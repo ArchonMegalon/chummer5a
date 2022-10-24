@@ -44,6 +44,7 @@ using System.Runtime.Serialization;
 using System.Threading;
 using Chummer.Plugins;
 using Microsoft.ApplicationInsights;
+using Microsoft.IO;
 using Newtonsoft.Json;
 using NLog;
 using Application = System.Windows.Forms.Application;
@@ -2775,7 +2776,7 @@ namespace Chummer
                     {
                         XmlDocument objDummyDocument = new XmlDocument { XmlResolver = null };
                         //For every 3 full points of Force a spirit has, it may gain one Optional Power.
-                        for (int i = intForce - 3; i >= 0; i -= 3)
+                        for (int i = intForce; i >= 3; i -= 3)
                         {
                             XmlNode bonusNode = objDummyDocument.CreateNode(XmlNodeType.Element, "bonus", null);
                             XmlNode powerNode =
@@ -2905,7 +2906,7 @@ namespace Chummer
 
                 void DoSave()
                 {
-                    using (MemoryStream objStream = new MemoryStream())
+                    using (RecyclableMemoryStream objStream = new RecyclableMemoryStream(Utils.MemoryStreamManager))
                     {
                         using (XmlWriter objWriter = Utils.GetStandardXmlWriter(objStream))
                         {
@@ -3713,7 +3714,7 @@ namespace Chummer
 
                 async Task DoSaveAsync(CancellationToken innerToken = default)
                 {
-                    using (MemoryStream objStream = new MemoryStream())
+                    using (RecyclableMemoryStream objStream = new RecyclableMemoryStream(Utils.MemoryStreamManager))
                     {
                         using (XmlWriter objWriter = Utils.GetStandardXmlWriter(objStream))
                         {
@@ -4782,19 +4783,23 @@ namespace Chummer
                         List<Task<bool>> lstDoOnSaveCompletedAsync = new List<Task<bool>>(Utils.MaxParallelBatchSize);
                         int i = 0;
                         int j = 0;
-                        while (i != DoOnSaveCompleted.Count || j != DoOnSaveCompletedAsync.Count)
+                        while (i != await DoOnSaveCompleted.GetCountAsync(token).ConfigureAwait(false)
+                               || j != await DoOnSaveCompletedAsync.GetCountAsync(token).ConfigureAwait(false))
                         {
                             lstDoOnSaveCompletedAsync.Clear();
                             while
-                                (i != DoOnSaveCompleted
-                                    .Count) // Set up this way because functions can potentially add more to DoOnSaveCompleted
+                                (i != await DoOnSaveCompleted
+                                            .GetCountAsync(token)
+                                            .ConfigureAwait(
+                                                false)) // Set up this way because functions can potentially add more to DoOnSaveCompleted
                             {
                                 int intCounter = 0;
                                 // ReSharper disable once ForCanBeConvertedToForeach
-                                for (; i < DoOnSaveCompleted.Count; ++i)
+                                for (; i < await DoOnSaveCompleted.GetCountAsync(token).ConfigureAwait(false); ++i)
                                 {
                                     token.ThrowIfCancellationRequested();
-                                    Func<Character, bool> funcLoopToRun = DoOnSaveCompleted[i];
+                                    Func<Character, bool> funcLoopToRun = await DoOnSaveCompleted
+                                        .GetValueAtAsync(i, token).ConfigureAwait(false);
                                     if (funcLoopToRun != null)
                                     {
                                         lstDoOnSaveCompletedAsync.Add(
@@ -4826,11 +4831,11 @@ namespace Chummer
                             }
 
                             lstDoOnSaveCompletedAsync.Clear();
-                            while (j != DoOnSaveCompletedAsync.Count)
+                            while (j != await DoOnSaveCompletedAsync.GetCountAsync(token).ConfigureAwait(false))
                             {
                                 int intCounter = 0;
                                 // ReSharper disable once ForCanBeConvertedToForeach
-                                for (; j < DoOnSaveCompletedAsync.Count; ++j)
+                                for (; j < await DoOnSaveCompletedAsync.GetCountAsync(token).ConfigureAwait(false); ++j)
                                 {
                                     Func<Character, CancellationToken, Task<bool>> funcLoopToRun
                                         = await DoOnSaveCompletedAsync.GetValueAtAsync(j, token).ConfigureAwait(false);
@@ -4930,27 +4935,30 @@ namespace Chummer
             return XmlManager.LoadAsync(strFileName, Settings.EnabledCustomDataDirectoryPaths, strLanguage, blnLoadFile, token);
         }
 
-        private bool _blnIsLoading;
+        private int _intIsLoading;
 
         /// <summary>
         /// Set to true while data is being populated by the Load function
         /// </summary>
         public bool IsLoading
         {
-            get
-            {
-                using (EnterReadLock.Enter(LockObject))
-                    return _blnIsLoading;
-            }
+            get => _intIsLoading > 0;
             set
             {
-                using (EnterReadLock.Enter(LockObject))
+                if (value)
                 {
-                    if (_blnIsLoading == value)
-                        return;
+                    if (Interlocked.Increment(ref _intIsLoading) == 1)
+                    {
+                        using (LockObject.EnterWriteLock())
+                        {
+                            OnPropertyChanged();
+                        }
+                    }
+                }
+                else if (Interlocked.Decrement(ref _intIsLoading) == 0)
+                {
                     using (LockObject.EnterWriteLock())
                     {
-                        _blnIsLoading = value;
                         OnPropertyChanged();
                     }
                 }
@@ -5331,28 +5339,56 @@ namespace Chummer
                                 {
                                     string strMinimumVersion = string.Empty;
                                     // Check to see if a character has a minimum version set where they will not load properly on anything older
-                                    if (xmlCharacterNavigator.TryGetStringFieldQuickly("minimumappversion", ref strMinimumVersion) &&
-                                        !string.IsNullOrEmpty(strMinimumVersion))
+                                    if (xmlCharacterNavigator.TryGetStringFieldQuickly(
+                                            "minimumappversion", ref strMinimumVersion)
+                                        && !string.IsNullOrEmpty(strMinimumVersion))
                                     {
                                         strMinimumVersion = strMinimumVersion.TrimStartOnce("0.");
-                                        if (Version.TryParse(strMinimumVersion, out Version objMinimumVersion) && objMinimumVersion > Utils.CurrentChummerVersion)
+                                        if (Version.TryParse(strMinimumVersion, out Version objMinimumVersion)
+                                            && objMinimumVersion > Utils.CurrentChummerVersion)
                                         {
                                             Program.ShowMessageBox(
                                                 string.Format(GlobalSettings.CultureInfo,
-                                                    LanguageManager.GetString("Message_OlderThanChummerSaveMinimumVersion"),
-                                                    objMinimumVersion, Utils.CurrentChummerVersion),
-                                                LanguageManager.GetString("MessageTitle_OlderThanChummerSaveMinimumVersion"),
-                                                MessageBoxButtons.OK,
-                                                MessageBoxIcon.Error);
+                                                              blnSync
+                                                                  // ReSharper disable once MethodHasAsyncOverload
+                                                                  ? LanguageManager.GetString(
+                                                                      "Message_OlderThanChummerSaveMinimumVersion")
+                                                                  : await LanguageManager
+                                                                          .GetStringAsync(
+                                                                              "Message_OlderThanChummerSaveMinimumVersion",
+                                                                              token: token).ConfigureAwait(false),
+                                                              objMinimumVersion, Utils.CurrentChummerVersion),
+                                                blnSync
+                                                    // ReSharper disable once MethodHasAsyncOverload
+                                                    ? LanguageManager.GetString(
+                                                        "MessageTitle_OlderThanChummerSaveMinimumVersion")
+                                                    : await LanguageManager
+                                                            .GetStringAsync(
+                                                                "MessageTitle_OlderThanChummerSaveMinimumVersion",
+                                                                token: token).ConfigureAwait(false),
+                                                MessageBoxButtons.OK, MessageBoxIcon.Error);
                                             return false;
                                         }
                                     }
-                                    if (_verSavedVersion > Utils.CurrentChummerVersion && DialogResult.Yes != Program.ShowMessageBox(
-                                        string.Format(GlobalSettings.CultureInfo, LanguageManager.GetString("Message_OutdatedChummerSave"),
-                                            _verSavedVersion, Utils.CurrentChummerVersion),
-                                        LanguageManager.GetString("MessageTitle_OutdatedChummerSave"),
-                                        MessageBoxButtons.YesNo,
-                                        MessageBoxIcon.Warning))
+
+                                    if (_verSavedVersion > Utils.CurrentChummerVersion && DialogResult.Yes
+                                        != Program.ShowMessageBox(
+                                            string.Format(GlobalSettings.CultureInfo,
+                                                          blnSync
+                                                              // ReSharper disable once MethodHasAsyncOverload
+                                                              ? LanguageManager.GetString("Message_OutdatedChummerSave")
+                                                              : await LanguageManager
+                                                                      .GetStringAsync(
+                                                                          "Message_OutdatedChummerSave", token: token)
+                                                                      .ConfigureAwait(false), _verSavedVersion,
+                                                          Utils.CurrentChummerVersion),
+                                            blnSync
+                                                // ReSharper disable once MethodHasAsyncOverload
+                                                ? LanguageManager.GetString("MessageTitle_OutdatedChummerSave")
+                                                : await LanguageManager
+                                                        .GetStringAsync("MessageTitle_OutdatedChummerSave",
+                                                                        token: token).ConfigureAwait(false),
+                                            MessageBoxButtons.YesNo, MessageBoxIcon.Warning))
                                     {
                                         return false;
                                     }
@@ -6068,8 +6104,8 @@ namespace Chummer
                                 if (blnDoSourceFetch)
                                 {
                                     XPathNavigator xmlCharNode
-                                        // ReSharper disable once MethodHasAsyncOverload
                                         = blnSync
+                                            // ReSharper disable once MethodHasAsyncOverload
                                             ? this.GetNodeXPath(token: token)
                                             : await this.GetNodeXPathAsync(token: token).ConfigureAwait(false);
                                     if (xmlCharNode != null)
@@ -17851,6 +17887,20 @@ namespace Chummer
             }
         }
 
+        public async ValueTask<string> GetDisplayPowerPointsRemainingAsync(CancellationToken token = default)
+        {
+            string strSpace = await LanguageManager.GetStringAsync("String_Space", token: token).ConfigureAwait(false);
+            using (await EnterReadLock.EnterAsync(LockObject, token).ConfigureAwait(false))
+            {
+                decimal decTotal = await GetPowerPointsTotalAsync(token).ConfigureAwait(false);
+                return decTotal.ToString(GlobalSettings.CultureInfo) + strSpace + '(' +
+                       (decTotal - await GetPowerPointsUsedAsync(token).ConfigureAwait(false)).ToString(
+                           GlobalSettings.CultureInfo) + strSpace +
+                       await LanguageManager.GetStringAsync("String_Remaining", token: token).ConfigureAwait(false)
+                       + ')';
+            }
+        }
+
         public bool AnyPowerAdeptWayDiscountEnabled
         {
             get
@@ -21564,7 +21614,7 @@ namespace Chummer
                             || objInnerArmor.ArmorValue.StartsWith('+')
                             || objInnerArmor.ArmorValue.StartsWith('-'))
                             continue;
-                        if (string.IsNullOrEmpty(strCustomFitName) || strCustomFitName != objArmor.Name)
+                        if (string.IsNullOrEmpty(strCustomFitName) || strCustomFitName != objInnerArmor.Name)
                         {
                             if (objArmor.ArmorValue.StartsWith('+') || objArmor.ArmorValue.StartsWith('-'))
                                 dicArmorStackingValues[objInnerArmor] += objArmor.TotalArmor;
@@ -21694,7 +21744,7 @@ namespace Chummer
                             || objInnerArmor.ArmorValue.StartsWith('+')
                             || objInnerArmor.ArmorValue.StartsWith('-'))
                             continue;
-                        if (string.IsNullOrEmpty(strCustomFitName) || strCustomFitName != objArmor.Name)
+                        if (string.IsNullOrEmpty(strCustomFitName) || strCustomFitName != objInnerArmor.Name)
                         {
                             if (objArmor.ArmorValue.StartsWith('+') || objArmor.ArmorValue.StartsWith('-'))
                                 dicArmorStackingValues[objInnerArmor] += objArmor.TotalArmor;
@@ -23298,7 +23348,7 @@ namespace Chummer
                                 || objInnerArmor.ArmorValue.StartsWith('+')
                                 || objInnerArmor.ArmorValue.StartsWith('-'))
                                 continue;
-                            if (string.IsNullOrEmpty(strCustomFitName) || strCustomFitName != objArmor.Name)
+                            if (string.IsNullOrEmpty(strCustomFitName) || strCustomFitName != objInnerArmor.Name)
                             {
                                 (int intI, int intJ) = dicArmorStackingValues[objInnerArmor];
                                 if (objArmor.Encumbrance)
@@ -23411,7 +23461,7 @@ namespace Chummer
                             || objInnerArmor.ArmorValue.StartsWith('+')
                             || objInnerArmor.ArmorValue.StartsWith('-'))
                             continue;
-                        if (string.IsNullOrEmpty(strCustomFitName) || strCustomFitName != objArmor.Name)
+                        if (string.IsNullOrEmpty(strCustomFitName) || strCustomFitName != objInnerArmor.Name)
                         {
                             (int intI, int intJ) = dicArmorStackingValues[objInnerArmor];
                             if (objArmor.Encumbrance)
@@ -33793,8 +33843,11 @@ namespace Chummer
                                                                         else
                                                                             await objArmorMod.GearChildren.AddAsync(objPlugin, token).ConfigureAwait(false);
                                                                     }
-                                                                    else
+                                                                    else if (blnSync)
+                                                                        // ReSharper disable once MethodHasAsyncOverload
                                                                         objPlugin.Dispose();
+                                                                    else
+                                                                        await objPlugin.DisposeAsync().ConfigureAwait(false);
                                                                 }
 
                                                                 foreach (XPathNavigator xmlPluginToAdd in
@@ -33842,8 +33895,11 @@ namespace Chummer
                                                                 else
                                                                     await objArmor.GearChildren.AddAsync(objPlugin, token).ConfigureAwait(false);
                                                             }
-                                                            else
+                                                            else if(blnSync)
+                                                                // ReSharper disable once MethodHasAsyncOverload
                                                                 objPlugin.Dispose();
+                                                            else
+                                                                await objPlugin.DisposeAsync().ConfigureAwait(false);
                                                         }
                                                     }
                                                 }
@@ -33887,8 +33943,11 @@ namespace Chummer
                                                                         else
                                                                             await objArmorMod.GearChildren.AddAsync(objPlugin, token).ConfigureAwait(false);
                                                                     }
-                                                                    else
+                                                                    else if (blnSync)
+                                                                        // ReSharper disable once MethodHasAsyncOverload
                                                                         objPlugin.Dispose();
+                                                                    else
+                                                                        await objPlugin.DisposeAsync().ConfigureAwait(false);
                                                                 }
 
                                                                 foreach (XPathNavigator xmlPluginToAdd in
@@ -33969,8 +34028,11 @@ namespace Chummer
                                         else
                                             await _lstWeapons.AddAsync(objWeapon, token).ConfigureAwait(false);
                                     }
-                                    else
+                                    else if (blnSync)
+                                        // ReSharper disable once MethodHasAsyncOverload
                                         objWeapon.Dispose();
+                                    else
+                                        await objWeapon.DisposeAsync().ConfigureAwait(false);
                                 }
 
                                 foreach (XPathNavigator xmlPluginToAdd in xmlStatBlockBaseNode.Select(
@@ -34012,8 +34074,11 @@ namespace Chummer
                                         else
                                             await _lstCyberware.AddAsync(objCyberware, token).ConfigureAwait(false);
                                     }
-                                    else
+                                    else if (blnSync)
+                                        // ReSharper disable once MethodHasAsyncOverload
                                         objCyberware.Dispose();
+                                    else
+                                        await objCyberware.DisposeAsync().ConfigureAwait(false);
                                 }
 
                                 foreach (XPathNavigator xmlPluginToAdd in xmlStatBlockBaseNode.Select(
@@ -34049,8 +34114,11 @@ namespace Chummer
                                         else
                                             await _lstCyberware.AddAsync(objCyberware, token).ConfigureAwait(false);
                                     }
-                                    else
+                                    else if (blnSync)
+                                        // ReSharper disable once MethodHasAsyncOverload
                                         objCyberware.Dispose();
+                                    else
+                                        await objCyberware.DisposeAsync().ConfigureAwait(false);
                                 }
 
                                 foreach (XPathNavigator xmlPluginToAdd in xmlStatBlockBaseNode.Select(

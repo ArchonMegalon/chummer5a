@@ -36,6 +36,7 @@ using Chummer.Backend.Equipment;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
+using Microsoft.IO;
 
 namespace Chummer
 {
@@ -1250,7 +1251,7 @@ namespace Chummer
             string strSearchText = strNeedle.CleanXPath().ToUpperInvariant();
             // Construct a second needle for French where we have zero-width spaces between a starting consonant and an apostrophe in order to fix ListView's weird way of alphabetically sorting names
             string strSearchText2 = string.Empty;
-            if (GlobalSettings.Language.StartsWith("FR", StringComparison.InvariantCultureIgnoreCase) && strSearchText.Contains('\''))
+            if (GlobalSettings.Language.StartsWith("FR", StringComparison.OrdinalIgnoreCase) && strSearchText.Contains('\''))
             {
                 strSearchText2 = strSearchText
                                  .Replace("D\'A", "D\u200B\'A")
@@ -1540,8 +1541,8 @@ namespace Chummer
         {
             objToken.ThrowIfCancellationRequested();
             XmlDocument objReturn = new XmlDocument { XmlResolver = null };
-            // Write the Character information to a MemoryStream so we don't need to create any files.
-            using (MemoryStream objStream = new MemoryStream())
+            // Write the Character information to a RecyclableMemoryStream so we don't need to create any files.
+            using (RecyclableMemoryStream objStream = new RecyclableMemoryStream(Utils.MemoryStreamManager))
             {
                 using (XmlWriter objWriter = Utils.GetStandardXmlWriter(objStream))
                 {
