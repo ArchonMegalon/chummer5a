@@ -308,13 +308,28 @@ namespace Chummer
         /// <summary>
         /// Character.
         /// </summary>
+
+        internal static CharacterSettings ResolveSettingsOrFallback(IAsyncReadOnlyDictionary<string, CharacterSettings> loadedCharacterSettings)
+        {
+            if (loadedCharacterSettings == null)
+                return new CharacterSettings();
+
+            foreach (KeyValuePair<string, CharacterSettings> pair in loadedCharacterSettings)
+            {
+                if (pair.Value != null)
+                    return pair.Value;
+            }
+
+            return new CharacterSettings();
+        }
+
         public Character()
         {
             if (Utils.IsDesignerMode || Utils.IsRunningInVisualStudio)
                 _objSettings = new CharacterSettings(); // Need this because ExpenseCharts is WPF and needs a Character in design mode.
             else if (!SettingsManager.LoadedCharacterSettings.TryGetValue(GlobalSettings.DefaultCharacterSetting, out _objSettings)
                      && !SettingsManager.LoadedCharacterSettings.TryGetValue(GlobalSettings.DefaultCharacterSettingDefaultValue, out _objSettings))
-                _objSettings = SettingsManager.LoadedCharacterSettings.First().Value;
+                _objSettings = ResolveSettingsOrFallback(SettingsManager.LoadedCharacterSettings);
 
             using (_objSettings.LockObject.EnterWriteLock())
                 _objSettings.PropertyChanged += OptionsOnPropertyChanged;

@@ -31,6 +31,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Text;
+using System.Text.Encodings.Web;
 using ChummerHub.Models.V1;
 using Newtonsoft.Json;
 using ChummerHub.API;
@@ -158,7 +159,7 @@ namespace ChummerHub.Controllers.V1
         [Swashbuckle.AspNetCore.Annotations.SwaggerResponse((int)(HttpStatusCode.PermanentRedirect))]
         [Swashbuckle.AspNetCore.Annotations.SwaggerResponse((int)HttpStatusCode.NotFound)]
         [Swashbuckle.AspNetCore.Annotations.SwaggerOperation("GroupO")]
-        public IActionResult G([FromRoute] string Hash, string open)
+        public async Task<IActionResult> G([FromRoute] string Hash, string open)
         {
             try
             {
@@ -181,7 +182,7 @@ namespace ChummerHub.Controllers.V1
 #endif
                 if (sgi != null)
                 {
-                    var user = _signInManager.UserManager.GetUserAsync(User).Result;
+                    var user = await _signInManager.UserManager.GetUserAsync(User).ConfigureAwait(false);
                     SINnerSearchGroup sg = new SINnerSearchGroup(sgi, user);
                     string transactionId = $"{Guid.NewGuid().ToString().GetHashCode():X}";
                     string chummerUrl = "chummer://plugin:SINners:Load:" + sg.Id + ":" + transactionId;
@@ -191,28 +192,28 @@ namespace ChummerHub.Controllers.V1
                     string mypath = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
                     StringBuilder sb = new StringBuilder("<html>")
                         .AppendFormat(@"<body onload='document.forms[""form""].submit()'>")
-                        .AppendFormat("<form name='form' action='{0}' method='post'>", postbackUrl)
-                        .AppendFormat("<input type='hidden' name='guid' value='{0}'>", sg.Id)
-                        .AppendFormat("<input type='hidden' name='Environment' value='{0}'>", mypath)
-                        .AppendFormat("<input type='hidden' name='GroupName' value='{0}'>", sg.Groupname)
-                        .AppendFormat("<input type='hidden' name='HasPassword' value='{0}'>", sg.HasPassword)
-                        .AppendFormat("<input type='hidden' name='Description' value='{0}'>", sg.Description)
-                        .AppendFormat("<input type='hidden' name='IsPublic' value='{0}'>", sg.IsPublic)
-                        .AppendFormat("<input type='hidden' name='Language' value='{0}'>", sg.Language);
+                        .AppendFormat("<form name='form' action='{0}' method='post'>", EscapeHiddenInputValue(postbackUrl))
+                        .AppendFormat("<input type='hidden' name='guid' value='{0}'>", EscapeHiddenInputValue(sg.Id.ToString()))
+                        .AppendFormat("<input type='hidden' name='Environment' value='{0}'>", EscapeHiddenInputValue(mypath))
+                        .AppendFormat("<input type='hidden' name='GroupName' value='{0}'>", EscapeHiddenInputValue(sg.Groupname))
+                        .AppendFormat("<input type='hidden' name='HasPassword' value='{0}'>", EscapeHiddenInputValue(sg.HasPassword.ToString()))
+                        .AppendFormat("<input type='hidden' name='Description' value='{0}'>", EscapeHiddenInputValue(sg.Description))
+                        .AppendFormat("<input type='hidden' name='IsPublic' value='{0}'>", EscapeHiddenInputValue(sg.IsPublic.ToString()))
+                        .AppendFormat("<input type='hidden' name='Language' value='{0}'>", EscapeHiddenInputValue(sg.Language));
                     string urlcallback = "https://shadowsprawl.com/character/status/" + transactionId;
                     string chummeruri = chummerUrl + ":" + Uri.EscapeDataString(urlcallback);
-                    sb.AppendFormat("<input type='hidden' name='ChummerUrl' value='{0}'>", chummeruri)
-                        .AppendFormat("<input type='hidden' name='TransactionId' value='{0}'>", transactionId)
-                        .AppendFormat("<input type='hidden' name='StatusCallback' value='{0}'>", urlcallback)
-                        .AppendFormat("<input type='hidden' name='OpenChummer' value='{0}'>", open);
+                    sb.AppendFormat("<input type='hidden' name='ChummerUrl' value='{0}'>", EscapeHiddenInputValue(chummeruri))
+                        .AppendFormat("<input type='hidden' name='TransactionId' value='{0}'>", EscapeHiddenInputValue(transactionId))
+                        .AppendFormat("<input type='hidden' name='StatusCallback' value='{0}'>", EscapeHiddenInputValue(urlcallback))
+                        .AppendFormat("<input type='hidden' name='OpenChummer' value='{0}'>", EscapeHiddenInputValue(open));
 
                     // Other params go here
-                    var members = sg.GetGroupMembers(_context, false).Result;
+                    var members = await sg.GetGroupMembers(_context, false).ConfigureAwait(false);
                     var json = JsonConvert.SerializeObject(members, Formatting.Indented);
-                    sb.AppendFormat("<input type='hidden' name='Members' value='{0}'>", json);
+                    sb.AppendFormat("<input type='hidden' name='Members' value='{0}'>", EscapeHiddenInputValue(json));
 
                     var jsonsubgroups = JsonConvert.SerializeObject(sg.MyGroups);
-                    sb.AppendFormat("<input type='hidden' name='SubGroups' value='{0}'>", jsonsubgroups);
+                    sb.AppendFormat("<input type='hidden' name='SubGroups' value='{0}'>", EscapeHiddenInputValue(jsonsubgroups));
 
                     sb.Append("</form></body></html>");
                     string strBody = sb.ToString();
@@ -285,6 +286,11 @@ namespace ChummerHub.Controllers.V1
                 tc?.TrackException(e);
                 throw;
             }
+        }
+
+        internal static string EscapeHiddenInputValue(string value)
+        {
+            return HtmlEncoder.Default.Encode(value ?? string.Empty);
         }
     }
 }

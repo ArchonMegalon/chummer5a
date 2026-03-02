@@ -27,6 +27,7 @@ using SendGrid.Helpers.Mail;
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Security.Authentication;
 using System.Threading.Tasks;
 
 namespace ChummerHub.Services
@@ -55,7 +56,7 @@ namespace ChummerHub.Services
             return Execute(Options.SendGridKey, subject, message, email);
         }
 
-        public Task Execute(string apiKey, string subject, string message, string email)
+        public async Task Execute(string apiKey, string subject, string message, string email)
         {
             if (string.IsNullOrEmpty(apiKey))
             {
@@ -71,8 +72,7 @@ namespace ChummerHub.Services
             httpClientHandler.DefaultProxyCredentials = CredentialCache.DefaultCredentials;
             httpClientHandler.Proxy.Credentials = CredentialCache.DefaultNetworkCredentials;
             httpClientHandler.PreAuthenticate = true;
-            httpClientHandler.SslProtocols = System.Security.Authentication.SslProtocols.Ssl3 | System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls11 | System.Security.Authentication.SslProtocols.Tls;
-            httpClientHandler.ServerCertificateCustomValidationCallback = (message2, cert, chain, errors) => true;
+            httpClientHandler.SslProtocols = SslProtocols.Tls12;
             var httpClient = new HttpClient(httpClientHandler);
 
             var client = new SendGridClient(httpClient, apiKey);
@@ -91,19 +91,15 @@ namespace ChummerHub.Services
             {
                 ClickTracking = new ClickTracking { Enable = false }
             };
-            var task = client.SendEmailAsync(msg);
-#if DEBUG
             try
             {
-                task.Wait();
+                await client.SendEmailAsync(msg).ConfigureAwait(false);
             }
             catch (Exception e)
             {
                 _logger.LogError("Exception sending mail: " + Environment.NewLine + e);
                 throw;
             }
-#endif
-            return task;
         }
     }
 }
