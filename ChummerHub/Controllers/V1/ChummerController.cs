@@ -98,7 +98,7 @@ namespace ChummerHub.Controllers.V1
 #endif
                 if (sinner != null)
                 {
-                    string transactionId = $"{Guid.NewGuid().ToString().GetHashCode():X}";
+                    string transactionId = Guid.NewGuid().ToString("N");
                     string chummerUrl = "chummer://plugin:SINners:Load:" + sinner.Id + ":" + transactionId;
                     string postbackUrl = "https://shadowsprawl.com/api/chummer/upload";
                     sinner.LastDownload = DateTime.Now;
@@ -106,22 +106,26 @@ namespace ChummerHub.Controllers.V1
                     string mypath = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
                     StringBuilder sb = new StringBuilder("<html>")
                         .AppendFormat(@"<body onload='document.forms[""form""].submit()'>")
-                        .AppendFormat("<form name='form' action='{0}' method='post'>", postbackUrl)
-                        .AppendFormat("<input type='hidden' name='guid' value='{0}'>", sinner.Id)
-                        .AppendFormat("<input type='hidden' name='Environment' value='{0}'>", mypath)
-                        .AppendFormat("<input type='hidden' name='CharName' value='{0}'>", sinner.Alias);
-                    Uri escape = new Uri(sinner.DownloadUrl);
-                    string escapestr = $"{escape.Scheme}://{escape.Host}{escape.AbsolutePath}";
-                    escapestr += Uri.EscapeDataString(escape.Query);
-                    sb.AppendFormat("<input type='hidden' name='DownloadUrl' value='{0}'>", escapestr);
+                        .AppendFormat("<form name='form' action='{0}' method='post'>", EscapeHiddenInputValue(postbackUrl))
+                        .AppendFormat("<input type='hidden' name='guid' value='{0}'>", EscapeHiddenInputValue(sinner.Id.ToString()))
+                        .AppendFormat("<input type='hidden' name='Environment' value='{0}'>", EscapeHiddenInputValue(mypath))
+                        .AppendFormat("<input type='hidden' name='CharName' value='{0}'>", EscapeHiddenInputValue(sinner.Alias));
+
+                    string escapestr = sinner.DownloadUrl;
+                    if (Uri.TryCreate(sinner.DownloadUrl, UriKind.Absolute, out Uri escape))
+                    {
+                        escapestr = $"{escape.Scheme}://{escape.Host}{escape.AbsolutePath}" + Uri.EscapeDataString(escape.Query);
+                    }
+
+                    sb.AppendFormat("<input type='hidden' name='DownloadUrl' value='{0}'>", EscapeHiddenInputValue(escapestr));
 
                     string urlcallback = "https://shadowsprawl.com/character/status/" + transactionId;
                     string chummeruri = chummerUrl + ":" + Uri.EscapeDataString(urlcallback);
-                    sb.AppendFormat("<input type='hidden' name='ChummerUrl' value='{0}'>", chummeruri)
-                        .AppendFormat("<input type='hidden' name='TransactionId' value='{0}'>", transactionId)
-                        .AppendFormat("<input type='hidden' name='StatusCallback' value='{0}'>", urlcallback)
-                        .AppendFormat("<input type='hidden' name='UploadDateTime' value='{0}'>", sinner.UploadDateTime)
-                        .AppendFormat("<input type='hidden' name='OpenChummer' value='{0}'>", open);
+                    sb.AppendFormat("<input type='hidden' name='ChummerUrl' value='{0}'>", EscapeHiddenInputValue(chummeruri))
+                        .AppendFormat("<input type='hidden' name='TransactionId' value='{0}'>", EscapeHiddenInputValue(transactionId))
+                        .AppendFormat("<input type='hidden' name='StatusCallback' value='{0}'>", EscapeHiddenInputValue(urlcallback))
+                        .AppendFormat("<input type='hidden' name='UploadDateTime' value='{0}'>", EscapeHiddenInputValue(sinner.UploadDateTime.ToString()))
+                        .AppendFormat("<input type='hidden' name='OpenChummer' value='{0}'>", EscapeHiddenInputValue(open));
                     // Other params go here
                     sb.Append("</form></body></html>");
                     string strBody = sb.ToString();
@@ -184,7 +188,7 @@ namespace ChummerHub.Controllers.V1
                 {
                     var user = await _signInManager.UserManager.GetUserAsync(User).ConfigureAwait(false);
                     SINnerSearchGroup sg = new SINnerSearchGroup(sgi, user);
-                    string transactionId = $"{Guid.NewGuid().ToString().GetHashCode():X}";
+                    string transactionId = Guid.NewGuid().ToString("N");
                     string chummerUrl = "chummer://plugin:SINners:Load:" + sg.Id + ":" + transactionId;
 
                     string postbackUrl = "https://shadowsprawl.com/api/chummer/upload";

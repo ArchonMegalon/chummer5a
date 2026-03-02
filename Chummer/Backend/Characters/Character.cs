@@ -309,15 +309,25 @@ namespace Chummer
         /// Character.
         /// </summary>
 
-        internal static CharacterSettings ResolveSettingsOrFallback(IAsyncReadOnlyDictionary<string, CharacterSettings> loadedCharacterSettings)
+        internal static CharacterSettings ResolveSettingsOrFallback(IAsyncReadOnlyDictionary<string, CharacterSettings> loadedCharacterSettings, string defaultKey, string fallbackKey)
         {
-            if (loadedCharacterSettings == null)
-                return new CharacterSettings();
-
-            foreach (KeyValuePair<string, CharacterSettings> pair in loadedCharacterSettings)
+            if (loadedCharacterSettings != null)
             {
-                if (pair.Value != null)
-                    return pair.Value;
+                if (!string.IsNullOrEmpty(defaultKey)
+                    && loadedCharacterSettings.TryGetValue(defaultKey, out CharacterSettings objDefaultSettings)
+                    && objDefaultSettings != null)
+                    return objDefaultSettings;
+
+                if (!string.IsNullOrEmpty(fallbackKey)
+                    && loadedCharacterSettings.TryGetValue(fallbackKey, out CharacterSettings objFallbackSettings)
+                    && objFallbackSettings != null)
+                    return objFallbackSettings;
+
+                foreach (KeyValuePair<string, CharacterSettings> pair in loadedCharacterSettings)
+                {
+                    if (pair.Value != null)
+                        return pair.Value;
+                }
             }
 
             return new CharacterSettings();
@@ -327,9 +337,10 @@ namespace Chummer
         {
             if (Utils.IsDesignerMode || Utils.IsRunningInVisualStudio)
                 _objSettings = new CharacterSettings(); // Need this because ExpenseCharts is WPF and needs a Character in design mode.
-            else if (!SettingsManager.LoadedCharacterSettings.TryGetValue(GlobalSettings.DefaultCharacterSetting, out _objSettings)
-                     && !SettingsManager.LoadedCharacterSettings.TryGetValue(GlobalSettings.DefaultCharacterSettingDefaultValue, out _objSettings))
-                _objSettings = ResolveSettingsOrFallback(SettingsManager.LoadedCharacterSettings);
+            else
+                _objSettings = ResolveSettingsOrFallback(SettingsManager.LoadedCharacterSettings,
+                                                        GlobalSettings.DefaultCharacterSetting,
+                                                        GlobalSettings.DefaultCharacterSettingDefaultValue);
 
             using (_objSettings.LockObject.EnterWriteLock())
                 _objSettings.PropertyChanged += OptionsOnPropertyChanged;
