@@ -4,9 +4,9 @@ namespace Chummer.Application.Characters;
 
 public interface ICharacterStatsQueries
 {
-    CharacterAttributesSection ParseAttributes(CharacterXmlDocument document);
+    CharacterAttributesSection ParseAttributes(CharacterDocument document);
 
-    CharacterAttributeDetailsSection ParseAttributeDetails(CharacterXmlDocument document);
+    CharacterAttributeDetailsSection ParseAttributeDetails(CharacterDocument document);
 
-    CharacterLimitModifiersSection ParseLimitModifiers(CharacterXmlDocument document);
+    CharacterLimitModifiersSection ParseLimitModifiers(CharacterDocument document);
 }

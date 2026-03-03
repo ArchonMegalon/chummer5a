@@ -12,31 +12,31 @@ public sealed class XmlCharacterInventoryQueries : ICharacterInventoryQueries
         _characterSectionService = characterSectionService;
     }
 
-    public CharacterInventorySection ParseInventory(CharacterXmlDocument document) => _characterSectionService.ParseInventory(document.Xml);
+    public CharacterInventorySection ParseInventory(CharacterDocument document) => _characterSectionService.ParseInventory(document.Content);
 
-    public CharacterGearSection ParseGear(CharacterXmlDocument document) => _characterSectionService.ParseGear(document.Xml);
+    public CharacterGearSection ParseGear(CharacterDocument document) => _characterSectionService.ParseGear(document.Content);
 
-    public CharacterWeaponsSection ParseWeapons(CharacterXmlDocument document) => _characterSectionService.ParseWeapons(document.Xml);
+    public CharacterWeaponsSection ParseWeapons(CharacterDocument document) => _characterSectionService.ParseWeapons(document.Content);
 
-    public CharacterWeaponAccessoriesSection ParseWeaponAccessories(CharacterXmlDocument document) => _characterSectionService.ParseWeaponAccessories(document.Xml);
+    public CharacterWeaponAccessoriesSection ParseWeaponAccessories(CharacterDocument document) => _characterSectionService.ParseWeaponAccessories(document.Content);
 
-    public CharacterArmorsSection ParseArmors(CharacterXmlDocument document) => _characterSectionService.ParseArmors(document.Xml);
+    public CharacterArmorsSection ParseArmors(CharacterDocument document) => _characterSectionService.ParseArmors(document.Content);
 
-    public CharacterArmorModsSection ParseArmorMods(CharacterXmlDocument document) => _characterSectionService.ParseArmorMods(document.Xml);
+    public CharacterArmorModsSection ParseArmorMods(CharacterDocument document) => _characterSectionService.ParseArmorMods(document.Content);
 
-    public CharacterCyberwaresSection ParseCyberwares(CharacterXmlDocument document) => _characterSectionService.ParseCyberwares(document.Xml);
+    public CharacterCyberwaresSection ParseCyberwares(CharacterDocument document) => _characterSectionService.ParseCyberwares(document.Content);
 
-    public CharacterVehiclesSection ParseVehicles(CharacterXmlDocument document) => _characterSectionService.ParseVehicles(document.Xml);
+    public CharacterVehiclesSection ParseVehicles(CharacterDocument document) => _characterSectionService.ParseVehicles(document.Content);
 
-    public CharacterVehicleModsSection ParseVehicleMods(CharacterXmlDocument document) => _characterSectionService.ParseVehicleMods(document.Xml);
+    public CharacterVehicleModsSection ParseVehicleMods(CharacterDocument document) => _characterSectionService.ParseVehicleMods(document.Content);
 
-    public CharacterLocationsSection ParseGearLocations(CharacterXmlDocument document) => _characterSectionService.ParseGearLocations(document.Xml);
+    public CharacterLocationsSection ParseGearLocations(CharacterDocument document) => _characterSectionService.ParseGearLocations(document.Content);
 
-    public CharacterLocationsSection ParseArmorLocations(CharacterXmlDocument document) => _characterSectionService.ParseArmorLocations(document.Xml);
+    public CharacterLocationsSection ParseArmorLocations(CharacterDocument document) => _characterSectionService.ParseArmorLocations(document.Content);
 
-    public CharacterLocationsSection ParseWeaponLocations(CharacterXmlDocument document) => _characterSectionService.ParseWeaponLocations(document.Xml);
+    public CharacterLocationsSection ParseWeaponLocations(CharacterDocument document) => _characterSectionService.ParseWeaponLocations(document.Content);
 
-    public CharacterLocationsSection ParseVehicleLocations(CharacterXmlDocument document) => _characterSectionService.ParseVehicleLocations(document.Xml);
+    public CharacterLocationsSection ParseVehicleLocations(CharacterDocument document) => _characterSectionService.ParseVehicleLocations(document.Content);
 
-    public CharacterDrugsSection ParseDrugs(CharacterXmlDocument document) => _characterSectionService.ParseDrugs(document.Xml);
+    public CharacterDrugsSection ParseDrugs(CharacterDocument document) => _characterSectionService.ParseDrugs(document.Content);
 }

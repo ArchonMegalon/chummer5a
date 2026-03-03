@@ -26,5 +26,21 @@ public sealed record CharacterMetadataUpdate(
     string? Alias,
     string? Notes);
 
+public enum CharacterDocumentFormat
+{
+    Chum5Xml = 0
+}
+
+public sealed record CharacterDocument(
+    string Content,
+    CharacterDocumentFormat Format = CharacterDocumentFormat.Chum5Xml);
+
+[Obsolete("Use CharacterDocument instead.")]
 public sealed record CharacterXmlDocument(
-    string Xml);
+    string Xml)
+{
+    public CharacterDocument ToCharacterDocument()
+    {
+        return new CharacterDocument(Xml, CharacterDocumentFormat.Chum5Xml);
+    }
+}

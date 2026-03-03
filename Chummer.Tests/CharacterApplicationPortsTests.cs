@@ -17,7 +17,7 @@ public class CharacterApplicationPortsTests
         const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created></character>";
 
         ICharacterFileQueries queries = new XmlCharacterFileQueries(new CharacterFileService());
-        CharacterFileSummary summary = queries.ParseSummary(new CharacterXmlDocument(xml));
+        CharacterFileSummary summary = queries.ParseSummary(new CharacterDocument(xml));
 
         Assert.AreEqual("Neo", summary.Name);
         Assert.AreEqual("The One", summary.Alias);
@@ -47,7 +47,7 @@ public class CharacterApplicationPortsTests
         const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created><adept>False</adept><magician>False</magician><technomancer>False</technomancer><ai>False</ai></character>";
 
         ICharacterSectionQueries queries = new XmlCharacterSectionQueries(new CharacterSectionService());
-        object section = queries.ParseSection("profile", new CharacterXmlDocument(xml));
+        object section = queries.ParseSection("profile", new CharacterDocument(xml));
 
         Assert.IsInstanceOfType<CharacterProfileSection>(section);
         CharacterProfileSection profile = (CharacterProfileSection)section;
@@ -65,7 +65,7 @@ public class CharacterApplicationPortsTests
         ICharacterInventoryQueries inventory = new XmlCharacterInventoryQueries(sectionService);
         ICharacterMagicResonanceQueries magic = new XmlCharacterMagicResonanceQueries(sectionService);
         ICharacterSocialNarrativeQueries social = new XmlCharacterSocialNarrativeQueries(sectionService);
-        CharacterXmlDocument document = new(xml);
+        CharacterDocument document = new(xml);
 
         Assert.IsNotNull(overview.ParseProfile(document));
         Assert.IsNotNull(stats.ParseAttributes(document));
@@ -87,7 +87,7 @@ public class CharacterApplicationPortsTests
             new XmlCharacterMagicResonanceQueries(sectionService),
             new XmlCharacterSocialNarrativeQueries(sectionService));
 
-        object section = queries.ParseSection("profile", new CharacterXmlDocument(xml));
+        object section = queries.ParseSection("profile", new CharacterDocument(xml));
         Assert.IsInstanceOfType<CharacterProfileSection>(section);
     }
 

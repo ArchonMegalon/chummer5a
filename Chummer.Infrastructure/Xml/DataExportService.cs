@@ -19,7 +19,7 @@ public sealed class DataExportService : IDataExportService
         _sectionQueries = sectionQueries;
     }
 
-    public DataExportBundle BuildBundle(CharacterXmlDocument document)
+    public DataExportBundle BuildBundle(CharacterDocument document)
     {
         CharacterFileSummary? summary = SafeParse(() => _characterFileQueries.ParseSummary(document));
         summary ??= BuildFallbackSummary(document);
@@ -43,7 +43,7 @@ public sealed class DataExportService : IDataExportService
             Contacts: contacts);
     }
 
-    private TSection ParseSection<TSection>(string sectionId, CharacterXmlDocument document)
+    private TSection ParseSection<TSection>(string sectionId, CharacterDocument document)
     {
         return (TSection)_sectionQueries.ParseSection(sectionId, document);
     }
@@ -60,11 +60,11 @@ public sealed class DataExportService : IDataExportService
         }
     }
 
-    private static CharacterFileSummary BuildFallbackSummary(CharacterXmlDocument document)
+    private static CharacterFileSummary BuildFallbackSummary(CharacterDocument document)
     {
         try
         {
-            XDocument doc = XDocument.Parse(document.Xml, LoadOptions.None);
+            XDocument doc = XDocument.Parse(document.Content, LoadOptions.None);
             XElement? root = doc.Root;
             string name = root?.Element("name")?.Value ?? string.Empty;
             string alias = root?.Element("alias")?.Value ?? string.Empty;

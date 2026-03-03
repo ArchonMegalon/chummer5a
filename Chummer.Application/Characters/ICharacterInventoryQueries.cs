@@ -4,31 +4,31 @@ namespace Chummer.Application.Characters;
 
 public interface ICharacterInventoryQueries
 {
-    CharacterInventorySection ParseInventory(CharacterXmlDocument document);
+    CharacterInventorySection ParseInventory(CharacterDocument document);
 
-    CharacterGearSection ParseGear(CharacterXmlDocument document);
+    CharacterGearSection ParseGear(CharacterDocument document);
 
-    CharacterWeaponsSection ParseWeapons(CharacterXmlDocument document);
+    CharacterWeaponsSection ParseWeapons(CharacterDocument document);
 
-    CharacterWeaponAccessoriesSection ParseWeaponAccessories(CharacterXmlDocument document);
+    CharacterWeaponAccessoriesSection ParseWeaponAccessories(CharacterDocument document);
 
-    CharacterArmorsSection ParseArmors(CharacterXmlDocument document);
+    CharacterArmorsSection ParseArmors(CharacterDocument document);
 
-    CharacterArmorModsSection ParseArmorMods(CharacterXmlDocument document);
+    CharacterArmorModsSection ParseArmorMods(CharacterDocument document);
 
-    CharacterCyberwaresSection ParseCyberwares(CharacterXmlDocument document);
+    CharacterCyberwaresSection ParseCyberwares(CharacterDocument document);
 
-    CharacterVehiclesSection ParseVehicles(CharacterXmlDocument document);
+    CharacterVehiclesSection ParseVehicles(CharacterDocument document);
 
-    CharacterVehicleModsSection ParseVehicleMods(CharacterXmlDocument document);
+    CharacterVehicleModsSection ParseVehicleMods(CharacterDocument document);
 
-    CharacterLocationsSection ParseGearLocations(CharacterXmlDocument document);
+    CharacterLocationsSection ParseGearLocations(CharacterDocument document);
 
-    CharacterLocationsSection ParseArmorLocations(CharacterXmlDocument document);
+    CharacterLocationsSection ParseArmorLocations(CharacterDocument document);
 
-    CharacterLocationsSection ParseWeaponLocations(CharacterXmlDocument document);
+    CharacterLocationsSection ParseWeaponLocations(CharacterDocument document);
 
-    CharacterLocationsSection ParseVehicleLocations(CharacterXmlDocument document);
+    CharacterLocationsSection ParseVehicleLocations(CharacterDocument document);
 
-    CharacterDrugsSection ParseDrugs(CharacterXmlDocument document);
+    CharacterDrugsSection ParseDrugs(CharacterDocument document);
 }

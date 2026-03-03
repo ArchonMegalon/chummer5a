@@ -35,7 +35,7 @@ public sealed class XmlCharacterSectionQueries : ICharacterSectionQueries
         _socialNarrativeQueries = socialNarrativeQueries;
     }
 
-    public object ParseSection(string sectionId, CharacterXmlDocument document)
+    public object ParseSection(string sectionId, CharacterDocument document)
     {
         string key = (sectionId ?? string.Empty).Trim().ToLowerInvariant();
         return key switch

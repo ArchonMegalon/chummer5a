@@ -10,13 +10,13 @@ public static class CharacterEndpoints
     {
         app.MapPost("/api/characters/summary", (ICharacterFileQueries characterFileQueries, CharacterXmlRequest request) =>
         {
-            var summary = characterFileQueries.ParseSummary(new CharacterXmlDocument(request.Xml));
+            var summary = characterFileQueries.ParseSummary(new CharacterDocument(request.Xml));
             return Results.Ok(summary);
         });
 
         app.MapPost("/api/characters/validate", (ICharacterFileQueries characterFileQueries, CharacterXmlRequest request) =>
         {
-            var validation = characterFileQueries.Validate(new CharacterXmlDocument(request.Xml));
+            var validation = characterFileQueries.Validate(new CharacterDocument(request.Xml));
             return Results.Ok(validation);
         });
 
@@ -85,7 +85,7 @@ public static class CharacterEndpoints
     {
         app.MapPost($"/api/characters/sections/{route}", (ICharacterSectionQueries characterSectionQueries, CharacterXmlRequest request) =>
         {
-            object section = characterSectionQueries.ParseSection(route, new CharacterXmlDocument(request.Xml));
+            object section = characterSectionQueries.ParseSection(route, new CharacterDocument(request.Xml));
             return Results.Ok(section);
         });
     }

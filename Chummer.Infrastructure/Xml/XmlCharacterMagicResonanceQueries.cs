@@ -12,27 +12,27 @@ public sealed class XmlCharacterMagicResonanceQueries : ICharacterMagicResonance
         _characterSectionService = characterSectionService;
     }
 
-    public CharacterSpellsSection ParseSpells(CharacterXmlDocument document) => _characterSectionService.ParseSpells(document.Xml);
+    public CharacterSpellsSection ParseSpells(CharacterDocument document) => _characterSectionService.ParseSpells(document.Content);
 
-    public CharacterPowersSection ParsePowers(CharacterXmlDocument document) => _characterSectionService.ParsePowers(document.Xml);
+    public CharacterPowersSection ParsePowers(CharacterDocument document) => _characterSectionService.ParsePowers(document.Content);
 
-    public CharacterComplexFormsSection ParseComplexForms(CharacterXmlDocument document) => _characterSectionService.ParseComplexForms(document.Xml);
+    public CharacterComplexFormsSection ParseComplexForms(CharacterDocument document) => _characterSectionService.ParseComplexForms(document.Content);
 
-    public CharacterSpiritsSection ParseSpirits(CharacterXmlDocument document) => _characterSectionService.ParseSpirits(document.Xml);
+    public CharacterSpiritsSection ParseSpirits(CharacterDocument document) => _characterSectionService.ParseSpirits(document.Content);
 
-    public CharacterFociSection ParseFoci(CharacterXmlDocument document) => _characterSectionService.ParseFoci(document.Xml);
+    public CharacterFociSection ParseFoci(CharacterDocument document) => _characterSectionService.ParseFoci(document.Content);
 
-    public CharacterAiProgramsSection ParseAiPrograms(CharacterXmlDocument document) => _characterSectionService.ParseAiPrograms(document.Xml);
+    public CharacterAiProgramsSection ParseAiPrograms(CharacterDocument document) => _characterSectionService.ParseAiPrograms(document.Content);
 
-    public CharacterMartialArtsSection ParseMartialArts(CharacterXmlDocument document) => _characterSectionService.ParseMartialArts(document.Xml);
+    public CharacterMartialArtsSection ParseMartialArts(CharacterDocument document) => _characterSectionService.ParseMartialArts(document.Content);
 
-    public CharacterMetamagicsSection ParseMetamagics(CharacterXmlDocument document) => _characterSectionService.ParseMetamagics(document.Xml);
+    public CharacterMetamagicsSection ParseMetamagics(CharacterDocument document) => _characterSectionService.ParseMetamagics(document.Content);
 
-    public CharacterArtsSection ParseArts(CharacterXmlDocument document) => _characterSectionService.ParseArts(document.Xml);
+    public CharacterArtsSection ParseArts(CharacterDocument document) => _characterSectionService.ParseArts(document.Content);
 
-    public CharacterInitiationGradesSection ParseInitiationGrades(CharacterXmlDocument document) => _characterSectionService.ParseInitiationGrades(document.Xml);
+    public CharacterInitiationGradesSection ParseInitiationGrades(CharacterDocument document) => _characterSectionService.ParseInitiationGrades(document.Content);
 
-    public CharacterCritterPowersSection ParseCritterPowers(CharacterXmlDocument document) => _characterSectionService.ParseCritterPowers(document.Xml);
+    public CharacterCritterPowersSection ParseCritterPowers(CharacterDocument document) => _characterSectionService.ParseCritterPowers(document.Content);
 
-    public CharacterMentorSpiritsSection ParseMentorSpirits(CharacterXmlDocument document) => _characterSectionService.ParseMentorSpirits(document.Xml);
+    public CharacterMentorSpiritsSection ParseMentorSpirits(CharacterDocument document) => _characterSectionService.ParseMentorSpirits(document.Content);
 }

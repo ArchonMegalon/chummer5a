@@ -12,20 +12,20 @@ public sealed class XmlCharacterSocialNarrativeQueries : ICharacterSocialNarrati
         _characterSectionService = characterSectionService;
     }
 
-    public CharacterQualitiesSection ParseQualities(CharacterXmlDocument document) => _characterSectionService.ParseQualities(document.Xml);
+    public CharacterQualitiesSection ParseQualities(CharacterDocument document) => _characterSectionService.ParseQualities(document.Content);
 
-    public CharacterContactsSection ParseContacts(CharacterXmlDocument document) => _characterSectionService.ParseContacts(document.Xml);
+    public CharacterContactsSection ParseContacts(CharacterDocument document) => _characterSectionService.ParseContacts(document.Content);
 
-    public CharacterLifestylesSection ParseLifestyles(CharacterXmlDocument document) => _characterSectionService.ParseLifestyles(document.Xml);
+    public CharacterLifestylesSection ParseLifestyles(CharacterDocument document) => _characterSectionService.ParseLifestyles(document.Content);
 
-    public CharacterSourcesSection ParseSources(CharacterXmlDocument document) => _characterSectionService.ParseSources(document.Xml);
+    public CharacterSourcesSection ParseSources(CharacterDocument document) => _characterSectionService.ParseSources(document.Content);
 
-    public CharacterExpensesSection ParseExpenses(CharacterXmlDocument document) => _characterSectionService.ParseExpenses(document.Xml);
+    public CharacterExpensesSection ParseExpenses(CharacterDocument document) => _characterSectionService.ParseExpenses(document.Content);
 
-    public CharacterCalendarSection ParseCalendar(CharacterXmlDocument document) => _characterSectionService.ParseCalendar(document.Xml);
+    public CharacterCalendarSection ParseCalendar(CharacterDocument document) => _characterSectionService.ParseCalendar(document.Content);
 
-    public CharacterImprovementsSection ParseImprovements(CharacterXmlDocument document) => _characterSectionService.ParseImprovements(document.Xml);
+    public CharacterImprovementsSection ParseImprovements(CharacterDocument document) => _characterSectionService.ParseImprovements(document.Content);
 
-    public CharacterCustomDataDirectoryNamesSection ParseCustomDataDirectoryNames(CharacterXmlDocument document) =>
-        _characterSectionService.ParseCustomDataDirectoryNames(document.Xml);
+    public CharacterCustomDataDirectoryNamesSection ParseCustomDataDirectoryNames(CharacterDocument document) =>
+        _characterSectionService.ParseCustomDataDirectoryNames(document.Content);
 }

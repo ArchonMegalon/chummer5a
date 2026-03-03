@@ -28,7 +28,7 @@ public sealed class WorkspaceService : IWorkspaceService
     {
         string xml = ToXmlContent(document.Content, document.Format);
         CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(xml, document.Format));
-        CharacterFileSummary summary = _characterFileQueries.ParseSummary(new CharacterXmlDocument(xml));
+        CharacterFileSummary summary = _characterFileQueries.ParseSummary(new CharacterDocument(xml));
         return new WorkspaceImportResult(id, summary);
     }
 
@@ -38,7 +38,7 @@ public sealed class WorkspaceService : IWorkspaceService
             return null;
 
         string xml = ToXmlContent(document.Content, document.Format);
-        return _characterSectionQueries.ParseSection(sectionId, new CharacterXmlDocument(xml));
+        return _characterSectionQueries.ParseSection(sectionId, new CharacterDocument(xml));
     }
 
     public CharacterProfileSection? GetProfile(CharacterWorkspaceId id)
@@ -95,7 +95,7 @@ public sealed class WorkspaceService : IWorkspaceService
         _workspaceStore.Save(id, new WorkspaceDocument(result.UpdatedXml, document.Format));
         CharacterProfileSection profile = (CharacterProfileSection)_characterSectionQueries.ParseSection(
             "profile",
-            new CharacterXmlDocument(result.UpdatedXml));
+            new CharacterDocument(result.UpdatedXml));
         return new CommandResult<CharacterProfileSection>(
             Success: true,
             Value: profile,

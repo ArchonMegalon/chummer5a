@@ -12,17 +12,17 @@ public sealed class XmlCharacterOverviewQueries : ICharacterOverviewQueries
         _characterSectionService = characterSectionService;
     }
 
-    public CharacterProfileSection ParseProfile(CharacterXmlDocument document) => _characterSectionService.ParseProfile(document.Xml);
+    public CharacterProfileSection ParseProfile(CharacterDocument document) => _characterSectionService.ParseProfile(document.Content);
 
-    public CharacterProgressSection ParseProgress(CharacterXmlDocument document) => _characterSectionService.ParseProgress(document.Xml);
+    public CharacterProgressSection ParseProgress(CharacterDocument document) => _characterSectionService.ParseProgress(document.Content);
 
-    public CharacterRulesSection ParseRules(CharacterXmlDocument document) => _characterSectionService.ParseRules(document.Xml);
+    public CharacterRulesSection ParseRules(CharacterDocument document) => _characterSectionService.ParseRules(document.Content);
 
-    public CharacterBuildSection ParseBuild(CharacterXmlDocument document) => _characterSectionService.ParseBuild(document.Xml);
+    public CharacterBuildSection ParseBuild(CharacterDocument document) => _characterSectionService.ParseBuild(document.Content);
 
-    public CharacterMovementSection ParseMovement(CharacterXmlDocument document) => _characterSectionService.ParseMovement(document.Xml);
+    public CharacterMovementSection ParseMovement(CharacterDocument document) => _characterSectionService.ParseMovement(document.Content);
 
-    public CharacterAwakeningSection ParseAwakening(CharacterXmlDocument document) => _characterSectionService.ParseAwakening(document.Xml);
+    public CharacterAwakeningSection ParseAwakening(CharacterDocument document) => _characterSectionService.ParseAwakening(document.Content);
 
-    public CharacterSkillsSection ParseSkills(CharacterXmlDocument document) => _characterSectionService.ParseSkills(document.Xml);
+    public CharacterSkillsSection ParseSkills(CharacterDocument document) => _characterSectionService.ParseSkills(document.Content);
 }

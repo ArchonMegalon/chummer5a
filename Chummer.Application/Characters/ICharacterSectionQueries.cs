@@ -4,5 +4,5 @@ namespace Chummer.Application.Characters;
 
 public interface ICharacterSectionQueries
 {
-    object ParseSection(string sectionId, CharacterXmlDocument document);
+    object ParseSection(string sectionId, CharacterDocument document);
 }

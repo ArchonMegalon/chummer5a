@@ -5,5 +5,5 @@ namespace Chummer.Application.Tools;
 
 public interface IDataExportService
 {
-    DataExportBundle BuildBundle(CharacterXmlDocument document);
+    DataExportBundle BuildBundle(CharacterDocument document);
 }

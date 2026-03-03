@@ -47,7 +47,7 @@ public static class ToolsEndpoints
 
         app.MapPost("/api/tools/data-export", (IDataExportService dataExportService, CharacterXmlRequest request) =>
         {
-            DataExportBundle bundle = dataExportService.BuildBundle(new CharacterXmlDocument(request.Xml));
+            DataExportBundle bundle = dataExportService.BuildBundle(new CharacterDocument(request.Xml));
             return Results.Ok(bundle);
         });
 

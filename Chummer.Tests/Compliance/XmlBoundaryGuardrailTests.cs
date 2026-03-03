@@ -12,6 +12,7 @@ public class XmlBoundaryGuardrailTests
 {
     private static readonly Regex PublicInterfaceRegex = new(@"public\s+interface\s+(?<name>[A-Za-z0-9_]+)", RegexOptions.Compiled);
     private static readonly Regex XmlParameterRegex = new(@"\bstring\s+xml\b", RegexOptions.Compiled);
+    private static readonly Regex LegacyCharacterXmlDocumentRegex = new(@"\bCharacterXmlDocument\b", RegexOptions.Compiled);
 
     private static readonly Dictionary<string, int> AllowedXmlInterfaceParameterCounts = new(StringComparer.Ordinal);
 
@@ -53,6 +54,21 @@ public class XmlBoundaryGuardrailTests
                 actualCount <= baselineCount,
                 $"{interfaceName} introduced additional raw xml parameters. Baseline: {baselineCount}, actual: {actualCount}.");
         }
+    }
+
+    [TestMethod]
+    public void Application_and_presentation_layers_do_not_reference_legacy_characterxmldocument()
+    {
+        string applicationDirectory = FindDirectory("Chummer.Application");
+        string presentationDirectory = FindDirectory("Chummer.Presentation");
+
+        List<string> offenders = Directory.EnumerateFiles(applicationDirectory, "*.cs", SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(presentationDirectory, "*.cs", SearchOption.AllDirectories))
+            .Where(file => LegacyCharacterXmlDocumentRegex.IsMatch(File.ReadAllText(file)))
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.AreEqual(0, offenders.Count, "Legacy CharacterXmlDocument references found:\n" + string.Join('\n', offenders));
     }
 
     private static string FindDirectory(params string[] parts)

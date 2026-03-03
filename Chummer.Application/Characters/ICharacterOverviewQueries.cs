@@ -4,17 +4,17 @@ namespace Chummer.Application.Characters;
 
 public interface ICharacterOverviewQueries
 {
-    CharacterProfileSection ParseProfile(CharacterXmlDocument document);
+    CharacterProfileSection ParseProfile(CharacterDocument document);
 
-    CharacterProgressSection ParseProgress(CharacterXmlDocument document);
+    CharacterProgressSection ParseProgress(CharacterDocument document);
 
-    CharacterRulesSection ParseRules(CharacterXmlDocument document);
+    CharacterRulesSection ParseRules(CharacterDocument document);
 
-    CharacterBuildSection ParseBuild(CharacterXmlDocument document);
+    CharacterBuildSection ParseBuild(CharacterDocument document);
 
-    CharacterMovementSection ParseMovement(CharacterXmlDocument document);
+    CharacterMovementSection ParseMovement(CharacterDocument document);
 
-    CharacterAwakeningSection ParseAwakening(CharacterXmlDocument document);
+    CharacterAwakeningSection ParseAwakening(CharacterDocument document);
 
-    CharacterSkillsSection ParseSkills(CharacterXmlDocument document);
+    CharacterSkillsSection ParseSkills(CharacterDocument document);
 }
