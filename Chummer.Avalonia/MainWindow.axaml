@@ -13,8 +13,11 @@
                FontWeight="Bold" />
 
     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
-      <Button Content="Import Document"
-              Width="140"
+      <Button Content="Import Character File"
+              Width="170"
+              Click="ImportFileButton_OnClick" />
+      <Button Content="Import Raw (Debug)"
+              Width="150"
               Click="ImportButton_OnClick" />
       <Button Content="Save Workspace"
               Width="140"
@@ -58,7 +61,7 @@
                Name="XmlInputBox"
                AcceptsReturn="True"
                TextWrapping="Wrap"
-               Watermark="Paste a .chum5 document payload and click Import Document" />
+               Watermark="Debug-only raw XML import payload" />
       <Border Grid.Column="1" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
         <StackPanel>
           <TextBlock Text="Commands" FontWeight="Bold" Margin="0,0,0,6" />

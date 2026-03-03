@@ -1,8 +1,10 @@
 using System.Net.Http;
 using System.Text;
 using System.Linq;
+using System.IO;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -66,11 +68,42 @@ public partial class MainWindow : Window
         string importText = _xmlInputBox.Text ?? string.Empty;
         if (string.IsNullOrWhiteSpace(importText))
         {
-            _statusText.Text = "State: paste document content before importing.";
+            _statusText.Text = "State: provide debug XML content before importing.";
             return;
         }
 
         await _adapter.ImportAsync(Encoding.UTF8.GetBytes(importText), CancellationToken.None);
+    }
+
+    private async void ImportFileButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (!StorageProvider.CanOpen)
+        {
+            _statusText.Text = "State: file picker unavailable on this platform.";
+            return;
+        }
+
+        IReadOnlyList<IStorageFile> files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open Character File",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Chummer Character Files")
+                {
+                    Patterns = ["*.chum5", "*.xml"]
+                }
+            ]
+        });
+
+        IStorageFile? file = files.FirstOrDefault();
+        if (file is null)
+            return;
+
+        await using Stream stream = await file.OpenReadAsync();
+        using MemoryStream memory = new();
+        await stream.CopyToAsync(memory, CancellationToken.None);
+        await _adapter.ImportAsync(memory.ToArray(), CancellationToken.None);
     }
 
     private async void OnOpened(object? sender, EventArgs e)

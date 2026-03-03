@@ -2,12 +2,28 @@
 @implements IDisposable
 @inject ICharacterOverviewPresenter Presenter
 @using System.Text
+@using Microsoft.AspNetCore.Components.Forms
 
 <section class="panel">
-    <h2>Import Character Document</h2>
-    <textarea @bind="ImportXml" rows="10"></textarea>
+    <h2>Import Character File</h2>
+    <div class="grid-fields">
+        <InputFile OnChange="ImportFileAsync"
+                   accept=".chum5,.xml,text/xml,application/xml"
+                   disabled="@State.IsBusy" />
+        <p class="hint">File: @(ImportedFileName ?? "(none)")</p>
+    </div>
+    <p class="hint">Primary flow imports file bytes through shared presenter and workspace API.</p>
+    @if (!string.IsNullOrWhiteSpace(ImportError))
+    {
+        <p class="error">@ImportError</p>
+    }
+</section>
+
+<section class="panel">
+    <h2>Raw Import (Debug)</h2>
+    <textarea @bind="RawImportXml" rows="8"></textarea>
     <div class="actions">
-        <button @onclick="ImportAsync" disabled="@State.IsBusy">Import</button>
+        <button @onclick="ImportRawAsync" disabled="@State.IsBusy">Import Raw XML</button>
     </div>
 </section>
 
@@ -105,8 +121,11 @@
 
 @code {
     private CharacterOverviewStateBridge? _bridge;
+    private const long MaxImportBytes = 8 * 1024 * 1024;
 
-    private string ImportXml { get; set; } = "<character><name>Demo</name><alias>Sample</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created></character>";
+    private string RawImportXml { get; set; } = "<character><name>Demo</name><alias>Sample</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created></character>";
+    private string? ImportedFileName { get; set; }
+    private string? ImportError { get; set; }
     private string LoadWorkspaceId { get; set; } = string.Empty;
     private string MetadataName { get; set; } = string.Empty;
     private string MetadataAlias { get; set; } = string.Empty;
@@ -120,13 +139,36 @@
         await _bridge.InitializeAsync(CancellationToken.None);
     }
 
-    private async Task ImportAsync()
+    private async Task ImportRawAsync()
     {
-        if (_bridge is null || string.IsNullOrWhiteSpace(ImportXml))
+        if (_bridge is null || string.IsNullOrWhiteSpace(RawImportXml))
             return;
 
-        await _bridge.ImportAsync(Encoding.UTF8.GetBytes(ImportXml), CancellationToken.None);
+        await _bridge.ImportAsync(Encoding.UTF8.GetBytes(RawImportXml), CancellationToken.None);
         SyncMetadataDraftFromState();
+    }
+
+    private async Task ImportFileAsync(InputFileChangeEventArgs args)
+    {
+        if (_bridge is null || args.FileCount == 0)
+            return;
+
+        IBrowserFile file = args.File;
+        ImportedFileName = file.Name;
+        ImportError = null;
+
+        try
+        {
+            await using Stream stream = file.OpenReadStream(MaxImportBytes);
+            using MemoryStream memory = new();
+            await stream.CopyToAsync(memory, CancellationToken.None);
+            await _bridge.ImportAsync(memory.ToArray(), CancellationToken.None);
+            SyncMetadataDraftFromState();
+        }
+        catch (Exception ex)
+        {
+            ImportError = $"Unable to import '{file.Name}': {ex.Message}";
+        }
     }
 
     private async Task LoadWorkspaceAsync()
