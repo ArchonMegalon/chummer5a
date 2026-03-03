@@ -89,6 +89,23 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Dual_head_adapter_projects_reference_shared_presentation_layer()
+    {
+        string blazorProjectPath = FindPath("Chummer.Blazor", "Chummer.Blazor.csproj");
+        string avaloniaProjectPath = FindPath("Chummer.Avalonia", "Chummer.Avalonia.csproj");
+        string blazorProjectText = File.ReadAllText(blazorProjectPath);
+        string avaloniaProjectText = File.ReadAllText(avaloniaProjectPath);
+
+        StringAssert.Contains(blazorProjectText, @"..\Chummer.Presentation\Chummer.Presentation.csproj");
+        StringAssert.Contains(blazorProjectText, @"..\Chummer.Contracts\Chummer.Contracts.csproj");
+        StringAssert.Contains(avaloniaProjectText, @"..\Chummer.Presentation\Chummer.Presentation.csproj");
+        StringAssert.Contains(avaloniaProjectText, @"..\Chummer.Contracts\Chummer.Contracts.csproj");
+
+        Assert.IsTrue(File.Exists(FindPath("Chummer.Blazor", "CharacterOverviewStateBridge.cs")));
+        Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "CharacterOverviewViewModelAdapter.cs")));
+    }
+
+    [TestMethod]
     public void App_command_catalog_ids_are_unique()
     {
         List<string> duplicateIds = AppCommandCatalog.All

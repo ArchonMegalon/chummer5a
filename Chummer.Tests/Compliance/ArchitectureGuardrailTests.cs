@@ -141,7 +141,9 @@ public class ArchitectureGuardrailTests
             ["Chummer.Presentation"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
             ["Chummer.Infrastructure"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts" },
             ["Chummer.Api"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure" },
-            ["Chummer.Web"] = new HashSet<string>(StringComparer.Ordinal)
+            ["Chummer.Web"] = new HashSet<string>(StringComparer.Ordinal),
+            ["Chummer.Blazor"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation" },
+            ["Chummer.Avalonia"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation" }
         };
 
         foreach ((string project, HashSet<string> allowed) in allowedReferences)
