@@ -166,6 +166,7 @@
     <ProjectReference Include="..\Chummer.Contracts\Chummer.Contracts.csproj" />
     <ProjectReference Include="..\Chummer.Core\Chummer.Core.csproj" />
     <ProjectReference Include="..\Chummer.Infrastructure\Chummer.Infrastructure.csproj" />
+    <ProjectReference Include="..\Chummer.Presentation\Chummer.Presentation.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="4.14.0">

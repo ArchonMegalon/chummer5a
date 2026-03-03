@@ -14,7 +14,8 @@ public class ArchitectureGuardrailTests
         "Chummer.Contracts",
         "Chummer.Core",
         "Chummer.Application",
-        "Chummer.Infrastructure"
+        "Chummer.Infrastructure",
+        "Chummer.Presentation"
     };
 
     private static readonly string[] BannedUiReferences =
