@@ -3738,18 +3738,24 @@ namespace Chummer
                     string strUniqueName = objImprovement.UniqueName;
                     Improvement.ImprovementType eImprovementType = objImprovement.ImproveType;
                     string strSourceName = objImprovement.SourceName;
-                    bool blnHasDuplicate = blnSync
+                    bool blnHasDuplicate;
+                    if (blnSync)
+                    {
                         // ReSharper disable once MethodHasAsyncOverload
-                        ? objCharacter.Improvements.Any(
+                        blnHasDuplicate = objCharacter.Improvements.Any(
                             x => x.UniqueName == strUniqueName && x.ImprovedName == strImprovedName
                                                                && x.ImproveType == eImprovementType
                                                                && x.SourceName != strSourceName
-                                                               && x.Enabled, token)
-                        : objCharacter.Improvements.Any(
+                                                               && x.Enabled, token);
+                    }
+                    else
+                    {
+                        blnHasDuplicate = await objCharacter.Improvements.AnyAsync(
                             x => x.UniqueName == strUniqueName && x.ImprovedName == strImprovedName
                                                                && x.ImproveType == eImprovementType
                                                                && x.SourceName != strSourceName
-                                                               && x.Enabled, token: token).ConfigureAwait(false);
+                                                               && x.Enabled, token).ConfigureAwait(false);
+                    }
 
                     switch (eImprovementType)
                     {

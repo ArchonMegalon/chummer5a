@@ -1,0 +1,23 @@
+namespace Chummer.Core.LifeModules;
+
+public static class LifeModulesPathResolver
+{
+    public static string Resolve(string baseDirectory, string currentDirectory)
+    {
+        string[] candidates =
+        {
+            Path.Combine(baseDirectory, "data", "lifemodules.xml"),
+            Path.Combine(baseDirectory, "Chummer", "data", "lifemodules.xml"),
+            Path.Combine(currentDirectory, "data", "lifemodules.xml"),
+            Path.Combine(currentDirectory, "Chummer", "data", "lifemodules.xml")
+        };
+
+        foreach (string candidate in candidates)
+        {
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        throw new FileNotFoundException("Could not locate lifemodules.xml.");
+    }
+}

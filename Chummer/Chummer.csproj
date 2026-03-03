@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <AssemblyName>Chummer5</AssemblyName>
     <IsWebBootstrapper>false</IsWebBootstrapper>
@@ -23,6 +23,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
 	<Configurations>Debug;Release;Debuggable Release</Configurations>
     <EmbeddedResourceUseDependentUponConvention>true</EmbeddedResourceUseDependentUponConvention>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -66,35 +67,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
-    <NoWarn>VSTHRD003;VSTHRD100;VSTHRD103;VSTHRD200</NoWarn>
+    <NoWarn>VSTHRD003;VSTHRD100;VSTHRD103;VSTHRD200;WFO1000</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>VSTHRD003;VSTHRD100;VSTHRD103;VSTHRD200</NoWarn>
+    <NoWarn>VSTHRD003;VSTHRD100;VSTHRD103;VSTHRD200;WFO1000</NoWarn>
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debuggable Release|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\Debuggable Release\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>VSTHRD003;VSTHRD100;VSTHRD103;VSTHRD200</NoWarn>
+    <NoWarn>VSTHRD003;VSTHRD100;VSTHRD103;VSTHRD200;WFO1000</NoWarn>
     <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Update="System">
-      <HintPath>$(MSBuildProgramFiles32)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.dll</HintPath>
-    </Reference>
-    <Reference Update="System.Drawing">
-      <HintPath>$(MSBuildProgramFiles32)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\System.Drawing.dll</HintPath>
-    </Reference>
     <Reference Include="System.Configuration" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net" />
-    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Transactions" />
-    <Reference Include="System.Web" />
-    <Reference Include="System.Web.Extensions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Backend\Improvements\ImprovementMethods.cs">
@@ -301,7 +293,7 @@
     <Content Include="customdata\Education Qualities Apply Karma Discount in Create Mode\manifest.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="customdata\Exclude German Sourcebooks\manifest.xml">
+    <Content Include="customdata\Exclude German sourcebooks\manifest.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="customdata\Fixed Nitama Sporter Stats\amend_weapons.xml">
@@ -1018,7 +1010,7 @@
     <Content Include="customdata\Education Qualities Apply Karma Discount in Create Mode\amend_qualities.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="customdata\Exclude German Sourcebooks\amend_german_books.xml">
+    <Content Include="customdata\Exclude German sourcebooks\amend_german_books.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="customdata\Hand-Based Cyberware Can Go Anywhere\amend_cyberware.xml">
@@ -25731,30 +25723,21 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <Target Name="Chummer_PreBuildHookCopy" BeforeTargets="PreBuildEvent"
+          Condition="Exists('$(SolutionDir).git/hooks') and Exists('$(SolutionDir)git/hooks')">
+    <ItemGroup>
+      <_GitHookSource Include="$(SolutionDir)git/hooks/*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_GitHookSource)" DestinationFolder="$(SolutionDir).git/hooks" OverwriteReadOnlyFiles="true" />
+  </Target>
+  <Target Name="Chummer_PostBuildArtifacts" AfterTargets="PostBuildEvent">
+    <Copy SourceFiles="$(SolutionDir)LICENSE.txt" DestinationFiles="$(TargetDir)LICENSE.txt"
+          Condition="Exists('$(SolutionDir)LICENSE.txt')" />
+    <Copy SourceFiles="$(SolutionDir)LICENSE" DestinationFiles="$(TargetDir)LICENSE"
+          Condition="Exists('$(SolutionDir)LICENSE')" />
+    <MakeDir Directories="$(TargetDir)livecustomdata;$(TargetDir)packs;$(TargetDir)settings" />
+  </Target>
   <PropertyGroup>
-    <PostBuildEvent Condition=" '$(OS)' != 'Unix' ">
-      copy "$(SolutionDir)LICENSE.txt" "$(TargetDir)LICENSE.txt"
-    </PostBuildEvent>
-    <PostBuildEvent Condition=" '$(OS)' == 'Unix' ">
-      cp "$(SolutionDir)LICENSE.txt" "$(TargetDir)LICENSE.txt"
-    </PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PostBuildEvent>
-        copy "$(SolutionDir)LICENSE" "$(TargetDir)LICENSE"
-        if not exist "$(TargetDir)livecustomdata" mkdir "$(TargetDir)livecustomdata"
-        if not exist "$(TargetDir)packs" mkdir "$(TargetDir)packs"
-        if not exist "$(TargetDir)settings" mkdir "$(TargetDir)settings"
-</PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <PreBuildEvent>
-        if exist "$(SolutionDir).git\hooks\" (
-            copy /y "$(SolutionDir)git\hooks\*.*" "$(SolutionDir).git\hooks"
-        ) else (
-            echo "No .git directory found, skipping copying of hooks."
-        )
-</PreBuildEvent>
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
     <AnalysisLevel>latest-minimum</AnalysisLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>

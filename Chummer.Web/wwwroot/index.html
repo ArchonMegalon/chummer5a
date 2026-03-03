@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chummer</title>
+  <style>
+    :root {
+      --bg: #d9dde3;
+      --panel: #eceff3;
+      --bar: #cfd5dd;
+      --line: #a8b2bf;
+      --ink: #15202b;
+      --muted: #46586d;
+      --accent: #1d5fa7;
+      --accent-2: #0f3f72;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Segoe UI", "Tahoma", sans-serif;
+      background:
+        linear-gradient(120deg, rgba(255,255,255,.45), rgba(255,255,255,0) 50%),
+        radial-gradient(circle at 0% 0%, #e8ecf1, #d6dbe2 65%);
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      min-height: 100vh;
+    }
+
+    .menu-bar,
+    .tool-bar,
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(#e7ebf0, var(--bar));
+    }
+
+    .status-bar {
+      border-top: 1px solid var(--line);
+      border-bottom: 0;
+      justify-content: space-between;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .menu-btn,
+    .tool-btn,
+    .action-btn,
+    .tab-btn {
+      border: 1px solid var(--line);
+      background: linear-gradient(#ffffff, #dce2ea);
+      color: var(--ink);
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .menu-btn:hover,
+    .tool-btn:hover,
+    .action-btn:hover,
+    .tab-btn:hover {
+      background: linear-gradient(#ffffff, #cfd9e5);
+    }
+
+    .tool-btn.primary,
+    .action-btn.primary {
+      border-color: #2b6eb4;
+      background: linear-gradient(#3a7ec6, #2d69a6);
+      color: #fff;
+    }
+
+    .surface {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 10px;
+      padding: 10px;
+      overflow: hidden;
+    }
+
+    .left-pane,
+    .main-pane {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .pane-title {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(#f8fafd, #d8dfe7);
+      font-weight: 600;
+      font-size: 0.93rem;
+    }
+
+    .left-content {
+      overflow: auto;
+      padding: 8px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .tab-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .main-content {
+      overflow: auto;
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .section {
+      border: 1px solid var(--line);
+      background: #f7f9fc;
+      border-radius: 6px;
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 7px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    textarea {
+      min-height: 240px;
+      resize: vertical;
+    }
+
+    .actions {
+      display: grid;
+      gap: 6px;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    }
+
+    pre {
+      margin: 0;
+      max-height: 420px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      padding: 10px;
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 6px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .note {
+      margin: 0;
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 980px) {
+      .surface {
+        grid-template-columns: 1fr;
+      }
+      .left-pane {
+        order: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="menu-bar">
+      <button class="menu-btn" data-command="file">File</button>
+      <button class="menu-btn" data-command="edit">Edit</button>
+      <button class="menu-btn" data-command="special">Special</button>
+      <button class="menu-btn" data-command="tools">Tools</button>
+      <button class="menu-btn" data-command="windows">Windows</button>
+      <button class="menu-btn" data-command="help">Help</button>
+      <span class="note" id="menuMessage">WinForms-like shell mapped to web handlers.</span>
+    </div>
+
+    <div class="tool-bar">
+      <button class="tool-btn primary" data-command="new_character">New</button>
+      <button class="tool-btn" data-command="open_character">Open</button>
+      <button class="tool-btn" data-command="save_character">Save</button>
+      <button class="tool-btn" data-command="save_character_as">Save As</button>
+      <button class="tool-btn" data-command="print_character">Print</button>
+      <button class="tool-btn" data-command="export_character">Export</button>
+      <button class="tool-btn" data-command="copy">Copy</button>
+      <button class="tool-btn" data-command="paste">Paste</button>
+      <button class="tool-btn" data-command="dice_roller">Dice Roller</button>
+      <button class="tool-btn" data-command="global_settings">Global Settings</button>
+      <button class="tool-btn" data-command="character_settings">Character Settings</button>
+      <button class="tool-btn" data-command="translator">Translator</button>
+      <button class="tool-btn" data-command="xml_editor">XML Editor</button>
+      <button class="tool-btn" data-command="master_index">Master Index</button>
+      <button class="tool-btn" data-command="character_roster">Roster</button>
+      <button class="tool-btn" data-command="data_exporter">Data Exporter</button>
+      <button class="tool-btn" data-command="update">Update</button>
+      <button class="tool-btn" data-command="restart">Restart</button>
+    </div>
+
+    <main class="surface">
+      <aside class="left-pane">
+        <div class="pane-title">Character Tabs</div>
+        <div class="left-content">
+          <div class="tab-list">
+            <button class="tab-btn" data-tab="tab-info">Info</button>
+            <button class="tab-btn" data-tab="tab-attributes">Attributes</button>
+            <button class="tab-btn" data-tab="tab-skills">Skills</button>
+            <button class="tab-btn" data-tab="tab-qualities">Qualities</button>
+            <button class="tab-btn" data-tab="tab-magician">Magician</button>
+            <button class="tab-btn" data-tab="tab-adept">Adept</button>
+            <button class="tab-btn" data-tab="tab-technomancer">Technomancer</button>
+            <button class="tab-btn" data-tab="tab-combat">Combat</button>
+            <button class="tab-btn" data-tab="tab-gear">Gear</button>
+            <button class="tab-btn" data-tab="tab-armor">Armor</button>
+            <button class="tab-btn" data-tab="tab-cyberware">Cyberware/Bioware</button>
+            <button class="tab-btn" data-tab="tab-vehicles">Vehicles</button>
+            <button class="tab-btn" data-tab="tab-lifestyle">Lifestyle</button>
+            <button class="tab-btn" data-tab="tab-contacts">Contacts</button>
+            <button class="tab-btn" data-tab="tab-notes">Notes</button>
+            <button class="tab-btn" data-tab="tab-calendar">Calendar</button>
+            <button class="tab-btn" data-tab="tab-improvements">Improvements</button>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Life Modules</div>
+            <label>Stage
+              <select id="stageSelect">
+                <option value="">(all)</option>
+              </select>
+            </label>
+            <div class="actions">
+              <button class="action-btn" id="loadStages">Load Stages</button>
+              <button class="action-btn" id="loadModules">Load Modules</button>
+            </div>
+            <div id="lifeModuleResult"></div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="main-pane">
+        <div class="pane-title">Character Workspace</div>
+        <div class="main-content">
+          <div class="section" id="tab-info">
+            <div class="section-title">Character File</div>
+            <p class="note">Paste or open a <code>.chum5</code> XML character file.</p>
+            <textarea id="xmlInput" placeholder="<character>...</character>"></textarea>
+            <div class="grid">
+              <label>Name <input id="metaName" /></label>
+              <label>Alias <input id="metaAlias" /></label>
+              <label>Notes <input id="metaNotes" /></label>
+            </div>
+            <input id="openFileInput" type="file" accept=".chum5,.xml,text/xml" style="display:none;" />
+            <div class="actions" id="quickActions">
+              <button class="action-btn primary" data-action="summary">Summary</button>
+              <button class="action-btn" data-action="validate">Validate</button>
+              <button class="action-btn" data-action="metadata">Apply Metadata</button>
+              <button class="action-btn" data-action="profile">Profile</button>
+              <button class="action-btn" data-action="progress">Progress</button>
+              <button class="action-btn" data-action="rules">Rules</button>
+              <button class="action-btn" data-action="build">Build</button>
+              <button class="action-btn" data-action="movement">Movement</button>
+              <button class="action-btn" data-action="awakening">Awakening</button>
+              <button class="action-btn" data-action="attributes">Attributes</button>
+              <button class="action-btn" data-action="attributedetails">Attribute Details</button>
+              <button class="action-btn" data-action="skills">Skills</button>
+              <button class="action-btn" data-action="qualities">Qualities</button>
+              <button class="action-btn" data-action="contacts">Contacts</button>
+              <button class="action-btn" data-action="spells">Spells</button>
+              <button class="action-btn" data-action="powers">Powers</button>
+              <button class="action-btn" data-action="complexforms">Complex Forms</button>
+              <button class="action-btn" data-action="martialarts">Martial Arts</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-gear">
+            <div class="section-title">Equipment</div>
+            <div class="actions">
+              <button class="action-btn" data-action="inventory">Inventory</button>
+              <button class="action-btn" data-action="gear">Gear</button>
+              <button class="action-btn" data-action="gearlocations">Gear Locations</button>
+              <button class="action-btn" data-action="weapons">Weapons</button>
+              <button class="action-btn" data-action="weaponaccessories">Weapon Accessories</button>
+              <button class="action-btn" data-action="weaponlocations">Weapon Locations</button>
+              <button class="action-btn" data-action="armors">Armors</button>
+              <button class="action-btn" data-action="armormods">Armor Mods</button>
+              <button class="action-btn" data-action="armorlocations">Armor Locations</button>
+              <button class="action-btn" data-action="cyberwares">Cyberwares</button>
+              <button class="action-btn" data-action="drugs">Drugs</button>
+              <button class="action-btn" data-action="lifestyles">Lifestyles</button>
+              <button class="action-btn" data-action="vehicles">Vehicles</button>
+              <button class="action-btn" data-action="vehiclemods">Vehicle Mods</button>
+              <button class="action-btn" data-action="vehiclelocations">Vehicle Locations</button>
+              <button class="action-btn" data-action="sources">Sources</button>
+              <button class="action-btn" data-action="customdatadirectorynames">Custom Data Dirs</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-magician">
+            <div class="section-title">Magic/Resonance</div>
+            <div class="actions">
+              <button class="action-btn" data-action="spirits">Spirits</button>
+              <button class="action-btn" data-action="foci">Foci</button>
+              <button class="action-btn" data-action="aiprograms">AI Programs</button>
+              <button class="action-btn" data-action="limitmodifiers">Limit Modifiers</button>
+              <button class="action-btn" data-action="metamagics">Metamagics</button>
+              <button class="action-btn" data-action="arts">Arts</button>
+              <button class="action-btn" data-action="initiationgrades">Initiation Grades</button>
+              <button class="action-btn" data-action="critterpowers">Critter Powers</button>
+              <button class="action-btn" data-action="mentorspirits">Mentor Spirits</button>
+              <button class="action-btn" data-action="expenses">Expenses</button>
+              <button class="action-btn" data-action="calendar">Calendar</button>
+              <button class="action-btn" data-action="improvements">Improvements</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Output</div>
+            <div id="result" class="note">No action executed yet.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="status-bar">
+      <span id="serviceState">checking service...</span>
+      <span id="timeState"></span>
+      <span id="complianceState">desktop command shell active</span>
+    </div>
+  </div>
+
+  <script>
+    const byId = (id) => document.getElementById(id);
+    const resultEl = byId("result");
+    let openFileMode = "normal";
+
+    const actionToPath = {
+      profile: "/api/characters/sections/profile",
+      progress: "/api/characters/sections/progress",
+      rules: "/api/characters/sections/rules",
+      build: "/api/characters/sections/build",
+      movement: "/api/characters/sections/movement",
+      awakening: "/api/characters/sections/awakening",
+      attributes: "/api/characters/sections/attributes",
+      attributedetails: "/api/characters/sections/attributedetails",
+      inventory: "/api/characters/sections/inventory",
+      gear: "/api/characters/sections/gear",
+      weapons: "/api/characters/sections/weapons",
+      weaponaccessories: "/api/characters/sections/weaponaccessories",
+      armors: "/api/characters/sections/armors",
+      armormods: "/api/characters/sections/armormods",
+      cyberwares: "/api/characters/sections/cyberwares",
+      vehicles: "/api/characters/sections/vehicles",
+      vehiclemods: "/api/characters/sections/vehiclemods",
+      skills: "/api/characters/sections/skills",
+      qualities: "/api/characters/sections/qualities",
+      contacts: "/api/characters/sections/contacts",
+      spells: "/api/characters/sections/spells",
+      powers: "/api/characters/sections/powers",
+      complexforms: "/api/characters/sections/complexforms",
+      spirits: "/api/characters/sections/spirits",
+      foci: "/api/characters/sections/foci",
+      aiprograms: "/api/characters/sections/aiprograms",
+      martialarts: "/api/characters/sections/martialarts",
+      limitmodifiers: "/api/characters/sections/limitmodifiers",
+      lifestyles: "/api/characters/sections/lifestyles",
+      metamagics: "/api/characters/sections/metamagics",
+      arts: "/api/characters/sections/arts",
+      initiationgrades: "/api/characters/sections/initiationgrades",
+      critterpowers: "/api/characters/sections/critterpowers",
+      mentorspirits: "/api/characters/sections/mentorspirits",
+      expenses: "/api/characters/sections/expenses",
+      sources: "/api/characters/sections/sources",
+      gearlocations: "/api/characters/sections/gearlocations",
+      armorlocations: "/api/characters/sections/armorlocations",
+      weaponlocations: "/api/characters/sections/weaponlocations",
+      vehiclelocations: "/api/characters/sections/vehiclelocations",
+      calendar: "/api/characters/sections/calendar",
+      improvements: "/api/characters/sections/improvements",
+      customdatadirectorynames: "/api/characters/sections/customdatadirectorynames",
+      drugs: "/api/characters/sections/drugs"
+    };
+
+    const commandHandlers = {
+      file: () => renderCommandMenu("File", [
+        ["new_character", "New Character"],
+        ["new_critter", "New Critter"],
+        ["open_character", "Open"],
+        ["open_for_printing", "Open For Printing"],
+        ["open_for_export", "Open For Export"],
+        ["save_character", "Save"],
+        ["save_character_as", "Save As"],
+        ["print_character", "Print"],
+        ["print_multiple", "Print Multiple"],
+        ["print_setup", "Print Setup"],
+        ["export_character", "Export"]
+      ]),
+      edit: () => renderCommandMenu("Edit", [
+        ["copy", "Copy"],
+        ["paste", "Paste"],
+        ["xml_editor", "XML Editor"]
+      ]),
+      special: async () => {
+        const data = await postJson("/api/tools/data-export", { xml: ensureXml() });
+        resultEl.innerHTML = renderJson(data);
+      },
+      tools: () => renderCommandMenu("Tools", [
+        ["dice_roller", "Dice Roller"],
+        ["global_settings", "Global Settings"],
+        ["character_settings", "Character Settings"],
+        ["translator", "Translator"],
+        ["hero_lab_importer", "Hero Lab Importer"],
+        ["master_index", "Master Index"],
+        ["character_roster", "Character Roster"],
+        ["data_exporter", "Data Exporter"],
+        ["report_bug", "Report Bug"]
+      ]),
+      windows: () => {
+        const tabs = [...document.querySelectorAll(".tab-btn")].map((b) => [null, b.textContent.trim(), b.dataset.tab]);
+        const tabRows = tabs.map((x) => `<button class="action-btn" data-tabjump="${x[2]}">${escapeHtml(x[1])}</button>`).join("");
+        const windowRows = `
+          <button class="action-btn" data-run-command="new_window">New Window</button>
+          <button class="action-btn" data-run-command="close_window">Close Window</button>
+          <button class="action-btn" data-run-command="close_all">Close All</button>
+        `;
+        resultEl.innerHTML = `<div class="actions">${windowRows}${tabRows}</div>`;
+        for (const btn of resultEl.querySelectorAll("[data-tabjump]")) {
+          btn.addEventListener("click", () => {
+            const target = document.getElementById(btn.dataset.tabjump);
+            if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }
+        for (const btn of resultEl.querySelectorAll("[data-run-command]")) {
+          btn.addEventListener("click", async () => {
+            const id = btn.dataset.runCommand;
+            const handler = commandHandlers[id];
+            if (handler) await handler();
+          });
+        }
+      },
+      help: () => renderCommandMenu("Help", [
+        ["wiki", "Wiki"],
+        ["discord", "Discord"],
+        ["revision_history", "Revision History"],
+        ["dumpshock", "Dumpshock Thread"],
+        ["about", "About"]
+      ]),
+      new_character: () => {
+        byId("xmlInput").value = "";
+        byId("metaName").value = "";
+        byId("metaAlias").value = "";
+        byId("metaNotes").value = "";
+        showNote("New character workspace initialized.");
+      },
+      new_critter: () => {
+        commandHandlers.new_character();
+        showNote("New critter workspace initialized.");
+      },
+      open_character: () => {
+        openFileMode = "normal";
+        byId("openFileInput").click();
+      },
+      open_for_printing: () => {
+        openFileMode = "print";
+        byId("openFileInput").click();
+      },
+      open_for_export: () => {
+        openFileMode = "export";
+        byId("openFileInput").click();
+      },
+      save_character: () => downloadText((xmlValue() || "<character></character>"), "character.chum5", "text/xml"),
+      save_character_as: () => downloadText((xmlValue() || "<character></character>"), `character-${Date.now()}.chum5`, "text/xml"),
+      print_character: () => window.print(),
+      print_multiple: async () => {
+        const roster = await getJson("/api/tools/roster");
+        resultEl.innerHTML = table(["Name", "Alias", "Metatype", "Last Opened"], (roster.entries || []).map((x) => [x.name, x.alias, x.metatype, x.lastOpenedUtc]));
+        window.print();
+      },
+      print_setup: () => showNote("Print setup is browser-managed in web mode."),
+      export_character: async () => {
+        const data = await postJson("/api/characters/summary", { xml: ensureXml() });
+        downloadText(JSON.stringify(data, null, 2), "character-summary.json", "application/json");
+      },
+      copy: async () => {
+        await navigator.clipboard.writeText(xmlValue());
+        showNote("XML copied to clipboard.");
+      },
+      paste: async () => {
+        const text = await navigator.clipboard.readText();
+        byId("xmlInput").value = text;
+        showNote("Clipboard pasted into XML editor.");
+      },
+      dice_roller: async () => {
+        const expression = prompt("Dice expression (example: 12d6+2)", "12d6");
+        if (!expression) return;
+        const data = await postJson("/api/tools/dice/roll", { expression });
+        resultEl.innerHTML = renderJson(data);
+      },
+      global_settings: () => {
+        return (async () => {
+          const current = await getJson("/api/tools/settings/global");
+          const currentText = JSON.stringify(current.settings || { uiScale: 100, theme: "classic" }, null, 2);
+          const next = prompt("Global settings JSON", currentText);
+          if (!next) return;
+          await postJson("/api/tools/settings/global", JSON.parse(next));
+          showNote("Global settings saved.");
+        })();
+      },
+      character_settings: () => {
+        return (async () => {
+          const current = await getJson("/api/tools/settings/character");
+          const currentText = JSON.stringify(current.settings || { priority: "SumToTen", houseRules: [] }, null, 2);
+          const next = prompt("Character settings JSON", currentText);
+          if (!next) return;
+          await postJson("/api/tools/settings/character", JSON.parse(next));
+          showNote("Character settings saved.");
+        })();
+      },
+      translator: async () => {
+        const data = await getJson("/api/tools/translator/languages");
+        resultEl.innerHTML = table(["Code", "Name"], data.languages.map((x) => [x.code, x.name]));
+      },
+      hero_lab_importer: () => showNote("Hero Lab import flow not yet migrated; use XML paste/open for now."),
+      xml_editor: () => {
+        const target = document.getElementById("tab-info");
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      },
+      master_index: async () => {
+        const data = await getJson("/api/tools/master-index");
+        resultEl.innerHTML = table(["File", "Root", "Elements"], data.files.map((x) => [x.file, x.root, x.elementCount]));
+      },
+      character_roster: async () => {
+        const summary = await postJson("/api/characters/summary", { xml: ensureXml() });
+        const entry = {
+          name: summary.name || "(unnamed)",
+          alias: summary.alias || "",
+          metatype: summary.metatype || "",
+          lastOpenedUtc: new Date().toISOString()
+        };
+        const result = await postJson("/api/tools/roster", entry);
+        resultEl.innerHTML = table(["Name", "Alias", "Metatype", "Last Opened"], result.entries.map((x) => [x.name, x.alias, x.metatype, x.lastOpenedUtc]));
+      },
+      data_exporter: async () => {
+        const data = await postJson("/api/tools/data-export", { xml: ensureXml() });
+        downloadText(JSON.stringify(data, null, 2), "character-export.json", "application/json");
+        showNote("Character export bundle downloaded.");
+      },
+      update: async () => {
+        const info = await getJson("/api/info");
+        const health = await getJson("/api/health");
+        resultEl.innerHTML = renderJson({ updater: "disabled-in-container", info, health });
+      },
+      restart: () => location.reload(),
+      report_bug: () => window.open("https://github.com/chummer5a/chummer5a/issues/new/choose", "_blank", "noopener"),
+      new_window: () => window.open(location.href, "_blank", "noopener"),
+      close_window: () => window.close(),
+      close_all: () => showNote("Close all windows is browser-restricted; close tabs manually."),
+      wiki: () => window.open("https://github.com/chummer5a/chummer5a/wiki", "_blank", "noopener"),
+      discord: () => window.open("https://discord.gg/EV44Mya", "_blank", "noopener"),
+      revision_history: () => window.open("https://github.com/chummer5a/chummer5a/releases", "_blank", "noopener"),
+      dumpshock: () => window.open("https://forums.dumpshock.com/index.php?showtopic=37464", "_blank", "noopener"),
+      about: async () => {
+        const info = await getJson("/api/info");
+        resultEl.innerHTML = renderJson({
+          product: "Chummer",
+          mode: "Linux-native web",
+          runtime: info.runtime,
+          platform: info.platform
+        });
+      }
+    };
+
+    const renderJson = (obj) => `<pre>${escapeHtml(JSON.stringify(obj, null, 2))}</pre>`;
+
+    const escapeHtml = (s) => s.replace(/[&<>\"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]);
+
+    const showNote = (message) => {
+      resultEl.innerHTML = `<p class="note">${escapeHtml(message)}</p>`;
+    };
+
+    function renderCommandMenu(title, commands) {
+      const rows = commands
+        .map(([id, label]) => `<button class="action-btn" data-run-command="${escapeHtml(id)}">${escapeHtml(label)}</button>`)
+        .join("");
+      resultEl.innerHTML = `<p class="note">${escapeHtml(title)} menu</p><div class="actions">${rows}</div>`;
+      for (const btn of resultEl.querySelectorAll("[data-run-command]")) {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.runCommand;
+          const handler = commandHandlers[id];
+          if (handler) await handler();
+        });
+      }
+    }
+
+    function table(headers, rows) {
+      const head = `<tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr>`;
+      const body = rows.map((r) => `<tr>${r.map((v) => `<td>${escapeHtml(String(v ?? ""))}</td>`).join("")}</tr>`).join("");
+      return `<table>${head}${body}</table>`;
+    }
+
+    async function postJson(url, body) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      const text = await response.text();
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText}: ${text}`);
+      }
+
+      if (!text.trim()) {
+        return {};
+      }
+
+      return JSON.parse(text);
+    }
+
+    async function getJson(url) {
+      const response = await fetch(url);
+      const text = await response.text();
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText}: ${text}`);
+      }
+      return text.trim() ? JSON.parse(text) : {};
+    }
+
+    function xmlValue() {
+      return byId("xmlInput").value.trim();
+    }
+
+    function ensureXml() {
+      const xml = xmlValue();
+      if (!xml) {
+        throw new Error("Character XML is empty.");
+      }
+      return xml;
+    }
+
+    function downloadText(content, fileName, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+    }
+
+    function renderSectionData(action, data) {
+      const list = data.items || data.entries || [];
+      if (action === "summary" || action === "validate" || action === "metadata") {
+        resultEl.innerHTML = renderJson(data);
+        return;
+      }
+
+      if (Array.isArray(list) && list.length > 0) {
+        const cols = Object.keys(list[0]).slice(0, 6);
+        resultEl.innerHTML = table(cols, list.slice(0, 60).map((item) => cols.map((c) => item[c])));
+        return;
+      }
+
+      if (typeof data.count === "number") {
+        resultEl.innerHTML = `<p class="note">${escapeHtml(action)} count: ${data.count}</p>${renderJson(data)}`;
+        return;
+      }
+
+      resultEl.innerHTML = renderJson(data);
+    }
+
+    async function runAction(action) {
+      try {
+        if (action === "summary") {
+          renderSectionData(action, await postJson("/api/characters/summary", { xml: ensureXml() }));
+          return;
+        }
+
+        if (action === "validate") {
+          renderSectionData(action, await postJson("/api/characters/validate", { xml: ensureXml() }));
+          return;
+        }
+
+        if (action === "metadata") {
+          renderSectionData(action, await postJson("/api/characters/metadata", {
+            xml: ensureXml(),
+            name: byId("metaName").value,
+            alias: byId("metaAlias").value,
+            notes: byId("metaNotes").value
+          }));
+          return;
+        }
+
+        const path = actionToPath[action];
+        if (!path) {
+          throw new Error(`Unknown action '${action}'.`);
+        }
+
+        renderSectionData(action, await postJson(path, { xml: ensureXml() }));
+      } catch (error) {
+        resultEl.innerHTML = `<pre>${escapeHtml(String(error))}</pre>`;
+      }
+    }
+
+    async function refreshServiceState() {
+      try {
+        const info = await (await fetch("/api/info")).json();
+        byId("serviceState").textContent = `${info.service} | ${info.status} | ${info.platform}`;
+      } catch {
+        byId("serviceState").textContent = "service unavailable";
+      }
+
+      byId("timeState").textContent = new Date().toLocaleString();
+    }
+
+    async function loadLifeStages() {
+      const stages = await (await fetch("/api/lifemodules/stages")).json();
+      const select = byId("stageSelect");
+      select.innerHTML = '<option value="">(all)</option>';
+      for (const stage of stages) {
+        const option = document.createElement("option");
+        option.value = stage;
+        option.textContent = stage;
+        select.appendChild(option);
+      }
+      byId("lifeModuleResult").innerHTML = `<p class="note">Loaded ${stages.length} stages.</p>`;
+    }
+
+    async function loadLifeModules() {
+      const stage = byId("stageSelect").value;
+      const query = stage ? `?stage=${encodeURIComponent(stage)}` : "";
+      const response = await (await fetch(`/api/lifemodules/modules${query}`)).json();
+      const rows = response.modules.slice(0, 50).map((module) => [module.stage, module.name, module.karma, module.source]);
+      byId("lifeModuleResult").innerHTML = table(["Stage", "Name", "Karma", "Source"], rows);
+    }
+
+    for (const button of document.querySelectorAll("[data-action]")) {
+      button.addEventListener("click", () => runAction(button.dataset.action));
+    }
+
+    for (const button of document.querySelectorAll("[data-command]")) {
+      button.addEventListener("click", async () => {
+        const command = button.dataset.command;
+        const handler = commandHandlers[command];
+        if (!handler) {
+          showNote(`Command '${command}' has no handler.`);
+          return;
+        }
+
+        try {
+          await handler();
+        } catch (error) {
+          showNote(String(error));
+        }
+      });
+    }
+
+    for (const button of document.querySelectorAll(".tab-btn")) {
+      button.addEventListener("click", () => {
+        const tabId = button.dataset.tab;
+        const target = document.getElementById(tabId);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+
+    byId("openFileInput").addEventListener("change", async (event) => {
+      const input = event.target;
+      const file = input.files && input.files[0];
+      if (!file) {
+        return;
+      }
+
+      const text = await file.text();
+      byId("xmlInput").value = text;
+      showNote(`Loaded file: ${file.name}`);
+      if (openFileMode === "print") {
+        await commandHandlers.print_character();
+      } else if (openFileMode === "export") {
+        await commandHandlers.export_character();
+      }
+      openFileMode = "normal";
+      input.value = "";
+    });
+
+    byId("loadStages").addEventListener("click", async () => {
+      try {
+        await loadLifeStages();
+      } catch (error) {
+        byId("lifeModuleResult").innerHTML = `<pre>${escapeHtml(String(error))}</pre>`;
+      }
+    });
+
+    byId("loadModules").addEventListener("click", async () => {
+      try {
+        await loadLifeModules();
+      } catch (error) {
+        byId("lifeModuleResult").innerHTML = `<pre>${escapeHtml(String(error))}</pre>`;
+      }
+    });
+
+    refreshServiceState();
+    setInterval(refreshServiceState, 30000);
+  </script>
+</body>
+</html>

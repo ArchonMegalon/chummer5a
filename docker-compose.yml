@@ -1,8 +1,26 @@
-version: '3.4'
-
 services:
-  chummerhub:
-    image: ${DOCKER_REGISTRY-}chummerhub
+  chummer-web:
+    image: chummer-web:local
     build:
       context: .
-      dockerfile: ChummerHub/Dockerfile
+      dockerfile: Chummer.Web/Dockerfile
+    ports:
+      - "${CHUMMER_WEB_PORT:-8088}:8080"
+  chummer-tests:
+    image: chummer-tests:local
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile.tests
+    depends_on:
+      - chummer-web
+    profiles: ["test"]
+    environment:
+      CHUMMER_WEB_BASE_URL: "http://chummer-web:8080"
+    command: >
+      dotnet test Chummer.Tests/Chummer.Tests.csproj
+      -c Release
+      -f net10.0
+      -p:TargetFramework=net10.0
+      --no-build
+      --no-restore
+      --logger "trx;LogFileName=test-results-linux.trx"

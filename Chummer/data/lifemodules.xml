@@ -972,7 +972,7 @@
           <addquality>Uncouth</addquality>
         </addqualities>
       </bonus>
-      <story>$real grew up almost everywhere, shifted from place to place by their $PARRENT 's military duties.</story>
+      <story>$real grew up almost everywhere, shifted from place to place by their parent's military duties.</story>
       <source>RF</source>
       <page>69</page>
     </module>
@@ -4618,7 +4618,7 @@
    <quality>Tour of Duty (UCAS, CAS and CFS)</quality>
   </oneof>
    </required> Needs way to not select individual stuff (shadow work vs face)-->
-      <story>$real overdosed on $CRIMEDESC decided to become a private investigator.</story>
+      <story>$real overdosed on $CRIMETEXT and decided to become a private investigator.</story>
       <source>RF</source>
       <page>79</page>
     </module>

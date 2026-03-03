@@ -15,10 +15,8 @@
     </AssemblyAttribute>
   </ItemGroup>
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>
     <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
 	<Configurations>Debug;Release;Debuggable Release</Configurations>
 	<AnalysisLevel>latest-minimum</AnalysisLevel>
@@ -31,8 +29,15 @@
     <ApplicationVersion>5.225.0.0</ApplicationVersion>
     <VersionPrefix>5.225.0.0</VersionPrefix>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="WindowsBase" />
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <Compile Remove="ChummerTest.cs" />
+    <Compile Remove="XmlNodeExtensionsTests.cs" />
+    <Compile Remove="GlobalUsings.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">
@@ -152,8 +157,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <ProjectReference Include="..\Chummer\Chummer.csproj" />
+    <Compile Remove="CoreXmlNodeExtensionsTests.cs" />
+  </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)Chummer\Chummer.csproj" />
+    <ProjectReference Include="..\Chummer.Core\Chummer.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="4.14.0">
@@ -166,6 +175,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="MSTest" Version="4.0.2" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.0" />
     <PackageReference Include="XMLUnit.Core" Version="2.11.1" />
   </ItemGroup>
 </Project>
