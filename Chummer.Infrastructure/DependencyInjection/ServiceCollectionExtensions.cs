@@ -11,6 +11,8 @@ namespace Chummer.Infrastructure.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
+    private const string WorkspaceStorePathEnvironmentVariable = "CHUMMER_WORKSPACE_STORE_PATH";
+
     public static IServiceCollection AddChummerHeadlessCore(
         this IServiceCollection services,
         string baseDirectory,
@@ -45,7 +47,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IToolCatalogService, XmlToolCatalogService>();
         services.AddSingleton<ISettingsStore, FileSettingsStore>();
         services.AddSingleton<IRosterStore, FileRosterStore>();
-        services.AddSingleton<IWorkspaceStore, InMemoryWorkspaceStore>();
+        services.AddSingleton<IWorkspaceStore>(_ =>
+        {
+            string? stateDirectory = Environment.GetEnvironmentVariable(WorkspaceStorePathEnvironmentVariable);
+            return string.IsNullOrWhiteSpace(stateDirectory)
+                ? new InMemoryWorkspaceStore()
+                : new FileWorkspaceStore(stateDirectory);
+        });
         services.AddSingleton<IWorkspaceService, WorkspaceService>();
 
         return services;
