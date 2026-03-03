@@ -21,7 +21,6 @@ services:
       CHUMMER_API_BASE_URL: "http://chummer-api:8080"
     ports:
       - "${CHUMMER_BLAZOR_PORT:-8089}:8080"
-    profiles: ["ui"]
   chummer-tests:
     image: chummer-tests:local
     build:

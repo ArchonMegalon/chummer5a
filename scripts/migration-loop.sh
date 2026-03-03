@@ -9,7 +9,7 @@ FAILED=0
 for ((iter = 1; iter <= MAX_ITERS; iter++)); do
   echo "===== migration slice iteration ${iter}/${MAX_ITERS} ====="
 
-  if docker compose --profile ui up -d --build --remove-orphans chummer-api chummer-blazor \
+  if docker compose up -d --build --remove-orphans chummer-api chummer-blazor \
     && CHUMMER_API_PORT="$PORT" CHUMMER_WEB_PORT="$PORT" bash scripts/audit-compliance.sh \
     && CHUMMER_API_PORT="$PORT" CHUMMER_WEB_PORT="$PORT" bash scripts/e2e-live.sh \
     && CHUMMER_API_PORT="$PORT" CHUMMER_WEB_PORT="$PORT" CHUMMER_BLAZOR_PORT="$UI_PORT" bash scripts/e2e-ui.sh \

@@ -165,6 +165,8 @@ public class MigrationComplianceTests
         string projectText = File.ReadAllText(projectPath);
         string programPath = FindPath("Chummer.Blazor", "Program.cs");
         string programText = File.ReadAllText(programPath);
+        string migrationLoopPath = FindPath("scripts", "migration-loop.sh");
+        string migrationLoopText = File.ReadAllText(migrationLoopPath);
         string apiIntegrationTestsPath = FindPath("Chummer.Tests", "ApiIntegrationTests.cs");
         string apiIntegrationTestsText = File.ReadAllText(apiIntegrationTestsPath);
         string dualHeadTestsPath = FindPath("Chummer.Tests", "Presentation", "DualHeadAcceptanceTests.cs");
@@ -176,6 +178,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(programText, "http://chummer-api:8080");
         StringAssert.Contains(apiIntegrationTestsText, "http://chummer-api:8080");
         StringAssert.Contains(dualHeadTestsText, "http://chummer-api:8080");
+        StringAssert.Contains(migrationLoopText, "docker compose up -d --build --remove-orphans chummer-api chummer-blazor");
+        Assert.IsFalse(
+            migrationLoopText.Contains("--profile ui up", StringComparison.Ordinal),
+            "Migration loop must not require the ui profile to start chummer-blazor.");
     }
 
     [TestMethod]

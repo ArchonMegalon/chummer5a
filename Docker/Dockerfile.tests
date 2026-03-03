@@ -25,4 +25,5 @@ COPY Chummer.Api/ Chummer.Api/
 COPY Chummer.Tests/ Chummer.Tests/
 COPY Chummer.Web/ Chummer.Web/
 COPY Chummer/ Chummer/
+COPY scripts/ scripts/
 RUN dotnet build Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0 --no-restore -p:TargetFramework=net10.0
