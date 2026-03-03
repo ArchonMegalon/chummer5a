@@ -22,9 +22,9 @@ public sealed class CharacterOverviewViewModelAdapter : IDisposable
         return _presenter.LoadAsync(workspaceId, ct);
     }
 
-    public Task ImportAsync(string xml, CancellationToken ct)
+    public Task ImportAsync(byte[] documentBytes, CancellationToken ct)
     {
-        return _presenter.ImportAsync(new WorkspaceImportDocument(xml), ct);
+        return _presenter.ImportAsync(WorkspaceImportDocument.FromUtf8Bytes(documentBytes), ct);
     }
 
     public void Dispose()

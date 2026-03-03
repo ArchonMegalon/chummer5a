@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 using Chummer.Blazor;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
@@ -27,9 +28,9 @@ public class CharacterOverviewStateBridgeTests
         var presenter = new FakeCharacterOverviewPresenter();
         using var bridge = new CharacterOverviewStateBridge(presenter, _ => { });
 
-        await bridge.ImportAsync("<character />", CancellationToken.None);
+        await bridge.ImportAsync(Encoding.UTF8.GetBytes("<character />"), CancellationToken.None);
 
-        Assert.AreEqual("<character />", presenter.ImportedXml);
+        Assert.AreEqual("<character />", presenter.ImportedContent);
     }
 
     [TestMethod]

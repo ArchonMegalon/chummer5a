@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
 
@@ -15,9 +16,13 @@ public sealed class HttpChummerClient : IChummerClient
 
     public async Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
     {
+        string contentBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(document.Content));
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             "/api/workspaces/import",
-            new WorkspaceImportRequest(document.Xml),
+            new WorkspaceImportRequest(
+                ContentBase64: contentBase64,
+                Format: document.Format.ToString(),
+                Xml: null),
             ct);
 
         if (!response.IsSuccessStatusCode)

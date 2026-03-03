@@ -38,7 +38,9 @@ public class CharacterOverviewPresenterTests
         var client = new FakeChummerClient();
         var presenter = new CharacterOverviewPresenter(client);
 
-        await presenter.ImportAsync(new WorkspaceImportDocument("<character><name>Imported</name></character>"), CancellationToken.None);
+        await presenter.ImportAsync(
+            new WorkspaceImportDocument("<character><name>Imported</name></character>", WorkspaceDocumentFormat.Chum5Xml),
+            CancellationToken.None);
 
         Assert.IsFalse(presenter.State.IsBusy);
         Assert.IsNull(presenter.State.Error);

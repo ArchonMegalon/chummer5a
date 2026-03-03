@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Avalonia;
@@ -22,13 +23,14 @@ public class DualHeadAcceptanceTests
     public async Task Avalonia_and_Blazor_overview_flows_show_equivalent_state_after_import()
     {
         string xml = File.ReadAllText(FindTestFilePath("Barrett.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
 
         CharacterOverviewState avaloniaState;
         using (HttpClient http = CreateClient())
         {
             var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
             using var adapter = new CharacterOverviewViewModelAdapter(presenter);
-            await adapter.ImportAsync(xml, CancellationToken.None);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
             avaloniaState = adapter.State;
         }
 
@@ -38,7 +40,7 @@ public class DualHeadAcceptanceTests
             var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
             CharacterOverviewState callbackState = CharacterOverviewState.Empty;
             using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
-            await bridge.ImportAsync(xml, CancellationToken.None);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
             blazorState = callbackState.WorkspaceId is null ? bridge.Current : callbackState;
         }
 
@@ -57,6 +59,7 @@ public class DualHeadAcceptanceTests
     public async Task Avalonia_and_Blazor_metadata_save_roundtrip_match()
     {
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
         UpdateWorkspaceMetadata update = new("Updated Name", "Updated Alias", "Updated Notes");
 
         CharacterOverviewState avaloniaState;
@@ -64,7 +67,7 @@ public class DualHeadAcceptanceTests
         {
             var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
             using var adapter = new CharacterOverviewViewModelAdapter(presenter);
-            await adapter.ImportAsync(xml, CancellationToken.None);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
             await presenter.UpdateMetadataAsync(update, CancellationToken.None);
             await presenter.SaveAsync(CancellationToken.None);
             avaloniaState = adapter.State;
@@ -76,7 +79,7 @@ public class DualHeadAcceptanceTests
             var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
             CharacterOverviewState callbackState = CharacterOverviewState.Empty;
             using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
-            await bridge.ImportAsync(xml, CancellationToken.None);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
             await presenter.UpdateMetadataAsync(update, CancellationToken.None);
             await presenter.SaveAsync(CancellationToken.None);
             blazorState = callbackState.WorkspaceId is null ? bridge.Current : callbackState;

@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Text;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Chummer.Contracts.Workspaces;
@@ -50,14 +51,14 @@ public partial class MainWindow : Window
 
     private async void ImportButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        string xml = _xmlInputBox.Text ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(xml))
+        string importText = _xmlInputBox.Text ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(importText))
         {
-            _statusText.Text = "State: paste XML content before importing.";
+            _statusText.Text = "State: paste document content before importing.";
             return;
         }
 
-        await _adapter.ImportAsync(xml, CancellationToken.None);
+        await _adapter.ImportAsync(Encoding.UTF8.GetBytes(importText), CancellationToken.None);
     }
 
     private async void SaveButton_OnClick(object? sender, RoutedEventArgs e)

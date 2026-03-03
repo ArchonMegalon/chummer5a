@@ -1,9 +1,10 @@
 @page "/"
 @implements IDisposable
 @inject ICharacterOverviewPresenter Presenter
+@using System.Text
 
 <section class="panel">
-    <h2>Import Character XML</h2>
+    <h2>Import Character Document</h2>
     <textarea @bind="ImportXml" rows="10"></textarea>
     <div class="actions">
         <button @onclick="ImportAsync" disabled="@State.IsBusy">Import</button>
@@ -71,7 +72,7 @@
         if (_bridge is null || string.IsNullOrWhiteSpace(ImportXml))
             return;
 
-        await _bridge.ImportAsync(ImportXml, CancellationToken.None);
+        await _bridge.ImportAsync(Encoding.UTF8.GetBytes(ImportXml), CancellationToken.None);
         SyncMetadataDraftFromState();
     }
 

@@ -33,13 +33,24 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         }
 
         PersistedWorkspaceRecord? record = JsonSerializer.Deserialize<PersistedWorkspaceRecord>(File.ReadAllText(path));
-        if (record is null || string.IsNullOrWhiteSpace(record.Xml))
+        if (record is null)
         {
             document = null!;
             return false;
         }
 
-        document = new WorkspaceDocument(record.Xml);
+        string? content = record.Content;
+        if (string.IsNullOrWhiteSpace(content))
+            content = record.Xml;
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            document = null!;
+            return false;
+        }
+
+        WorkspaceDocumentFormat format = ParseFormat(record.Format);
+        document = new WorkspaceDocument(content, format);
         return true;
     }
 
@@ -49,7 +60,7 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         if (path is null)
             throw new InvalidOperationException("Workspace id contains unsupported characters.");
 
-        PersistedWorkspaceRecord record = new(document.Xml);
+        PersistedWorkspaceRecord record = new(document.Content, document.Format.ToString());
         File.WriteAllText(path, JsonSerializer.Serialize(record));
     }
 
@@ -67,5 +78,17 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         return Path.Combine(_workspaceDirectory, $"{id.Value}.json");
     }
 
-    private sealed record PersistedWorkspaceRecord(string Xml);
+    private static WorkspaceDocumentFormat ParseFormat(string? format)
+    {
+        if (Enum.TryParse(format, ignoreCase: true, out WorkspaceDocumentFormat parsed))
+            return parsed;
+
+        return WorkspaceDocumentFormat.Chum5Xml;
+    }
+
+    private sealed record PersistedWorkspaceRecord(string Content, string Format)
+    {
+        // Backward compatibility for legacy persisted payloads.
+        public string? Xml { get; init; }
+    }
 }

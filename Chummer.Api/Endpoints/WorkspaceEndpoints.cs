@@ -1,3 +1,4 @@
+using System.Text;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
@@ -10,10 +11,18 @@ public static class WorkspaceEndpoints
     {
         app.MapPost("/api/workspaces/import", (IWorkspaceService workspaceService, WorkspaceImportRequest request) =>
         {
-            WorkspaceImportResult result = workspaceService.Import(new WorkspaceImportDocument(request.Xml));
-            return Results.Ok(new WorkspaceImportResponse(
-                Id: result.Id.Value,
-                Summary: result.Summary));
+            try
+            {
+                WorkspaceImportResult result = workspaceService.Import(ToImportDocument(request));
+                return Results.Ok(new WorkspaceImportResponse(
+                    Id: result.Id.Value,
+                    Summary: result.Summary));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+
         });
 
         app.MapGet("/api/workspaces/{id}/profile", (string id, IWorkspaceService workspaceService) =>
@@ -102,5 +111,37 @@ public static class WorkspaceEndpoints
         });
 
         return app;
+    }
+
+    private static WorkspaceImportDocument ToImportDocument(WorkspaceImportRequest request)
+    {
+        WorkspaceDocumentFormat format = ParseFormatOrDefault(request.Format);
+
+        if (!string.IsNullOrWhiteSpace(request.ContentBase64))
+        {
+            try
+            {
+                byte[] bytes = Convert.FromBase64String(request.ContentBase64);
+                string content = Encoding.UTF8.GetString(bytes);
+                return new WorkspaceImportDocument(content, format);
+            }
+            catch (FormatException ex)
+            {
+                throw new InvalidOperationException("Import payload contentBase64 is not valid base64.", ex);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Xml))
+            return new WorkspaceImportDocument(request.Xml, format);
+
+        throw new InvalidOperationException("Workspace import requires either contentBase64 or xml.");
+    }
+
+    private static WorkspaceDocumentFormat ParseFormatOrDefault(string? rawFormat)
+    {
+        if (Enum.TryParse(rawFormat, ignoreCase: true, out WorkspaceDocumentFormat format))
+            return format;
+
+        return WorkspaceDocumentFormat.Chum5Xml;
     }
 }

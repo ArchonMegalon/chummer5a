@@ -26,8 +26,8 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public WorkspaceImportResult Import(WorkspaceImportDocument document)
     {
-        string xml = document.Xml;
-        CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(xml));
+        string xml = ToXmlContent(document.Content, document.Format);
+        CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(xml, document.Format));
         CharacterFileSummary summary = _characterFileQueries.ParseSummary(new CharacterXmlDocument(xml));
         return new WorkspaceImportResult(id, summary);
     }
@@ -37,7 +37,8 @@ public sealed class WorkspaceService : IWorkspaceService
         if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
             return null;
 
-        return _characterSectionQueries.ParseSection(sectionId, new CharacterXmlDocument(document.Xml));
+        string xml = ToXmlContent(document.Content, document.Format);
+        return _characterSectionQueries.ParseSection(sectionId, new CharacterXmlDocument(xml));
     }
 
     public CharacterProfileSection? GetProfile(CharacterWorkspaceId id)
@@ -86,12 +87,12 @@ public sealed class WorkspaceService : IWorkspaceService
         }
 
         UpdateCharacterMetadataResult result = _characterMetadataCommands.UpdateMetadata(new UpdateCharacterMetadataCommand(
-            Xml: document.Xml,
+            Xml: ToXmlContent(document.Content, document.Format),
             Name: command.Name,
             Alias: command.Alias,
             Notes: command.Notes));
 
-        _workspaceStore.Save(id, new WorkspaceDocument(result.UpdatedXml));
+        _workspaceStore.Save(id, new WorkspaceDocument(result.UpdatedXml, document.Format));
         CharacterProfileSection profile = (CharacterProfileSection)_characterSectionQueries.ParseSection(
             "profile",
             new CharacterXmlDocument(result.UpdatedXml));
@@ -112,11 +113,19 @@ public sealed class WorkspaceService : IWorkspaceService
         }
 
         return new CommandResult<WorkspaceSaveReceipt>(
-            Success: true,
-            Value: new WorkspaceSaveReceipt(
-                Id: id,
-                DocumentLength: document.Xml.Length),
-            Error: null);
+                Success: true,
+                Value: new WorkspaceSaveReceipt(
+                    Id: id,
+                    DocumentLength: document.Content.Length),
+                Error: null);
+    }
+
+    private static string ToXmlContent(string content, WorkspaceDocumentFormat format)
+    {
+        if (format != WorkspaceDocumentFormat.Chum5Xml)
+            throw new InvalidOperationException($"Workspace format '{format}' is not supported.");
+
+        return content;
     }
 
     private TSection? TryParseSection<TSection>(CharacterWorkspaceId id, string sectionId)

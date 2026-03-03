@@ -14,7 +14,7 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
 
     public CharacterWorkspaceId? LoadedWorkspaceId { get; private set; }
 
-    public string? ImportedXml { get; private set; }
+    public string? ImportedContent { get; private set; }
 
     public UpdateWorkspaceMetadata? UpdatedMetadata { get; private set; }
 
@@ -22,7 +22,7 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
 
     public Task ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
     {
-        ImportedXml = document.Xml;
+        ImportedContent = document.Content;
         return Task.CompletedTask;
     }
 

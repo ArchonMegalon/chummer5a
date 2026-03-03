@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 using Chummer.Avalonia;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
@@ -27,9 +28,9 @@ public class CharacterOverviewViewModelAdapterTests
         var presenter = new FakeCharacterOverviewPresenter();
         using var adapter = new CharacterOverviewViewModelAdapter(presenter);
 
-        await adapter.ImportAsync("<character />", CancellationToken.None);
+        await adapter.ImportAsync(Encoding.UTF8.GetBytes("<character />"), CancellationToken.None);
 
-        Assert.AreEqual("<character />", presenter.ImportedXml);
+        Assert.AreEqual("<character />", presenter.ImportedContent);
     }
 
     [TestMethod]

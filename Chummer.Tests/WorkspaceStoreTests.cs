@@ -23,7 +23,8 @@ public class WorkspaceStoreTests
             bool found = store.TryGet(id, out WorkspaceDocument actual);
 
             Assert.IsTrue(found);
-            Assert.AreEqual(expected.Xml, actual.Xml);
+            Assert.AreEqual(expected.Content, actual.Content);
+            Assert.AreEqual(expected.Format, actual.Format);
         }
         finally
         {
@@ -47,7 +48,7 @@ public class WorkspaceStoreTests
                 IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
                 bool found = store.TryGet(id, out WorkspaceDocument loaded);
                 Assert.IsTrue(found);
-                StringAssert.Contains(loaded.Xml, "BLUE");
+                StringAssert.Contains(loaded.Content, "BLUE");
             }
         }
         finally

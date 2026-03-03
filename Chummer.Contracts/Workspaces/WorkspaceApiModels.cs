@@ -2,7 +2,10 @@ using Chummer.Contracts.Characters;
 
 namespace Chummer.Contracts.Workspaces;
 
-public sealed record WorkspaceImportRequest(string Xml);
+public sealed record WorkspaceImportRequest(
+    string? ContentBase64,
+    string? Format,
+    string? Xml);
 
 public sealed record WorkspaceImportResult(
     CharacterWorkspaceId Id,
