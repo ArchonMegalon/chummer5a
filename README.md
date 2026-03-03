@@ -21,7 +21,7 @@ The `Docker` branch is an active migration branch and no longer follows a WinFor
 * `Chummer.Blazor` and `Chummer.Avalonia` are the two UI heads over the same presentation/API path.
 * `Chummer.Web` is currently retained as a static legacy-shell parity artifact during migration.
 
-`docker-compose.yml` currently runs the API container under the service name `chummer-web` for compatibility with existing scripts.
+`docker-compose.yml` runs the API container under the service name `chummer-api`.
 
 ## Requirements
 | Operating System | .NET Framework |

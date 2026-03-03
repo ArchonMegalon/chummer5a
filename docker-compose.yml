@@ -1,6 +1,6 @@
 services:
-  chummer-web:
-    image: chummer-web:local
+  chummer-api:
+    image: chummer-api:local
     build:
       context: .
       dockerfile: Chummer.Api/Dockerfile
@@ -16,9 +16,9 @@ services:
       context: .
       dockerfile: Chummer.Blazor/Dockerfile
     depends_on:
-      - chummer-web
+      - chummer-api
     environment:
-      CHUMMER_API_BASE_URL: "http://chummer-web:8080"
+      CHUMMER_API_BASE_URL: "http://chummer-api:8080"
     ports:
       - "${CHUMMER_BLAZOR_PORT:-8089}:8080"
     profiles: ["ui"]
@@ -28,10 +28,11 @@ services:
       context: .
       dockerfile: Docker/Dockerfile.tests
     depends_on:
-      - chummer-web
+      - chummer-api
     profiles: ["test"]
     environment:
-      CHUMMER_WEB_BASE_URL: "http://chummer-web:8080"
+      CHUMMER_API_BASE_URL: "http://chummer-api:8080"
+      CHUMMER_WEB_BASE_URL: "http://chummer-api:8080"
     command: >
       dotnet test Chummer.Tests/Chummer.Tests.csproj
       -c Release

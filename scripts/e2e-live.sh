@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${CHUMMER_WEB_BASE_URL:-http://127.0.0.1:${CHUMMER_WEB_PORT:-8088}}"
+BASE_URL="${CHUMMER_API_BASE_URL:-${CHUMMER_WEB_BASE_URL:-http://127.0.0.1:${CHUMMER_API_PORT:-${CHUMMER_WEB_PORT:-8088}}}}"
 XML_FILE="${1:-Chummer.Tests/TestFiles/BLUE.chum5}"
 
 if [[ ! -f "$XML_FILE" ]]; then

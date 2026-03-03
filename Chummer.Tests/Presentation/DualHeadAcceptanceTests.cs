@@ -101,12 +101,14 @@ public class DualHeadAcceptanceTests
 
     private static Uri ResolveBaseUri()
     {
-        string? raw = Environment.GetEnvironmentVariable("CHUMMER_WEB_BASE_URL");
+        string? raw = Environment.GetEnvironmentVariable("CHUMMER_API_BASE_URL");
         if (string.IsNullOrWhiteSpace(raw))
-            raw = "http://chummer-web:8080";
+            raw = Environment.GetEnvironmentVariable("CHUMMER_WEB_BASE_URL");
+        if (string.IsNullOrWhiteSpace(raw))
+            raw = "http://chummer-api:8080";
 
         if (!Uri.TryCreate(raw, UriKind.Absolute, out Uri? uri))
-            throw new InvalidOperationException($"Invalid CHUMMER_WEB_BASE_URL: '{raw}'");
+            throw new InvalidOperationException($"Invalid CHUMMER_API_BASE_URL/CHUMMER_WEB_BASE_URL: '{raw}'");
 
         return uri;
     }

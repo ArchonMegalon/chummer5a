@@ -13,7 +13,7 @@ builder.Services.AddHttpClient<IChummerClient, HttpChummerClient>((_, client) =>
     string? environmentBaseUrl = Environment.GetEnvironmentVariable("CHUMMER_API_BASE_URL");
     string baseUrl = configuredBaseUrl
         ?? environmentBaseUrl
-        ?? "http://chummer-web:8080";
+        ?? "http://chummer-api:8080";
 
     client.BaseAddress = new Uri(baseUrl, UriKind.Absolute);
     client.Timeout = TimeSpan.FromSeconds(20);

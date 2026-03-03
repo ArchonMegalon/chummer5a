@@ -165,10 +165,17 @@ public class MigrationComplianceTests
         string projectText = File.ReadAllText(projectPath);
         string programPath = FindPath("Chummer.Blazor", "Program.cs");
         string programText = File.ReadAllText(programPath);
+        string apiIntegrationTestsPath = FindPath("Chummer.Tests", "ApiIntegrationTests.cs");
+        string apiIntegrationTestsText = File.ReadAllText(apiIntegrationTestsPath);
+        string dualHeadTestsPath = FindPath("Chummer.Tests", "Presentation", "DualHeadAcceptanceTests.cs");
+        string dualHeadTestsText = File.ReadAllText(dualHeadTestsPath);
 
         StringAssert.Contains(projectText, "<Project Sdk=\"Microsoft.NET.Sdk.Web\">");
         StringAssert.Contains(programText, "AddRazorComponents()");
         StringAssert.Contains(programText, "CHUMMER_API_BASE_URL");
+        StringAssert.Contains(programText, "http://chummer-api:8080");
+        StringAssert.Contains(apiIntegrationTestsText, "http://chummer-api:8080");
+        StringAssert.Contains(dualHeadTestsText, "http://chummer-api:8080");
     }
 
     [TestMethod]
