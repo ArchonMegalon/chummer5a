@@ -24,7 +24,24 @@ public class CharacterOverviewPresenterTests
         Assert.IsNotNull(presenter.State.Profile);
         Assert.IsNotNull(presenter.State.Progress);
         Assert.IsNotNull(presenter.State.Skills);
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
         Assert.AreEqual("BLUE", presenter.State.Profile.Alias);
+    }
+
+    [TestMethod]
+    public async Task ImportAsync_loads_workspace_and_sections()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.ImportAsync("<character><name>Imported</name></character>", CancellationToken.None);
+
+        Assert.IsFalse(presenter.State.IsBusy);
+        Assert.IsNull(presenter.State.Error);
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
+        Assert.IsNotNull(presenter.State.Profile);
+        Assert.IsNotNull(presenter.State.Progress);
+        Assert.IsNotNull(presenter.State.Skills);
     }
 
     [TestMethod]
@@ -50,13 +67,58 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual("Updated", presenter.State.Profile?.Name);
     }
 
+    [TestMethod]
+    public async Task SaveAsync_requires_loaded_workspace()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+
+        await presenter.SaveAsync(CancellationToken.None);
+
+        Assert.AreEqual("No workspace loaded.", presenter.State.Error);
+    }
+
+    [TestMethod]
+    public async Task SaveAsync_sets_last_saved_xml_after_workspace_load()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.UpdateMetadataAsync(new UpdateWorkspaceMetadata("Updated", "Alias", "Notes"), CancellationToken.None);
+        await presenter.SaveAsync(CancellationToken.None);
+
+        Assert.IsNull(presenter.State.Error);
+        StringAssert.Contains(presenter.State.LastSavedXml ?? string.Empty, "Updated");
+    }
+
     private sealed class FakeChummerClient : IChummerClient
     {
+        private string _name = "Troy Simmons";
+        private string _alias = "BLUE";
+
+        public Task<WorkspaceImportResult> ImportAsync(string xml, CancellationToken ct)
+        {
+            WorkspaceImportResult result = new(
+                new CharacterWorkspaceId("ws-1"),
+                new CharacterFileSummary(
+                    Name: "Imported",
+                    Alias: _alias,
+                    Metatype: "Ork",
+                    BuildMethod: "SumtoTen",
+                    CreatedVersion: "1.0",
+                    AppVersion: "1.0",
+                    Karma: 0m,
+                    Nuyen: 0m,
+                    Created: true));
+
+            return Task.FromResult(result);
+        }
+
         public Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)
         {
             CharacterProfileSection profile = new(
-                Name: "Troy Simmons",
-                Alias: "BLUE",
+                Name: _name,
+                Alias: _alias,
                 PlayerName: string.Empty,
                 Metatype: "Ork",
                 Metavariant: string.Empty,
@@ -132,9 +194,12 @@ public class CharacterOverviewPresenterTests
 
         public Task<CommandResult<CharacterProfileSection>> UpdateMetadataAsync(CharacterWorkspaceId id, UpdateWorkspaceMetadata command, CancellationToken ct)
         {
+            _name = command.Name ?? _name;
+            _alias = command.Alias ?? _alias;
+
             CharacterProfileSection updated = new(
-                Name: command.Name ?? "Troy Simmons",
-                Alias: command.Alias ?? "BLUE",
+                Name: _name,
+                Alias: _alias,
                 PlayerName: string.Empty,
                 Metatype: "Ork",
                 Metavariant: string.Empty,
@@ -163,6 +228,15 @@ public class CharacterOverviewPresenterTests
             return Task.FromResult(new CommandResult<CharacterProfileSection>(
                 Success: true,
                 Value: updated,
+                Error: null));
+        }
+
+        public Task<CommandResult<string>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            string xml = $"<character><name>{_name}</name><alias>{_alias}</alias></character>";
+            return Task.FromResult(new CommandResult<string>(
+                Success: true,
+                Value: xml,
                 Error: null));
         }
     }

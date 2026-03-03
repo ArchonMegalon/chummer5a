@@ -5,6 +5,8 @@ namespace Chummer.Presentation;
 
 public interface IChummerClient
 {
+    Task<WorkspaceImportResult> ImportAsync(string xml, CancellationToken ct);
+
     Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct);
 
     Task<CharacterProgressSection> GetProgressAsync(CharacterWorkspaceId id, CancellationToken ct);
@@ -15,4 +17,6 @@ public interface IChummerClient
         CharacterWorkspaceId id,
         UpdateWorkspaceMetadata command,
         CancellationToken ct);
+
+    Task<CommandResult<string>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct);
 }

@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
 
@@ -11,6 +12,23 @@ public sealed class HttpChummerClient : IChummerClient
     public HttpChummerClient(HttpClient httpClient)
     {
         _httpClient = httpClient;
+    }
+
+    public async Task<WorkspaceImportResult> ImportAsync(string xml, CancellationToken ct)
+    {
+        using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
+            "/api/workspaces/import",
+            new CharacterXmlRequest(xml),
+            ct);
+
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"Workspace import failed with HTTP {(int)response.StatusCode}.");
+
+        WorkspaceImportResponse? payload = await response.Content.ReadFromJsonAsync<WorkspaceImportResponse>(ct);
+        if (payload is null || string.IsNullOrWhiteSpace(payload.Id))
+            throw new InvalidOperationException("Import response did not include a workspace id.");
+
+        return new WorkspaceImportResult(new CharacterWorkspaceId(payload.Id), payload.Summary);
     }
 
     public async Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)
@@ -47,7 +65,7 @@ public sealed class HttpChummerClient : IChummerClient
                 Error: $"HTTP {(int)response.StatusCode}");
         }
 
-        MetadataResponse? payload = await response.Content.ReadFromJsonAsync<MetadataResponse>(ct);
+        WorkspaceMetadataResponse? payload = await response.Content.ReadFromJsonAsync<WorkspaceMetadataResponse>(ct);
         if (payload?.Profile is null)
         {
             return new CommandResult<CharacterProfileSection>(
@@ -62,6 +80,37 @@ public sealed class HttpChummerClient : IChummerClient
             Error: null);
     }
 
+    public async Task<CommandResult<string>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
+            $"/api/workspaces/{id.Value}/save",
+            new { },
+            ct);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return new CommandResult<string>(
+                Success: false,
+                Value: null,
+                Error: $"HTTP {(int)response.StatusCode}");
+        }
+
+        WorkspaceSaveResponse? payload = await response.Content.ReadFromJsonAsync<WorkspaceSaveResponse>(ct);
+
+        if (payload is null || string.IsNullOrWhiteSpace(payload.Xml))
+        {
+            return new CommandResult<string>(
+                Success: false,
+                Value: null,
+                Error: "Save response did not include xml.");
+        }
+
+        return new CommandResult<string>(
+            Success: true,
+            Value: payload.Xml,
+            Error: null);
+    }
+
     private async Task<T> GetRequiredAsync<T>(string path, CancellationToken ct)
     {
         T? data = await _httpClient.GetFromJsonAsync<T>(path, ct);
@@ -70,6 +119,4 @@ public sealed class HttpChummerClient : IChummerClient
 
         return data;
     }
-
-    private sealed record MetadataResponse(CharacterProfileSection Profile);
 }

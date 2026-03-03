@@ -17,6 +17,29 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
     public event EventHandler? StateChanged;
 
+    public async Task ImportAsync(string xml, CancellationToken ct)
+    {
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            WorkspaceImportResult imported = await _client.ImportAsync(xml, ct);
+            await LoadWorkspaceAsync(imported.Id, ct);
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
     public async Task LoadAsync(CharacterWorkspaceId id, CancellationToken ct)
     {
         Publish(State with
@@ -27,19 +50,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         try
         {
-            Task<CharacterProfileSection> profileTask = _client.GetProfileAsync(id, ct);
-            Task<CharacterProgressSection> progressTask = _client.GetProgressAsync(id, ct);
-            Task<CharacterSkillsSection> skillsTask = _client.GetSkillsAsync(id, ct);
-
-            await Task.WhenAll(profileTask, progressTask, skillsTask);
-
-            _currentWorkspace = id;
-            Publish(new CharacterOverviewState(
-                IsBusy: false,
-                Error: null,
-                Profile: profileTask.Result,
-                Progress: progressTask.Result,
-                Skills: skillsTask.Result));
+            await LoadWorkspaceAsync(id, ct);
         }
         catch (Exception ex)
         {
@@ -85,6 +96,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             {
                 IsBusy = false,
                 Error = null,
+                WorkspaceId = _currentWorkspace,
                 Profile = result.Value
             });
         }
@@ -96,6 +108,73 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 Error = ex.Message
             });
         }
+    }
+
+    public async Task SaveAsync(CancellationToken ct)
+    {
+        if (_currentWorkspace is null)
+        {
+            Publish(State with
+            {
+                Error = "No workspace loaded."
+            });
+            return;
+        }
+
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            CommandResult<string> result = await _client.SaveAsync(_currentWorkspace.Value, ct);
+            if (!result.Success || result.Value is null)
+            {
+                Publish(State with
+                {
+                    IsBusy = false,
+                    Error = result.Error ?? "Save failed."
+                });
+                return;
+            }
+
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = null,
+                WorkspaceId = _currentWorkspace,
+                LastSavedXml = result.Value
+            });
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
+    private async Task LoadWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        Task<CharacterProfileSection> profileTask = _client.GetProfileAsync(id, ct);
+        Task<CharacterProgressSection> progressTask = _client.GetProgressAsync(id, ct);
+        Task<CharacterSkillsSection> skillsTask = _client.GetSkillsAsync(id, ct);
+
+        await Task.WhenAll(profileTask, progressTask, skillsTask);
+
+        _currentWorkspace = id;
+        Publish(new CharacterOverviewState(
+            IsBusy: false,
+            Error: null,
+            WorkspaceId: id,
+            Profile: profileTask.Result,
+            Progress: progressTask.Result,
+            Skills: skillsTask.Result,
+            LastSavedXml: State.LastSavedXml));
     }
 
     private void Publish(CharacterOverviewState state)

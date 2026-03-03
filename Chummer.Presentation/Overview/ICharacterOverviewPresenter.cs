@@ -8,7 +8,11 @@ public interface ICharacterOverviewPresenter
 
     event EventHandler? StateChanged;
 
+    Task ImportAsync(string xml, CancellationToken ct);
+
     Task LoadAsync(CharacterWorkspaceId id, CancellationToken ct);
 
     Task UpdateMetadataAsync(UpdateWorkspaceMetadata command, CancellationToken ct);
+
+    Task SaveAsync(CancellationToken ct);
 }
