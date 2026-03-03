@@ -424,7 +424,7 @@ public class ApiIntegrationTests
 
         JsonObject saveResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/save", new JsonObject());
         Assert.AreEqual(workspaceId, saveResponse["id"]?.GetValue<string>());
-        StringAssert.Contains(saveResponse["xml"]?.GetValue<string>() ?? string.Empty, "Updated Name");
+        Assert.IsTrue((saveResponse["documentLength"]?.GetValue<int>() ?? 0) > 0);
     }
 
     [TestMethod]

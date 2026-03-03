@@ -320,12 +320,13 @@ public class CharacterOverviewPresenterTests
                 Error: null));
         }
 
-        public Task<CommandResult<WorkspaceDocument>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct)
+        public Task<CommandResult<WorkspaceSaveReceipt>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct)
         {
-            string xml = $"<character><name>{_name}</name><alias>{_alias}</alias></character>";
-            return Task.FromResult(new CommandResult<WorkspaceDocument>(
+            return Task.FromResult(new CommandResult<WorkspaceSaveReceipt>(
                 Success: true,
-                Value: new WorkspaceDocument(xml),
+                Value: new WorkspaceSaveReceipt(
+                    Id: id,
+                    DocumentLength: 64),
                 Error: null));
         }
     }

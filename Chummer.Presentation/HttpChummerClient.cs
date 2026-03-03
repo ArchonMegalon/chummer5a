@@ -99,7 +99,7 @@ public sealed class HttpChummerClient : IChummerClient
             Error: null);
     }
 
-    public async Task<CommandResult<WorkspaceDocument>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct)
+    public async Task<CommandResult<WorkspaceSaveReceipt>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct)
     {
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             $"/api/workspaces/{id.Value}/save",
@@ -108,7 +108,7 @@ public sealed class HttpChummerClient : IChummerClient
 
         if (!response.IsSuccessStatusCode)
         {
-            return new CommandResult<WorkspaceDocument>(
+            return new CommandResult<WorkspaceSaveReceipt>(
                 Success: false,
                 Value: null,
                 Error: $"HTTP {(int)response.StatusCode}");
@@ -116,17 +116,19 @@ public sealed class HttpChummerClient : IChummerClient
 
         WorkspaceSaveResponse? payload = await response.Content.ReadFromJsonAsync<WorkspaceSaveResponse>(ct);
 
-        if (payload is null || string.IsNullOrWhiteSpace(payload.Xml))
+        if (payload is null || string.IsNullOrWhiteSpace(payload.Id))
         {
-            return new CommandResult<WorkspaceDocument>(
+            return new CommandResult<WorkspaceSaveReceipt>(
                 Success: false,
                 Value: null,
-                Error: "Save response did not include xml.");
+                Error: "Save response did not include workspace id.");
         }
 
-        return new CommandResult<WorkspaceDocument>(
+        return new CommandResult<WorkspaceSaveReceipt>(
             Success: true,
-            Value: new WorkspaceDocument(payload.Xml),
+            Value: new WorkspaceSaveReceipt(
+                Id: new CharacterWorkspaceId(payload.Id),
+                DocumentLength: payload.DocumentLength),
             Error: null);
     }
 

@@ -13,6 +13,10 @@ public sealed record WorkspaceImportDocument(
 public sealed record WorkspaceDocument(
     string Xml);
 
+public sealed record WorkspaceSaveReceipt(
+    CharacterWorkspaceId Id,
+    int DocumentLength);
+
 public sealed record UpdateWorkspaceMetadata(
     string? Name,
     string? Alias,

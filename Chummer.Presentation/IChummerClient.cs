@@ -26,5 +26,5 @@ public interface IChummerClient
         UpdateWorkspaceMetadata command,
         CancellationToken ct);
 
-    Task<CommandResult<WorkspaceDocument>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct);
+    Task<CommandResult<WorkspaceSaveReceipt>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct);
 }

@@ -92,13 +92,13 @@ public static class WorkspaceEndpoints
         app.MapPost("/api/workspaces/{id}/save", (string id, IWorkspaceService workspaceService) =>
         {
             CharacterWorkspaceId workspaceId = new(id);
-            CommandResult<WorkspaceDocument> result = workspaceService.Save(workspaceId);
+            CommandResult<WorkspaceSaveReceipt> result = workspaceService.Save(workspaceId);
             if (!result.Success || result.Value is null)
                 return Results.NotFound(new { error = result.Error ?? "Workspace not found." });
 
             return Results.Ok(new WorkspaceSaveResponse(
-                Id: workspaceId.Value,
-                Xml: result.Value.Xml));
+                Id: result.Value.Id.Value,
+                DocumentLength: result.Value.DocumentLength));
         });
 
         return app;

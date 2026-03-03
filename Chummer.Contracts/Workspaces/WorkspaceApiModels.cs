@@ -17,4 +17,4 @@ public sealed record WorkspaceMetadataResponse(
 
 public sealed record WorkspaceSaveResponse(
     string Id,
-    string Xml);
+    int DocumentLength);

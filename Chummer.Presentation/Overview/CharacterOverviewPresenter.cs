@@ -129,7 +129,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         try
         {
-            CommandResult<WorkspaceDocument> result = await _client.SaveAsync(_currentWorkspace.Value, ct);
+            CommandResult<WorkspaceSaveReceipt> result = await _client.SaveAsync(_currentWorkspace.Value, ct);
             if (!result.Success || result.Value is null)
             {
                 Publish(State with
