@@ -168,6 +168,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(indexText, "id=\"serviceState\"");
         StringAssert.Contains(indexText, "id=\"timeState\"");
         StringAssert.Contains(indexText, "id=\"complianceState\"");
+        StringAssert.Contains(indexText, "Desktop Summary Header");
+        StringAssert.Contains(indexText, "data-ui-control=");
+        StringAssert.Contains(indexText, "function handleUiControl(");
 
         HashSet<string> tabIds = TabButtonRegex.Matches(indexText)
             .Select(match => match.Groups[1].Value)
@@ -178,6 +181,24 @@ public class MigrationComplianceTests
         Assert.IsTrue(tabIds.Contains("tab-gear"), "Missing Gear navigation tab.");
         Assert.IsTrue(tabIds.Contains("tab-magician"), "Missing Magician navigation tab.");
         Assert.IsTrue(tabIds.Contains("tab-improvements"), "Missing Improvements navigation tab.");
+    }
+
+    [TestMethod]
+    public void Workspace_uses_live_document_state_and_recent_file_hooks()
+    {
+        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
+        string indexText = File.ReadAllText(indexPath);
+
+        StringAssert.Contains(indexText, "const openDocs = [];");
+        StringAssert.Contains(indexText, "const recentFiles = [];");
+        StringAssert.Contains(indexText, "function syncCurrentDocumentFromForm()");
+        StringAssert.Contains(indexText, "function openDocument(");
+        StringAssert.Contains(indexText, "function addRecentFile(");
+        StringAssert.Contains(indexText, "function executeCommand(");
+        StringAssert.Contains(indexText, "open_recent_");
+        StringAssert.Contains(indexText, "clear_unpinned_items");
+        StringAssert.Contains(indexText, "openCharactersTreeEl.addEventListener(\"click\"");
+        StringAssert.Contains(indexText, "mdiStripEl.addEventListener(\"click\"");
     }
 
     private static string ToSectionName(string pascalName)

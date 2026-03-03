@@ -260,6 +260,44 @@
       grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
     }
 
+    .control-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: linear-gradient(#fdfefe, #e8edf4);
+      box-shadow: inset 0 0 0 1px #fff;
+    }
+
+    .mini-btn {
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      background: linear-gradient(#ffffff, #dce2ea);
+      color: var(--ink);
+      padding: 4px 8px;
+      font: inherit;
+      font-size: 0.83rem;
+      cursor: pointer;
+    }
+
+    .mini-btn:hover {
+      background: linear-gradient(#ffffff, #d1dbe8);
+    }
+
+    .summary-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      align-items: end;
+    }
+
+    .summary-grid label {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
     pre {
       margin: 0;
       max-height: 420px;
@@ -383,6 +421,28 @@
       <section class="main-pane">
         <div class="pane-title">Character Workspace</div>
         <div class="main-content">
+          <div class="section">
+            <div class="section-title">Desktop Summary Header</div>
+            <div class="summary-grid">
+              <label>Metatype <input id="summaryMetatype" value="-" readonly /></label>
+              <label>Priority / Build <input id="summaryBuild" value="-" readonly /></label>
+              <label>Karma <input id="summaryKarma" value="-" readonly /></label>
+              <label>Nuyen <input id="summaryNuyen" value="-" readonly /></label>
+              <label>Essence <input id="summaryEssence" value="-" readonly /></label>
+              <label>Street Cred <input id="summaryStreetCred" value="-" readonly /></label>
+            </div>
+            <div class="control-strip">
+              <button class="mini-btn" data-ui-control="create_entry">Add</button>
+              <button class="mini-btn" data-ui-control="edit_entry">Edit</button>
+              <button class="mini-btn" data-ui-control="delete_entry">Delete</button>
+              <button class="mini-btn" data-ui-control="move_up">Up</button>
+              <button class="mini-btn" data-ui-control="move_down">Down</button>
+              <button class="mini-btn" data-ui-control="toggle_free_paid">Free/Paid</button>
+              <button class="mini-btn" data-ui-control="show_source">Source</button>
+              <button class="mini-btn" data-ui-control="open_notes">Notes</button>
+            </div>
+          </div>
+
           <div class="section" id="tab-info">
             <div class="section-title">Character File</div>
             <p class="note">Paste or open a <code>.chum5</code> XML character file.</p>
@@ -417,6 +477,13 @@
 
           <div class="section" id="tab-gear">
             <div class="section-title">Equipment</div>
+            <div class="control-strip">
+              <button class="mini-btn" data-ui-control="gear_add">Add Gear</button>
+              <button class="mini-btn" data-ui-control="gear_edit">Edit Gear</button>
+              <button class="mini-btn" data-ui-control="gear_delete">Delete Gear</button>
+              <button class="mini-btn" data-ui-control="gear_mount">Mount</button>
+              <button class="mini-btn" data-ui-control="gear_source">Source</button>
+            </div>
             <div class="actions">
               <button class="action-btn" data-action="inventory">Inventory</button>
               <button class="action-btn" data-action="gear">Gear</button>
@@ -440,6 +507,12 @@
 
           <div class="section" id="tab-magician">
             <div class="section-title">Magic/Resonance</div>
+            <div class="control-strip">
+              <button class="mini-btn" data-ui-control="magic_add">Add Spell/Power</button>
+              <button class="mini-btn" data-ui-control="magic_delete">Delete Spell/Power</button>
+              <button class="mini-btn" data-ui-control="magic_bind">Bind/Link</button>
+              <button class="mini-btn" data-ui-control="magic_source">Source</button>
+            </div>
             <div class="actions">
               <button class="action-btn" data-action="spirits">Spirits</button>
               <button class="action-btn" data-action="foci">Foci</button>
@@ -467,6 +540,12 @@
 
           <div class="section" id="tab-skills">
             <div class="section-title">Skills</div>
+            <div class="control-strip">
+              <button class="mini-btn" data-ui-control="skill_add">Add Skill</button>
+              <button class="mini-btn" data-ui-control="skill_specialize">Specialize</button>
+              <button class="mini-btn" data-ui-control="skill_remove">Remove</button>
+              <button class="mini-btn" data-ui-control="skill_group">Group</button>
+            </div>
             <div class="actions">
               <button class="action-btn" data-action="skills">Skills</button>
               <button class="action-btn" data-action="martialarts">Martial Arts</button>
@@ -500,6 +579,12 @@
 
           <div class="section" id="tab-combat">
             <div class="section-title">Combat</div>
+            <div class="control-strip">
+              <button class="mini-btn" data-ui-control="combat_add_weapon">Add Weapon</button>
+              <button class="mini-btn" data-ui-control="combat_add_armor">Add Armor</button>
+              <button class="mini-btn" data-ui-control="combat_reload">Reload</button>
+              <button class="mini-btn" data-ui-control="combat_damage_track">Damage Track</button>
+            </div>
             <div class="actions">
               <button class="action-btn" data-action="weapons">Weapons</button>
               <button class="action-btn" data-action="armors">Armor</button>
@@ -545,6 +630,12 @@
 
           <div class="section" id="tab-contacts">
             <div class="section-title">Contacts & Enemies</div>
+            <div class="control-strip">
+              <button class="mini-btn" data-ui-control="contact_add">Add Contact</button>
+              <button class="mini-btn" data-ui-control="contact_edit">Edit Contact</button>
+              <button class="mini-btn" data-ui-control="contact_remove">Remove Contact</button>
+              <button class="mini-btn" data-ui-control="contact_connection">Connection/Loyalty</button>
+            </div>
             <div class="actions">
               <button class="action-btn" data-action="contacts">Contacts</button>
               <button class="action-btn" data-action="mentorspirits">Mentors/Spirits</button>
@@ -603,6 +694,7 @@
     let nextDocId = 1;
     let activeDocId = "";
     const openDocs = [];
+    const recentFiles = [];
     const characterState = {
       karma: "-",
       nuyen: "-",
@@ -677,6 +769,48 @@
       return doc;
     }
 
+    function addRecentFile(label, xml) {
+      const cleanLabel = (label || "").trim();
+      if (!cleanLabel) {
+        return;
+      }
+
+      const existingIndex = recentFiles.findIndex((item) => item.label === cleanLabel);
+      if (existingIndex >= 0) {
+        recentFiles.splice(existingIndex, 1);
+      }
+
+      recentFiles.unshift({ label: cleanLabel, xml: xml || "<character></character>", pinned: false });
+      if (recentFiles.length > 10) {
+        recentFiles.length = 10;
+      }
+    }
+
+    function clearUnpinnedRecentFiles() {
+      const kept = recentFiles.filter((item) => item.pinned);
+      recentFiles.splice(0, recentFiles.length, ...kept);
+    }
+
+    function fileMenuItems() {
+      const base = [
+        ["new_character", "New Character"],
+        ["new_critter", "New Critter"],
+        ["open_character", "Open"],
+        ["open_for_printing", "Open For Printing"],
+        ["open_for_export", "Open For Export"],
+        ["save_character", "Save"],
+        ["save_character_as", "Save As"],
+        ["print_character", "Print"],
+        ["print_multiple", "Print Multiple"],
+        ["print_setup", "Print Setup"],
+        ["export_character", "Export"]
+      ];
+
+      const recents = recentFiles.map((item, index) => [`open_recent_${index}`, `Recent: ${item.label}`]);
+      const footer = [["clear_unpinned_items", "Clear Unpinned Items"]];
+      return [...base, ...recents, ...footer];
+    }
+
     function closeAllDocuments() {
       openDocs.splice(0, openDocs.length);
       const doc = openDocument("CharacterCreate - (Unsaved)", "");
@@ -737,19 +871,7 @@
     };
 
     const menuModel = {
-      file: [
-        ["new_character", "New Character"],
-        ["new_critter", "New Critter"],
-        ["open_character", "Open"],
-        ["open_for_printing", "Open For Printing"],
-        ["open_for_export", "Open For Export"],
-        ["save_character", "Save"],
-        ["save_character_as", "Save As"],
-        ["print_character", "Print"],
-        ["print_multiple", "Print Multiple"],
-        ["print_setup", "Print Setup"],
-        ["export_character", "Export"]
-      ],
+      file: fileMenuItems,
       edit: [
         ["copy", "Copy"],
         ["paste", "Paste"],
@@ -781,19 +903,7 @@
     };
 
     const commandHandlers = {
-      file: () => renderCommandMenu("File", [
-        ["new_character", "New Character"],
-        ["new_critter", "New Critter"],
-        ["open_character", "Open"],
-        ["open_for_printing", "Open For Printing"],
-        ["open_for_export", "Open For Export"],
-        ["save_character", "Save"],
-        ["save_character_as", "Save As"],
-        ["print_character", "Print"],
-        ["print_multiple", "Print Multiple"],
-        ["print_setup", "Print Setup"],
-        ["export_character", "Export"]
-      ]),
+      file: () => renderCommandMenu("File", fileMenuItems()),
       edit: () => renderCommandMenu("Edit", [
         ["copy", "Copy"],
         ["paste", "Paste"],
@@ -889,6 +999,10 @@
       export_character: async () => {
         const data = await postJson("/api/characters/summary", { xml: ensureXml() });
         downloadText(JSON.stringify(data, null, 2), "character-summary.json", "application/json");
+      },
+      clear_unpinned_items: () => {
+        clearUnpinnedRecentFiles();
+        showNote("Unpinned recent files were cleared.");
       },
       copy: async () => {
         await navigator.clipboard.writeText(xmlValue());
@@ -990,6 +1104,29 @@
       }
     };
 
+    async function executeCommand(command) {
+      const handler = commandHandlers[command];
+      if (handler) {
+        await handler();
+        return;
+      }
+
+      if (command.startsWith("open_recent_")) {
+        const index = Number.parseInt(command.slice("open_recent_".length), 10);
+        const entry = Number.isFinite(index) ? recentFiles[index] : null;
+        if (!entry) {
+          throw new Error(`Recent file entry '${command}' is unavailable.`);
+        }
+
+        openDocument(entry.label, entry.xml, { fileName: entry.label });
+        byId("metaName").value = entry.label;
+        showNote(`Loaded recent file: ${entry.label}`);
+        return;
+      }
+
+      throw new Error(`Command '${command}' has no handler.`);
+    }
+
     function hideMenuDropdown() {
       menuDropdownEl.classList.add("hidden");
       for (const btn of document.querySelectorAll(".menu-btn")) {
@@ -1016,11 +1153,8 @@
       for (const btn of menuDropdownEl.querySelectorAll("[data-run-command]")) {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.runCommand;
-          const handler = commandHandlers[id];
           hideMenuDropdown();
-          if (handler) {
-            await handler();
-          }
+          await executeCommand(id);
         });
       }
     }
@@ -1035,6 +1169,10 @@
 
     function refreshCharacterState() {
       byId("charState").textContent = `Karma: ${characterState.karma} | Nuyen: ${characterState.nuyen} | Essence: ${characterState.essence} | Build: ${characterState.buildMethod}`;
+      byId("summaryKarma").value = String(characterState.karma);
+      byId("summaryNuyen").value = String(characterState.nuyen);
+      byId("summaryEssence").value = String(characterState.essence);
+      byId("summaryBuild").value = String(characterState.buildMethod);
     }
 
     function applyStateFromPayload(action, data) {
@@ -1046,12 +1184,15 @@
         if (data.karma != null) characterState.karma = data.karma;
         if (data.nuyen != null) characterState.nuyen = data.nuyen;
         if (data.buildMethod) characterState.buildMethod = data.buildMethod;
+        if (data.metatype) byId("summaryMetatype").value = String(data.metatype);
+        if (data.streetCred != null) byId("summaryStreetCred").value = String(data.streetCred);
       }
 
       if (action === "progress") {
         if (data.karma != null) characterState.karma = data.karma;
         if (data.nuyen != null) characterState.nuyen = data.nuyen;
         if (data.totalEss != null) characterState.essence = data.totalEss;
+        if (data.streetCred != null) byId("summaryStreetCred").value = String(data.streetCred);
       }
 
       if (action === "build" && data.buildMethod) {
@@ -1068,10 +1209,14 @@
       for (const btn of resultEl.querySelectorAll("[data-run-command]")) {
         btn.addEventListener("click", async () => {
           const id = btn.dataset.runCommand;
-          const handler = commandHandlers[id];
-          if (handler) await handler();
+          await executeCommand(id);
         });
       }
+    }
+
+    function handleUiControl(controlId) {
+      const activeTab = document.querySelector(".tab-btn.active")?.textContent?.trim() || "current tab";
+      showNote(`Desktop control '${controlId}' invoked on ${activeTab}.`);
     }
 
     function table(headers, rows) {
@@ -1234,23 +1379,18 @@
         const command = button.dataset.command;
         const isMenuButton = button.classList.contains("menu-btn");
         if (isMenuButton && menuModel[command]) {
+          const menuItems = typeof menuModel[command] === "function" ? menuModel[command]() : menuModel[command];
           if (!menuDropdownEl.classList.contains("hidden") && button.classList.contains("active")) {
             hideMenuDropdown();
           } else {
-            showMenuDropdown(button, menuModel[command]);
+            showMenuDropdown(button, menuItems);
           }
           return;
         }
 
         hideMenuDropdown();
-        const handler = commandHandlers[command];
-        if (!handler) {
-          showNote(`Command '${command}' has no handler.`);
-          return;
-        }
-
         try {
-          await handler();
+          await executeCommand(command);
         } catch (error) {
           showNote(String(error));
         }
@@ -1302,6 +1442,7 @@
         const summary = await postJson("/api/characters/summary", { xml: text });
         const importedName = summary.name || file.name;
         openDocument(importedName, text, { alias: summary.alias || "", fileName: file.name });
+        addRecentFile(importedName, text);
         byId("metaName").value = importedName;
         byId("metaAlias").value = summary.alias || "";
         resultEl.innerHTML = `<p class="note">Hero Lab import staging loaded as XML.</p>${renderJson(summary)}`;
@@ -1309,6 +1450,7 @@
       } else {
         const loadedName = file.name.replace(/\.(chum5|xml)$/i, "") || file.name;
         openDocument(loadedName, text, { fileName: file.name });
+        addRecentFile(loadedName, text);
         byId("metaName").value = loadedName;
       }
       syncCurrentDocumentFromForm();
@@ -1363,6 +1505,10 @@
       }
     });
 
+    for (const button of document.querySelectorAll("[data-ui-control]")) {
+      button.addEventListener("click", () => handleUiControl(button.dataset.uiControl));
+    }
+
     byId("xmlInput").addEventListener("input", syncCurrentDocumentFromForm);
     byId("metaName").addEventListener("input", syncCurrentDocumentFromForm);
     byId("metaAlias").addEventListener("input", syncCurrentDocumentFromForm);
@@ -1372,6 +1518,7 @@
     refreshCharacterState();
     openDocument("CharacterCreate - (Unsaved)", "");
     openDocument("Sample: BLUE.chum5", "<character></character>", { fileName: "BLUE.chum5" });
+    addRecentFile("Sample: BLUE.chum5", "<character></character>");
     selectDocument(openDocs[0].id);
     setInterval(refreshServiceState, 30000);
   </script>
