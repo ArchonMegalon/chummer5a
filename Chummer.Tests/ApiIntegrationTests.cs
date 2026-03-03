@@ -12,6 +12,53 @@ namespace Chummer.Tests;
 public class ApiIntegrationTests
 {
     private static readonly Uri BaseUri = ResolveBaseUri();
+    private static readonly string[] AllSectionIds =
+    {
+        "attributes",
+        "attributedetails",
+        "inventory",
+        "profile",
+        "progress",
+        "rules",
+        "build",
+        "movement",
+        "awakening",
+        "gear",
+        "weapons",
+        "weaponaccessories",
+        "armors",
+        "armormods",
+        "cyberwares",
+        "vehicles",
+        "vehiclemods",
+        "skills",
+        "qualities",
+        "contacts",
+        "spells",
+        "powers",
+        "complexforms",
+        "spirits",
+        "foci",
+        "aiprograms",
+        "martialarts",
+        "limitmodifiers",
+        "lifestyles",
+        "metamagics",
+        "arts",
+        "initiationgrades",
+        "critterpowers",
+        "mentorspirits",
+        "expenses",
+        "sources",
+        "gearlocations",
+        "armorlocations",
+        "weaponlocations",
+        "vehiclelocations",
+        "calendar",
+        "improvements",
+        "customdatadirectorynames",
+        "drugs"
+    };
 
     [TestMethod]
     public async Task Info_endpoint_reports_chummer_service()
@@ -378,7 +425,7 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
-    public async Task Workspace_section_endpoint_matches_legacy_section_payload()
+    public async Task Workspace_section_endpoint_matches_legacy_section_payload_for_all_sections()
     {
         using var client = CreateClient();
 
@@ -392,10 +439,13 @@ public class ApiIntegrationTests
         string workspaceId = importResponse["id"]?.GetValue<string>() ?? string.Empty;
         Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceId));
 
-        JsonObject legacySection = await PostRequiredJsonObject(client, "/api/characters/sections/skills", payload);
-        JsonObject workspaceSection = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/sections/skills");
+        foreach (string sectionId in AllSectionIds)
+        {
+            JsonObject legacySection = await PostRequiredJsonObject(client, $"/api/characters/sections/{sectionId}", payload);
+            JsonObject workspaceSection = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/sections/{sectionId}");
 
-        Assert.AreEqual(legacySection.ToJsonString(), workspaceSection.ToJsonString());
+            Assert.AreEqual(legacySection.ToJsonString(), workspaceSection.ToJsonString(), $"Section mismatch for '{sectionId}'.");
+        }
     }
 
     private static HttpClient CreateClient()
