@@ -5,7 +5,7 @@ namespace Chummer.Application.Workspaces;
 
 public interface IWorkspaceService
 {
-    WorkspaceImportResult Import(string xml);
+    WorkspaceImportResult Import(WorkspaceImportDocument document);
 
     object? GetSection(CharacterWorkspaceId id, string sectionId);
 

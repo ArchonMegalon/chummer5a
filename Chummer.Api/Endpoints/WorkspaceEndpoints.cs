@@ -11,7 +11,7 @@ public static class WorkspaceEndpoints
     {
         app.MapPost("/api/workspaces/import", (IWorkspaceService workspaceService, CharacterXmlRequest request) =>
         {
-            WorkspaceImportResult result = workspaceService.Import(request.Xml);
+            WorkspaceImportResult result = workspaceService.Import(new WorkspaceImportDocument(request.Xml));
             return Results.Ok(new WorkspaceImportResponse(
                 Id: result.Id.Value,
                 Summary: result.Summary));

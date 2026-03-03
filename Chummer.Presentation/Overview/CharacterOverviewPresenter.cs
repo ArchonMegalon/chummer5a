@@ -17,7 +17,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
     public event EventHandler? StateChanged;
 
-    public async Task ImportAsync(string xml, CancellationToken ct)
+    public async Task ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
     {
         Publish(State with
         {
@@ -27,7 +27,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         try
         {
-            WorkspaceImportResult imported = await _client.ImportAsync(xml, ct);
+            WorkspaceImportResult imported = await _client.ImportAsync(document, ct);
             await LoadWorkspaceAsync(imported.Id, ct);
         }
         catch (Exception ex)

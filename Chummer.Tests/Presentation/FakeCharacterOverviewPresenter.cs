@@ -20,9 +20,9 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
 
     public int SaveCalls { get; private set; }
 
-    public Task ImportAsync(string xml, CancellationToken ct)
+    public Task ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
     {
-        ImportedXml = xml;
+        ImportedXml = document.Xml;
         return Task.CompletedTask;
     }
 

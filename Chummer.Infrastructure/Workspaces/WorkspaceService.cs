@@ -24,8 +24,9 @@ public sealed class WorkspaceService : IWorkspaceService
         _characterMetadataCommands = characterMetadataCommands;
     }
 
-    public WorkspaceImportResult Import(string xml)
+    public WorkspaceImportResult Import(WorkspaceImportDocument document)
     {
+        string xml = document.Xml;
         CharacterWorkspaceId id = _workspaceStore.Create(xml);
         CharacterFileSummary summary = _characterFileQueries.ParseSummary(xml);
         return new WorkspaceImportResult(id, summary);

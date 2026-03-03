@@ -22,7 +22,7 @@ public class WorkspaceServiceTests
         ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
         IWorkspaceService workspaceService = new WorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
 
-        WorkspaceImportResult imported = workspaceService.Import(xml);
+        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml));
         Assert.IsFalse(string.IsNullOrWhiteSpace(imported.Id.Value));
         Assert.AreEqual("Neo", imported.Summary.Name);
 

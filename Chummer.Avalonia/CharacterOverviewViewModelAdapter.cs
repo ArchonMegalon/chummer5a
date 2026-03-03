@@ -24,7 +24,7 @@ public sealed class CharacterOverviewViewModelAdapter : IDisposable
 
     public Task ImportAsync(string xml, CancellationToken ct)
     {
-        return _presenter.ImportAsync(xml, ct);
+        return _presenter.ImportAsync(new WorkspaceImportDocument(xml), ct);
     }
 
     public void Dispose()

@@ -5,7 +5,7 @@ namespace Chummer.Presentation;
 
 public interface IChummerClient
 {
-    Task<WorkspaceImportResult> ImportAsync(string xml, CancellationToken ct);
+    Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct);
 
     Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct);
 

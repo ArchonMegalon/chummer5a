@@ -7,6 +7,9 @@ public readonly record struct CharacterWorkspaceId(string Value)
     public override string ToString() => Value;
 }
 
+public sealed record WorkspaceImportDocument(
+    string Xml);
+
 public sealed record UpdateWorkspaceMetadata(
     string? Name,
     string? Alias,

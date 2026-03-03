@@ -14,11 +14,11 @@ public sealed class HttpChummerClient : IChummerClient
         _httpClient = httpClient;
     }
 
-    public async Task<WorkspaceImportResult> ImportAsync(string xml, CancellationToken ct)
+    public async Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
     {
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             "/api/workspaces/import",
-            new CharacterXmlRequest(xml),
+            new CharacterXmlRequest(document.Xml),
             ct);
 
         if (!response.IsSuccessStatusCode)
