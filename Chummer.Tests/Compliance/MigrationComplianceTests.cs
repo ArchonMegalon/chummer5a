@@ -14,6 +14,9 @@ public class MigrationComplianceTests
     private static readonly Regex SectionEndpointRegex = new(@"/api/characters/sections/([a-z0-9]+)", RegexOptions.Compiled);
     private static readonly Regex UiActionRegex = new(@"data-action=""([a-z0-9]+)""", RegexOptions.Compiled);
     private static readonly Regex CommandRegex = new(@"data-command=""([a-z_]+)""", RegexOptions.Compiled);
+    private static readonly Regex RunCommandRegex = new(@"data-run-command=""([a-z_]+)""", RegexOptions.Compiled);
+    private static readonly Regex MenuCommandRegex = new(@"\[\s*""([a-z_]+)""\s*,", RegexOptions.Compiled);
+    private static readonly Regex TabButtonRegex = new(@"<button class=""tab-btn""\s+data-tab=""([a-z0-9-]+)""", RegexOptions.Compiled);
 
     private static readonly HashSet<string> RequiredDesktopCommands = new(StringComparer.Ordinal)
     {
@@ -24,10 +27,15 @@ public class MigrationComplianceTests
         "windows",
         "help",
         "new_character",
+        "new_critter",
         "open_character",
+        "open_for_printing",
+        "open_for_export",
         "save_character",
         "save_character_as",
         "print_character",
+        "print_multiple",
+        "print_setup",
         "export_character",
         "copy",
         "paste",
@@ -35,10 +43,20 @@ public class MigrationComplianceTests
         "global_settings",
         "character_settings",
         "translator",
+        "hero_lab_importer",
         "xml_editor",
         "master_index",
         "character_roster",
         "data_exporter",
+        "report_bug",
+        "new_window",
+        "close_window",
+        "close_all",
+        "wiki",
+        "discord",
+        "revision_history",
+        "dumpshock",
+        "about",
         "update",
         "restart"
     };
@@ -82,6 +100,14 @@ public class MigrationComplianceTests
         HashSet<string> commandIds = CommandRegex.Matches(indexText)
             .Select(match => match.Groups[1].Value)
             .ToHashSet(StringComparer.Ordinal);
+        HashSet<string> runCommands = RunCommandRegex.Matches(indexText)
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+        HashSet<string> menuCommands = MenuCommandRegex.Matches(indexText)
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+        commandIds.UnionWith(runCommands);
+        commandIds.UnionWith(menuCommands);
 
         List<string> missingCommands = RequiredDesktopCommands.Where(command => !commandIds.Contains(command)).OrderBy(x => x).ToList();
         Assert.AreEqual(0, missingCommands.Count, "Missing desktop command buttons: " + string.Join(", ", missingCommands));
@@ -105,6 +131,53 @@ public class MigrationComplianceTests
         StringAssert.Contains(indexText, "action === \"summary\"");
         StringAssert.Contains(indexText, "action === \"validate\"");
         StringAssert.Contains(indexText, "action === \"metadata\"");
+    }
+
+    [TestMethod]
+    public void Critical_commands_are_not_placeholder_stubs()
+    {
+        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
+        string indexText = File.ReadAllText(indexPath);
+
+        string[] disallowedPatterns =
+        {
+            "hero_lab_importer: () => showNote(",
+            "print_setup: () => showNote(",
+            "close_all: () => showNote(",
+            "restart: () => location.reload()"
+        };
+
+        foreach (string pattern in disallowedPatterns)
+        {
+            Assert.IsFalse(indexText.Contains(pattern, StringComparison.Ordinal),
+                $"Placeholder command implementation still present: {pattern}");
+        }
+    }
+
+    [TestMethod]
+    public void Desktop_shell_layout_contains_core_winforms_like_regions()
+    {
+        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
+        string indexText = File.ReadAllText(indexPath);
+
+        StringAssert.Contains(indexText, "class=\"menu-bar\"");
+        StringAssert.Contains(indexText, "id=\"mdiStrip\"");
+        StringAssert.Contains(indexText, "Character Navigator");
+        StringAssert.Contains(indexText, "id=\"openCharactersTree\"");
+        StringAssert.Contains(indexText, "id=\"charState\"");
+        StringAssert.Contains(indexText, "id=\"serviceState\"");
+        StringAssert.Contains(indexText, "id=\"timeState\"");
+        StringAssert.Contains(indexText, "id=\"complianceState\"");
+
+        HashSet<string> tabIds = TabButtonRegex.Matches(indexText)
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.IsTrue(tabIds.Count >= 16, $"Expected at least 16 desktop-style navigation tabs, got {tabIds.Count}.");
+        Assert.IsTrue(tabIds.Contains("tab-info"), "Missing Info navigation tab.");
+        Assert.IsTrue(tabIds.Contains("tab-gear"), "Missing Gear navigation tab.");
+        Assert.IsTrue(tabIds.Contains("tab-magician"), "Missing Magician navigation tab.");
+        Assert.IsTrue(tabIds.Contains("tab-improvements"), "Missing Improvements navigation tab.");
     }
 
     private static string ToSectionName(string pascalName)

@@ -6,12 +6,12 @@
   <title>Chummer</title>
   <style>
     :root {
-      --bg: #d9dde3;
-      --panel: #eceff3;
-      --bar: #cfd5dd;
-      --line: #a8b2bf;
-      --ink: #15202b;
-      --muted: #46586d;
+      --bg: #cfd3d8;
+      --panel: #f2f4f7;
+      --bar: #e5e8ec;
+      --line: #9ea7b2;
+      --ink: #1f2b38;
+      --muted: #4a5b70;
       --accent: #1d5fa7;
       --accent-2: #0f3f72;
     }
@@ -23,14 +23,12 @@
       min-height: 100vh;
       color: var(--ink);
       font-family: "Segoe UI", "Tahoma", sans-serif;
-      background:
-        linear-gradient(120deg, rgba(255,255,255,.45), rgba(255,255,255,0) 50%),
-        radial-gradient(circle at 0% 0%, #e8ecf1, #d6dbe2 65%);
+      background: linear-gradient(#d7dbe0, #c7ccd2);
     }
 
     .app {
       display: grid;
-      grid-template-rows: auto auto 1fr auto;
+      grid-template-rows: auto auto auto 1fr auto;
       min-height: 100vh;
     }
 
@@ -41,8 +39,8 @@
       align-items: center;
       gap: 6px;
       padding: 6px 10px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(#e7ebf0, var(--bar));
+      border-bottom: 1px solid #8f98a5;
+      background: linear-gradient(#f1f3f6, #dbe0e6);
     }
 
     .status-bar {
@@ -56,7 +54,9 @@
     .menu-btn,
     .tool-btn,
     .action-btn,
-    .tab-btn {
+    .tab-btn,
+    .menu-item,
+    .mdi-tab {
       border: 1px solid var(--line);
       background: linear-gradient(#ffffff, #dce2ea);
       color: var(--ink);
@@ -69,8 +69,65 @@
     .menu-btn:hover,
     .tool-btn:hover,
     .action-btn:hover,
-    .tab-btn:hover {
+    .tab-btn:hover,
+    .menu-item:hover,
+    .mdi-tab:hover {
       background: linear-gradient(#ffffff, #cfd9e5);
+    }
+
+    .menu-btn {
+      border: 0;
+      background: transparent;
+      border-radius: 2px;
+      padding: 3px 8px;
+    }
+
+    .menu-btn.active {
+      border: 1px solid #8fa3bb;
+      background: linear-gradient(#eef4fb, #d7e3f2);
+    }
+
+    .menu-dropdown {
+      position: fixed;
+      min-width: 220px;
+      max-width: 340px;
+      display: grid;
+      gap: 4px;
+      padding: 6px;
+      background: #f7f8fa;
+      border: 1px solid #8f98a5;
+      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+    }
+
+    .menu-dropdown.hidden {
+      display: none;
+    }
+
+    .menu-item {
+      border-radius: 2px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .mdi-strip {
+      display: flex;
+      gap: 6px;
+      padding: 6px 8px 0;
+      border-bottom: 1px solid #8f98a5;
+      background: linear-gradient(#e2e6ec, #d3d9e0);
+    }
+
+    .mdi-tab {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      padding: 6px 12px;
+    }
+
+    .mdi-tab.active {
+      background: linear-gradient(#f9fbfe, #eef2f7);
+      border-bottom-color: #eef2f7;
+      font-weight: 600;
     }
 
     .tool-btn.primary,
@@ -96,6 +153,7 @@
       overflow: hidden;
       display: grid;
       grid-template-rows: auto 1fr;
+      box-shadow: inset 0 0 0 1px #ffffff;
     }
 
     .pane-title {
@@ -114,9 +172,42 @@
       align-content: start;
     }
 
+    .tree-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 4px;
+      max-height: 200px;
+      overflow: auto;
+    }
+
+    .tree-list li {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e4e7eb;
+      font-size: 0.88rem;
+      cursor: pointer;
+    }
+
+    .tree-list li:last-child {
+      border-bottom: 0;
+    }
+
+    .tree-list li.active {
+      background: linear-gradient(#d9e7f8, #c6daf2);
+      font-weight: 600;
+    }
+
     .tab-list {
       display: grid;
       gap: 6px;
+    }
+
+    .tab-btn.active {
+      border-color: #2f6eae;
+      background: linear-gradient(#eaf3ff, #d4e5f8);
+      font-weight: 600;
     }
 
     .main-content {
@@ -219,8 +310,9 @@
       <button class="menu-btn" data-command="tools">Tools</button>
       <button class="menu-btn" data-command="windows">Windows</button>
       <button class="menu-btn" data-command="help">Help</button>
-      <span class="note" id="menuMessage">WinForms-like shell mapped to web handlers.</span>
+      <span class="note" id="menuMessage">Desktop-style menu shell with web command routing.</span>
     </div>
+    <div id="menuDropdown" class="menu-dropdown hidden"></div>
 
     <div class="tool-bar">
       <button class="tool-btn primary" data-command="new_character">New</button>
@@ -242,11 +334,16 @@
       <button class="tool-btn" data-command="update">Update</button>
       <button class="tool-btn" data-command="restart">Restart</button>
     </div>
+    <div class="mdi-strip" id="mdiStrip"></div>
 
     <main class="surface">
       <aside class="left-pane">
-        <div class="pane-title">Character Tabs</div>
+        <div class="pane-title">Character Navigator</div>
         <div class="left-content">
+          <div class="section">
+            <div class="section-title">Open Characters</div>
+            <ul class="tree-list" id="openCharactersTree"></ul>
+          </div>
           <div class="tab-list">
             <button class="tab-btn" data-tab="tab-info">Info</button>
             <button class="tab-btn" data-tab="tab-attributes">Attributes</button>
@@ -359,6 +456,127 @@
             </div>
           </div>
 
+          <div class="section" id="tab-attributes">
+            <div class="section-title">Attributes</div>
+            <div class="actions">
+              <button class="action-btn" data-action="attributes">Attributes Summary</button>
+              <button class="action-btn" data-action="attributedetails">Attribute Details</button>
+              <button class="action-btn" data-action="limitmodifiers">Limit Modifiers</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-skills">
+            <div class="section-title">Skills</div>
+            <div class="actions">
+              <button class="action-btn" data-action="skills">Skills</button>
+              <button class="action-btn" data-action="martialarts">Martial Arts</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-qualities">
+            <div class="section-title">Qualities</div>
+            <div class="actions">
+              <button class="action-btn" data-action="qualities">Qualities</button>
+              <button class="action-btn" data-action="improvements">Improvements</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-adept">
+            <div class="section-title">Adept</div>
+            <div class="actions">
+              <button class="action-btn" data-action="powers">Adept Powers</button>
+              <button class="action-btn" data-action="metamagics">Metamagics</button>
+              <button class="action-btn" data-action="initiationgrades">Initiation/Submersion</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-technomancer">
+            <div class="section-title">Technomancer</div>
+            <div class="actions">
+              <button class="action-btn" data-action="complexforms">Complex Forms</button>
+              <button class="action-btn" data-action="aiprograms">Advanced Programs</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-combat">
+            <div class="section-title">Combat</div>
+            <div class="actions">
+              <button class="action-btn" data-action="weapons">Weapons</button>
+              <button class="action-btn" data-action="armors">Armor</button>
+              <button class="action-btn" data-action="drugs">Drugs</button>
+              <button class="action-btn" data-action="movement">Movement</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-armor">
+            <div class="section-title">Armor</div>
+            <div class="actions">
+              <button class="action-btn" data-action="armors">Armor Items</button>
+              <button class="action-btn" data-action="armormods">Armor Mods</button>
+              <button class="action-btn" data-action="armorlocations">Armor Locations</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-cyberware">
+            <div class="section-title">Cyberware & Bioware</div>
+            <div class="actions">
+              <button class="action-btn" data-action="cyberwares">Cyberware/Bioware</button>
+              <button class="action-btn" data-action="foci">Foci</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-vehicles">
+            <div class="section-title">Vehicles</div>
+            <div class="actions">
+              <button class="action-btn" data-action="vehicles">Vehicles</button>
+              <button class="action-btn" data-action="vehiclemods">Vehicle Mods</button>
+              <button class="action-btn" data-action="vehiclelocations">Vehicle Locations</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-lifestyle">
+            <div class="section-title">Lifestyle</div>
+            <div class="actions">
+              <button class="action-btn" data-action="lifestyles">Lifestyles</button>
+              <button class="action-btn" data-action="expenses">Expenses</button>
+              <button class="action-btn" data-action="sources">Sources</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-contacts">
+            <div class="section-title">Contacts & Enemies</div>
+            <div class="actions">
+              <button class="action-btn" data-action="contacts">Contacts</button>
+              <button class="action-btn" data-action="mentorspirits">Mentors/Spirits</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-notes">
+            <div class="section-title">Notes</div>
+            <p class="note">Use metadata notes and exported JSON for long-form notes until dedicated editors are migrated.</p>
+            <div class="actions">
+              <button class="action-btn" data-action="metadata">Save Notes</button>
+              <button class="action-btn" data-command="data_exporter">Export Notes Snapshot</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-calendar">
+            <div class="section-title">Calendar</div>
+            <div class="actions">
+              <button class="action-btn" data-action="calendar">Calendar Entries</button>
+              <button class="action-btn" data-action="expenses">Expense Timeline</button>
+            </div>
+          </div>
+
+          <div class="section" id="tab-improvements">
+            <div class="section-title">Improvements</div>
+            <div class="actions">
+              <button class="action-btn" data-action="improvements">Improvements</button>
+              <button class="action-btn" data-action="build">Build Snapshot</button>
+              <button class="action-btn" data-action="progress">Career Progress</button>
+            </div>
+          </div>
+
           <div class="section">
             <div class="section-title">Output</div>
             <div id="result" class="note">No action executed yet.</div>
@@ -368,6 +586,7 @@
     </main>
 
     <div class="status-bar">
+      <span id="charState">Karma: - | Nuyen: - | Essence: - | Build: -</span>
       <span id="serviceState">checking service...</span>
       <span id="timeState"></span>
       <span id="complianceState">desktop command shell active</span>
@@ -377,7 +596,98 @@
   <script>
     const byId = (id) => document.getElementById(id);
     const resultEl = byId("result");
+    const menuDropdownEl = byId("menuDropdown");
+    const mdiStripEl = byId("mdiStrip");
+    const openCharactersTreeEl = byId("openCharactersTree");
     let openFileMode = "normal";
+    let nextDocId = 1;
+    let activeDocId = "";
+    const openDocs = [];
+    const characterState = {
+      karma: "-",
+      nuyen: "-",
+      essence: "-",
+      buildMethod: "-"
+    };
+
+    function newDocId() {
+      const value = `doc-${nextDocId}`;
+      nextDocId += 1;
+      return value;
+    }
+
+    function newDocumentRecord(name, xml, options = {}) {
+      return {
+        id: newDocId(),
+        name: name || "CharacterCreate - (Unsaved)",
+        xml: xml || "",
+        alias: options.alias || "",
+        notes: options.notes || "",
+        fileName: options.fileName || "",
+        kind: options.kind || "character"
+      };
+    }
+
+    function activeDocument() {
+      return openDocs.find((doc) => doc.id === activeDocId) || null;
+    }
+
+    function renderOpenDocuments() {
+      mdiStripEl.innerHTML = openDocs
+        .map((doc) => `<button class="mdi-tab ${doc.id === activeDocId ? "active" : ""}" data-doc-id="${escapeHtml(doc.id)}">${escapeHtml(doc.name)}</button>`)
+        .join("");
+
+      openCharactersTreeEl.innerHTML = openDocs
+        .map((doc) => `<li class="${doc.id === activeDocId ? "active" : ""}" data-doc-id="${escapeHtml(doc.id)}">${escapeHtml(doc.name)}</li>`)
+        .join("");
+    }
+
+    function selectDocument(docId) {
+      const doc = openDocs.find((item) => item.id === docId);
+      if (!doc) {
+        return;
+      }
+
+      activeDocId = doc.id;
+      byId("xmlInput").value = doc.xml || "";
+      byId("metaName").value = doc.name || "";
+      byId("metaAlias").value = doc.alias || "";
+      byId("metaNotes").value = doc.notes || "";
+      byId("complianceState").textContent = `active document: ${doc.name}`;
+      renderOpenDocuments();
+    }
+
+    function syncCurrentDocumentFromForm() {
+      const doc = activeDocument();
+      if (!doc) {
+        return;
+      }
+
+      doc.xml = byId("xmlInput").value;
+      doc.name = byId("metaName").value || doc.name;
+      doc.alias = byId("metaAlias").value;
+      doc.notes = byId("metaNotes").value;
+      renderOpenDocuments();
+    }
+
+    function openDocument(name, xml, options = {}) {
+      const doc = newDocumentRecord(name, xml, options);
+      openDocs.push(doc);
+      selectDocument(doc.id);
+      return doc;
+    }
+
+    function closeAllDocuments() {
+      openDocs.splice(0, openDocs.length);
+      const doc = openDocument("CharacterCreate - (Unsaved)", "");
+      selectDocument(doc.id);
+    }
+    const printableSummary = () => {
+      const name = byId("metaName").value || "(unnamed)";
+      const alias = byId("metaAlias").value || "";
+      const notes = byId("metaNotes").value || "";
+      return `Name: ${name}\nAlias: ${alias}\nNotes: ${notes}\n\nXML Length: ${xmlValue().length}`;
+    };
 
     const actionToPath = {
       profile: "/api/characters/sections/profile",
@@ -424,6 +734,50 @@
       improvements: "/api/characters/sections/improvements",
       customdatadirectorynames: "/api/characters/sections/customdatadirectorynames",
       drugs: "/api/characters/sections/drugs"
+    };
+
+    const menuModel = {
+      file: [
+        ["new_character", "New Character"],
+        ["new_critter", "New Critter"],
+        ["open_character", "Open"],
+        ["open_for_printing", "Open For Printing"],
+        ["open_for_export", "Open For Export"],
+        ["save_character", "Save"],
+        ["save_character_as", "Save As"],
+        ["print_character", "Print"],
+        ["print_multiple", "Print Multiple"],
+        ["print_setup", "Print Setup"],
+        ["export_character", "Export"]
+      ],
+      edit: [
+        ["copy", "Copy"],
+        ["paste", "Paste"],
+        ["xml_editor", "XML Editor"]
+      ],
+      tools: [
+        ["dice_roller", "Dice Roller"],
+        ["global_settings", "Global Settings"],
+        ["character_settings", "Character Settings"],
+        ["translator", "Translator"],
+        ["hero_lab_importer", "Hero Lab Importer"],
+        ["master_index", "Master Index"],
+        ["character_roster", "Character Roster"],
+        ["data_exporter", "Data Exporter"],
+        ["report_bug", "Report Bug"]
+      ],
+      windows: [
+        ["new_window", "New Window"],
+        ["close_window", "Close Window"],
+        ["close_all", "Close All"]
+      ],
+      help: [
+        ["wiki", "Wiki"],
+        ["discord", "Discord"],
+        ["revision_history", "Revision History"],
+        ["dumpshock", "Dumpshock Thread"],
+        ["about", "About"]
+      ]
     };
 
     const commandHandlers = {
@@ -491,14 +845,19 @@
         ["about", "About"]
       ]),
       new_character: () => {
-        byId("xmlInput").value = "";
-        byId("metaName").value = "";
+        syncCurrentDocumentFromForm();
+        const doc = openDocument("CharacterCreate - (Unsaved)", "");
+        byId("metaName").value = doc.name;
         byId("metaAlias").value = "";
         byId("metaNotes").value = "";
         showNote("New character workspace initialized.");
       },
       new_critter: () => {
-        commandHandlers.new_character();
+        syncCurrentDocumentFromForm();
+        const doc = openDocument("CritterCreate - (Unsaved)", "", { kind: "critter" });
+        byId("metaName").value = doc.name;
+        byId("metaAlias").value = "";
+        byId("metaNotes").value = "";
         showNote("New critter workspace initialized.");
       },
       open_character: () => {
@@ -515,13 +874,18 @@
       },
       save_character: () => downloadText((xmlValue() || "<character></character>"), "character.chum5", "text/xml"),
       save_character_as: () => downloadText((xmlValue() || "<character></character>"), `character-${Date.now()}.chum5`, "text/xml"),
-      print_character: () => window.print(),
+      print_character: async () => {
+        resultEl.innerHTML = `<pre>${escapeHtml(printableSummary())}</pre>`;
+        window.print();
+      },
       print_multiple: async () => {
         const roster = await getJson("/api/tools/roster");
         resultEl.innerHTML = table(["Name", "Alias", "Metatype", "Last Opened"], (roster.entries || []).map((x) => [x.name, x.alias, x.metatype, x.lastOpenedUtc]));
         window.print();
       },
-      print_setup: () => showNote("Print setup is browser-managed in web mode."),
+      print_setup: () => {
+        resultEl.innerHTML = `<p class="note">Print settings are browser-managed. Use browser print dialog options.</p>`;
+      },
       export_character: async () => {
         const data = await postJson("/api/characters/summary", { xml: ensureXml() });
         downloadText(JSON.stringify(data, null, 2), "character-summary.json", "application/json");
@@ -565,7 +929,12 @@
         const data = await getJson("/api/tools/translator/languages");
         resultEl.innerHTML = table(["Code", "Name"], data.languages.map((x) => [x.code, x.name]));
       },
-      hero_lab_importer: () => showNote("Hero Lab import flow not yet migrated; use XML paste/open for now."),
+      hero_lab_importer: async () => {
+        const fileInput = byId("openFileInput");
+        openFileMode = "hero_lab_import";
+        fileInput.setAttribute("accept", ".xml,.chum5,.por,text/xml");
+        fileInput.click();
+      },
       xml_editor: () => {
         const target = document.getElementById("tab-info");
         if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -595,11 +964,17 @@
         const health = await getJson("/api/health");
         resultEl.innerHTML = renderJson({ updater: "disabled-in-container", info, health });
       },
-      restart: () => location.reload(),
+      restart: () => {
+        closeAllDocuments();
+        resultEl.innerHTML = `<p class="note">Workspace reset complete.</p>`;
+      },
       report_bug: () => window.open("https://github.com/chummer5a/chummer5a/issues/new/choose", "_blank", "noopener"),
       new_window: () => window.open(location.href, "_blank", "noopener"),
       close_window: () => window.close(),
-      close_all: () => showNote("Close all windows is browser-restricted; close tabs manually."),
+      close_all: () => {
+        closeAllDocuments();
+        resultEl.innerHTML = `<p class="note">Closed all in-page views and cleared working XML.</p>`;
+      },
       wiki: () => window.open("https://github.com/chummer5a/chummer5a/wiki", "_blank", "noopener"),
       discord: () => window.open("https://discord.gg/EV44Mya", "_blank", "noopener"),
       revision_history: () => window.open("https://github.com/chummer5a/chummer5a/releases", "_blank", "noopener"),
@@ -615,6 +990,41 @@
       }
     };
 
+    function hideMenuDropdown() {
+      menuDropdownEl.classList.add("hidden");
+      for (const btn of document.querySelectorAll(".menu-btn")) {
+        btn.classList.remove("active");
+      }
+    }
+
+    function showMenuDropdown(anchor, items) {
+      const rows = items
+        .map(([id, label]) => `<button class="menu-item" data-run-command="${escapeHtml(id)}">${escapeHtml(label)}</button>`)
+        .join("");
+
+      menuDropdownEl.innerHTML = rows;
+      const rect = anchor.getBoundingClientRect();
+      menuDropdownEl.style.left = `${rect.left}px`;
+      menuDropdownEl.style.top = `${rect.bottom + 2}px`;
+      menuDropdownEl.classList.remove("hidden");
+
+      for (const btn of document.querySelectorAll(".menu-btn")) {
+        btn.classList.remove("active");
+      }
+      anchor.classList.add("active");
+
+      for (const btn of menuDropdownEl.querySelectorAll("[data-run-command]")) {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.runCommand;
+          const handler = commandHandlers[id];
+          hideMenuDropdown();
+          if (handler) {
+            await handler();
+          }
+        });
+      }
+    }
+
     const renderJson = (obj) => `<pre>${escapeHtml(JSON.stringify(obj, null, 2))}</pre>`;
 
     const escapeHtml = (s) => s.replace(/[&<>\"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]);
@@ -622,6 +1032,33 @@
     const showNote = (message) => {
       resultEl.innerHTML = `<p class="note">${escapeHtml(message)}</p>`;
     };
+
+    function refreshCharacterState() {
+      byId("charState").textContent = `Karma: ${characterState.karma} | Nuyen: ${characterState.nuyen} | Essence: ${characterState.essence} | Build: ${characterState.buildMethod}`;
+    }
+
+    function applyStateFromPayload(action, data) {
+      if (!data || typeof data !== "object") {
+        return;
+      }
+
+      if (action === "summary" || action === "profile") {
+        if (data.karma != null) characterState.karma = data.karma;
+        if (data.nuyen != null) characterState.nuyen = data.nuyen;
+        if (data.buildMethod) characterState.buildMethod = data.buildMethod;
+      }
+
+      if (action === "progress") {
+        if (data.karma != null) characterState.karma = data.karma;
+        if (data.nuyen != null) characterState.nuyen = data.nuyen;
+        if (data.totalEss != null) characterState.essence = data.totalEss;
+      }
+
+      if (action === "build" && data.buildMethod) {
+        characterState.buildMethod = data.buildMethod;
+      }
+      refreshCharacterState();
+    }
 
     function renderCommandMenu(title, commands) {
       const rows = commands
@@ -719,7 +1156,9 @@
     async function runAction(action) {
       try {
         if (action === "summary") {
-          renderSectionData(action, await postJson("/api/characters/summary", { xml: ensureXml() }));
+          const data = await postJson("/api/characters/summary", { xml: ensureXml() });
+          renderSectionData(action, data);
+          applyStateFromPayload(action, data);
           return;
         }
 
@@ -729,12 +1168,15 @@
         }
 
         if (action === "metadata") {
-          renderSectionData(action, await postJson("/api/characters/metadata", {
+          const data = await postJson("/api/characters/metadata", {
             xml: ensureXml(),
             name: byId("metaName").value,
             alias: byId("metaAlias").value,
             notes: byId("metaNotes").value
-          }));
+          });
+          renderSectionData(action, data);
+          if (data.summary) applyStateFromPayload("summary", data.summary);
+          syncCurrentDocumentFromForm();
           return;
         }
 
@@ -743,7 +1185,9 @@
           throw new Error(`Unknown action '${action}'.`);
         }
 
-        renderSectionData(action, await postJson(path, { xml: ensureXml() }));
+        const data = await postJson(path, { xml: ensureXml() });
+        renderSectionData(action, data);
+        applyStateFromPayload(action, data);
       } catch (error) {
         resultEl.innerHTML = `<pre>${escapeHtml(String(error))}</pre>`;
       }
@@ -788,6 +1232,17 @@
     for (const button of document.querySelectorAll("[data-command]")) {
       button.addEventListener("click", async () => {
         const command = button.dataset.command;
+        const isMenuButton = button.classList.contains("menu-btn");
+        if (isMenuButton && menuModel[command]) {
+          if (!menuDropdownEl.classList.contains("hidden") && button.classList.contains("active")) {
+            hideMenuDropdown();
+          } else {
+            showMenuDropdown(button, menuModel[command]);
+          }
+          return;
+        }
+
+        hideMenuDropdown();
         const handler = commandHandlers[command];
         if (!handler) {
           showNote(`Command '${command}' has no handler.`);
@@ -802,8 +1257,25 @@
       });
     }
 
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      if (target.closest(".menu-btn") || target.closest("#menuDropdown")) {
+        return;
+      }
+
+      hideMenuDropdown();
+    });
+
     for (const button of document.querySelectorAll(".tab-btn")) {
       button.addEventListener("click", () => {
+        for (const tab of document.querySelectorAll(".tab-btn")) {
+          tab.classList.remove("active");
+        }
+        button.classList.add("active");
         const tabId = button.dataset.tab;
         const target = document.getElementById(tabId);
         if (target) {
@@ -826,9 +1298,53 @@
         await commandHandlers.print_character();
       } else if (openFileMode === "export") {
         await commandHandlers.export_character();
+      } else if (openFileMode === "hero_lab_import") {
+        const summary = await postJson("/api/characters/summary", { xml: text });
+        const importedName = summary.name || file.name;
+        openDocument(importedName, text, { alias: summary.alias || "", fileName: file.name });
+        byId("metaName").value = importedName;
+        byId("metaAlias").value = summary.alias || "";
+        resultEl.innerHTML = `<p class="note">Hero Lab import staging loaded as XML.</p>${renderJson(summary)}`;
+        applyStateFromPayload("summary", summary);
+      } else {
+        const loadedName = file.name.replace(/\.(chum5|xml)$/i, "") || file.name;
+        openDocument(loadedName, text, { fileName: file.name });
+        byId("metaName").value = loadedName;
       }
+      syncCurrentDocumentFromForm();
+      byId("openFileInput").setAttribute("accept", ".chum5,.xml,text/xml");
       openFileMode = "normal";
       input.value = "";
+    });
+
+    mdiStripEl.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      const button = target.closest("[data-doc-id]");
+      if (!(button instanceof HTMLElement)) {
+        return;
+      }
+
+      syncCurrentDocumentFromForm();
+      selectDocument(button.dataset.docId);
+    });
+
+    openCharactersTreeEl.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      const item = target.closest("[data-doc-id]");
+      if (!(item instanceof HTMLElement)) {
+        return;
+      }
+
+      syncCurrentDocumentFromForm();
+      selectDocument(item.dataset.docId);
     });
 
     byId("loadStages").addEventListener("click", async () => {
@@ -847,7 +1363,16 @@
       }
     });
 
+    byId("xmlInput").addEventListener("input", syncCurrentDocumentFromForm);
+    byId("metaName").addEventListener("input", syncCurrentDocumentFromForm);
+    byId("metaAlias").addEventListener("input", syncCurrentDocumentFromForm);
+    byId("metaNotes").addEventListener("input", syncCurrentDocumentFromForm);
+
     refreshServiceState();
+    refreshCharacterState();
+    openDocument("CharacterCreate - (Unsaved)", "");
+    openDocument("Sample: BLUE.chum5", "<character></character>", { fileName: "BLUE.chum5" });
+    selectDocument(openDocs[0].id);
     setInterval(refreshServiceState, 30000);
   </script>
 </body>
