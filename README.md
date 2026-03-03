@@ -12,6 +12,17 @@
 
 Chummer is a character creation and management application for the tabletop RPG [Shadowrun, Fifth Edition](https://www.shadowruntabletop.com/products-page/getting-started/shadowrun-fifth-edition) running on Windows. Not only can you create your character quickly and easily, but you can also use Chummer during your character's shadowrunning career, to accurately track your Karma, Nuyen, ammo, and everything else all in one place. Chummer also includes support for a number of optional rules and house rules and even includes support for critters and is useful for players and Game Masters alike! It also supports a number of languages: supports multiple languages: English (US), French, German, Japanese, Portuguese (Brazil) and Chinese (Simplified) files are pre-installed, while additional languages can be added and shared through use of our in-house translator tool.
 
+## Docker Branch Status
+
+The `Docker` branch is an active migration branch and no longer follows a WinForms-only architecture:
+
+* `Chummer.Api` is the HTTP host for headless services and workspace routes.
+* `Chummer.Application`, `Chummer.Contracts`, `Chummer.Infrastructure`, and `Chummer.Presentation` provide the shared behavior seam.
+* `Chummer.Blazor` and `Chummer.Avalonia` are the two UI heads over the same presentation/API path.
+* `Chummer.Web` is currently retained as a static legacy-shell parity artifact during migration.
+
+`docker-compose.yml` currently runs the API container under the service name `chummer-web` for compatibility with existing scripts.
+
 ## Requirements
 | Operating System | .NET Framework |
 | --- | --- |

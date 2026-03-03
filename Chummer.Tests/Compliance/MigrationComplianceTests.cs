@@ -136,6 +136,29 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Solution_includes_headless_and_dual_head_projects()
+    {
+        string solutionPath = FindPath("Chummer.sln");
+        string solutionText = File.ReadAllText(solutionPath);
+
+        string[] requiredProjects =
+        {
+            @"Chummer.Api\Chummer.Api.csproj",
+            @"Chummer.Application\Chummer.Application.csproj",
+            @"Chummer.Contracts\Chummer.Contracts.csproj",
+            @"Chummer.Infrastructure\Chummer.Infrastructure.csproj",
+            @"Chummer.Presentation\Chummer.Presentation.csproj",
+            @"Chummer.Avalonia\Chummer.Avalonia.csproj",
+            @"Chummer.Blazor\Chummer.Blazor.csproj"
+        };
+
+        foreach (string requiredProject in requiredProjects)
+        {
+            StringAssert.Contains(solutionText, requiredProject, "Missing solution entry: " + requiredProject);
+        }
+    }
+
+    [TestMethod]
     public void Docker_compose_exposes_blazor_head_with_api_dependency()
     {
         string projectPath = FindPath("Chummer.Blazor", "Chummer.Blazor.csproj");

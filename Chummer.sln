@@ -45,6 +45,20 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chummer.Core", "Chummer.Cor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chummer.Web", "Chummer.Web\Chummer.Web.csproj", "{0C96FA04-EBAF-4C31-99BE-6B1F163640A1}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chummer.Api", "Chummer.Api\Chummer.Api.csproj", "{E2CFB081-23C0-4A58-9A0E-187E90D9A7B0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chummer.Application", "Chummer.Application\Chummer.Application.csproj", "{1AB8F055-2F4A-4505-8A10-EF1E8BDCF6DF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chummer.Contracts", "Chummer.Contracts\Chummer.Contracts.csproj", "{5B3F7D90-7156-4A4D-A0BE-F446C63DD9C1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chummer.Infrastructure", "Chummer.Infrastructure\Chummer.Infrastructure.csproj", "{A4770746-78A8-4738-90D0-6CBEF73F89D8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chummer.Presentation", "Chummer.Presentation\Chummer.Presentation.csproj", "{20F31B7E-C849-42F4-A970-9932E5A3DEAF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chummer.Avalonia", "Chummer.Avalonia\Chummer.Avalonia.csproj", "{D2C9A230-4447-4C20-BD9A-7A4773D05A59}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Chummer.Blazor", "Chummer.Blazor\Chummer.Blazor.csproj", "{310FE55A-9BA8-4E20-8A6E-4A5A468A66C4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug with ChummerHub|Any CPU = Debug with ChummerHub|Any CPU

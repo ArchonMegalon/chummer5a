@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0
 WORKDIR /src
 
 COPY global.json ./
+COPY Chummer.sln ./
 COPY Chummer.Core/Chummer.Core.csproj Chummer.Core/
 COPY Chummer.Application/Chummer.Application.csproj Chummer.Application/
 COPY Chummer.Contracts/Chummer.Contracts.csproj Chummer.Contracts/
