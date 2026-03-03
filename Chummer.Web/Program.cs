@@ -27,6 +27,8 @@ app.MapInfoEndpoints();
 app.MapCharacterEndpoints();
 app.MapLifeModulesEndpoints();
 app.MapToolsEndpoints();
+app.MapSettingsEndpoints();
+app.MapRosterEndpoints();
 app.MapCommandEndpoints();
 
 app.Run();

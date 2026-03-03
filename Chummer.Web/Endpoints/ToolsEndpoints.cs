@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using System.Text.Json.Nodes;
 using System.Xml.Linq;
 using Chummer.Application.Tools;
 using Chummer.Contracts.Api;
@@ -117,42 +116,6 @@ public static class ToolsEndpoints
             return Results.Ok(new { count = languages.Count, languages });
         });
 
-        app.MapGet("/api/tools/settings/{scope}", (string scope, ISettingsStore settingsStore) =>
-        {
-            if (!TryNormalizeScope(scope, out string normalizedScope))
-                return Results.BadRequest(new { error = "scope must be 'global' or 'character'." });
-
-            JsonObject settings = settingsStore.Load(normalizedScope);
-            return Results.Ok(new { scope = normalizedScope, settings });
-        });
-
-        app.MapPost("/api/tools/settings/{scope}", (string scope, JsonObject? settings, ISettingsStore settingsStore) =>
-        {
-            if (!TryNormalizeScope(scope, out string normalizedScope))
-                return Results.BadRequest(new { error = "scope must be 'global' or 'character'." });
-
-            settingsStore.Save(normalizedScope, settings ?? new JsonObject());
-            return Results.Ok(new { scope = normalizedScope, saved = true });
-        });
-
-        app.MapGet("/api/tools/roster", (IRosterStore rosterStore) =>
-        {
-            IReadOnlyList<RosterEntry> entries = rosterStore.Load();
-            return Results.Ok(new { count = entries.Count, entries });
-        });
-
-        app.MapPost("/api/tools/roster", (RosterEntry entry, IRosterStore rosterStore) =>
-        {
-            IReadOnlyList<RosterEntry> entries = rosterStore.Upsert(entry);
-            return Results.Ok(new { count = entries.Count, entries });
-        });
-
         return app;
-    }
-
-    private static bool TryNormalizeScope(string scope, out string normalizedScope)
-    {
-        normalizedScope = (scope ?? string.Empty).Trim().ToLowerInvariant();
-        return normalizedScope is "global" or "character";
     }
 }
