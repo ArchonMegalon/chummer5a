@@ -1,0 +1,62 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Chummer.Avalonia.MainWindow"
+        Width="1100"
+        Height="760"
+        MinWidth="900"
+        MinHeight="600"
+        Title="Chummer Avalonia Preview">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="16" RowSpacing="10">
+    <TextBlock Grid.Row="0"
+               Text="Avalonia head over shared presenter/API"
+               FontSize="18"
+               FontWeight="Bold" />
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
+      <Button Content="Import XML"
+              Width="140"
+              Click="ImportButton_OnClick" />
+      <Button Content="Save Workspace"
+              Width="140"
+              Click="SaveButton_OnClick" />
+    </StackPanel>
+
+    <TextBlock Grid.Row="2"
+               Name="StatusText"
+               Text="State: idle"
+               TextWrapping="Wrap" />
+
+    <Grid Grid.Row="3" ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+      <Border Grid.Column="0" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+        <StackPanel>
+          <TextBlock Text="Name" FontWeight="Bold" />
+          <TextBlock Name="NameValue" Text="-" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="1" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+        <StackPanel>
+          <TextBlock Text="Alias" FontWeight="Bold" />
+          <TextBlock Name="AliasValue" Text="-" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="2" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+        <StackPanel>
+          <TextBlock Text="Karma" FontWeight="Bold" />
+          <TextBlock Name="KarmaValue" Text="-" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="3" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+        <StackPanel>
+          <TextBlock Text="Skills" FontWeight="Bold" />
+          <TextBlock Name="SkillsValue" Text="-" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <TextBox Grid.Row="4"
+             Name="XmlInputBox"
+             AcceptsReturn="True"
+             TextWrapping="Wrap"
+             Watermark="Paste a .chum5 XML payload and click Import XML" />
+  </Grid>
+</Window>

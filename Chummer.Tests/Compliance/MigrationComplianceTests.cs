@@ -99,18 +99,30 @@ public class MigrationComplianceTests
         string avaloniaProjectText = File.ReadAllText(avaloniaProjectPath);
         string blazorProgramPath = FindPath("Chummer.Blazor", "Program.cs");
         string blazorProgramText = File.ReadAllText(blazorProgramPath);
+        string avaloniaProgramPath = FindPath("Chummer.Avalonia", "Program.cs");
+        string avaloniaProgramText = File.ReadAllText(avaloniaProgramPath);
+        string avaloniaAppCodePath = FindPath("Chummer.Avalonia", "App.axaml.cs");
+        string avaloniaAppCodeText = File.ReadAllText(avaloniaAppCodePath);
 
         StringAssert.Contains(blazorProjectText, @"..\Chummer.Presentation\Chummer.Presentation.csproj");
         StringAssert.Contains(blazorProjectText, @"..\Chummer.Contracts\Chummer.Contracts.csproj");
         StringAssert.Contains(avaloniaProjectText, @"..\Chummer.Presentation\Chummer.Presentation.csproj");
         StringAssert.Contains(avaloniaProjectText, @"..\Chummer.Contracts\Chummer.Contracts.csproj");
+        StringAssert.Contains(avaloniaProjectText, "Avalonia.Desktop");
+        StringAssert.Contains(avaloniaProjectText, "Avalonia.Themes.Fluent");
 
         Assert.IsTrue(File.Exists(FindPath("Chummer.Blazor", "CharacterOverviewStateBridge.cs")));
         Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "CharacterOverviewViewModelAdapter.cs")));
         Assert.IsTrue(File.Exists(FindPath("Chummer.Blazor", "Components", "App.razor")));
         Assert.IsTrue(File.Exists(FindPath("Chummer.Blazor", "Components", "Pages", "Home.razor")));
+        Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "App.axaml")));
+        Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "MainWindow.axaml")));
+        Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "MainWindow.axaml.cs")));
         StringAssert.Contains(blazorProgramText, "AddRazorComponents()");
         StringAssert.Contains(blazorProgramText, "MapRazorComponents<App>()");
+        StringAssert.Contains(avaloniaProgramText, "BuildAvaloniaApp()");
+        StringAssert.Contains(avaloniaProgramText, "UsePlatformDetect()");
+        StringAssert.Contains(avaloniaAppCodeText, "desktop.MainWindow = new MainWindow()");
     }
 
     [TestMethod]
