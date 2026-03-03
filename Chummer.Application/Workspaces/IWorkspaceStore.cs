@@ -4,9 +4,9 @@ namespace Chummer.Application.Workspaces;
 
 public interface IWorkspaceStore
 {
-    CharacterWorkspaceId Create(string xml);
+    CharacterWorkspaceId Create(WorkspaceDocument document);
 
-    bool TryGet(CharacterWorkspaceId id, out string xml);
+    bool TryGet(CharacterWorkspaceId id, out WorkspaceDocument document);
 
-    void Save(CharacterWorkspaceId id, string xml);
+    void Save(CharacterWorkspaceId id, WorkspaceDocument document);
 }

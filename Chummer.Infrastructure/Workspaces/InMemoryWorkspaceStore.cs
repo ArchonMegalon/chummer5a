@@ -6,22 +6,22 @@ namespace Chummer.Infrastructure.Workspaces;
 
 public sealed class InMemoryWorkspaceStore : IWorkspaceStore
 {
-    private readonly ConcurrentDictionary<string, string> _documents = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, WorkspaceDocument> _documents = new(StringComparer.Ordinal);
 
-    public CharacterWorkspaceId Create(string xml)
+    public CharacterWorkspaceId Create(WorkspaceDocument document)
     {
         string key = Guid.NewGuid().ToString("N");
-        _documents[key] = xml;
+        _documents[key] = document;
         return new CharacterWorkspaceId(key);
     }
 
-    public bool TryGet(CharacterWorkspaceId id, out string xml)
+    public bool TryGet(CharacterWorkspaceId id, out WorkspaceDocument document)
     {
-        return _documents.TryGetValue(id.Value, out xml!);
+        return _documents.TryGetValue(id.Value, out document!);
     }
 
-    public void Save(CharacterWorkspaceId id, string xml)
+    public void Save(CharacterWorkspaceId id, WorkspaceDocument document)
     {
-        _documents[id.Value] = xml;
+        _documents[id.Value] = document;
     }
 }

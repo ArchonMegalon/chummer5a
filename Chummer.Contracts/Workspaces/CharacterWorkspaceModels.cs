@@ -10,6 +10,9 @@ public readonly record struct CharacterWorkspaceId(string Value)
 public sealed record WorkspaceImportDocument(
     string Xml);
 
+public sealed record WorkspaceDocument(
+    string Xml);
+
 public sealed record UpdateWorkspaceMetadata(
     string? Name,
     string? Alias,

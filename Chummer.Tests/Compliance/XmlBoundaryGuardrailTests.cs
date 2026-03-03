@@ -22,8 +22,7 @@ public class XmlBoundaryGuardrailTests
         ["ICharacterSectionQueries"] = 1,
         ["ICharacterSocialNarrativeQueries"] = 8,
         ["ICharacterStatsQueries"] = 3,
-        ["IDataExportService"] = 1,
-        ["IWorkspaceStore"] = 3
+        ["IDataExportService"] = 1
     };
 
     [TestMethod]

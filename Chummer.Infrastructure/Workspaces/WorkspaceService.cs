@@ -27,17 +27,17 @@ public sealed class WorkspaceService : IWorkspaceService
     public WorkspaceImportResult Import(WorkspaceImportDocument document)
     {
         string xml = document.Xml;
-        CharacterWorkspaceId id = _workspaceStore.Create(xml);
+        CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(xml));
         CharacterFileSummary summary = _characterFileQueries.ParseSummary(xml);
         return new WorkspaceImportResult(id, summary);
     }
 
     public object? GetSection(CharacterWorkspaceId id, string sectionId)
     {
-        if (!_workspaceStore.TryGet(id, out string xml))
+        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
             return null;
 
-        return _characterSectionQueries.ParseSection(sectionId, xml);
+        return _characterSectionQueries.ParseSection(sectionId, document.Xml);
     }
 
     public CharacterProfileSection? GetProfile(CharacterWorkspaceId id)
@@ -77,7 +77,7 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public CommandResult<CharacterProfileSection> UpdateMetadata(CharacterWorkspaceId id, UpdateWorkspaceMetadata command)
     {
-        if (!_workspaceStore.TryGet(id, out string xml))
+        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
         {
             return new CommandResult<CharacterProfileSection>(
                 Success: false,
@@ -86,12 +86,12 @@ public sealed class WorkspaceService : IWorkspaceService
         }
 
         UpdateCharacterMetadataResult result = _characterMetadataCommands.UpdateMetadata(new UpdateCharacterMetadataCommand(
-            Xml: xml,
+            Xml: document.Xml,
             Name: command.Name,
             Alias: command.Alias,
             Notes: command.Notes));
 
-        _workspaceStore.Save(id, result.UpdatedXml);
+        _workspaceStore.Save(id, new WorkspaceDocument(result.UpdatedXml));
         CharacterProfileSection profile = (CharacterProfileSection)_characterSectionQueries.ParseSection("profile", result.UpdatedXml);
         return new CommandResult<CharacterProfileSection>(
             Success: true,
@@ -101,7 +101,7 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public CommandResult<string> Save(CharacterWorkspaceId id)
     {
-        if (!_workspaceStore.TryGet(id, out string xml))
+        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
         {
             return new CommandResult<string>(
                 Success: false,
@@ -111,7 +111,7 @@ public sealed class WorkspaceService : IWorkspaceService
 
         return new CommandResult<string>(
             Success: true,
-            Value: xml,
+            Value: document.Xml,
             Error: null);
     }
 
