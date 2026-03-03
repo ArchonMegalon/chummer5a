@@ -12,6 +12,17 @@ namespace Chummer.Tests.Presentation;
 public class CharacterOverviewStateBridgeTests
 {
     [TestMethod]
+    public async Task InitializeAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var bridge = new CharacterOverviewStateBridge(presenter, _ => { });
+
+        await bridge.InitializeAsync(CancellationToken.None);
+
+        Assert.AreEqual(1, presenter.InitializeCalls);
+    }
+
+    [TestMethod]
     public async Task LoadAsync_delegates_to_presenter()
     {
         var presenter = new FakeCharacterOverviewPresenter();

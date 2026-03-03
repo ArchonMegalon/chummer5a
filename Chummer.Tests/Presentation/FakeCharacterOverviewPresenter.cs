@@ -20,6 +20,14 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
 
     public int SaveCalls { get; private set; }
 
+    public int InitializeCalls { get; private set; }
+
+    public Task InitializeAsync(CancellationToken ct)
+    {
+        InitializeCalls++;
+        return Task.CompletedTask;
+    }
+
     public Task ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
     {
         ImportedContent = document.Content;

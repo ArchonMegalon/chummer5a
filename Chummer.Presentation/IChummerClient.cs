@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation;
@@ -6,6 +7,8 @@ namespace Chummer.Presentation;
 public interface IChummerClient
 {
     Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct);
+
+    Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct);
 
     Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct);
 

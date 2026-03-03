@@ -19,6 +19,11 @@ public sealed class CharacterOverviewStateBridge : IDisposable
 
     public CharacterOverviewState Current => _presenter.State;
 
+    public Task InitializeAsync(CancellationToken ct)
+    {
+        return _presenter.InitializeAsync(ct);
+    }
+
     public Task LoadAsync(CharacterWorkspaceId workspaceId, CancellationToken ct)
     {
         return _presenter.LoadAsync(workspaceId, ct);

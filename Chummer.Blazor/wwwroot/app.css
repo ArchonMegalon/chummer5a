@@ -92,3 +92,21 @@ button:disabled {
     color: #b91c1c;
     font-weight: 600;
 }
+
+.command-list {
+    margin: 0;
+    padding-left: 1rem;
+    max-height: 16rem;
+    overflow: auto;
+}
+
+.command-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.15rem 0;
+}
+
+.command-list li.disabled {
+    opacity: 0.55;
+}

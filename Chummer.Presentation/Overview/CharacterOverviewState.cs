@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Overview;
@@ -14,6 +15,7 @@ public sealed record CharacterOverviewState(
     CharacterBuildSection? Build,
     CharacterMovementSection? Movement,
     CharacterAwakeningSection? Awakening,
+    IReadOnlyList<AppCommandDefinition> Commands,
     bool HasSavedWorkspace)
 {
     public static CharacterOverviewState Empty { get; } = new(
@@ -27,5 +29,6 @@ public sealed record CharacterOverviewState(
         Build: null,
         Movement: null,
         Awakening: null,
+        Commands: [],
         HasSavedWorkspace: false);
 }

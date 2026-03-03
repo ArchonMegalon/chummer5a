@@ -51,6 +51,20 @@
     }
 </section>
 
+<section class="panel">
+    <h2>Commands (@State.Commands.Count)</h2>
+    <ul class="command-list">
+        @foreach (var command in State.Commands)
+        {
+            bool enabled = command.EnabledByDefault && (!command.RequiresOpenCharacter || State.WorkspaceId is not null);
+            <li class="@(enabled ? string.Empty : "disabled")">
+                <code>@command.Id</code>
+                <span>@command.Group</span>
+            </li>
+        }
+    </ul>
+</section>
+
 @code {
     private CharacterOverviewStateBridge? _bridge;
 
@@ -62,9 +76,10 @@
 
     private CharacterOverviewState State => _bridge?.Current ?? Presenter.State;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _bridge = new CharacterOverviewStateBridge(Presenter, _ => InvokeAsync(StateHasChanged));
+        await _bridge.InitializeAsync(CancellationToken.None);
     }
 
     private async Task ImportAsync()

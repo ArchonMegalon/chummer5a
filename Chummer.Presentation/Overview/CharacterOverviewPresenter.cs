@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Overview;
@@ -16,6 +17,34 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
     public CharacterOverviewState State { get; private set; } = CharacterOverviewState.Empty;
 
     public event EventHandler? StateChanged;
+
+    public async Task InitializeAsync(CancellationToken ct)
+    {
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            IReadOnlyList<AppCommandDefinition> commands = await _client.GetCommandsAsync(ct);
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = null,
+                Commands = commands
+            });
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
 
     public async Task ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
     {
@@ -182,6 +211,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Build: buildTask.Result,
             Movement: movementTask.Result,
             Awakening: awakeningTask.Result,
+            Commands: State.Commands,
             HasSavedWorkspace: State.HasSavedWorkspace));
     }
 

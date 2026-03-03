@@ -13,7 +13,7 @@
                FontWeight="Bold" />
 
     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
-      <Button Content="Import XML"
+      <Button Content="Import Document"
               Width="140"
               Click="ImportButton_OnClick" />
       <Button Content="Save Workspace"
@@ -53,10 +53,18 @@
       </Border>
     </Grid>
 
-    <TextBox Grid.Row="4"
-             Name="XmlInputBox"
-             AcceptsReturn="True"
-             TextWrapping="Wrap"
-             Watermark="Paste a .chum5 XML payload and click Import XML" />
+    <Grid Grid.Row="4" ColumnDefinitions="2*,*" ColumnSpacing="12">
+      <TextBox Grid.Column="0"
+               Name="XmlInputBox"
+               AcceptsReturn="True"
+               TextWrapping="Wrap"
+               Watermark="Paste a .chum5 document payload and click Import Document" />
+      <Border Grid.Column="1" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+        <StackPanel>
+          <TextBlock Text="Commands" FontWeight="Bold" Margin="0,0,0,6" />
+          <ListBox Name="CommandsList" MinHeight="200" />
+        </StackPanel>
+      </Border>
+    </Grid>
   </Grid>
 </Window>

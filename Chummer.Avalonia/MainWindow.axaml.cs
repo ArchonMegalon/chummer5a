@@ -1,7 +1,9 @@
 using System.Net.Http;
 using System.Text;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -18,6 +20,7 @@ public partial class MainWindow : Window
     private readonly TextBlock _aliasValue;
     private readonly TextBlock _karmaValue;
     private readonly TextBlock _skillsValue;
+    private readonly ListBox _commandsList;
 
     public MainWindow()
     {
@@ -39,8 +42,10 @@ public partial class MainWindow : Window
         _aliasValue = this.FindControl<TextBlock>("AliasValue")!;
         _karmaValue = this.FindControl<TextBlock>("KarmaValue")!;
         _skillsValue = this.FindControl<TextBlock>("SkillsValue")!;
+        _commandsList = this.FindControl<ListBox>("CommandsList")!;
 
         RefreshState();
+        Opened += OnOpened;
     }
 
     protected override void OnClosed(EventArgs e)
@@ -61,6 +66,11 @@ public partial class MainWindow : Window
         await _adapter.ImportAsync(Encoding.UTF8.GetBytes(importText), CancellationToken.None);
     }
 
+    private async void OnOpened(object? sender, EventArgs e)
+    {
+        await _adapter.InitializeAsync(CancellationToken.None);
+    }
+
     private async void SaveButton_OnClick(object? sender, RoutedEventArgs e)
     {
         await _presenter.SaveAsync(CancellationToken.None);
@@ -78,6 +88,17 @@ public partial class MainWindow : Window
         _aliasValue.Text = state.Profile?.Alias ?? "-";
         _karmaValue.Text = state.Progress?.Karma.ToString() ?? "-";
         _skillsValue.Text = state.Skills?.Count.ToString() ?? "-";
+
+        bool hasWorkspace = state.WorkspaceId is not null;
+        _commandsList.ItemsSource = state.Commands
+            .Select(command => ToCommandLine(command, hasWorkspace))
+            .ToArray();
+    }
+
+    private static string ToCommandLine(AppCommandDefinition command, bool hasWorkspace)
+    {
+        bool enabled = command.EnabledByDefault && (!command.RequiresOpenCharacter || hasWorkspace);
+        return $"{command.Id} [{command.Group}] {(enabled ? "enabled" : "disabled")}";
     }
 
     private static Uri ResolveApiBaseAddress()

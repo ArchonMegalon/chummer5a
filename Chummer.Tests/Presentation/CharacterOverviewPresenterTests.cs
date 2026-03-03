@@ -1,6 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -11,6 +13,20 @@ namespace Chummer.Tests.Presentation;
 [TestClass]
 public class CharacterOverviewPresenterTests
 {
+    [TestMethod]
+    public async Task InitializeAsync_loads_command_catalog()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        Assert.IsFalse(presenter.State.IsBusy);
+        Assert.IsNull(presenter.State.Error);
+        Assert.IsTrue(presenter.State.Commands.Count > 0);
+        Assert.AreEqual("new_character", presenter.State.Commands[0].Id);
+    }
+
     [TestMethod]
     public async Task LoadAsync_populates_profile_progress_and_skills()
     {
@@ -105,6 +121,11 @@ public class CharacterOverviewPresenterTests
     {
         private string _name = "Troy Simmons";
         private string _alias = "BLUE";
+        private static readonly IReadOnlyList<AppCommandDefinition> Commands =
+        [
+            new("new_character", "command.new_character", "file", false, true),
+            new("save_character", "command.save_character", "file", true, true)
+        ];
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
         {
@@ -122,6 +143,11 @@ public class CharacterOverviewPresenterTests
                     Created: true));
 
             return Task.FromResult(result);
+        }
+
+        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct)
+        {
+            return Task.FromResult(Commands);
         }
 
         public Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)

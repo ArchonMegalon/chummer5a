@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation;
@@ -33,6 +34,15 @@ public sealed class HttpChummerClient : IChummerClient
             throw new InvalidOperationException("Import response did not include a workspace id.");
 
         return new WorkspaceImportResult(new CharacterWorkspaceId(payload.Id), payload.Summary);
+    }
+
+    public async Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct)
+    {
+        AppCommandCatalogResponse? response = await _httpClient.GetFromJsonAsync<AppCommandCatalogResponse>("/api/commands", ct);
+        if (response is null)
+            throw new InvalidOperationException("Command catalog response was empty.");
+
+        return response.Commands;
     }
 
     public async Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)

@@ -9,7 +9,9 @@ public static class CommandEndpoints
         app.MapGet("/api/commands", () =>
         {
             IReadOnlyList<AppCommandDefinition> commands = AppCommandCatalog.All;
-            return Results.Ok(new { count = commands.Count, commands });
+            return Results.Ok(new AppCommandCatalogResponse(
+                Count: commands.Count,
+                Commands: commands));
         });
 
         return app;
