@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using Chummer.Application.Tools;
 using Chummer.Contracts.Api;
 
@@ -51,69 +50,16 @@ public static class ToolsEndpoints
             return Results.Ok(bundle);
         });
 
-        app.MapGet("/api/tools/master-index", () =>
+        app.MapGet("/api/tools/master-index", (IToolCatalogService toolCatalogService) =>
         {
-            string dataDir = Path.Combine(AppContext.BaseDirectory, "data");
-            if (!Directory.Exists(dataDir))
-                return Results.Ok(new { count = 0, files = Array.Empty<object>() });
-
-            List<object> files = new();
-            foreach (string file in Directory.EnumerateFiles(dataDir, "*.xml").OrderBy(Path.GetFileName))
-            {
-                try
-                {
-                    XDocument document = XDocument.Load(file, LoadOptions.None);
-                    files.Add(new
-                    {
-                        file = Path.GetFileName(file),
-                        root = document.Root?.Name.LocalName ?? string.Empty,
-                        elementCount = document.Descendants().Count()
-                    });
-                }
-                catch
-                {
-                    files.Add(new
-                    {
-                        file = Path.GetFileName(file),
-                        root = string.Empty,
-                        elementCount = 0
-                    });
-                }
-            }
-
-            return Results.Ok(new
-            {
-                count = files.Count,
-                generatedUtc = DateTimeOffset.UtcNow,
-                files
-            });
+            MasterIndexResponse response = toolCatalogService.GetMasterIndex();
+            return Results.Ok(response);
         });
 
-        app.MapGet("/api/tools/translator/languages", () =>
+        app.MapGet("/api/tools/translator/languages", (IToolCatalogService toolCatalogService) =>
         {
-            string langDir = Path.Combine(AppContext.BaseDirectory, "lang");
-            if (!Directory.Exists(langDir))
-                return Results.Ok(new { count = 0, languages = Array.Empty<object>() });
-
-            List<object> languages = new();
-            foreach (string file in Directory.EnumerateFiles(langDir, "*.xml").OrderBy(Path.GetFileName))
-            {
-                string code = Path.GetFileNameWithoutExtension(file);
-                string name = code;
-                try
-                {
-                    XDocument doc = XDocument.Load(file, LoadOptions.None);
-                    name = doc.Root?.Element("name")?.Value?.Trim() ?? code;
-                }
-                catch
-                {
-                    name = code;
-                }
-
-                languages.Add(new { code, name });
-            }
-
-            return Results.Ok(new { count = languages.Count, languages });
+            TranslatorLanguagesResponse response = toolCatalogService.GetTranslatorLanguages();
+            return Results.Ok(response);
         });
 
         return app;

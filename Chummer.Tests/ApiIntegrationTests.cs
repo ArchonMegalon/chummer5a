@@ -263,6 +263,16 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Translator_languages_endpoint_returns_data()
+    {
+        using var client = CreateClient();
+
+        JsonObject response = await GetRequiredJsonObject(client, "/api/tools/translator/languages");
+        Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) > 0);
+        Assert.IsTrue(response["languages"] is JsonArray);
+    }
+
+    [TestMethod]
     public async Task Settings_endpoints_roundtrip()
     {
         using var client = CreateClient();

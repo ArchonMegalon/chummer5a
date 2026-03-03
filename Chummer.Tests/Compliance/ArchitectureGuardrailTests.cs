@@ -67,6 +67,18 @@ public class ArchitectureGuardrailTests
         }
     }
 
+    [TestMethod]
+    public void Tools_endpoints_stay_transport_only()
+    {
+        string endpointPath = FindPath("Chummer.Web", "Endpoints", "ToolsEndpoints.cs");
+        string text = File.ReadAllText(endpointPath);
+
+        Assert.IsFalse(text.Contains("Directory.", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("File.", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("Path.Combine", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("XDocument", StringComparison.Ordinal));
+    }
+
     private static string FindPath(params string[] parts)
     {
         foreach (string? root in CandidateRoots())

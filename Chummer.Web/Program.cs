@@ -32,6 +32,7 @@ builder.Services.AddSingleton<ILifeModulesService>(_ =>
     return new LifeModulesService(path);
 });
 builder.Services.AddSingleton<IDataExportService, DataExportService>();
+builder.Services.AddSingleton<IToolCatalogService, XmlToolCatalogService>();
 builder.Services.AddSingleton<ISettingsStore, FileSettingsStore>();
 builder.Services.AddSingleton<IRosterStore, FileRosterStore>();
 builder.Services.AddSingleton<IWorkspaceStore, InMemoryWorkspaceStore>();
