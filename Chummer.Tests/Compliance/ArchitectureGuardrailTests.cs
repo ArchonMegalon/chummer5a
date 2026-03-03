@@ -82,6 +82,15 @@ public class ArchitectureGuardrailTests
         Assert.IsFalse(text.Contains("XDocument", StringComparison.Ordinal));
     }
 
+    [TestMethod]
+    public void Web_project_does_not_reference_core_directly()
+    {
+        string projectPath = FindPath("Chummer.Web", "Chummer.Web.csproj");
+        string text = File.ReadAllText(projectPath);
+
+        Assert.IsFalse(text.Contains(@"..\Chummer.Core\Chummer.Core.csproj", StringComparison.Ordinal));
+    }
+
     private static string FindPath(params string[] parts)
     {
         foreach (string? root in CandidateRoots())

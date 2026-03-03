@@ -1,5 +1,4 @@
 using System.Xml;
-using Chummer.Core;
 
 namespace Chummer.Web.Endpoints;
 
@@ -21,7 +20,7 @@ public static class InfoEndpoints
         {
             XmlDocument doc = new();
             doc.LoadXml(xml);
-            bool isEmpty = doc.DocumentElement.IsNullOrInnerTextIsEmpty();
+            bool isEmpty = doc.DocumentElement is null || string.IsNullOrWhiteSpace(doc.DocumentElement.InnerText);
             return Results.Ok(new { isEmpty });
         });
 
