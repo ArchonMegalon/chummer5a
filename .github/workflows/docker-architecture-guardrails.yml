@@ -1,0 +1,44 @@
+name: Docker Branch Guardrails
+
+on:
+  push:
+    branches:
+      - Docker
+  pull_request:
+    branches:
+      - Docker
+
+jobs:
+  linux-headless-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore Chummer.Tests/Chummer.Tests.csproj -p:TargetFramework=net10.0
+
+      - name: Test (net10.0)
+        run: dotnet test Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0 -p:TargetFramework=net10.0 --no-restore
+
+  windows-desktop-tests:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore Chummer.Tests/Chummer.Tests.csproj -p:TargetFramework=net10.0-windows
+
+      - name: Test (net10.0-windows)
+        run: dotnet test Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0-windows -p:TargetFramework=net10.0-windows --no-restore

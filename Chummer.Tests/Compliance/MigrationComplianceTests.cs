@@ -66,18 +66,22 @@ public class MigrationComplianceTests
     public void Section_parsers_are_exposed_as_api_endpoints_and_ui_actions()
     {
         string interfacePath = FindPath("Chummer.Core", "Characters", "ICharacterSectionService.cs");
-        string programPath = FindPath("Chummer.Web", "Program.cs");
+        string endpointDirectory = FindDirectory("Chummer.Web", "Endpoints");
         string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
 
         string interfaceText = File.ReadAllText(interfacePath);
-        string programText = File.ReadAllText(programPath);
+        string endpointText = string.Join(
+            Environment.NewLine,
+            Directory.EnumerateFiles(endpointDirectory, "*.cs", SearchOption.AllDirectories)
+                .OrderBy(path => path, StringComparer.Ordinal)
+                .Select(File.ReadAllText));
         string indexText = File.ReadAllText(indexPath);
 
         HashSet<string> expectedSections = SectionMethodRegex.Matches(interfaceText)
             .Select(match => ToSectionName(match.Groups[1].Value))
             .ToHashSet(StringComparer.Ordinal);
 
-        HashSet<string> endpointSections = SectionEndpointRegex.Matches(programText)
+        HashSet<string> endpointSections = SectionEndpointRegex.Matches(endpointText)
             .Select(match => match.Groups[1].Value)
             .ToHashSet(StringComparer.Ordinal);
 
@@ -298,6 +302,30 @@ public class MigrationComplianceTests
         }
 
         throw new FileNotFoundException("Could not locate file.", Path.Combine(parts));
+    }
+
+    private static string FindDirectory(params string[] parts)
+    {
+        foreach (string? root in CandidateRoots())
+        {
+            if (string.IsNullOrWhiteSpace(root))
+                continue;
+
+            DirectoryInfo current = new(root);
+            while (true)
+            {
+                string candidate = Path.Combine(new[] { current.FullName }.Concat(parts).ToArray());
+                if (Directory.Exists(candidate))
+                    return candidate;
+
+                if (current.Parent == null)
+                    break;
+
+                current = current.Parent;
+            }
+        }
+
+        throw new DirectoryNotFoundException("Could not locate directory: " + Path.Combine(parts));
     }
 
     private static IEnumerable<string?> CandidateRoots()

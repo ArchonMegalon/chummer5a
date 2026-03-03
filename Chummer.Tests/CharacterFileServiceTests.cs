@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using Chummer.Contracts.Characters;
 using Chummer.Core.Characters;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

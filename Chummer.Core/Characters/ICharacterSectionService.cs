@@ -1,3 +1,5 @@
+using Chummer.Contracts.Characters;
+
 namespace Chummer.Core.Characters;
 
 public interface ICharacterSectionService

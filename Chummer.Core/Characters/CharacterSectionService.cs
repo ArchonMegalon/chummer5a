@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using Chummer.Contracts.Characters;
 
 namespace Chummer.Core.Characters;
 
