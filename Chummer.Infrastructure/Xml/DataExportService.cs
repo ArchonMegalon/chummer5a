@@ -1,36 +1,36 @@
 using System.Xml.Linq;
+using Chummer.Application.Characters;
 using Chummer.Application.Tools;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
-using Chummer.Core.Characters;
 
 namespace Chummer.Infrastructure.Xml;
 
 public sealed class DataExportService : IDataExportService
 {
-    private readonly ICharacterFileService _characterFileService;
-    private readonly ICharacterSectionService _sectionService;
+    private readonly ICharacterFileQueries _characterFileQueries;
+    private readonly ICharacterSectionQueries _sectionQueries;
 
     public DataExportService(
-        ICharacterFileService characterFileService,
-        ICharacterSectionService sectionService)
+        ICharacterFileQueries characterFileQueries,
+        ICharacterSectionQueries sectionQueries)
     {
-        _characterFileService = characterFileService;
-        _sectionService = sectionService;
+        _characterFileQueries = characterFileQueries;
+        _sectionQueries = sectionQueries;
     }
 
     public DataExportBundle BuildBundle(string xml)
     {
-        CharacterFileSummary? summary = SafeParse(() => _characterFileService.ParseSummaryFromXml(xml));
+        CharacterFileSummary? summary = SafeParse(() => _characterFileQueries.ParseSummary(xml));
         summary ??= BuildFallbackSummary(xml);
 
-        CharacterProfileSection? profile = SafeParse(() => _sectionService.ParseProfile(xml));
-        CharacterProgressSection? progress = SafeParse(() => _sectionService.ParseProgress(xml));
-        CharacterAttributesSection? attributes = SafeParse(() => _sectionService.ParseAttributes(xml));
-        CharacterSkillsSection? skills = SafeParse(() => _sectionService.ParseSkills(xml));
-        CharacterInventorySection? inventory = SafeParse(() => _sectionService.ParseInventory(xml));
-        CharacterQualitiesSection? qualities = SafeParse(() => _sectionService.ParseQualities(xml));
-        CharacterContactsSection? contacts = SafeParse(() => _sectionService.ParseContacts(xml));
+        CharacterProfileSection? profile = SafeParse(() => ParseSection<CharacterProfileSection>("profile", xml));
+        CharacterProgressSection? progress = SafeParse(() => ParseSection<CharacterProgressSection>("progress", xml));
+        CharacterAttributesSection? attributes = SafeParse(() => ParseSection<CharacterAttributesSection>("attributes", xml));
+        CharacterSkillsSection? skills = SafeParse(() => ParseSection<CharacterSkillsSection>("skills", xml));
+        CharacterInventorySection? inventory = SafeParse(() => ParseSection<CharacterInventorySection>("inventory", xml));
+        CharacterQualitiesSection? qualities = SafeParse(() => ParseSection<CharacterQualitiesSection>("qualities", xml));
+        CharacterContactsSection? contacts = SafeParse(() => ParseSection<CharacterContactsSection>("contacts", xml));
 
         return new DataExportBundle(
             Summary: summary,
@@ -41,6 +41,11 @@ public sealed class DataExportService : IDataExportService
             Inventory: inventory,
             Qualities: qualities,
             Contacts: contacts);
+    }
+
+    private TSection ParseSection<TSection>(string sectionId, string xml)
+    {
+        return (TSection)_sectionQueries.ParseSection(sectionId, xml);
     }
 
     private static T? SafeParse<T>(Func<T> parser) where T : class

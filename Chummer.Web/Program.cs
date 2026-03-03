@@ -1,3 +1,4 @@
+using Chummer.Application.Characters;
 using Chummer.Application.Tools;
 using Chummer.Core.Characters;
 using Chummer.Core.LifeModules;
@@ -9,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<ICharacterFileService, CharacterFileService>();
 builder.Services.AddSingleton<ICharacterSectionService, CharacterSectionService>();
+builder.Services.AddSingleton<ICharacterFileQueries, XmlCharacterFileQueries>();
+builder.Services.AddSingleton<ICharacterMetadataCommands, XmlCharacterMetadataCommands>();
+builder.Services.AddSingleton<ICharacterSectionQueries, XmlCharacterSectionQueries>();
 builder.Services.AddSingleton<ILifeModulesService>(_ =>
 {
     string path = LifeModulesPathResolver.Resolve(AppContext.BaseDirectory, Directory.GetCurrentDirectory());
