@@ -40,6 +40,7 @@ public class ArchitectureGuardrailTests
         StringAssert.Contains(text, "app.MapRosterEndpoints();");
         StringAssert.Contains(text, "app.MapCommandEndpoints();");
         StringAssert.Contains(text, "app.MapWorkspaceEndpoints();");
+        StringAssert.Contains(text, "builder.Services.AddChummerHeadlessCore(");
 
         Assert.IsFalse(text.Contains("Path.GetTempPath()", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("File.", StringComparison.Ordinal));
@@ -47,6 +48,7 @@ public class ArchitectureGuardrailTests
         Assert.IsFalse(text.Contains("public sealed record", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("app.MapPost(\"/api/characters/sections", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("Chummer.Core.LifeModules", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("AddSingleton<", StringComparison.Ordinal));
     }
 
     [TestMethod]
