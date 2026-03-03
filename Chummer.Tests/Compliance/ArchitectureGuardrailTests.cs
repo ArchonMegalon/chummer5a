@@ -54,6 +54,16 @@ public class ArchitectureGuardrailTests
     }
 
     [TestMethod]
+    public void Blazor_head_exposes_health_endpoint()
+    {
+        string programPath = FindPath("Chummer.Blazor", "Program.cs");
+        string text = File.ReadAllText(programPath);
+
+        StringAssert.Contains(text, "app.MapGet(\"/health\"");
+        StringAssert.Contains(text, "head = \"blazor\"");
+    }
+
+    [TestMethod]
     public void Headless_projects_do_not_reference_ui_frameworks()
     {
         foreach (string project in HeadlessProjects)

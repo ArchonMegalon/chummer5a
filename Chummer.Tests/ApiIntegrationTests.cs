@@ -84,6 +84,18 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Root_endpoint_reports_api_service_document()
+    {
+        using var client = CreateClient();
+
+        JsonObject payload = await GetRequiredJsonObject(client, "/");
+
+        Assert.AreEqual("Chummer.Api", payload["service"]?.GetValue<string>());
+        Assert.AreEqual("running", payload["status"]?.GetValue<string>());
+        Assert.IsTrue(payload["docs"] is JsonArray);
+    }
+
+    [TestMethod]
     public async Task Contacts_section_endpoint_parses_payload()
     {
         using var client = CreateClient();

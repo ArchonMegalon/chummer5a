@@ -47,8 +47,10 @@ bash scripts/migration-loop.sh 1
 
 Default endpoints:
 
+* API root: `http://127.0.0.1:8088/`
 * API health: `http://127.0.0.1:8088/api/health`
 * Blazor UI (when `ui` profile is enabled): `http://127.0.0.1:8089/`
+* Blazor health (when `ui` profile is enabled): `http://127.0.0.1:8089/health`
 
 ## Requirements
 | Operating System | .NET Framework |

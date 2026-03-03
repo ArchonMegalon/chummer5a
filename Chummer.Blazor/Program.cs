@@ -26,6 +26,13 @@ var app = builder.Build();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
+app.MapGet("/health", () => Results.Ok(new
+{
+    ok = true,
+    head = "blazor",
+    utc = DateTimeOffset.UtcNow
+}));
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

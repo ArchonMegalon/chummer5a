@@ -6,6 +6,18 @@ public static class InfoEndpoints
 {
     public static IEndpointRouteBuilder MapInfoEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/", () => Results.Ok(new
+        {
+            service = "Chummer.Api",
+            status = "running",
+            docs = new[]
+            {
+                "/api/info",
+                "/api/health",
+                "/api/workspaces/import"
+            }
+        }));
+
         app.MapGet("/api/info", () => Results.Ok(new
         {
             service = "Chummer",
