@@ -91,6 +91,35 @@ public class ArchitectureGuardrailTests
         Assert.IsFalse(text.Contains(@"..\Chummer.Core\Chummer.Core.csproj", StringComparison.Ordinal));
     }
 
+    [TestMethod]
+    public void Character_xml_parsers_live_in_infrastructure_not_core()
+    {
+        string infrastructureSectionPath = FindPath("Chummer.Infrastructure", "Xml", "ICharacterSectionService.cs");
+        string infrastructureFilePath = FindPath("Chummer.Infrastructure", "Xml", "ICharacterFileService.cs");
+        string? coreCharactersDirectory = TryFindDirectory("Chummer.Core", "Characters");
+
+        Assert.IsTrue(File.Exists(infrastructureSectionPath));
+        Assert.IsTrue(File.Exists(infrastructureFilePath));
+
+        if (!string.IsNullOrWhiteSpace(coreCharactersDirectory))
+        {
+            string coreSectionPath = Path.Combine(coreCharactersDirectory, "ICharacterSectionService.cs");
+            string coreFilePath = Path.Combine(coreCharactersDirectory, "ICharacterFileService.cs");
+
+            Assert.IsFalse(File.Exists(coreSectionPath), "Character section parser interface must not live in Chummer.Core.");
+            Assert.IsFalse(File.Exists(coreFilePath), "Character file parser interface must not live in Chummer.Core.");
+        }
+    }
+
+    [TestMethod]
+    public void Infrastructure_project_does_not_reference_core_project()
+    {
+        string projectPath = FindPath("Chummer.Infrastructure", "Chummer.Infrastructure.csproj");
+        string text = File.ReadAllText(projectPath);
+
+        Assert.IsFalse(text.Contains(@"..\Chummer.Core\Chummer.Core.csproj", StringComparison.Ordinal));
+    }
+
     private static string FindPath(params string[] parts)
     {
         foreach (string? root in CandidateRoots())
@@ -137,6 +166,30 @@ public class ArchitectureGuardrailTests
         }
 
         throw new DirectoryNotFoundException("Could not locate directory: " + Path.Combine(parts));
+    }
+
+    private static string? TryFindDirectory(params string[] parts)
+    {
+        foreach (string? root in CandidateRoots())
+        {
+            if (string.IsNullOrWhiteSpace(root))
+                continue;
+
+            DirectoryInfo current = new(root);
+            while (true)
+            {
+                string candidate = Path.Combine(new[] { current.FullName }.Concat(parts).ToArray());
+                if (Directory.Exists(candidate))
+                    return candidate;
+
+                if (current.Parent == null)
+                    break;
+
+                current = current.Parent;
+            }
+        }
+
+        return null;
     }
 
     private static IEnumerable<string?> CandidateRoots()

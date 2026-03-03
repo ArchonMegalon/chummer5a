@@ -28,7 +28,7 @@ public class MigrationComplianceTests
     [TestMethod]
     public void Section_parsers_are_exposed_as_api_endpoints_and_ui_actions()
     {
-        string interfacePath = FindPath("Chummer.Core", "Characters", "ICharacterSectionService.cs");
+        string interfacePath = FindPath("Chummer.Infrastructure", "Xml", "ICharacterSectionService.cs");
         string endpointDirectory = FindDirectory("Chummer.Web", "Endpoints");
         string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
 

@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Xml.Linq;
 using Chummer.Contracts.Characters;
 
-namespace Chummer.Core.Characters;
+namespace Chummer.Infrastructure.Xml;
 
 public sealed class CharacterFileService : ICharacterFileService
 {

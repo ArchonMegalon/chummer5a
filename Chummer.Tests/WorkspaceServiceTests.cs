@@ -1,9 +1,8 @@
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Workspaces;
-using Chummer.Core.Characters;
-using Chummer.Infrastructure.Workspaces;
 using Chummer.Infrastructure.Xml;
+using Chummer.Infrastructure.Workspaces;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;

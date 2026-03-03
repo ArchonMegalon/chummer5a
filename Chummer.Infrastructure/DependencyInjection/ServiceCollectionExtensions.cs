@@ -2,7 +2,6 @@ using Chummer.Application.Characters;
 using Chummer.Application.LifeModules;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
-using Chummer.Core.Characters;
 using Chummer.Infrastructure.Files;
 using Chummer.Infrastructure.Workspaces;
 using Chummer.Infrastructure.Xml;

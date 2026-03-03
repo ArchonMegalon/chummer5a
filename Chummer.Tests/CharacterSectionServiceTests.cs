@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Chummer.Contracts.Characters;
-using Chummer.Core.Characters;
+using Chummer.Infrastructure.Xml;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;

@@ -1,5 +1,4 @@
 using Chummer.Application.Characters;
-using Chummer.Core.Characters;
 
 namespace Chummer.Infrastructure.Xml;
 
