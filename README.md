@@ -23,6 +23,33 @@ The `Docker` branch is an active migration branch and no longer follows a WinFor
 
 `docker-compose.yml` runs the API container under the service name `chummer-api`.
 
+## Running the Docker Branch
+
+The `Docker` branch is validated on Linux with `net10.0` tests through Docker.
+
+Start API only:
+
+```bash
+docker compose up -d --build chummer-api
+```
+
+Start API + Blazor UI:
+
+```bash
+docker compose --profile ui up -d --build chummer-api chummer-blazor
+```
+
+Run migration/compliance test loop (branch helper script):
+
+```bash
+bash scripts/migration-loop.sh 1
+```
+
+Default endpoints:
+
+* API health: `http://127.0.0.1:8088/api/health`
+* Blazor UI (when `ui` profile is enabled): `http://127.0.0.1:8089/`
+
 ## Requirements
 | Operating System | .NET Framework |
 | --- | --- |
@@ -41,7 +68,7 @@ Chummer uses a single tree release strategy with two release channels; **Milesto
 
 ## Installation - Linux and OSX
 
-As Chummer is a WinForms application, support for other operating systems is limited. For Linux, macOS, and Chrome OS, Chummer can be run through one of three possible ways:
+For the legacy WinForms desktop app, support for other operating systems is limited. For Linux, macOS, and Chrome OS, legacy Chummer can be run through one of three possible ways:
 
 1. Set up and run [Wine](https://www.winehq.org/), an open-source Windows compatibility layer. This is usually not for the faint-of-heart, especially on Chrome OS, but it is completely free. Some details about the steps necessary to run Chummer5a under Wine can be found on [the wiki](https://github.com/chummer5a/chummer5a/wiki#installation). Note that even after you set up Chummer5a to run on Wine, Wine is not perfect and you will encounter some additional bugs while using Chummer5a that you wouldn't run into under Windows.
 2. Set up and run [CrossOver](https://www.codeweavers.com/crossover), a hassle-free version of Wine with commercial support. It costs money (though it has a limited free trial), but what you are effectively purchasing is for someone else to do all the hard work setting up Wine for you, no matter what you want to run on it. If you do not want to mess around with technical stuff, we highly recommend using CrossOver.
