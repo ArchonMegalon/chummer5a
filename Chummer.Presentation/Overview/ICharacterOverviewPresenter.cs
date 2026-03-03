@@ -14,6 +14,8 @@ public interface ICharacterOverviewPresenter
 
     Task LoadAsync(CharacterWorkspaceId id, CancellationToken ct);
 
+    Task ExecuteCommandAsync(string commandId, CancellationToken ct);
+
     Task SelectTabAsync(string tabId, CancellationToken ct);
 
     Task UpdateMetadataAsync(UpdateWorkspaceMetadata command, CancellationToken ct);

@@ -96,6 +96,53 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         }
     }
 
+    public async Task ExecuteCommandAsync(string commandId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(commandId))
+        {
+            Publish(State with { Error = "Command id is required." });
+            return;
+        }
+
+        Publish(State with
+        {
+            LastCommandId = commandId,
+            Error = null
+        });
+
+        switch (commandId)
+        {
+            case "save_character":
+            case "save_character_as":
+                await SaveAsync(ct);
+                return;
+            case "refresh_character":
+                if (_currentWorkspace is null)
+                {
+                    Publish(State with { Error = "No workspace loaded." });
+                    return;
+                }
+
+                await LoadAsync(_currentWorkspace.Value, ct);
+                return;
+            case "new_character":
+                _currentWorkspace = null;
+                Publish(CharacterOverviewState.Empty with
+                {
+                    Commands = State.Commands,
+                    NavigationTabs = State.NavigationTabs,
+                    LastCommandId = commandId
+                });
+                return;
+            default:
+                Publish(State with
+                {
+                    Error = $"Command '{commandId}' is not implemented in shared presenter yet."
+                });
+                return;
+        }
+    }
+
     public async Task SelectTabAsync(string tabId, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(tabId))
@@ -268,6 +315,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             ActiveTabId: null,
             ActiveSectionId: null,
             ActiveSectionJson: null,
+            LastCommandId: State.LastCommandId,
             Commands: State.Commands,
             NavigationTabs: State.NavigationTabs,
             HasSavedWorkspace: false));

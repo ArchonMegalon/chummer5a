@@ -44,6 +44,7 @@
         <li>Karma: @(State.Progress?.Karma ?? 0)</li>
         <li>Skills: @(State.Skills?.Count ?? 0)</li>
         <li>Game Edition: @(State.Rules?.GameEdition ?? "(none)")</li>
+        <li>Last Command: @(State.LastCommandId ?? "(none)")</li>
     </ul>
     @if (!string.IsNullOrWhiteSpace(State.Error))
     {
@@ -58,7 +59,12 @@
         {
             bool enabled = command.EnabledByDefault && (!command.RequiresOpenCharacter || State.WorkspaceId is not null);
             <li class="@(enabled ? string.Empty : "disabled")">
-                <code>@command.Id</code>
+                <button
+                    class="command-button @(State.LastCommandId == command.Id ? "selected" : string.Empty)"
+                    disabled="@(!enabled || State.IsBusy)"
+                    @onclick="() => ExecuteCommandAsync(command.Id)">
+                    <code>@command.Id</code>
+                </button>
                 <span>@command.Group</span>
             </li>
         }
@@ -143,6 +149,14 @@
     private async Task SaveAsync()
     {
         await Presenter.SaveAsync(CancellationToken.None);
+    }
+
+    private async Task ExecuteCommandAsync(string commandId)
+    {
+        if (_bridge is null)
+            return;
+
+        await _bridge.ExecuteCommandAsync(commandId, CancellationToken.None);
     }
 
     private async Task SelectTabAsync(string tabId)

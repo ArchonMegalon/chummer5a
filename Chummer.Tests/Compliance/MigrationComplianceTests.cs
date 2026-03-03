@@ -410,6 +410,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(testText, "Avalonia_and_Blazor_overview_flows_show_equivalent_state_after_import");
         StringAssert.Contains(testText, "Avalonia_and_Blazor_metadata_save_roundtrip_match");
         StringAssert.Contains(testText, "Avalonia_and_Blazor_tab_selection_loads_same_workspace_section");
+        StringAssert.Contains(testText, "Avalonia_and_Blazor_command_dispatch_save_character_matches");
     }
 
     private static string ToSectionName(string pascalName)

@@ -125,6 +125,18 @@ button:disabled {
     background: #dbeafe;
 }
 
+.command-button {
+    display: inline-flex;
+    align-items: center;
+    min-width: 12rem;
+    text-align: left;
+}
+
+.command-button.selected {
+    border-color: #14532d;
+    background: #dcfce7;
+}
+
 .section-preview pre {
     margin: 0;
     max-height: 16rem;

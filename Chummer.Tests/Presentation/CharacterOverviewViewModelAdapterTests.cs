@@ -45,6 +45,17 @@ public class CharacterOverviewViewModelAdapterTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+
+        await adapter.ExecuteCommandAsync("save_character", CancellationToken.None);
+
+        Assert.AreEqual("save_character", presenter.ExecutedCommandId);
+    }
+
+    [TestMethod]
     public async Task ImportAsync_delegates_to_presenter()
     {
         var presenter = new FakeCharacterOverviewPresenter();

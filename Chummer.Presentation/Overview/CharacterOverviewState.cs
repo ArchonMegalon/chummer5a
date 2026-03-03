@@ -18,6 +18,7 @@ public sealed record CharacterOverviewState(
     string? ActiveTabId,
     string? ActiveSectionId,
     string? ActiveSectionJson,
+    string? LastCommandId,
     IReadOnlyList<AppCommandDefinition> Commands,
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     bool HasSavedWorkspace)
@@ -36,6 +37,7 @@ public sealed record CharacterOverviewState(
         ActiveTabId: null,
         ActiveSectionId: null,
         ActiveSectionJson: null,
+        LastCommandId: null,
         Commands: [],
         NavigationTabs: [],
         HasSavedWorkspace: false);

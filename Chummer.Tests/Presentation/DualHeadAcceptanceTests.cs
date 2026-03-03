@@ -129,6 +129,39 @@ public class DualHeadAcceptanceTests
         Assert.AreEqual(avaloniaState.ActiveSectionJson, blazorState.ActiveSectionJson);
     }
 
+    [TestMethod]
+    public async Task Avalonia_and_Blazor_command_dispatch_save_character_matches()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+
+        CharacterOverviewState avaloniaState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
+            await adapter.ExecuteCommandAsync("save_character", CancellationToken.None);
+            avaloniaState = adapter.State;
+        }
+
+        CharacterOverviewState blazorState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
+            await bridge.ExecuteCommandAsync("save_character", CancellationToken.None);
+            blazorState = callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+        }
+
+        Assert.AreEqual("save_character", avaloniaState.LastCommandId);
+        Assert.AreEqual("save_character", blazorState.LastCommandId);
+        Assert.IsTrue(avaloniaState.HasSavedWorkspace);
+        Assert.IsTrue(blazorState.HasSavedWorkspace);
+    }
+
     private static HttpClient CreateClient()
     {
         return new HttpClient

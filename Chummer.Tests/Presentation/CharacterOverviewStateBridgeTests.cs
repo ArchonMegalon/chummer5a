@@ -45,6 +45,17 @@ public class CharacterOverviewStateBridgeTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var bridge = new CharacterOverviewStateBridge(presenter, _ => { });
+
+        await bridge.ExecuteCommandAsync("save_character", CancellationToken.None);
+
+        Assert.AreEqual("save_character", presenter.ExecutedCommandId);
+    }
+
+    [TestMethod]
     public async Task ImportAsync_delegates_to_presenter()
     {
         var presenter = new FakeCharacterOverviewPresenter();

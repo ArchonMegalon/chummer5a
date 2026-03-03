@@ -29,6 +29,11 @@ public sealed class CharacterOverviewStateBridge : IDisposable
         return _presenter.LoadAsync(workspaceId, ct);
     }
 
+    public Task ExecuteCommandAsync(string commandId, CancellationToken ct)
+    {
+        return _presenter.ExecuteCommandAsync(commandId, ct);
+    }
+
     public Task SelectTabAsync(string tabId, CancellationToken ct)
     {
         return _presenter.SelectTabAsync(tabId, ct);

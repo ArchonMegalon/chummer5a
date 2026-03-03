@@ -3,7 +3,6 @@ using System.Text;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -23,6 +22,7 @@ public partial class MainWindow : Window
     private readonly ListBox _commandsList;
     private readonly ListBox _navigationTabsList;
     private readonly TextBox _sectionPreviewBox;
+    private bool _suppressCommandSelectionEvent;
     private bool _suppressTabSelectionEvent;
 
     public MainWindow()
@@ -46,6 +46,7 @@ public partial class MainWindow : Window
         _karmaValue = this.FindControl<TextBlock>("KarmaValue")!;
         _skillsValue = this.FindControl<TextBlock>("SkillsValue")!;
         _commandsList = this.FindControl<ListBox>("CommandsList")!;
+        _commandsList.SelectionChanged += CommandsList_OnSelectionChanged;
         _navigationTabsList = this.FindControl<ListBox>("NavigationTabsList")!;
         _sectionPreviewBox = this.FindControl<TextBox>("SectionPreviewBox")!;
         _navigationTabsList.SelectionChanged += NavigationTabsList_OnSelectionChanged;
@@ -87,7 +88,7 @@ public partial class MainWindow : Window
         CharacterOverviewState state = _adapter.State;
 
         _statusText.Text = state.Error is null
-            ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(state.WorkspaceId?.Value ?? "none")}, saved={state.HasSavedWorkspace}"
+            ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(state.WorkspaceId?.Value ?? "none")}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}"
             : $"State: error - {state.Error}";
 
         _nameValue.Text = state.Profile?.Name ?? "-";
@@ -96,9 +97,17 @@ public partial class MainWindow : Window
         _skillsValue.Text = state.Skills?.Count.ToString() ?? "-";
 
         bool hasWorkspace = state.WorkspaceId is not null;
-        _commandsList.ItemsSource = state.Commands
-            .Select(command => ToCommandLine(command, hasWorkspace))
+        CommandListItem[] commands = state.Commands
+            .Select(command => new CommandListItem(
+                command.Id,
+                command.Group,
+                command.EnabledByDefault && (!command.RequiresOpenCharacter || hasWorkspace)))
             .ToArray();
+
+        _suppressCommandSelectionEvent = true;
+        _commandsList.ItemsSource = commands;
+        _commandsList.SelectedItem = commands.FirstOrDefault(item => string.Equals(item.Id, state.LastCommandId, StringComparison.Ordinal));
+        _suppressCommandSelectionEvent = false;
         TabListItem[] tabs = state.NavigationTabs
             .Select(tab => new TabListItem(
                 tab.Id,
@@ -116,10 +125,15 @@ public partial class MainWindow : Window
         _sectionPreviewBox.Text = state.ActiveSectionJson ?? string.Empty;
     }
 
-    private static string ToCommandLine(AppCommandDefinition command, bool hasWorkspace)
+    private async void CommandsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        bool enabled = command.EnabledByDefault && (!command.RequiresOpenCharacter || hasWorkspace);
-        return $"{command.Id} [{command.Group}] {(enabled ? "enabled" : "disabled")}";
+        if (_suppressCommandSelectionEvent)
+            return;
+
+        if (_commandsList.SelectedItem is not CommandListItem command || !command.Enabled)
+            return;
+
+        await _adapter.ExecuteCommandAsync(command.Id, CancellationToken.None);
     }
 
     private async void NavigationTabsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -159,6 +173,17 @@ public partial class MainWindow : Window
         public override string ToString()
         {
             return $"{Id} -> {SectionId} [{Group}] {(Enabled ? "enabled" : "disabled")}";
+        }
+    }
+
+    private sealed record CommandListItem(
+        string Id,
+        string Group,
+        bool Enabled)
+    {
+        public override string ToString()
+        {
+            return $"{Id} [{Group}] {(Enabled ? "enabled" : "disabled")}";
         }
     }
 }

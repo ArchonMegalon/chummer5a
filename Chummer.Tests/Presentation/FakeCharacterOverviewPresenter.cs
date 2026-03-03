@@ -18,6 +18,8 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
 
     public UpdateWorkspaceMetadata? UpdatedMetadata { get; private set; }
 
+    public string? ExecutedCommandId { get; private set; }
+
     public string? SelectedTabId { get; private set; }
 
     public int SaveCalls { get; private set; }
@@ -39,6 +41,12 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
     public Task LoadAsync(CharacterWorkspaceId id, CancellationToken ct)
     {
         LoadedWorkspaceId = id;
+        return Task.CompletedTask;
+    }
+
+    public Task ExecuteCommandAsync(string commandId, CancellationToken ct)
+    {
+        ExecutedCommandId = commandId;
         return Task.CompletedTask;
     }
 

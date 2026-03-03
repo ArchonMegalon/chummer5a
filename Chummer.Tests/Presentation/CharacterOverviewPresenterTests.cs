@@ -121,6 +121,31 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_save_character_marks_workspace_as_saved()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.ExecuteCommandAsync("save_character", CancellationToken.None);
+
+        Assert.AreEqual("save_character", presenter.State.LastCommandId);
+        Assert.IsTrue(presenter.State.HasSavedWorkspace);
+        Assert.IsNull(presenter.State.Error);
+    }
+
+    [TestMethod]
+    public async Task ExecuteCommandAsync_unknown_command_sets_error()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+
+        await presenter.ExecuteCommandAsync("nope", CancellationToken.None);
+
+        Assert.AreEqual("nope", presenter.State.LastCommandId);
+        StringAssert.Contains(presenter.State.Error ?? string.Empty, "not implemented");
+    }
+
+    [TestMethod]
     public async Task SelectTabAsync_requires_loaded_workspace()
     {
         var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
