@@ -26,6 +26,7 @@ public class MigrationComplianceTests
         .ToHashSet(StringComparer.Ordinal);
 
     [TestMethod]
+    [TestCategory("LegacyShellRegression")]
     public void Section_parsers_are_exposed_as_api_endpoints_and_ui_actions()
     {
         string interfacePath = FindPath("Chummer.Infrastructure", "Xml", "ICharacterSectionService.cs");
@@ -62,6 +63,7 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    [TestCategory("LegacyShellRegression")]
     public void Desktop_shell_commands_exist_and_have_handlers()
     {
         string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
@@ -129,6 +131,7 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    [TestCategory("LegacyShellRegression")]
     public void Ui_exposes_summary_validate_and_metadata_actions()
     {
         string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
@@ -144,6 +147,7 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    [TestCategory("LegacyShellRegression")]
     public void Critical_commands_are_not_placeholder_stubs()
     {
         string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
@@ -165,6 +169,7 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    [TestCategory("LegacyShellRegression")]
     public void Desktop_shell_layout_contains_core_winforms_like_regions()
     {
         string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
@@ -194,6 +199,7 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    [TestCategory("LegacyShellRegression")]
     public void Workspace_uses_live_document_state_and_recent_file_hooks()
     {
         string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
@@ -212,6 +218,7 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    [TestCategory("LegacyShellRegression")]
     public void Ui_click_paths_are_wired_for_commands_controls_and_dialogs()
     {
         string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
@@ -278,6 +285,16 @@ public class MigrationComplianceTests
         Assert.AreEqual(0, missingHandlers.Count, "Missing ui control handler mappings: " + string.Join(", ", missingHandlers));
         Assert.IsFalse(indexText.Contains("showNote(`Desktop control '${controlId}' invoked on", StringComparison.Ordinal),
             "Generic ui control placeholder behavior is still present.");
+    }
+
+    [TestMethod]
+    public void Dual_head_acceptance_suite_is_present_for_primary_migration_gate()
+    {
+        string testPath = FindPath("Chummer.Tests", "Presentation", "DualHeadAcceptanceTests.cs");
+        string testText = File.ReadAllText(testPath);
+
+        StringAssert.Contains(testText, "Avalonia_and_Blazor_overview_flows_show_equivalent_state_after_import");
+        StringAssert.Contains(testText, "Avalonia_and_Blazor_metadata_save_roundtrip_match");
     }
 
     private static string ToSectionName(string pascalName)
