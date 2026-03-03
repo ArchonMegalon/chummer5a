@@ -1,4 +1,4 @@
-namespace Chummer.Core.Characters;
+namespace Chummer.Contracts.Characters;
 
 public sealed record CharacterFileSummary(
     string Name,
