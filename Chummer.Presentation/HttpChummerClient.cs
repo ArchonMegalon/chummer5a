@@ -45,6 +45,15 @@ public sealed class HttpChummerClient : IChummerClient
         return response.Commands;
     }
 
+    public async Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct)
+    {
+        NavigationTabCatalogResponse? response = await _httpClient.GetFromJsonAsync<NavigationTabCatalogResponse>("/api/navigation-tabs", ct);
+        if (response is null)
+            throw new InvalidOperationException("Navigation tab catalog response was empty.");
+
+        return response.Tabs;
+    }
+
     public async Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)
     {
         return await GetRequiredAsync<CharacterProfileSection>($"/api/workspaces/{id.Value}/profile", ct);

@@ -62,7 +62,9 @@
       <Border Grid.Column="1" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
         <StackPanel>
           <TextBlock Text="Commands" FontWeight="Bold" Margin="0,0,0,6" />
-          <ListBox Name="CommandsList" MinHeight="200" />
+          <ListBox Name="CommandsList" MinHeight="140" />
+          <TextBlock Text="Navigation Tabs" FontWeight="Bold" Margin="0,10,0,6" />
+          <ListBox Name="NavigationTabsList" MinHeight="140" />
         </StackPanel>
       </Border>
     </Grid>

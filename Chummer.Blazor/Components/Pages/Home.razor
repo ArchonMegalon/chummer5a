@@ -65,6 +65,20 @@
     </ul>
 </section>
 
+<section class="panel">
+    <h2>Navigation Tabs (@State.NavigationTabs.Count)</h2>
+    <ul class="command-list">
+        @foreach (var tab in State.NavigationTabs)
+        {
+            bool enabled = tab.EnabledByDefault && (!tab.RequiresOpenCharacter || State.WorkspaceId is not null);
+            <li class="@(enabled ? string.Empty : "disabled")">
+                <code>@tab.Id</code>
+                <span>@tab.Group</span>
+            </li>
+        }
+    </ul>
+</section>
+
 @code {
     private CharacterOverviewStateBridge? _bridge;
 

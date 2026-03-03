@@ -379,6 +379,18 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Navigation_tabs_endpoint_returns_catalog()
+    {
+        using var client = CreateClient();
+
+        JsonObject response = await GetRequiredJsonObject(client, "/api/navigation-tabs");
+
+        Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) >= 16);
+        Assert.IsTrue(response["tabs"] is JsonArray);
+        Assert.IsTrue((response["tabs"] as JsonArray)?.Any(node => string.Equals(node?["id"]?.GetValue<string>(), "tab-info", StringComparison.Ordinal)) ?? false);
+    }
+
+    [TestMethod]
     public async Task Workspace_endpoints_import_read_update_and_save_character()
     {
         using var client = CreateClient();

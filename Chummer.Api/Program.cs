@@ -14,6 +14,7 @@ app.MapToolsEndpoints();
 app.MapSettingsEndpoints();
 app.MapRosterEndpoints();
 app.MapCommandEndpoints();
+app.MapNavigationEndpoints();
 app.MapWorkspaceEndpoints();
 
 app.Run();

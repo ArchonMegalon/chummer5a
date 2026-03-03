@@ -16,6 +16,7 @@ public sealed record CharacterOverviewState(
     CharacterMovementSection? Movement,
     CharacterAwakeningSection? Awakening,
     IReadOnlyList<AppCommandDefinition> Commands,
+    IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     bool HasSavedWorkspace)
 {
     public static CharacterOverviewState Empty { get; } = new(
@@ -30,5 +31,6 @@ public sealed record CharacterOverviewState(
         Movement: null,
         Awakening: null,
         Commands: [],
+        NavigationTabs: [],
         HasSavedWorkspace: false);
 }

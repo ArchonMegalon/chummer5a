@@ -10,6 +10,8 @@ public interface IChummerClient
 
     Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct);
 
+    Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct);
+
     Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct);
 
     Task<CharacterProgressSection> GetProgressAsync(CharacterWorkspaceId id, CancellationToken ct);

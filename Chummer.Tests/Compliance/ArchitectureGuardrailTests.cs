@@ -40,6 +40,7 @@ public class ArchitectureGuardrailTests
         StringAssert.Contains(text, "app.MapSettingsEndpoints();");
         StringAssert.Contains(text, "app.MapRosterEndpoints();");
         StringAssert.Contains(text, "app.MapCommandEndpoints();");
+        StringAssert.Contains(text, "app.MapNavigationEndpoints();");
         StringAssert.Contains(text, "app.MapWorkspaceEndpoints();");
         StringAssert.Contains(text, "builder.Services.AddChummerHeadlessCore(");
 

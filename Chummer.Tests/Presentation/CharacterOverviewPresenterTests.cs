@@ -25,6 +25,8 @@ public class CharacterOverviewPresenterTests
         Assert.IsNull(presenter.State.Error);
         Assert.IsTrue(presenter.State.Commands.Count > 0);
         Assert.AreEqual("new_character", presenter.State.Commands[0].Id);
+        Assert.IsTrue(presenter.State.NavigationTabs.Count > 0);
+        Assert.AreEqual("tab-info", presenter.State.NavigationTabs[0].Id);
     }
 
     [TestMethod]
@@ -126,6 +128,11 @@ public class CharacterOverviewPresenterTests
             new("new_character", "command.new_character", "file", false, true),
             new("save_character", "command.save_character", "file", true, true)
         ];
+        private static readonly IReadOnlyList<NavigationTabDefinition> Tabs =
+        [
+            new("tab-info", "Info", "character", true, true),
+            new("tab-gear", "Gear", "character", true, true)
+        ];
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
         {
@@ -148,6 +155,11 @@ public class CharacterOverviewPresenterTests
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct)
         {
             return Task.FromResult(Commands);
+        }
+
+        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct)
+        {
+            return Task.FromResult(Tabs);
         }
 
         public Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)

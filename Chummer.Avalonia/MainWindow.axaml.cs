@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private readonly TextBlock _karmaValue;
     private readonly TextBlock _skillsValue;
     private readonly ListBox _commandsList;
+    private readonly ListBox _navigationTabsList;
 
     public MainWindow()
     {
@@ -43,6 +44,7 @@ public partial class MainWindow : Window
         _karmaValue = this.FindControl<TextBlock>("KarmaValue")!;
         _skillsValue = this.FindControl<TextBlock>("SkillsValue")!;
         _commandsList = this.FindControl<ListBox>("CommandsList")!;
+        _navigationTabsList = this.FindControl<ListBox>("NavigationTabsList")!;
 
         RefreshState();
         Opened += OnOpened;
@@ -93,12 +95,21 @@ public partial class MainWindow : Window
         _commandsList.ItemsSource = state.Commands
             .Select(command => ToCommandLine(command, hasWorkspace))
             .ToArray();
+        _navigationTabsList.ItemsSource = state.NavigationTabs
+            .Select(tab => ToTabLine(tab, hasWorkspace))
+            .ToArray();
     }
 
     private static string ToCommandLine(AppCommandDefinition command, bool hasWorkspace)
     {
         bool enabled = command.EnabledByDefault && (!command.RequiresOpenCharacter || hasWorkspace);
         return $"{command.Id} [{command.Group}] {(enabled ? "enabled" : "disabled")}";
+    }
+
+    private static string ToTabLine(NavigationTabDefinition tab, bool hasWorkspace)
+    {
+        bool enabled = tab.EnabledByDefault && (!tab.RequiresOpenCharacter || hasWorkspace);
+        return $"{tab.Id} [{tab.Group}] {(enabled ? "enabled" : "disabled")}";
     }
 
     private static Uri ResolveApiBaseAddress()

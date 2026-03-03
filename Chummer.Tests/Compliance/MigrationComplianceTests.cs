@@ -206,6 +206,37 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Navigation_tab_catalog_ids_are_unique_and_cover_legacy_shell_tabs()
+    {
+        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
+        string indexText = File.ReadAllText(indexPath);
+
+        HashSet<string> legacyTabIds = TabButtonRegex.Matches(indexText)
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+
+        List<string> duplicateIds = NavigationTabCatalog.All
+            .GroupBy(tab => tab.Id, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .OrderBy(id => id)
+            .ToList();
+
+        Assert.AreEqual(0, duplicateIds.Count, "Duplicate tab ids in NavigationTabCatalog: " + string.Join(", ", duplicateIds));
+
+        HashSet<string> catalogTabIds = NavigationTabCatalog.All
+            .Select(tab => tab.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        List<string> missingInCatalog = legacyTabIds
+            .Where(tabId => !catalogTabIds.Contains(tabId))
+            .OrderBy(x => x)
+            .ToList();
+
+        Assert.AreEqual(0, missingInCatalog.Count, "Legacy shell tabs missing from NavigationTabCatalog: " + string.Join(", ", missingInCatalog));
+    }
+
+    [TestMethod]
     [TestCategory("LegacyShellRegression")]
     public void Ui_exposes_summary_validate_and_metadata_actions()
     {

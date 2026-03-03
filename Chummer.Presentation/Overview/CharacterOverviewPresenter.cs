@@ -28,12 +28,16 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         try
         {
-            IReadOnlyList<AppCommandDefinition> commands = await _client.GetCommandsAsync(ct);
+            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _client.GetCommandsAsync(ct);
+            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _client.GetNavigationTabsAsync(ct);
+            await Task.WhenAll(commandsTask, tabsTask);
+
             Publish(State with
             {
                 IsBusy = false,
                 Error = null,
-                Commands = commands
+                Commands = commandsTask.Result,
+                NavigationTabs = tabsTask.Result
             });
         }
         catch (Exception ex)
@@ -212,6 +216,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Movement: movementTask.Result,
             Awakening: awakeningTask.Result,
             Commands: State.Commands,
+            NavigationTabs: State.NavigationTabs,
             HasSavedWorkspace: State.HasSavedWorkspace));
     }
 
