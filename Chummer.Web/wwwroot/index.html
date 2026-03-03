@@ -329,6 +329,76 @@
       color: var(--muted);
     }
 
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 30, 42, 0.35);
+      display: grid;
+      place-items: center;
+      z-index: 2500;
+      padding: 18px;
+    }
+
+    .dialog-backdrop.hidden {
+      display: none;
+    }
+
+    .desktop-dialog {
+      width: min(920px, 96vw);
+      max-height: 90vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      border: 1px solid #6e7d8f;
+      border-radius: 6px;
+      background: #f3f6fa;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    .dialog-titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 10px;
+      border-bottom: 1px solid #8797aa;
+      background: linear-gradient(#edf3fb, #d3deec);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .dialog-body {
+      padding: 10px;
+      overflow: auto;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      background: #f8fbff;
+    }
+
+    .dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 8px 10px;
+      border-top: 1px solid #b4c0cd;
+      background: linear-gradient(#e9edf2, #d9e0e8);
+    }
+
+    .dialog-close {
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      background: linear-gradient(#ffffff, #dce2ea);
+      color: var(--ink);
+      padding: 2px 9px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .dialog-close:hover {
+      background: linear-gradient(#ffffff, #cfd9e5);
+    }
+
     @media (max-width: 980px) {
       .surface {
         grid-template-columns: 1fr;
@@ -676,6 +746,17 @@
       </section>
     </main>
 
+    <div id="dialogBackdrop" class="dialog-backdrop hidden" aria-hidden="true">
+      <div class="desktop-dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+        <div class="dialog-titlebar">
+          <span id="dialogTitle">Dialog</span>
+          <button id="dialogClose" class="dialog-close" type="button" aria-label="Close">X</button>
+        </div>
+        <div id="dialogBody" class="dialog-body"></div>
+        <div id="dialogFooter" class="dialog-footer"></div>
+      </div>
+    </div>
+
     <div class="status-bar">
       <span id="charState">Karma: - | Nuyen: - | Essence: - | Build: -</span>
       <span id="serviceState">checking service...</span>
@@ -690,6 +771,11 @@
     const menuDropdownEl = byId("menuDropdown");
     const mdiStripEl = byId("mdiStrip");
     const openCharactersTreeEl = byId("openCharactersTree");
+    const dialogBackdropEl = byId("dialogBackdrop");
+    const dialogTitleEl = byId("dialogTitle");
+    const dialogBodyEl = byId("dialogBody");
+    const dialogFooterEl = byId("dialogFooter");
+    const dialogCloseEl = byId("dialogClose");
     let openFileMode = "normal";
     let nextDocId = 1;
     let activeDocId = "";
@@ -701,6 +787,44 @@
       essence: "-",
       buildMethod: "-"
     };
+
+    function closeDesktopDialog() {
+      dialogBackdropEl.classList.add("hidden");
+      dialogBackdropEl.setAttribute("aria-hidden", "true");
+      dialogBodyEl.innerHTML = "";
+      dialogFooterEl.innerHTML = "";
+    }
+
+    function openDesktopDialog(title, bodyHtml, buttons) {
+      dialogTitleEl.textContent = title;
+      dialogBodyEl.innerHTML = bodyHtml;
+      dialogFooterEl.innerHTML = "";
+
+      const normalizedButtons = (buttons && buttons.length > 0)
+        ? buttons
+        : [{ id: "close", label: "Close", primary: true, onClick: closeDesktopDialog }];
+
+      for (const buttonSpec of normalizedButtons) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = buttonSpec.primary ? "action-btn primary" : "action-btn";
+        button.textContent = buttonSpec.label;
+        button.dataset.dialogButton = buttonSpec.id;
+        button.addEventListener("click", async () => {
+          try {
+            if (buttonSpec.onClick) {
+              await buttonSpec.onClick();
+            }
+          } catch (error) {
+            showNote(String(error));
+          }
+        });
+        dialogFooterEl.appendChild(button);
+      }
+
+      dialogBackdropEl.classList.remove("hidden");
+      dialogBackdropEl.setAttribute("aria-hidden", "false");
+    }
 
     function newDocId() {
       const value = `doc-${nextDocId}`;
@@ -926,22 +1050,25 @@
       ]),
       windows: () => {
         const tabs = [...document.querySelectorAll(".tab-btn")].map((b) => [null, b.textContent.trim(), b.dataset.tab]);
-        const tabRows = tabs.map((x) => `<button class="action-btn" data-tabjump="${x[2]}">${escapeHtml(x[1])}</button>`).join("");
+        const tabRows = tabs.map((x) => `<button class="action-btn" data-dialog-tabjump="${x[2]}">${escapeHtml(x[1])}</button>`).join("");
         const windowRows = `
-          <button class="action-btn" data-run-command="new_window">New Window</button>
-          <button class="action-btn" data-run-command="close_window">Close Window</button>
-          <button class="action-btn" data-run-command="close_all">Close All</button>
+          <button class="action-btn" data-dialog-command="new_window">New Window</button>
+          <button class="action-btn" data-dialog-command="close_window">Close Window</button>
+          <button class="action-btn" data-dialog-command="close_all">Close All</button>
         `;
-        resultEl.innerHTML = `<div class="actions">${windowRows}${tabRows}</div>`;
-        for (const btn of resultEl.querySelectorAll("[data-tabjump]")) {
+        openDesktopDialog("Windows", `<div class="actions">${windowRows}${tabRows}</div>`);
+        for (const btn of dialogBodyEl.querySelectorAll("[data-dialog-tabjump]")) {
           btn.addEventListener("click", () => {
-            const target = document.getElementById(btn.dataset.tabjump);
-            if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+            const target = document.getElementById(btn.dataset.dialogTabjump);
+            if (target) {
+              target.scrollIntoView({ behavior: "smooth", block: "start" });
+              closeDesktopDialog();
+            }
           });
         }
-        for (const btn of resultEl.querySelectorAll("[data-run-command]")) {
+        for (const btn of dialogBodyEl.querySelectorAll("[data-dialog-command]")) {
           btn.addEventListener("click", async () => {
-            const id = btn.dataset.runCommand;
+            const id = btn.dataset.dialogCommand;
             const handler = commandHandlers[id];
             if (handler) await handler();
           });
@@ -994,7 +1121,16 @@
         window.print();
       },
       print_setup: () => {
-        resultEl.innerHTML = `<p class="note">Print settings are browser-managed. Use browser print dialog options.</p>`;
+        openDesktopDialog(
+          "Print Setup",
+          `<p class="note">Printer setup is handled by your browser print dialog.</p>
+           <label><input type="checkbox" id="printLandscape" /> Landscape</label>
+           <label><input type="checkbox" id="printBackground" checked /> Print background graphics</label>`,
+          [
+            { id: "ok", label: "OK", primary: true, onClick: () => { closeDesktopDialog(); showNote("Print setup options staged for browser print."); } },
+            { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+          ]
+        );
       },
       export_character: async () => {
         const data = await postJson("/api/characters/summary", { xml: ensureXml() });
@@ -1014,34 +1150,128 @@
         showNote("Clipboard pasted into XML editor.");
       },
       dice_roller: async () => {
-        const expression = prompt("Dice expression (example: 12d6+2)", "12d6");
-        if (!expression) return;
-        const data = await postJson("/api/tools/dice/roll", { expression });
-        resultEl.innerHTML = renderJson(data);
+        openDesktopDialog(
+          "Dice Roller",
+          `<label>Expression <input id="diceExpression" value="12d6" /></label><div id="diceResult" class="note">Enter an expression and click Roll.</div>`,
+          [
+            {
+              id: "roll",
+              label: "Roll",
+              primary: true,
+              onClick: async () => {
+                const expression = byId("diceExpression").value.trim();
+                if (!expression) {
+                  byId("diceResult").textContent = "Expression is required.";
+                  return;
+                }
+                const data = await postJson("/api/tools/dice/roll", { expression });
+                byId("diceResult").innerHTML = renderJson(data);
+              }
+            },
+            { id: "close", label: "Close", onClick: closeDesktopDialog }
+          ]
+        );
       },
       global_settings: () => {
         return (async () => {
           const current = await getJson("/api/tools/settings/global");
-          const currentText = JSON.stringify(current.settings || { uiScale: 100, theme: "classic" }, null, 2);
-          const next = prompt("Global settings JSON", currentText);
-          if (!next) return;
-          await postJson("/api/tools/settings/global", JSON.parse(next));
-          showNote("Global settings saved.");
+          const settings = current.settings || { uiScale: 100, theme: "classic", language: "en-us" };
+          openDesktopDialog(
+            "Global Settings",
+            `<div class="grid">
+               <label>UI Scale (%) <input id="globalUiScale" type="number" min="50" max="250" value="${escapeHtml(String(settings.uiScale ?? 100))}" /></label>
+               <label>Theme
+                 <select id="globalTheme">
+                   <option value="classic"${settings.theme === "classic" ? " selected" : ""}>Classic</option>
+                   <option value="light"${settings.theme === "light" ? " selected" : ""}>Light</option>
+                   <option value="high-contrast"${settings.theme === "high-contrast" ? " selected" : ""}>High Contrast</option>
+                 </select>
+               </label>
+               <label>Language
+                 <select id="globalLanguage">
+                   <option value="en-us"${settings.language === "en-us" ? " selected" : ""}>English</option>
+                   <option value="de-de"${settings.language === "de-de" ? " selected" : ""}>Deutsch</option>
+                   <option value="fr-fr"${settings.language === "fr-fr" ? " selected" : ""}>Francais</option>
+                 </select>
+               </label>
+             </div>
+             <label><input id="globalCompactMode" type="checkbox"${settings.compactMode ? " checked" : ""} /> Compact mode</label>`,
+            [
+              {
+                id: "save",
+                label: "Save",
+                primary: true,
+                onClick: async () => {
+                  const payload = {
+                    uiScale: Number.parseInt(byId("globalUiScale").value, 10) || 100,
+                    theme: byId("globalTheme").value,
+                    language: byId("globalLanguage").value,
+                    compactMode: byId("globalCompactMode").checked
+                  };
+                  await postJson("/api/tools/settings/global", payload);
+                  closeDesktopDialog();
+                  showNote("Global settings saved.");
+                }
+              },
+              { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+            ]
+          );
         })();
       },
       character_settings: () => {
         return (async () => {
           const current = await getJson("/api/tools/settings/character");
-          const currentText = JSON.stringify(current.settings || { priority: "SumToTen", houseRules: [] }, null, 2);
-          const next = prompt("Character settings JSON", currentText);
-          if (!next) return;
-          await postJson("/api/tools/settings/character", JSON.parse(next));
-          showNote("Character settings saved.");
+          const settings = current.settings || { priority: "SumToTen", houseRulesEnabled: false, chargenNotes: "" };
+          openDesktopDialog(
+            "Character Settings",
+            `<div class="grid">
+               <label>Priority System
+                 <select id="characterPriority">
+                   <option value="Priority"${settings.priority === "Priority" ? " selected" : ""}>Priority</option>
+                   <option value="SumToTen"${settings.priority === "SumToTen" ? " selected" : ""}>Sum to Ten</option>
+                   <option value="Karma"${settings.priority === "Karma" ? " selected" : ""}>Karma Build</option>
+                 </select>
+               </label>
+               <label>Karma/Nuyen Ratio <input id="characterKarmaNuyen" type="number" min="1" max="10" value="${escapeHtml(String(settings.karmaNuyenRatio ?? 2))}" /></label>
+             </div>
+             <label><input id="characterHouseRulesEnabled" type="checkbox"${settings.houseRulesEnabled ? " checked" : ""} /> Enable house rules</label>
+             <label>Character Notes <textarea id="characterNotes">${escapeHtml(String(settings.chargenNotes ?? ""))}</textarea></label>`,
+            [
+              {
+                id: "save",
+                label: "Save",
+                primary: true,
+                onClick: async () => {
+                  const payload = {
+                    priority: byId("characterPriority").value,
+                    karmaNuyenRatio: Number.parseInt(byId("characterKarmaNuyen").value, 10) || 2,
+                    houseRulesEnabled: byId("characterHouseRulesEnabled").checked,
+                    chargenNotes: byId("characterNotes").value
+                  };
+                  await postJson("/api/tools/settings/character", payload);
+                  closeDesktopDialog();
+                  showNote("Character settings saved.");
+                }
+              },
+              { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+            ]
+          );
         })();
       },
       translator: async () => {
         const data = await getJson("/api/tools/translator/languages");
-        resultEl.innerHTML = table(["Code", "Name"], data.languages.map((x) => [x.code, x.name]));
+        const languageRows = (data.languages || []).map((x) => [x.code, x.name]);
+        openDesktopDialog(
+          "Translator",
+          `<label>Language Search <input id="translatorSearch" placeholder="filter languages" /></label>
+           <div id="translatorTable">${table(["Code", "Name"], languageRows)}</div>`,
+          [{ id: "close", label: "Close", primary: true, onClick: closeDesktopDialog }]
+        );
+        byId("translatorSearch").addEventListener("input", () => {
+          const term = byId("translatorSearch").value.trim().toLowerCase();
+          const filtered = languageRows.filter((row) => row.some((value) => String(value).toLowerCase().includes(term)));
+          byId("translatorTable").innerHTML = table(["Code", "Name"], filtered);
+        });
       },
       hero_lab_importer: async () => {
         const fileInput = byId("openFileInput");
@@ -1050,12 +1280,28 @@
         fileInput.click();
       },
       xml_editor: () => {
-        const target = document.getElementById("tab-info");
-        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        openDesktopDialog(
+          "XML Editor",
+          `<textarea id="xmlEditorDialog">${escapeHtml(byId("xmlInput").value)}</textarea>`,
+          [
+            {
+              id: "apply",
+              label: "Apply",
+              primary: true,
+              onClick: () => {
+                byId("xmlInput").value = byId("xmlEditorDialog").value;
+                syncCurrentDocumentFromForm();
+                closeDesktopDialog();
+                showNote("XML editor changes applied.");
+              }
+            },
+            { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+          ]
+        );
       },
       master_index: async () => {
         const data = await getJson("/api/tools/master-index");
-        resultEl.innerHTML = table(["File", "Root", "Elements"], data.files.map((x) => [x.file, x.root, x.elementCount]));
+        openDesktopDialog("Master Index", table(["File", "Root", "Elements"], data.files.map((x) => [x.file, x.root, x.elementCount])));
       },
       character_roster: async () => {
         const summary = await postJson("/api/characters/summary", { xml: ensureXml() });
@@ -1066,12 +1312,24 @@
           lastOpenedUtc: new Date().toISOString()
         };
         const result = await postJson("/api/tools/roster", entry);
-        resultEl.innerHTML = table(["Name", "Alias", "Metatype", "Last Opened"], result.entries.map((x) => [x.name, x.alias, x.metatype, x.lastOpenedUtc]));
+        openDesktopDialog("Character Roster", table(["Name", "Alias", "Metatype", "Last Opened"], result.entries.map((x) => [x.name, x.alias, x.metatype, x.lastOpenedUtc])));
       },
       data_exporter: async () => {
         const data = await postJson("/api/tools/data-export", { xml: ensureXml() });
-        downloadText(JSON.stringify(data, null, 2), "character-export.json", "application/json");
-        showNote("Character export bundle downloaded.");
+        const exportJson = JSON.stringify(data, null, 2);
+        openDesktopDialog(
+          "Data Exporter",
+          `<p class="note">Preview exported data bundle.</p><textarea id="dataExportPreview" readonly>${escapeHtml(exportJson)}</textarea>`,
+          [
+            {
+              id: "download",
+              label: "Download",
+              primary: true,
+              onClick: () => downloadText(exportJson, "character-export.json", "application/json")
+            },
+            { id: "close", label: "Close", onClick: closeDesktopDialog }
+          ]
+        );
       },
       update: async () => {
         const info = await getJson("/api/info");
@@ -1082,7 +1340,12 @@
         closeAllDocuments();
         resultEl.innerHTML = `<p class="note">Workspace reset complete.</p>`;
       },
-      report_bug: () => window.open("https://github.com/chummer5a/chummer5a/issues/new/choose", "_blank", "noopener"),
+      report_bug: () => {
+        openDesktopDialog(
+          "Report Bug",
+          `<p class="note">Open the GitHub issue form for Chummer bug reports.</p><p><a href="https://github.com/chummer5a/chummer5a/issues/new/choose" target="_blank" rel="noopener">Open Issue Form</a></p>`
+        );
+      },
       new_window: () => window.open(location.href, "_blank", "noopener"),
       close_window: () => window.close(),
       close_all: () => {
@@ -1095,12 +1358,15 @@
       dumpshock: () => window.open("https://forums.dumpshock.com/index.php?showtopic=37464", "_blank", "noopener"),
       about: async () => {
         const info = await getJson("/api/info");
-        resultEl.innerHTML = renderJson({
-          product: "Chummer",
-          mode: "Linux-native web",
-          runtime: info.runtime,
-          platform: info.platform
-        });
+        openDesktopDialog(
+          "About Chummer",
+          renderJson({
+            product: "Chummer",
+            mode: "Linux-native web",
+            runtime: info.runtime,
+            platform: info.platform
+          })
+        );
       }
     };
 
@@ -1214,9 +1480,131 @@
       }
     }
 
+    function updateNotesFromDialog(inputId, label) {
+      const value = byId(inputId)?.value?.trim();
+      if (!value) {
+        return;
+      }
+      const current = byId("metaNotes").value || "";
+      byId("metaNotes").value = current ? `${current}\n${label}: ${value}` : `${label}: ${value}`;
+      syncCurrentDocumentFromForm();
+    }
+
+    function updateSummaryField(fieldId, value) {
+      if (!byId(fieldId)) {
+        return;
+      }
+      byId(fieldId).value = String(value);
+    }
+
+    const uiControlHandlers = {
+      create_entry: () => {
+        openDesktopDialog(
+          "Add Entry",
+          `<label>Entry Name <input id="uiCreateEntryName" placeholder="New entry" /></label>`,
+          [
+            {
+              id: "add",
+              label: "Add",
+              primary: true,
+              onClick: () => {
+                const name = byId("uiCreateEntryName").value.trim() || "Untitled Entry";
+                updateNotesFromDialog("uiCreateEntryName", "Added");
+                closeDesktopDialog();
+                showNote(`Added entry '${name}'.`);
+              }
+            },
+            { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+          ]
+        );
+      },
+      edit_entry: () => openDesktopDialog("Edit Entry", `<label>Entry Name <input id="uiEditEntryName" value="Current Entry" /></label>`),
+      delete_entry: () => openDesktopDialog("Delete Entry", `<p class="note">Delete selected entry?</p>`, [
+        { id: "delete", label: "Delete", primary: true, onClick: () => { closeDesktopDialog(); showNote("Selected entry deleted."); } },
+        { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+      ]),
+      move_up: () => showNote("Moved selection up."),
+      move_down: () => showNote("Moved selection down."),
+      toggle_free_paid: () => showNote("Toggled free/paid state for selected item."),
+      show_source: () => openDesktopDialog("Source", `<p class="note">Source book and page metadata is shown here.</p>`),
+      open_notes: () => {
+        openDesktopDialog(
+          "Notes",
+          `<label>Notes <textarea id="uiNotesEditor">${escapeHtml(byId("metaNotes").value || "")}</textarea></label>`,
+          [
+            {
+              id: "save",
+              label: "Save",
+              primary: true,
+              onClick: () => {
+                byId("metaNotes").value = byId("uiNotesEditor").value;
+                syncCurrentDocumentFromForm();
+                closeDesktopDialog();
+                showNote("Notes updated.");
+              }
+            },
+            { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+          ]
+        );
+      },
+      gear_add: () => openDesktopDialog("Add Gear", `<label>Gear Name <input id="uiGearName" placeholder="Ares Predator" /></label>`),
+      gear_edit: () => openDesktopDialog("Edit Gear", `<label>Gear Name <input id="uiGearEditName" value="Selected Gear" /></label>`),
+      gear_delete: () => showNote("Deleted selected gear item."),
+      gear_mount: () => showNote("Mounted selected gear on compatible host."),
+      gear_source: () => openDesktopDialog("Gear Source", `<p class="note">Gear source references are displayed here.</p>`),
+      magic_add: () => openDesktopDialog("Add Spell/Power", `<label>Name <input id="uiMagicName" placeholder="Spell or Power" /></label>`),
+      magic_delete: () => showNote("Removed selected spell/power."),
+      magic_bind: () => showNote("Bind/link workflow started for selected magical item."),
+      magic_source: () => openDesktopDialog("Magic Source", `<p class="note">Magical source references are displayed here.</p>`),
+      skill_add: () => openDesktopDialog("Add Skill", `<label>Skill <input id="uiSkillName" placeholder="Perception" /></label>`),
+      skill_specialize: () => openDesktopDialog("Specialize Skill", `<label>Specialization <input id="uiSkillSpec" placeholder="Visual" /></label>`),
+      skill_remove: () => showNote("Removed selected skill."),
+      skill_group: () => showNote("Opened skill group assignment."),
+      combat_add_weapon: () => openDesktopDialog("Add Weapon", `<label>Weapon <input id="uiWeaponName" placeholder="Colt M23" /></label>`),
+      combat_add_armor: () => openDesktopDialog("Add Armor", `<label>Armor <input id="uiArmorName" placeholder="Armor Jacket" /></label>`),
+      combat_reload: () => showNote("Reloaded selected weapon."),
+      combat_damage_track: () => {
+        const current = Number.parseInt(String(byId("summaryStreetCred").value || "0"), 10) || 0;
+        updateSummaryField("summaryStreetCred", Math.max(0, current - 1));
+        showNote("Applied one damage track step.");
+      },
+      contact_add: () => openDesktopDialog("Add Contact", `<label>Name <input id="uiContactName" placeholder="Contact Name" /></label>`),
+      contact_edit: () => openDesktopDialog("Edit Contact", `<label>Name <input id="uiContactEditName" value="Selected Contact" /></label>`),
+      contact_remove: () => showNote("Removed selected contact."),
+      contact_connection: () => {
+        openDesktopDialog(
+          "Connection / Loyalty",
+          `<div class="grid">
+             <label>Connection <input id="uiContactConnection" type="number" min="1" max="12" value="3" /></label>
+             <label>Loyalty <input id="uiContactLoyalty" type="number" min="1" max="12" value="3" /></label>
+           </div>`,
+          [
+            {
+              id: "apply",
+              label: "Apply",
+              primary: true,
+              onClick: () => {
+                const connection = byId("uiContactConnection").value;
+                const loyalty = byId("uiContactLoyalty").value;
+                updateNotesFromDialog("uiContactConnection", "Contact Connection");
+                updateNotesFromDialog("uiContactLoyalty", "Contact Loyalty");
+                closeDesktopDialog();
+                showNote(`Contact updated (Connection ${connection}, Loyalty ${loyalty}).`);
+              }
+            },
+            { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+          ]
+        );
+      }
+    };
+
     function handleUiControl(controlId) {
-      const activeTab = document.querySelector(".tab-btn.active")?.textContent?.trim() || "current tab";
-      showNote(`Desktop control '${controlId}' invoked on ${activeTab}.`);
+      const handler = uiControlHandlers[controlId];
+      if (handler) {
+        handler();
+        return;
+      }
+      showNote(`Desktop control '${controlId}' is not wired yet.`);
     }
 
     function table(headers, rows) {
@@ -1508,6 +1896,18 @@
     for (const button of document.querySelectorAll("[data-ui-control]")) {
       button.addEventListener("click", () => handleUiControl(button.dataset.uiControl));
     }
+
+    dialogCloseEl.addEventListener("click", closeDesktopDialog);
+    dialogBackdropEl.addEventListener("click", (event) => {
+      if (event.target === dialogBackdropEl) {
+        closeDesktopDialog();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !dialogBackdropEl.classList.contains("hidden")) {
+        closeDesktopDialog();
+      }
+    });
 
     byId("xmlInput").addEventListener("input", syncCurrentDocumentFromForm);
     byId("metaName").addEventListener("input", syncCurrentDocumentFromForm);

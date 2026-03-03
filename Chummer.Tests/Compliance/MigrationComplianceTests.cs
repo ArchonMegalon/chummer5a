@@ -17,6 +17,7 @@ public class MigrationComplianceTests
     private static readonly Regex RunCommandRegex = new(@"data-run-command=""([a-z_]+)""", RegexOptions.Compiled);
     private static readonly Regex MenuCommandRegex = new(@"\[\s*""([a-z_]+)""\s*,", RegexOptions.Compiled);
     private static readonly Regex TabButtonRegex = new(@"<button class=""tab-btn""\s+data-tab=""([a-z0-9-]+)""", RegexOptions.Compiled);
+    private static readonly Regex UiControlRegex = new(@"data-ui-control=""([a-z_]+)""", RegexOptions.Compiled);
 
     private static readonly HashSet<string> RequiredDesktopCommands = new(StringComparer.Ordinal)
     {
@@ -199,6 +200,75 @@ public class MigrationComplianceTests
         StringAssert.Contains(indexText, "clear_unpinned_items");
         StringAssert.Contains(indexText, "openCharactersTreeEl.addEventListener(\"click\"");
         StringAssert.Contains(indexText, "mdiStripEl.addEventListener(\"click\"");
+    }
+
+    [TestMethod]
+    public void Ui_click_paths_are_wired_for_commands_controls_and_dialogs()
+    {
+        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
+        string indexText = File.ReadAllText(indexPath);
+
+        StringAssert.Contains(indexText, "for (const button of document.querySelectorAll(\"[data-command]\"))");
+        StringAssert.Contains(indexText, "await executeCommand(command)");
+        StringAssert.Contains(indexText, "for (const button of document.querySelectorAll(\"[data-ui-control]\"))");
+        StringAssert.Contains(indexText, "handleUiControl(button.dataset.uiControl)");
+        StringAssert.Contains(indexText, "openDesktopDialog(");
+        StringAssert.Contains(indexText, "dialogCloseEl.addEventListener(\"click\", closeDesktopDialog)");
+        StringAssert.Contains(indexText, "dialogBackdropEl.addEventListener(\"click\"");
+        StringAssert.Contains(indexText, "event.key === \"Escape\"");
+
+        string[] dialogBackedCommands =
+        {
+            "print_setup: () => {",
+            "dice_roller: async () => {",
+            "global_settings: () => {",
+            "character_settings: () => {",
+            "translator: async () => {",
+            "xml_editor: () => {",
+            "master_index: async () => {",
+            "character_roster: async () => {",
+            "data_exporter: async () => {",
+            "report_bug: () => {",
+            "about: async () => {"
+        };
+
+        foreach (string command in dialogBackedCommands)
+        {
+            StringAssert.Contains(indexText, command, $"Expected dialog-backed command definition missing: {command}");
+        }
+
+        string[] dialogControlIds =
+        {
+            "globalUiScale",
+            "globalTheme",
+            "globalLanguage",
+            "globalCompactMode",
+            "characterPriority",
+            "characterKarmaNuyen",
+            "characterHouseRulesEnabled",
+            "characterNotes",
+            "diceExpression",
+            "translatorSearch",
+            "xmlEditorDialog",
+            "dataExportPreview"
+        };
+
+        foreach (string controlId in dialogControlIds)
+        {
+            StringAssert.Contains(indexText, controlId, $"Expected dialog control id missing: {controlId}");
+        }
+
+        StringAssert.Contains(indexText, "const uiControlHandlers = {");
+        HashSet<string> declaredControls = UiControlRegex.Matches(indexText)
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+        List<string> missingHandlers = declaredControls
+            .Where(controlId => !indexText.Contains($"{controlId}:", StringComparison.Ordinal))
+            .OrderBy(x => x)
+            .ToList();
+        Assert.AreEqual(0, missingHandlers.Count, "Missing ui control handler mappings: " + string.Join(", ", missingHandlers));
+        Assert.IsFalse(indexText.Contains("showNote(`Desktop control '${controlId}' invoked on", StringComparison.Ordinal),
+            "Generic ui control placeholder behavior is still present.");
     }
 
     private static string ToSectionName(string pascalName)
