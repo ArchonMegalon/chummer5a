@@ -4,19 +4,19 @@ namespace Chummer.Application.Characters;
 
 public interface ICharacterSocialNarrativeQueries
 {
-    CharacterQualitiesSection ParseQualities(string xml);
+    CharacterQualitiesSection ParseQualities(CharacterXmlDocument document);
 
-    CharacterContactsSection ParseContacts(string xml);
+    CharacterContactsSection ParseContacts(CharacterXmlDocument document);
 
-    CharacterLifestylesSection ParseLifestyles(string xml);
+    CharacterLifestylesSection ParseLifestyles(CharacterXmlDocument document);
 
-    CharacterSourcesSection ParseSources(string xml);
+    CharacterSourcesSection ParseSources(CharacterXmlDocument document);
 
-    CharacterExpensesSection ParseExpenses(string xml);
+    CharacterExpensesSection ParseExpenses(CharacterXmlDocument document);
 
-    CharacterCalendarSection ParseCalendar(string xml);
+    CharacterCalendarSection ParseCalendar(CharacterXmlDocument document);
 
-    CharacterImprovementsSection ParseImprovements(string xml);
+    CharacterImprovementsSection ParseImprovements(CharacterXmlDocument document);
 
-    CharacterCustomDataDirectoryNamesSection ParseCustomDataDirectoryNames(string xml);
+    CharacterCustomDataDirectoryNamesSection ParseCustomDataDirectoryNames(CharacterXmlDocument document);
 }

@@ -13,12 +13,7 @@ public class XmlBoundaryGuardrailTests
     private static readonly Regex PublicInterfaceRegex = new(@"public\s+interface\s+(?<name>[A-Za-z0-9_]+)", RegexOptions.Compiled);
     private static readonly Regex XmlParameterRegex = new(@"\bstring\s+xml\b", RegexOptions.Compiled);
 
-    private static readonly Dictionary<string, int> AllowedXmlInterfaceParameterCounts = new(StringComparer.Ordinal)
-    {
-        ["ICharacterInventoryQueries"] = 14,
-        ["ICharacterMagicResonanceQueries"] = 12,
-        ["ICharacterSocialNarrativeQueries"] = 8,
-    };
+    private static readonly Dictionary<string, int> AllowedXmlInterfaceParameterCounts = new(StringComparer.Ordinal);
 
     [TestMethod]
     public void Xml_string_parameters_in_public_interfaces_do_not_expand()

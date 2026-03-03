@@ -69,9 +69,9 @@ public class CharacterApplicationPortsTests
 
         Assert.IsNotNull(overview.ParseProfile(document));
         Assert.IsNotNull(stats.ParseAttributes(document));
-        Assert.IsNotNull(inventory.ParseInventory(xml));
-        Assert.IsNotNull(magic.ParseSpells(xml));
-        Assert.IsNotNull(social.ParseQualities(xml));
+        Assert.IsNotNull(inventory.ParseInventory(document));
+        Assert.IsNotNull(magic.ParseSpells(document));
+        Assert.IsNotNull(social.ParseQualities(document));
     }
 
     [TestMethod]

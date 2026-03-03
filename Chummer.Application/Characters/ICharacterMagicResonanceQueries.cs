@@ -4,27 +4,27 @@ namespace Chummer.Application.Characters;
 
 public interface ICharacterMagicResonanceQueries
 {
-    CharacterSpellsSection ParseSpells(string xml);
+    CharacterSpellsSection ParseSpells(CharacterXmlDocument document);
 
-    CharacterPowersSection ParsePowers(string xml);
+    CharacterPowersSection ParsePowers(CharacterXmlDocument document);
 
-    CharacterComplexFormsSection ParseComplexForms(string xml);
+    CharacterComplexFormsSection ParseComplexForms(CharacterXmlDocument document);
 
-    CharacterSpiritsSection ParseSpirits(string xml);
+    CharacterSpiritsSection ParseSpirits(CharacterXmlDocument document);
 
-    CharacterFociSection ParseFoci(string xml);
+    CharacterFociSection ParseFoci(CharacterXmlDocument document);
 
-    CharacterAiProgramsSection ParseAiPrograms(string xml);
+    CharacterAiProgramsSection ParseAiPrograms(CharacterXmlDocument document);
 
-    CharacterMartialArtsSection ParseMartialArts(string xml);
+    CharacterMartialArtsSection ParseMartialArts(CharacterXmlDocument document);
 
-    CharacterMetamagicsSection ParseMetamagics(string xml);
+    CharacterMetamagicsSection ParseMetamagics(CharacterXmlDocument document);
 
-    CharacterArtsSection ParseArts(string xml);
+    CharacterArtsSection ParseArts(CharacterXmlDocument document);
 
-    CharacterInitiationGradesSection ParseInitiationGrades(string xml);
+    CharacterInitiationGradesSection ParseInitiationGrades(CharacterXmlDocument document);
 
-    CharacterCritterPowersSection ParseCritterPowers(string xml);
+    CharacterCritterPowersSection ParseCritterPowers(CharacterXmlDocument document);
 
-    CharacterMentorSpiritsSection ParseMentorSpirits(string xml);
+    CharacterMentorSpiritsSection ParseMentorSpirits(CharacterXmlDocument document);
 }

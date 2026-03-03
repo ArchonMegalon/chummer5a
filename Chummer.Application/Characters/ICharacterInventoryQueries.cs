@@ -4,31 +4,31 @@ namespace Chummer.Application.Characters;
 
 public interface ICharacterInventoryQueries
 {
-    CharacterInventorySection ParseInventory(string xml);
+    CharacterInventorySection ParseInventory(CharacterXmlDocument document);
 
-    CharacterGearSection ParseGear(string xml);
+    CharacterGearSection ParseGear(CharacterXmlDocument document);
 
-    CharacterWeaponsSection ParseWeapons(string xml);
+    CharacterWeaponsSection ParseWeapons(CharacterXmlDocument document);
 
-    CharacterWeaponAccessoriesSection ParseWeaponAccessories(string xml);
+    CharacterWeaponAccessoriesSection ParseWeaponAccessories(CharacterXmlDocument document);
 
-    CharacterArmorsSection ParseArmors(string xml);
+    CharacterArmorsSection ParseArmors(CharacterXmlDocument document);
 
-    CharacterArmorModsSection ParseArmorMods(string xml);
+    CharacterArmorModsSection ParseArmorMods(CharacterXmlDocument document);
 
-    CharacterCyberwaresSection ParseCyberwares(string xml);
+    CharacterCyberwaresSection ParseCyberwares(CharacterXmlDocument document);
 
-    CharacterVehiclesSection ParseVehicles(string xml);
+    CharacterVehiclesSection ParseVehicles(CharacterXmlDocument document);
 
-    CharacterVehicleModsSection ParseVehicleMods(string xml);
+    CharacterVehicleModsSection ParseVehicleMods(CharacterXmlDocument document);
 
-    CharacterLocationsSection ParseGearLocations(string xml);
+    CharacterLocationsSection ParseGearLocations(CharacterXmlDocument document);
 
-    CharacterLocationsSection ParseArmorLocations(string xml);
+    CharacterLocationsSection ParseArmorLocations(CharacterXmlDocument document);
 
-    CharacterLocationsSection ParseWeaponLocations(string xml);
+    CharacterLocationsSection ParseWeaponLocations(CharacterXmlDocument document);
 
-    CharacterLocationsSection ParseVehicleLocations(string xml);
+    CharacterLocationsSection ParseVehicleLocations(CharacterXmlDocument document);
 
-    CharacterDrugsSection ParseDrugs(string xml);
+    CharacterDrugsSection ParseDrugs(CharacterXmlDocument document);
 }

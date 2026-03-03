@@ -12,31 +12,31 @@ public sealed class XmlCharacterInventoryQueries : ICharacterInventoryQueries
         _characterSectionService = characterSectionService;
     }
 
-    public CharacterInventorySection ParseInventory(string xml) => _characterSectionService.ParseInventory(xml);
+    public CharacterInventorySection ParseInventory(CharacterXmlDocument document) => _characterSectionService.ParseInventory(document.Xml);
 
-    public CharacterGearSection ParseGear(string xml) => _characterSectionService.ParseGear(xml);
+    public CharacterGearSection ParseGear(CharacterXmlDocument document) => _characterSectionService.ParseGear(document.Xml);
 
-    public CharacterWeaponsSection ParseWeapons(string xml) => _characterSectionService.ParseWeapons(xml);
+    public CharacterWeaponsSection ParseWeapons(CharacterXmlDocument document) => _characterSectionService.ParseWeapons(document.Xml);
 
-    public CharacterWeaponAccessoriesSection ParseWeaponAccessories(string xml) => _characterSectionService.ParseWeaponAccessories(xml);
+    public CharacterWeaponAccessoriesSection ParseWeaponAccessories(CharacterXmlDocument document) => _characterSectionService.ParseWeaponAccessories(document.Xml);
 
-    public CharacterArmorsSection ParseArmors(string xml) => _characterSectionService.ParseArmors(xml);
+    public CharacterArmorsSection ParseArmors(CharacterXmlDocument document) => _characterSectionService.ParseArmors(document.Xml);
 
-    public CharacterArmorModsSection ParseArmorMods(string xml) => _characterSectionService.ParseArmorMods(xml);
+    public CharacterArmorModsSection ParseArmorMods(CharacterXmlDocument document) => _characterSectionService.ParseArmorMods(document.Xml);
 
-    public CharacterCyberwaresSection ParseCyberwares(string xml) => _characterSectionService.ParseCyberwares(xml);
+    public CharacterCyberwaresSection ParseCyberwares(CharacterXmlDocument document) => _characterSectionService.ParseCyberwares(document.Xml);
 
-    public CharacterVehiclesSection ParseVehicles(string xml) => _characterSectionService.ParseVehicles(xml);
+    public CharacterVehiclesSection ParseVehicles(CharacterXmlDocument document) => _characterSectionService.ParseVehicles(document.Xml);
 
-    public CharacterVehicleModsSection ParseVehicleMods(string xml) => _characterSectionService.ParseVehicleMods(xml);
+    public CharacterVehicleModsSection ParseVehicleMods(CharacterXmlDocument document) => _characterSectionService.ParseVehicleMods(document.Xml);
 
-    public CharacterLocationsSection ParseGearLocations(string xml) => _characterSectionService.ParseGearLocations(xml);
+    public CharacterLocationsSection ParseGearLocations(CharacterXmlDocument document) => _characterSectionService.ParseGearLocations(document.Xml);
 
-    public CharacterLocationsSection ParseArmorLocations(string xml) => _characterSectionService.ParseArmorLocations(xml);
+    public CharacterLocationsSection ParseArmorLocations(CharacterXmlDocument document) => _characterSectionService.ParseArmorLocations(document.Xml);
 
-    public CharacterLocationsSection ParseWeaponLocations(string xml) => _characterSectionService.ParseWeaponLocations(xml);
+    public CharacterLocationsSection ParseWeaponLocations(CharacterXmlDocument document) => _characterSectionService.ParseWeaponLocations(document.Xml);
 
-    public CharacterLocationsSection ParseVehicleLocations(string xml) => _characterSectionService.ParseVehicleLocations(xml);
+    public CharacterLocationsSection ParseVehicleLocations(CharacterXmlDocument document) => _characterSectionService.ParseVehicleLocations(document.Xml);
 
-    public CharacterDrugsSection ParseDrugs(string xml) => _characterSectionService.ParseDrugs(xml);
+    public CharacterDrugsSection ParseDrugs(CharacterXmlDocument document) => _characterSectionService.ParseDrugs(document.Xml);
 }
