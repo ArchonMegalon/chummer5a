@@ -1,6 +1,7 @@
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
+using System.Text.Json.Nodes;
 
 namespace Chummer.Presentation;
 
@@ -11,6 +12,8 @@ public interface IChummerClient
     Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct);
 
     Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct);
+
+    Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct);
 
     Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct);
 

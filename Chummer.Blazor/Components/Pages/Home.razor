@@ -72,11 +72,29 @@
         {
             bool enabled = tab.EnabledByDefault && (!tab.RequiresOpenCharacter || State.WorkspaceId is not null);
             <li class="@(enabled ? string.Empty : "disabled")">
-                <code>@tab.Id</code>
+                <button
+                    class="tab-button @(State.ActiveTabId == tab.Id ? "selected" : string.Empty)"
+                    disabled="@(!enabled || State.IsBusy)"
+                    @onclick="() => SelectTabAsync(tab.Id)">
+                    <code>@tab.Id</code>
+                    <span>@tab.Label</span>
+                </button>
                 <span>@tab.Group</span>
             </li>
         }
     </ul>
+</section>
+
+<section class="panel section-preview">
+    <h2>Active Section (@(State.ActiveSectionId ?? "none"))</h2>
+    @if (string.IsNullOrWhiteSpace(State.ActiveSectionJson))
+    {
+        <p>Select a navigation tab to load a section payload.</p>
+    }
+    else
+    {
+        <pre>@State.ActiveSectionJson</pre>
+    }
 </section>
 
 @code {
@@ -125,6 +143,14 @@
     private async Task SaveAsync()
     {
         await Presenter.SaveAsync(CancellationToken.None);
+    }
+
+    private async Task SelectTabAsync(string tabId)
+    {
+        if (_bridge is null)
+            return;
+
+        await _bridge.SelectTabAsync(tabId, CancellationToken.None);
     }
 
     private void SyncMetadataDraftFromState()

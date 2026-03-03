@@ -27,6 +27,11 @@ public sealed class CharacterOverviewViewModelAdapter : IDisposable
         return _presenter.LoadAsync(workspaceId, ct);
     }
 
+    public Task SelectTabAsync(string tabId, CancellationToken ct)
+    {
+        return _presenter.SelectTabAsync(tabId, ct);
+    }
+
     public Task ImportAsync(byte[] documentBytes, CancellationToken ct)
     {
         return _presenter.ImportAsync(WorkspaceImportDocument.FromUtf8Bytes(documentBytes), ct);

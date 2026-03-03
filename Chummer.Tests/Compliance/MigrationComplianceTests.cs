@@ -234,6 +234,14 @@ public class MigrationComplianceTests
             .ToList();
 
         Assert.AreEqual(0, missingInCatalog.Count, "Legacy shell tabs missing from NavigationTabCatalog: " + string.Join(", ", missingInCatalog));
+
+        List<string> tabsWithoutSection = NavigationTabCatalog.All
+            .Where(tab => string.IsNullOrWhiteSpace(tab.SectionId))
+            .Select(tab => tab.Id)
+            .OrderBy(id => id)
+            .ToList();
+
+        Assert.AreEqual(0, tabsWithoutSection.Count, "Navigation tabs without section bindings: " + string.Join(", ", tabsWithoutSection));
     }
 
     [TestMethod]
@@ -401,6 +409,7 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(testText, "Avalonia_and_Blazor_overview_flows_show_equivalent_state_after_import");
         StringAssert.Contains(testText, "Avalonia_and_Blazor_metadata_save_roundtrip_match");
+        StringAssert.Contains(testText, "Avalonia_and_Blazor_tab_selection_loads_same_workspace_section");
     }
 
     private static string ToSectionName(string pascalName)

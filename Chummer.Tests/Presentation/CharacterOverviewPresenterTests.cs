@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Text.Json.Nodes;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
@@ -119,6 +120,31 @@ public class CharacterOverviewPresenterTests
         Assert.IsTrue(presenter.State.HasSavedWorkspace);
     }
 
+    [TestMethod]
+    public async Task SelectTabAsync_requires_loaded_workspace()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+
+        await presenter.SelectTabAsync("tab-info", CancellationToken.None);
+
+        Assert.AreEqual("No workspace loaded.", presenter.State.Error);
+    }
+
+    [TestMethod]
+    public async Task SelectTabAsync_loads_active_section_preview_after_workspace_load()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.SelectTabAsync("tab-info", CancellationToken.None);
+
+        Assert.AreEqual("tab-info", presenter.State.ActiveTabId);
+        Assert.AreEqual("profile", presenter.State.ActiveSectionId);
+        StringAssert.Contains(presenter.State.ActiveSectionJson ?? string.Empty, "\"sectionId\": \"profile\"");
+    }
+
     private sealed class FakeChummerClient : IChummerClient
     {
         private string _name = "Troy Simmons";
@@ -130,8 +156,8 @@ public class CharacterOverviewPresenterTests
         ];
         private static readonly IReadOnlyList<NavigationTabDefinition> Tabs =
         [
-            new("tab-info", "Info", "character", true, true),
-            new("tab-gear", "Gear", "character", true, true)
+            new("tab-info", "Info", "profile", "character", true, true),
+            new("tab-gear", "Gear", "gear", "character", true, true)
         ];
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
@@ -160,6 +186,17 @@ public class CharacterOverviewPresenterTests
         public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct)
         {
             return Task.FromResult(Tabs);
+        }
+
+        public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
+        {
+            JsonObject section = new()
+            {
+                ["workspaceId"] = id.Value,
+                ["sectionId"] = sectionId
+            };
+
+            return Task.FromResult<JsonNode>(section);
         }
 
         public Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)

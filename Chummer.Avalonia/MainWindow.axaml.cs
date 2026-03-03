@@ -22,6 +22,8 @@ public partial class MainWindow : Window
     private readonly TextBlock _skillsValue;
     private readonly ListBox _commandsList;
     private readonly ListBox _navigationTabsList;
+    private readonly TextBox _sectionPreviewBox;
+    private bool _suppressTabSelectionEvent;
 
     public MainWindow()
     {
@@ -45,6 +47,8 @@ public partial class MainWindow : Window
         _skillsValue = this.FindControl<TextBlock>("SkillsValue")!;
         _commandsList = this.FindControl<ListBox>("CommandsList")!;
         _navigationTabsList = this.FindControl<ListBox>("NavigationTabsList")!;
+        _sectionPreviewBox = this.FindControl<TextBox>("SectionPreviewBox")!;
+        _navigationTabsList.SelectionChanged += NavigationTabsList_OnSelectionChanged;
 
         RefreshState();
         Opened += OnOpened;
@@ -95,9 +99,21 @@ public partial class MainWindow : Window
         _commandsList.ItemsSource = state.Commands
             .Select(command => ToCommandLine(command, hasWorkspace))
             .ToArray();
-        _navigationTabsList.ItemsSource = state.NavigationTabs
-            .Select(tab => ToTabLine(tab, hasWorkspace))
+        TabListItem[] tabs = state.NavigationTabs
+            .Select(tab => new TabListItem(
+                tab.Id,
+                tab.Label,
+                tab.SectionId,
+                tab.Group,
+                tab.EnabledByDefault && (!tab.RequiresOpenCharacter || hasWorkspace)))
             .ToArray();
+
+        _suppressTabSelectionEvent = true;
+        _navigationTabsList.ItemsSource = tabs;
+        _navigationTabsList.SelectedItem = tabs.FirstOrDefault(item => string.Equals(item.Id, state.ActiveTabId, StringComparison.Ordinal));
+        _suppressTabSelectionEvent = false;
+
+        _sectionPreviewBox.Text = state.ActiveSectionJson ?? string.Empty;
     }
 
     private static string ToCommandLine(AppCommandDefinition command, bool hasWorkspace)
@@ -106,10 +122,15 @@ public partial class MainWindow : Window
         return $"{command.Id} [{command.Group}] {(enabled ? "enabled" : "disabled")}";
     }
 
-    private static string ToTabLine(NavigationTabDefinition tab, bool hasWorkspace)
+    private async void NavigationTabsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        bool enabled = tab.EnabledByDefault && (!tab.RequiresOpenCharacter || hasWorkspace);
-        return $"{tab.Id} [{tab.Group}] {(enabled ? "enabled" : "disabled")}";
+        if (_suppressTabSelectionEvent)
+            return;
+
+        if (_navigationTabsList.SelectedItem is not TabListItem tab || !tab.Enabled)
+            return;
+
+        await _adapter.SelectTabAsync(tab.Id, CancellationToken.None);
     }
 
     private static Uri ResolveApiBaseAddress()
@@ -126,5 +147,18 @@ public partial class MainWindow : Window
         }
 
         return uri;
+    }
+
+    private sealed record TabListItem(
+        string Id,
+        string Label,
+        string SectionId,
+        string Group,
+        bool Enabled)
+    {
+        public override string ToString()
+        {
+            return $"{Id} -> {SectionId} [{Group}] {(Enabled ? "enabled" : "disabled")}";
+        }
     }
 }

@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json.Nodes;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
@@ -52,6 +53,15 @@ public sealed class HttpChummerClient : IChummerClient
             throw new InvalidOperationException("Navigation tab catalog response was empty.");
 
         return response.Tabs;
+    }
+
+    public async Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
+    {
+        JsonNode? response = await _httpClient.GetFromJsonAsync<JsonNode>($"/api/workspaces/{id.Value}/sections/{sectionId}", ct);
+        if (response is null)
+            throw new InvalidOperationException($"Section '{sectionId}' response was empty.");
+
+        return response;
     }
 
     public async Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)

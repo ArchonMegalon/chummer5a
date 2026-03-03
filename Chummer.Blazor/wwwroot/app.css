@@ -105,8 +105,33 @@ button:disabled {
     justify-content: space-between;
     gap: 0.5rem;
     padding: 0.15rem 0;
+    align-items: center;
 }
 
 .command-list li.disabled {
     opacity: 0.55;
+}
+
+.tab-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 16rem;
+    text-align: left;
+}
+
+.tab-button.selected {
+    border-color: #1d4ed8;
+    background: #dbeafe;
+}
+
+.section-preview pre {
+    margin: 0;
+    max-height: 16rem;
+    overflow: auto;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.8rem;
 }

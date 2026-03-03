@@ -34,6 +34,17 @@ public class CharacterOverviewViewModelAdapterTests
     }
 
     [TestMethod]
+    public async Task SelectTabAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+
+        await adapter.SelectTabAsync("tab-info", CancellationToken.None);
+
+        Assert.AreEqual("tab-info", presenter.SelectedTabId);
+    }
+
+    [TestMethod]
     public async Task ImportAsync_delegates_to_presenter()
     {
         var presenter = new FakeCharacterOverviewPresenter();

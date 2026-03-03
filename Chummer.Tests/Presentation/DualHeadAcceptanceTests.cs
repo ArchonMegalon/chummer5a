@@ -93,6 +93,42 @@ public class DualHeadAcceptanceTests
         Assert.IsTrue(blazorState.HasSavedWorkspace);
     }
 
+    [TestMethod]
+    public async Task Avalonia_and_Blazor_tab_selection_loads_same_workspace_section()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+
+        CharacterOverviewState avaloniaState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+            await adapter.InitializeAsync(CancellationToken.None);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
+            await adapter.SelectTabAsync("tab-skills", CancellationToken.None);
+            avaloniaState = adapter.State;
+        }
+
+        CharacterOverviewState blazorState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            await bridge.InitializeAsync(CancellationToken.None);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
+            await bridge.SelectTabAsync("tab-skills", CancellationToken.None);
+            blazorState = callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+        }
+
+        Assert.AreEqual("tab-skills", avaloniaState.ActiveTabId);
+        Assert.AreEqual("tab-skills", blazorState.ActiveTabId);
+        Assert.AreEqual("skills", avaloniaState.ActiveSectionId);
+        Assert.AreEqual("skills", blazorState.ActiveSectionId);
+        Assert.AreEqual(avaloniaState.ActiveSectionJson, blazorState.ActiveSectionJson);
+    }
+
     private static HttpClient CreateClient()
     {
         return new HttpClient

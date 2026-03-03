@@ -388,6 +388,7 @@ public class ApiIntegrationTests
         Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) >= 16);
         Assert.IsTrue(response["tabs"] is JsonArray);
         Assert.IsTrue((response["tabs"] as JsonArray)?.Any(node => string.Equals(node?["id"]?.GetValue<string>(), "tab-info", StringComparison.Ordinal)) ?? false);
+        Assert.IsTrue((response["tabs"] as JsonArray)?.All(node => !string.IsNullOrWhiteSpace(node?["sectionId"]?.GetValue<string>())) ?? false);
     }
 
     [TestMethod]

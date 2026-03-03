@@ -1,6 +1,7 @@
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
+using System.Text.Json;
 
 namespace Chummer.Presentation.Overview;
 
@@ -84,6 +85,55 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         try
         {
             await LoadWorkspaceAsync(id, ct);
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
+    public async Task SelectTabAsync(string tabId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(tabId))
+        {
+            Publish(State with { Error = "Tab id is required." });
+            return;
+        }
+
+        if (_currentWorkspace is null)
+        {
+            Publish(State with { Error = "No workspace loaded." });
+            return;
+        }
+
+        NavigationTabDefinition? tab = State.NavigationTabs.FirstOrDefault(item => string.Equals(item.Id, tabId, StringComparison.Ordinal));
+        if (tab is null)
+        {
+            Publish(State with { Error = $"Unknown tab '{tabId}'." });
+            return;
+        }
+
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            var section = await _client.GetSectionAsync(_currentWorkspace.Value, tab.SectionId, ct);
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = null,
+                ActiveTabId = tab.Id,
+                ActiveSectionId = tab.SectionId,
+                ActiveSectionJson = section.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
+            });
         }
         catch (Exception ex)
         {
@@ -215,9 +265,12 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Build: buildTask.Result,
             Movement: movementTask.Result,
             Awakening: awakeningTask.Result,
+            ActiveTabId: null,
+            ActiveSectionId: null,
+            ActiveSectionJson: null,
             Commands: State.Commands,
             NavigationTabs: State.NavigationTabs,
-            HasSavedWorkspace: State.HasSavedWorkspace));
+            HasSavedWorkspace: false));
     }
 
     private void Publish(CharacterOverviewState state)

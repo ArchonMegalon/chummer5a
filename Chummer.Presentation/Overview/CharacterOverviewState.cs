@@ -15,6 +15,9 @@ public sealed record CharacterOverviewState(
     CharacterBuildSection? Build,
     CharacterMovementSection? Movement,
     CharacterAwakeningSection? Awakening,
+    string? ActiveTabId,
+    string? ActiveSectionId,
+    string? ActiveSectionJson,
     IReadOnlyList<AppCommandDefinition> Commands,
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     bool HasSavedWorkspace)
@@ -30,6 +33,9 @@ public sealed record CharacterOverviewState(
         Build: null,
         Movement: null,
         Awakening: null,
+        ActiveTabId: null,
+        ActiveSectionId: null,
+        ActiveSectionJson: null,
         Commands: [],
         NavigationTabs: [],
         HasSavedWorkspace: false);
