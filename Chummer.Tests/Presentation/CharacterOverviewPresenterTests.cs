@@ -24,6 +24,10 @@ public class CharacterOverviewPresenterTests
         Assert.IsNotNull(presenter.State.Profile);
         Assert.IsNotNull(presenter.State.Progress);
         Assert.IsNotNull(presenter.State.Skills);
+        Assert.IsNotNull(presenter.State.Rules);
+        Assert.IsNotNull(presenter.State.Build);
+        Assert.IsNotNull(presenter.State.Movement);
+        Assert.IsNotNull(presenter.State.Awakening);
         Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
         Assert.AreEqual("BLUE", presenter.State.Profile.Alias);
     }
@@ -42,6 +46,10 @@ public class CharacterOverviewPresenterTests
         Assert.IsNotNull(presenter.State.Profile);
         Assert.IsNotNull(presenter.State.Progress);
         Assert.IsNotNull(presenter.State.Skills);
+        Assert.IsNotNull(presenter.State.Rules);
+        Assert.IsNotNull(presenter.State.Build);
+        Assert.IsNotNull(presenter.State.Movement);
+        Assert.IsNotNull(presenter.State.Awakening);
     }
 
     [TestMethod]
@@ -190,6 +198,87 @@ public class CharacterOverviewPresenterTests
                 ]);
 
             return Task.FromResult(skills);
+        }
+
+        public Task<CharacterRulesSection> GetRulesAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            CharacterRulesSection rules = new(
+                GameEdition: "SR5",
+                Settings: "default.xml",
+                GameplayOption: "Standard",
+                GameplayOptionQualityLimit: 25,
+                MaxNuyen: 10,
+                MaxKarma: 25,
+                ContactMultiplier: 3,
+                BannedWareGrades: ["Betaware"]);
+
+            return Task.FromResult(rules);
+        }
+
+        public Task<CharacterBuildSection> GetBuildAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            CharacterBuildSection build = new(
+                BuildMethod: "SumtoTen",
+                PriorityMetatype: "C,2",
+                PriorityAttributes: "E,0",
+                PrioritySpecial: "A,4",
+                PrioritySkills: "B,3",
+                PriorityResources: "D,1",
+                PriorityTalent: "Mundane",
+                SumToTen: 10,
+                Special: 1,
+                TotalSpecial: 4,
+                TotalAttributes: 20,
+                ContactPoints: 15,
+                ContactPointsUsed: 8);
+
+            return Task.FromResult(build);
+        }
+
+        public Task<CharacterMovementSection> GetMovementAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            CharacterMovementSection movement = new(
+                Walk: "2/1/0",
+                Run: "4/0/0",
+                Sprint: "2/1/0",
+                WalkAlt: "2/1/0",
+                RunAlt: "4/0/0",
+                SprintAlt: "2/1/0",
+                PhysicalCmFilled: 0,
+                StunCmFilled: 0);
+
+            return Task.FromResult(movement);
+        }
+
+        public Task<CharacterAwakeningSection> GetAwakeningAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            CharacterAwakeningSection awakening = new(
+                MagEnabled: false,
+                ResEnabled: false,
+                DepEnabled: false,
+                Adept: false,
+                Magician: false,
+                Technomancer: false,
+                AI: false,
+                InitiateGrade: 0,
+                SubmersionGrade: 0,
+                Tradition: string.Empty,
+                TraditionName: string.Empty,
+                TraditionDrain: string.Empty,
+                SpiritCombat: string.Empty,
+                SpiritDetection: string.Empty,
+                SpiritHealth: string.Empty,
+                SpiritIllusion: string.Empty,
+                SpiritManipulation: string.Empty,
+                Stream: string.Empty,
+                StreamDrain: string.Empty,
+                CurrentCounterspellingDice: 0,
+                SpellLimit: 0,
+                CfpLimit: 0,
+                AiNormalProgramLimit: 0,
+                AiAdvancedProgramLimit: 0);
+
+            return Task.FromResult(awakening);
         }
 
         public Task<CommandResult<CharacterProfileSection>> UpdateMetadataAsync(CharacterWorkspaceId id, UpdateWorkspaceMetadata command, CancellationToken ct)

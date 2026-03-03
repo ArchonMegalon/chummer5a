@@ -10,6 +10,10 @@ public sealed record CharacterOverviewState(
     CharacterProfileSection? Profile,
     CharacterProgressSection? Progress,
     CharacterSkillsSection? Skills,
+    CharacterRulesSection? Rules,
+    CharacterBuildSection? Build,
+    CharacterMovementSection? Movement,
+    CharacterAwakeningSection? Awakening,
     string? LastSavedXml)
 {
     public static CharacterOverviewState Empty { get; } = new(
@@ -19,5 +23,9 @@ public sealed record CharacterOverviewState(
         Profile: null,
         Progress: null,
         Skills: null,
+        Rules: null,
+        Build: null,
+        Movement: null,
+        Awakening: null,
         LastSavedXml: null);
 }

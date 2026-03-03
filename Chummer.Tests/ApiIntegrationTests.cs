@@ -334,7 +334,7 @@ public class ApiIntegrationTests
     {
         using var client = CreateClient();
 
-        const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created><newskills><skills><skill><guid>s1</guid><suid>suid1</suid><skillcategory>Combat</skillcategory><isknowledge>False</isknowledge><base>6</base><karma>0</karma><specs><spec><name>Semi-Automatics</name></spec></specs></skill></skills></newskills></character>";
+        const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created><gameedition>SR5</gameedition><settings>default.xml</settings><gameplayoption>Standard</gameplayoption><gameplayoptionqualitylimit>25</gameplayoptionqualitylimit><maxnuyen>10</maxnuyen><maxkarma>25</maxkarma><contactmultiplier>3</contactmultiplier><walk>2/1/0</walk><run>4/0/0</run><sprint>2/1/0</sprint><walkalt>2/1/0</walkalt><runalt>4/0/0</runalt><sprintalt>2/1/0</sprintalt><magenabled>False</magenabled><resenabled>False</resenabled><depenabled>False</depenabled><newskills><skills><skill><guid>s1</guid><suid>suid1</suid><skillcategory>Combat</skillcategory><isknowledge>False</isknowledge><base>6</base><karma>0</karma><specs><spec><name>Semi-Automatics</name></spec></specs></skill></skills></newskills></character>";
         JsonObject importBody = new()
         {
             ["xml"] = xml
@@ -349,6 +349,18 @@ public class ApiIntegrationTests
 
         JsonObject skills = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/skills");
         Assert.AreEqual(1, skills["count"]?.GetValue<int>());
+
+        JsonObject rules = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/rules");
+        Assert.AreEqual("SR5", rules["gameEdition"]?.GetValue<string>());
+
+        JsonObject build = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/build");
+        Assert.AreEqual("Priority", build["buildMethod"]?.GetValue<string>());
+
+        JsonObject movement = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/movement");
+        Assert.AreEqual("2/1/0", movement["walk"]?.GetValue<string>());
+
+        JsonObject awakening = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/awakening");
+        Assert.IsFalse(awakening["magEnabled"]?.GetValue<bool>() ?? true);
 
         JsonObject patchBody = new()
         {

@@ -163,8 +163,12 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         Task<CharacterProfileSection> profileTask = _client.GetProfileAsync(id, ct);
         Task<CharacterProgressSection> progressTask = _client.GetProgressAsync(id, ct);
         Task<CharacterSkillsSection> skillsTask = _client.GetSkillsAsync(id, ct);
+        Task<CharacterRulesSection> rulesTask = _client.GetRulesAsync(id, ct);
+        Task<CharacterBuildSection> buildTask = _client.GetBuildAsync(id, ct);
+        Task<CharacterMovementSection> movementTask = _client.GetMovementAsync(id, ct);
+        Task<CharacterAwakeningSection> awakeningTask = _client.GetAwakeningAsync(id, ct);
 
-        await Task.WhenAll(profileTask, progressTask, skillsTask);
+        await Task.WhenAll(profileTask, progressTask, skillsTask, rulesTask, buildTask, movementTask, awakeningTask);
 
         _currentWorkspace = id;
         Publish(new CharacterOverviewState(
@@ -174,6 +178,10 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Profile: profileTask.Result,
             Progress: progressTask.Result,
             Skills: skillsTask.Result,
+            Rules: rulesTask.Result,
+            Build: buildTask.Result,
+            Movement: movementTask.Result,
+            Awakening: awakeningTask.Result,
             LastSavedXml: State.LastSavedXml));
     }
 

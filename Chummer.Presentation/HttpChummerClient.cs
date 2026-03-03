@@ -46,6 +46,26 @@ public sealed class HttpChummerClient : IChummerClient
         return await GetRequiredAsync<CharacterSkillsSection>($"/api/workspaces/{id.Value}/skills", ct);
     }
 
+    public async Task<CharacterRulesSection> GetRulesAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        return await GetRequiredAsync<CharacterRulesSection>($"/api/workspaces/{id.Value}/rules", ct);
+    }
+
+    public async Task<CharacterBuildSection> GetBuildAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        return await GetRequiredAsync<CharacterBuildSection>($"/api/workspaces/{id.Value}/build", ct);
+    }
+
+    public async Task<CharacterMovementSection> GetMovementAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        return await GetRequiredAsync<CharacterMovementSection>($"/api/workspaces/{id.Value}/movement", ct);
+    }
+
+    public async Task<CharacterAwakeningSection> GetAwakeningAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        return await GetRequiredAsync<CharacterAwakeningSection>($"/api/workspaces/{id.Value}/awakening", ct);
+    }
+
     public async Task<CommandResult<CharacterProfileSection>> UpdateMetadataAsync(
         CharacterWorkspaceId id,
         UpdateWorkspaceMetadata command,

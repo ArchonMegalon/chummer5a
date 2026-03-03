@@ -46,6 +46,26 @@ public sealed class WorkspaceService : IWorkspaceService
         return TryParseSection<CharacterSkillsSection>(id, "skills");
     }
 
+    public CharacterRulesSection? GetRules(CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterRulesSection>(id, "rules");
+    }
+
+    public CharacterBuildSection? GetBuild(CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterBuildSection>(id, "build");
+    }
+
+    public CharacterMovementSection? GetMovement(CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterMovementSection>(id, "movement");
+    }
+
+    public CharacterAwakeningSection? GetAwakening(CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterAwakeningSection>(id, "awakening");
+    }
+
     public CommandResult<CharacterProfileSection> UpdateMetadata(CharacterWorkspaceId id, UpdateWorkspaceMetadata command)
     {
         if (!_workspaceStore.TryGet(id, out string xml))

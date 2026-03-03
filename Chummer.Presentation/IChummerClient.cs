@@ -13,6 +13,14 @@ public interface IChummerClient
 
     Task<CharacterSkillsSection> GetSkillsAsync(CharacterWorkspaceId id, CancellationToken ct);
 
+    Task<CharacterRulesSection> GetRulesAsync(CharacterWorkspaceId id, CancellationToken ct);
+
+    Task<CharacterBuildSection> GetBuildAsync(CharacterWorkspaceId id, CancellationToken ct);
+
+    Task<CharacterMovementSection> GetMovementAsync(CharacterWorkspaceId id, CancellationToken ct);
+
+    Task<CharacterAwakeningSection> GetAwakeningAsync(CharacterWorkspaceId id, CancellationToken ct);
+
     Task<CommandResult<CharacterProfileSection>> UpdateMetadataAsync(
         CharacterWorkspaceId id,
         UpdateWorkspaceMetadata command,

@@ -38,6 +38,34 @@ public static class WorkspaceEndpoints
             return skills is null ? Results.NotFound() : Results.Ok(skills);
         });
 
+        app.MapGet("/api/workspaces/{id}/rules", (string id, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            var rules = workspaceService.GetRules(workspaceId);
+            return rules is null ? Results.NotFound() : Results.Ok(rules);
+        });
+
+        app.MapGet("/api/workspaces/{id}/build", (string id, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            var build = workspaceService.GetBuild(workspaceId);
+            return build is null ? Results.NotFound() : Results.Ok(build);
+        });
+
+        app.MapGet("/api/workspaces/{id}/movement", (string id, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            var movement = workspaceService.GetMovement(workspaceId);
+            return movement is null ? Results.NotFound() : Results.Ok(movement);
+        });
+
+        app.MapGet("/api/workspaces/{id}/awakening", (string id, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            var awakening = workspaceService.GetAwakening(workspaceId);
+            return awakening is null ? Results.NotFound() : Results.Ok(awakening);
+        });
+
         app.MapMethods("/api/workspaces/{id}/metadata", ["PATCH"], (string id, UpdateWorkspaceMetadata command, IWorkspaceService workspaceService) =>
         {
             CharacterWorkspaceId workspaceId = new(id);

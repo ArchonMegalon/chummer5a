@@ -13,6 +13,14 @@ public interface IWorkspaceService
 
     CharacterSkillsSection? GetSkills(CharacterWorkspaceId id);
 
+    CharacterRulesSection? GetRules(CharacterWorkspaceId id);
+
+    CharacterBuildSection? GetBuild(CharacterWorkspaceId id);
+
+    CharacterMovementSection? GetMovement(CharacterWorkspaceId id);
+
+    CharacterAwakeningSection? GetAwakening(CharacterWorkspaceId id);
+
     CommandResult<CharacterProfileSection> UpdateMetadata(CharacterWorkspaceId id, UpdateWorkspaceMetadata command);
 
     CommandResult<string> Save(CharacterWorkspaceId id);
