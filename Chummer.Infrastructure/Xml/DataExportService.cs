@@ -24,13 +24,13 @@ public sealed class DataExportService : IDataExportService
         CharacterFileSummary? summary = SafeParse(() => _characterFileQueries.ParseSummary(document));
         summary ??= BuildFallbackSummary(document);
 
-        CharacterProfileSection? profile = SafeParse(() => ParseSection<CharacterProfileSection>("profile", document.Xml));
-        CharacterProgressSection? progress = SafeParse(() => ParseSection<CharacterProgressSection>("progress", document.Xml));
-        CharacterAttributesSection? attributes = SafeParse(() => ParseSection<CharacterAttributesSection>("attributes", document.Xml));
-        CharacterSkillsSection? skills = SafeParse(() => ParseSection<CharacterSkillsSection>("skills", document.Xml));
-        CharacterInventorySection? inventory = SafeParse(() => ParseSection<CharacterInventorySection>("inventory", document.Xml));
-        CharacterQualitiesSection? qualities = SafeParse(() => ParseSection<CharacterQualitiesSection>("qualities", document.Xml));
-        CharacterContactsSection? contacts = SafeParse(() => ParseSection<CharacterContactsSection>("contacts", document.Xml));
+        CharacterProfileSection? profile = SafeParse(() => ParseSection<CharacterProfileSection>("profile", document));
+        CharacterProgressSection? progress = SafeParse(() => ParseSection<CharacterProgressSection>("progress", document));
+        CharacterAttributesSection? attributes = SafeParse(() => ParseSection<CharacterAttributesSection>("attributes", document));
+        CharacterSkillsSection? skills = SafeParse(() => ParseSection<CharacterSkillsSection>("skills", document));
+        CharacterInventorySection? inventory = SafeParse(() => ParseSection<CharacterInventorySection>("inventory", document));
+        CharacterQualitiesSection? qualities = SafeParse(() => ParseSection<CharacterQualitiesSection>("qualities", document));
+        CharacterContactsSection? contacts = SafeParse(() => ParseSection<CharacterContactsSection>("contacts", document));
 
         return new DataExportBundle(
             Summary: summary,
@@ -43,9 +43,9 @@ public sealed class DataExportService : IDataExportService
             Contacts: contacts);
     }
 
-    private TSection ParseSection<TSection>(string sectionId, string xml)
+    private TSection ParseSection<TSection>(string sectionId, CharacterXmlDocument document)
     {
-        return (TSection)_sectionQueries.ParseSection(sectionId, xml);
+        return (TSection)_sectionQueries.ParseSection(sectionId, document);
     }
 
     private static T? SafeParse<T>(Func<T> parser) where T : class

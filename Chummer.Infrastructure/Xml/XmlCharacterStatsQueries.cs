@@ -12,9 +12,9 @@ public sealed class XmlCharacterStatsQueries : ICharacterStatsQueries
         _characterSectionService = characterSectionService;
     }
 
-    public CharacterAttributesSection ParseAttributes(string xml) => _characterSectionService.ParseAttributes(xml);
+    public CharacterAttributesSection ParseAttributes(CharacterXmlDocument document) => _characterSectionService.ParseAttributes(document.Xml);
 
-    public CharacterAttributeDetailsSection ParseAttributeDetails(string xml) => _characterSectionService.ParseAttributeDetails(xml);
+    public CharacterAttributeDetailsSection ParseAttributeDetails(CharacterXmlDocument document) => _characterSectionService.ParseAttributeDetails(document.Xml);
 
-    public CharacterLimitModifiersSection ParseLimitModifiers(string xml) => _characterSectionService.ParseLimitModifiers(xml);
+    public CharacterLimitModifiersSection ParseLimitModifiers(CharacterXmlDocument document) => _characterSectionService.ParseLimitModifiers(document.Xml);
 }

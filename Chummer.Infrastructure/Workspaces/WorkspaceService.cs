@@ -37,7 +37,7 @@ public sealed class WorkspaceService : IWorkspaceService
         if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
             return null;
 
-        return _characterSectionQueries.ParseSection(sectionId, document.Xml);
+        return _characterSectionQueries.ParseSection(sectionId, new CharacterXmlDocument(document.Xml));
     }
 
     public CharacterProfileSection? GetProfile(CharacterWorkspaceId id)
@@ -92,7 +92,9 @@ public sealed class WorkspaceService : IWorkspaceService
             Notes: command.Notes));
 
         _workspaceStore.Save(id, new WorkspaceDocument(result.UpdatedXml));
-        CharacterProfileSection profile = (CharacterProfileSection)_characterSectionQueries.ParseSection("profile", result.UpdatedXml);
+        CharacterProfileSection profile = (CharacterProfileSection)_characterSectionQueries.ParseSection(
+            "profile",
+            new CharacterXmlDocument(result.UpdatedXml));
         return new CommandResult<CharacterProfileSection>(
             Success: true,
             Value: profile,

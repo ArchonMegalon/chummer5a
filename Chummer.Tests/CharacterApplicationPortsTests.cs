@@ -47,7 +47,7 @@ public class CharacterApplicationPortsTests
         const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created><adept>False</adept><magician>False</magician><technomancer>False</technomancer><ai>False</ai></character>";
 
         ICharacterSectionQueries queries = new XmlCharacterSectionQueries(new CharacterSectionService());
-        object section = queries.ParseSection("profile", xml);
+        object section = queries.ParseSection("profile", new CharacterXmlDocument(xml));
 
         Assert.IsInstanceOfType<CharacterProfileSection>(section);
         CharacterProfileSection profile = (CharacterProfileSection)section;
@@ -65,9 +65,10 @@ public class CharacterApplicationPortsTests
         ICharacterInventoryQueries inventory = new XmlCharacterInventoryQueries(sectionService);
         ICharacterMagicResonanceQueries magic = new XmlCharacterMagicResonanceQueries(sectionService);
         ICharacterSocialNarrativeQueries social = new XmlCharacterSocialNarrativeQueries(sectionService);
+        CharacterXmlDocument document = new(xml);
 
-        Assert.IsNotNull(overview.ParseProfile(xml));
-        Assert.IsNotNull(stats.ParseAttributes(xml));
+        Assert.IsNotNull(overview.ParseProfile(document));
+        Assert.IsNotNull(stats.ParseAttributes(document));
         Assert.IsNotNull(inventory.ParseInventory(xml));
         Assert.IsNotNull(magic.ParseSpells(xml));
         Assert.IsNotNull(social.ParseQualities(xml));
@@ -86,7 +87,7 @@ public class CharacterApplicationPortsTests
             new XmlCharacterMagicResonanceQueries(sectionService),
             new XmlCharacterSocialNarrativeQueries(sectionService));
 
-        object section = queries.ParseSection("profile", xml);
+        object section = queries.ParseSection("profile", new CharacterXmlDocument(xml));
         Assert.IsInstanceOfType<CharacterProfileSection>(section);
     }
 

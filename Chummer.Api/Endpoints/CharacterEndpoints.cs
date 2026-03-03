@@ -85,7 +85,7 @@ public static class CharacterEndpoints
     {
         app.MapPost($"/api/characters/sections/{route}", (ICharacterSectionQueries characterSectionQueries, CharacterXmlRequest request) =>
         {
-            object section = characterSectionQueries.ParseSection(route, request.Xml);
+            object section = characterSectionQueries.ParseSection(route, new CharacterXmlDocument(request.Xml));
             return Results.Ok(section);
         });
     }

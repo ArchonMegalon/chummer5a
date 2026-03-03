@@ -12,17 +12,17 @@ public sealed class XmlCharacterOverviewQueries : ICharacterOverviewQueries
         _characterSectionService = characterSectionService;
     }
 
-    public CharacterProfileSection ParseProfile(string xml) => _characterSectionService.ParseProfile(xml);
+    public CharacterProfileSection ParseProfile(CharacterXmlDocument document) => _characterSectionService.ParseProfile(document.Xml);
 
-    public CharacterProgressSection ParseProgress(string xml) => _characterSectionService.ParseProgress(xml);
+    public CharacterProgressSection ParseProgress(CharacterXmlDocument document) => _characterSectionService.ParseProgress(document.Xml);
 
-    public CharacterRulesSection ParseRules(string xml) => _characterSectionService.ParseRules(xml);
+    public CharacterRulesSection ParseRules(CharacterXmlDocument document) => _characterSectionService.ParseRules(document.Xml);
 
-    public CharacterBuildSection ParseBuild(string xml) => _characterSectionService.ParseBuild(xml);
+    public CharacterBuildSection ParseBuild(CharacterXmlDocument document) => _characterSectionService.ParseBuild(document.Xml);
 
-    public CharacterMovementSection ParseMovement(string xml) => _characterSectionService.ParseMovement(xml);
+    public CharacterMovementSection ParseMovement(CharacterXmlDocument document) => _characterSectionService.ParseMovement(document.Xml);
 
-    public CharacterAwakeningSection ParseAwakening(string xml) => _characterSectionService.ParseAwakening(xml);
+    public CharacterAwakeningSection ParseAwakening(CharacterXmlDocument document) => _characterSectionService.ParseAwakening(document.Xml);
 
-    public CharacterSkillsSection ParseSkills(string xml) => _characterSectionService.ParseSkills(xml);
+    public CharacterSkillsSection ParseSkills(CharacterXmlDocument document) => _characterSectionService.ParseSkills(document.Xml);
 }

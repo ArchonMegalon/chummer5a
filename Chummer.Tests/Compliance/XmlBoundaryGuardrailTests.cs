@@ -17,10 +17,7 @@ public class XmlBoundaryGuardrailTests
     {
         ["ICharacterInventoryQueries"] = 14,
         ["ICharacterMagicResonanceQueries"] = 12,
-        ["ICharacterOverviewQueries"] = 7,
-        ["ICharacterSectionQueries"] = 1,
         ["ICharacterSocialNarrativeQueries"] = 8,
-        ["ICharacterStatsQueries"] = 3
     };
 
     [TestMethod]
