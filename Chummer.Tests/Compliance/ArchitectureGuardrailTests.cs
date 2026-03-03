@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests.Compliance;
@@ -120,6 +121,31 @@ public class ArchitectureGuardrailTests
         Assert.IsFalse(text.Contains(@"..\Chummer.Core\Chummer.Core.csproj", StringComparison.Ordinal));
     }
 
+    [TestMethod]
+    public void Headless_project_references_follow_layering_rules()
+    {
+        Dictionary<string, HashSet<string>> allowedReferences = new(StringComparer.Ordinal)
+        {
+            ["Chummer.Contracts"] = new HashSet<string>(StringComparer.Ordinal),
+            ["Chummer.Core"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
+            ["Chummer.Application"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
+            ["Chummer.Presentation"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
+            ["Chummer.Infrastructure"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts" },
+            ["Chummer.Web"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure" }
+        };
+
+        foreach ((string project, HashSet<string> allowed) in allowedReferences)
+        {
+            HashSet<string> actual = ReadProjectReferenceNames(project);
+            List<string> forbidden = actual.Except(allowed, StringComparer.Ordinal).OrderBy(name => name, StringComparer.Ordinal).ToList();
+
+            Assert.AreEqual(
+                0,
+                forbidden.Count,
+                $"{project} has forbidden project references: {string.Join(", ", forbidden)}.");
+        }
+    }
+
     private static string FindPath(params string[] parts)
     {
         foreach (string? root in CandidateRoots())
@@ -142,6 +168,21 @@ public class ArchitectureGuardrailTests
         }
 
         throw new FileNotFoundException("Could not locate file.", Path.Combine(parts));
+    }
+
+    private static HashSet<string> ReadProjectReferenceNames(string projectName)
+    {
+        string projectPath = FindPath(projectName, $"{projectName}.csproj");
+        XDocument document = XDocument.Load(projectPath);
+
+        return document
+            .Descendants()
+            .Where(element => string.Equals(element.Name.LocalName, "ProjectReference", StringComparison.Ordinal))
+            .Select(element => element.Attribute("Include")?.Value ?? string.Empty)
+            .Where(include => !string.IsNullOrWhiteSpace(include))
+            .Select(include => Path.GetFileNameWithoutExtension(include.Replace('\\', Path.DirectorySeparatorChar)))
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.Ordinal);
     }
 
     private static string FindDirectory(params string[] parts)
