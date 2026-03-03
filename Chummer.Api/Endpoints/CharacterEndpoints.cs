@@ -23,12 +23,13 @@ public static class CharacterEndpoints
         app.MapPost("/api/characters/metadata", (ICharacterMetadataCommands characterMetadataCommands, CharacterMetadataRequest request) =>
         {
             UpdateCharacterMetadataCommand command = new(
-                Xml: request.Xml,
-                Name: request.Name,
-                Alias: request.Alias,
-                Notes: request.Notes);
+                Document: new CharacterDocument(request.Xml),
+                Update: new CharacterMetadataUpdate(
+                    Name: request.Name,
+                    Alias: request.Alias,
+                    Notes: request.Notes));
             UpdateCharacterMetadataResult result = characterMetadataCommands.UpdateMetadata(command);
-            return Results.Ok(new { updatedXml = result.UpdatedXml, summary = result.Summary });
+            return Results.Ok(new { updatedXml = result.UpdatedDocument.Content, summary = result.Summary });
         });
 
         MapSection(app, "attributes");

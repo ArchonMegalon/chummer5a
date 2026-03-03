@@ -87,15 +87,16 @@ public sealed class WorkspaceService : IWorkspaceService
         }
 
         UpdateCharacterMetadataResult result = _characterMetadataCommands.UpdateMetadata(new UpdateCharacterMetadataCommand(
-            Xml: ToXmlContent(document.Content, document.Format),
-            Name: command.Name,
-            Alias: command.Alias,
-            Notes: command.Notes));
+            Document: new CharacterDocument(ToXmlContent(document.Content, document.Format)),
+            Update: new CharacterMetadataUpdate(
+                Name: command.Name,
+                Alias: command.Alias,
+                Notes: command.Notes)));
 
-        _workspaceStore.Save(id, new WorkspaceDocument(result.UpdatedXml, document.Format));
+        _workspaceStore.Save(id, new WorkspaceDocument(result.UpdatedDocument.Content, document.Format));
         CharacterProfileSection profile = (CharacterProfileSection)_characterSectionQueries.ParseSection(
             "profile",
-            new CharacterDocument(result.UpdatedXml));
+            new CharacterDocument(result.UpdatedDocument.Content));
         return new CommandResult<CharacterProfileSection>(
             Success: true,
             Value: profile,

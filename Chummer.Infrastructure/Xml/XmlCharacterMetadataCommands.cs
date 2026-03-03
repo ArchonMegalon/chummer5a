@@ -14,15 +14,11 @@ public sealed class XmlCharacterMetadataCommands : ICharacterMetadataCommands
 
     public UpdateCharacterMetadataResult UpdateMetadata(UpdateCharacterMetadataCommand command)
     {
-        CharacterMetadataUpdate update = new(
-            Name: command.Name,
-            Alias: command.Alias,
-            Notes: command.Notes);
-
-        string updatedXml = _characterFileService.ApplyMetadataUpdate(command.Xml, update);
-        CharacterFileSummary summary = _characterFileService.ParseSummaryFromXml(updatedXml);
+        string updatedContent = _characterFileService.ApplyMetadataUpdate(command.Document.Content, command.Update);
+        CharacterDocument updatedDocument = new(updatedContent, command.Document.Format);
+        CharacterFileSummary summary = _characterFileService.ParseSummaryFromXml(updatedDocument.Content);
         return new UpdateCharacterMetadataResult(
-            UpdatedXml: updatedXml,
+            UpdatedDocument: updatedDocument,
             Summary: summary);
     }
 }

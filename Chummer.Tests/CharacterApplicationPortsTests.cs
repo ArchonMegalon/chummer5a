@@ -31,14 +31,15 @@ public class CharacterApplicationPortsTests
 
         ICharacterMetadataCommands commands = new XmlCharacterMetadataCommands(new CharacterFileService());
         UpdateCharacterMetadataResult result = commands.UpdateMetadata(new UpdateCharacterMetadataCommand(
-            Xml: xml,
-            Name: "Updated",
-            Alias: "Alias",
-            Notes: "Hello"));
+            Document: new CharacterDocument(xml),
+            Update: new CharacterMetadataUpdate(
+                Name: "Updated",
+                Alias: "Alias",
+                Notes: "Hello")));
 
         Assert.AreEqual("Updated", result.Summary.Name);
         Assert.AreEqual("Alias", result.Summary.Alias);
-        StringAssert.Contains(result.UpdatedXml, "<notes>Hello</notes>");
+        StringAssert.Contains(result.UpdatedDocument.Content, "<notes>Hello</notes>");
     }
 
     [TestMethod]
