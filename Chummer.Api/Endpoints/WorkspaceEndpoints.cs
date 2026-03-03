@@ -1,5 +1,4 @@
 using Chummer.Application.Workspaces;
-using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
 
@@ -9,7 +8,7 @@ public static class WorkspaceEndpoints
 {
     public static IEndpointRouteBuilder MapWorkspaceEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/workspaces/import", (IWorkspaceService workspaceService, CharacterXmlRequest request) =>
+        app.MapPost("/api/workspaces/import", (IWorkspaceService workspaceService, WorkspaceImportRequest request) =>
         {
             WorkspaceImportResult result = workspaceService.Import(new WorkspaceImportDocument(request.Xml));
             return Results.Ok(new WorkspaceImportResponse(

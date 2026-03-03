@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
 
@@ -18,7 +17,7 @@ public sealed class HttpChummerClient : IChummerClient
     {
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             "/api/workspaces/import",
-            new CharacterXmlRequest(document.Xml),
+            new WorkspaceImportRequest(document.Xml),
             ct);
 
         if (!response.IsSuccessStatusCode)
