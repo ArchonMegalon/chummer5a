@@ -3,7 +3,7 @@ services:
     image: chummer-web:local
     build:
       context: .
-      dockerfile: Chummer.Web/Dockerfile
+      dockerfile: Chummer.Api/Dockerfile
     ports:
       - "${CHUMMER_WEB_PORT:-8088}:8080"
   chummer-tests:

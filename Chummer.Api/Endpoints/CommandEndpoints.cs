@@ -1,6 +1,6 @@
 using Chummer.Contracts.Presentation;
 
-namespace Chummer.Web.Endpoints;
+namespace Chummer.Api.Endpoints;
 
 public static class CommandEndpoints
 {

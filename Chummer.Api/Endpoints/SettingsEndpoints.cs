@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
 using Chummer.Application.Tools;
 
-namespace Chummer.Web.Endpoints;
+namespace Chummer.Api.Endpoints;
 
 public static class SettingsEndpoints
 {

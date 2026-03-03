@@ -30,7 +30,7 @@ public class ArchitectureGuardrailTests
     [TestMethod]
     public void Program_host_file_stays_transport_only()
     {
-        string programPath = FindPath("Chummer.Web", "Program.cs");
+        string programPath = FindPath("Chummer.Api", "Program.cs");
         string text = File.ReadAllText(programPath);
 
         StringAssert.Contains(text, "app.MapInfoEndpoints();");
@@ -74,7 +74,7 @@ public class ArchitectureGuardrailTests
     [TestMethod]
     public void Tools_endpoints_stay_transport_only()
     {
-        string endpointPath = FindPath("Chummer.Web", "Endpoints", "ToolsEndpoints.cs");
+        string endpointPath = FindPath("Chummer.Api", "Endpoints", "ToolsEndpoints.cs");
         string text = File.ReadAllText(endpointPath);
 
         Assert.IsFalse(text.Contains("Directory.", StringComparison.Ordinal));
@@ -87,6 +87,15 @@ public class ArchitectureGuardrailTests
     public void Web_project_does_not_reference_core_directly()
     {
         string projectPath = FindPath("Chummer.Web", "Chummer.Web.csproj");
+        string text = File.ReadAllText(projectPath);
+
+        Assert.IsFalse(text.Contains(@"..\Chummer.Core\Chummer.Core.csproj", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void Api_project_does_not_reference_core_directly()
+    {
+        string projectPath = FindPath("Chummer.Api", "Chummer.Api.csproj");
         string text = File.ReadAllText(projectPath);
 
         Assert.IsFalse(text.Contains(@"..\Chummer.Core\Chummer.Core.csproj", StringComparison.Ordinal));
@@ -131,7 +140,8 @@ public class ArchitectureGuardrailTests
             ["Chummer.Application"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
             ["Chummer.Presentation"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
             ["Chummer.Infrastructure"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts" },
-            ["Chummer.Web"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure" }
+            ["Chummer.Api"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure" },
+            ["Chummer.Web"] = new HashSet<string>(StringComparer.Ordinal)
         };
 
         foreach ((string project, HashSet<string> allowed) in allowedReferences)

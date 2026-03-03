@@ -1,6 +1,6 @@
 using Chummer.Application.LifeModules;
 
-namespace Chummer.Web.Endpoints;
+namespace Chummer.Api.Endpoints;
 
 public static class LifeModulesEndpoints
 {

@@ -6,10 +6,4 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Chummer.Application\Chummer.Application.csproj" />
-    <ProjectReference Include="..\Chummer.Contracts\Chummer.Contracts.csproj" />
-    <ProjectReference Include="..\Chummer.Infrastructure\Chummer.Infrastructure.csproj" />
-  </ItemGroup>
-
 </Project>

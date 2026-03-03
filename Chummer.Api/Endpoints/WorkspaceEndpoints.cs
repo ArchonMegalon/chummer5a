@@ -3,7 +3,7 @@ using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
 
-namespace Chummer.Web.Endpoints;
+namespace Chummer.Api.Endpoints;
 
 public static class WorkspaceEndpoints
 {

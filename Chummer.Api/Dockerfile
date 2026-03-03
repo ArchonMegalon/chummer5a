@@ -1,23 +1,24 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY global.json ./
 COPY Chummer.Core/Chummer.Core.csproj Chummer.Core/
 COPY Chummer.Application/Chummer.Application.csproj Chummer.Application/
 COPY Chummer.Contracts/Chummer.Contracts.csproj Chummer.Contracts/
 COPY Chummer.Infrastructure/Chummer.Infrastructure.csproj Chummer.Infrastructure/
-COPY Chummer.Presentation/Chummer.Presentation.csproj Chummer.Presentation/
 COPY Chummer.Api/Chummer.Api.csproj Chummer.Api/
-COPY Chummer.Tests/Chummer.Tests.csproj Chummer.Tests/
-RUN dotnet restore Chummer.Tests/Chummer.Tests.csproj -p:TargetFramework=net10.0
+RUN dotnet restore Chummer.Api/Chummer.Api.csproj
 
 COPY Chummer.Core/ Chummer.Core/
 COPY Chummer.Application/ Chummer.Application/
 COPY Chummer.Contracts/ Chummer.Contracts/
 COPY Chummer.Infrastructure/ Chummer.Infrastructure/
-COPY Chummer.Presentation/ Chummer.Presentation/
 COPY Chummer.Api/ Chummer.Api/
-COPY Chummer.Tests/ Chummer.Tests/
-COPY Chummer.Web/ Chummer.Web/
-COPY Chummer/ Chummer/
-RUN dotnet build Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0 --no-restore -p:TargetFramework=net10.0
+RUN dotnet publish Chummer.Api/Chummer.Api.csproj -c Release -o /out
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /out/ .
+COPY Chummer/data/ /app/data/
+COPY Chummer/lang/ /app/lang/
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Chummer.Api.dll"]

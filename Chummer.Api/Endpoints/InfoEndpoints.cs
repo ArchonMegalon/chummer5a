@@ -1,6 +1,6 @@
 using System.Xml;
 
-namespace Chummer.Web.Endpoints;
+namespace Chummer.Api.Endpoints;
 
 public static class InfoEndpoints
 {

@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Chummer.Application.Tools;
 using Chummer.Contracts.Api;
 
-namespace Chummer.Web.Endpoints;
+namespace Chummer.Api.Endpoints;
 
 public static class ToolsEndpoints
 {

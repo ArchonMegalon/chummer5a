@@ -2,7 +2,7 @@ using Chummer.Application.Characters;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 
-namespace Chummer.Web.Endpoints;
+namespace Chummer.Api.Endpoints;
 
 public static class CharacterEndpoints
 {
