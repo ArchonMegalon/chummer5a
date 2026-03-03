@@ -4,8 +4,12 @@ services:
     build:
       context: .
       dockerfile: Chummer.Api/Dockerfile
+    environment:
+      CHUMMER_STATE_PATH: "/app/state"
     ports:
       - "${CHUMMER_WEB_PORT:-8088}:8080"
+    volumes:
+      - chummer-state:/app/state
   chummer-blazor:
     image: chummer-blazor:local
     build:
@@ -36,3 +40,6 @@ services:
       --no-build
       --no-restore
       --logger "trx;LogFileName=test-results-linux.trx"
+
+volumes:
+  chummer-state:

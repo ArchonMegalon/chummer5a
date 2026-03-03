@@ -11,6 +11,7 @@ namespace Chummer.Infrastructure.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
+    private const string StatePathEnvironmentVariable = "CHUMMER_STATE_PATH";
     private const string WorkspaceStorePathEnvironmentVariable = "CHUMMER_WORKSPACE_STORE_PATH";
 
     public static IServiceCollection AddChummerHeadlessCore(
@@ -19,6 +20,7 @@ public static class ServiceCollectionExtensions
         string currentDirectory)
     {
         ArgumentNullException.ThrowIfNull(services);
+        string stateDirectory = ResolveStateDirectory(baseDirectory);
 
         services.AddSingleton<ICharacterFileService, CharacterFileService>();
         services.AddSingleton<ICharacterSectionService, CharacterSectionService>();
@@ -45,17 +47,26 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IDataExportService, DataExportService>();
         services.AddSingleton<IToolCatalogService, XmlToolCatalogService>();
-        services.AddSingleton<ISettingsStore, FileSettingsStore>();
-        services.AddSingleton<IRosterStore, FileRosterStore>();
+        services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(stateDirectory));
+        services.AddSingleton<IRosterStore>(_ => new FileRosterStore(stateDirectory));
         services.AddSingleton<IWorkspaceStore>(_ =>
         {
-            string? stateDirectory = Environment.GetEnvironmentVariable(WorkspaceStorePathEnvironmentVariable);
-            return string.IsNullOrWhiteSpace(stateDirectory)
-                ? new InMemoryWorkspaceStore()
-                : new FileWorkspaceStore(stateDirectory);
+            string? workspaceDirectory = Environment.GetEnvironmentVariable(WorkspaceStorePathEnvironmentVariable);
+            return string.IsNullOrWhiteSpace(workspaceDirectory)
+                ? new FileWorkspaceStore(stateDirectory)
+                : new FileWorkspaceStore(workspaceDirectory);
         });
         services.AddSingleton<IWorkspaceService, WorkspaceService>();
 
         return services;
+    }
+
+    private static string ResolveStateDirectory(string baseDirectory)
+    {
+        string? configured = Environment.GetEnvironmentVariable(StatePathEnvironmentVariable);
+        if (!string.IsNullOrWhiteSpace(configured))
+            return configured;
+
+        return Path.Combine(baseDirectory, "state");
     }
 }

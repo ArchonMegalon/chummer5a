@@ -149,6 +149,20 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Default_state_persistence_is_file_backed_and_configurable()
+    {
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+
+        StringAssert.Contains(serviceRegistrationText, "CHUMMER_STATE_PATH");
+        StringAssert.Contains(serviceRegistrationText, "new FileSettingsStore(stateDirectory)");
+        StringAssert.Contains(serviceRegistrationText, "new FileRosterStore(stateDirectory)");
+        StringAssert.Contains(serviceRegistrationText, "new FileWorkspaceStore(stateDirectory)");
+        StringAssert.Contains(serviceRegistrationText, "CHUMMER_WORKSPACE_STORE_PATH");
+        Assert.IsFalse(serviceRegistrationText.Contains("new InMemoryWorkspaceStore()", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void App_command_catalog_ids_are_unique()
     {
         List<string> duplicateIds = AppCommandCatalog.All
