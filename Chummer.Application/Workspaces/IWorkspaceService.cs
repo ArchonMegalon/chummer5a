@@ -25,5 +25,5 @@ public interface IWorkspaceService
 
     CommandResult<CharacterProfileSection> UpdateMetadata(CharacterWorkspaceId id, UpdateWorkspaceMetadata command);
 
-    CommandResult<string> Save(CharacterWorkspaceId id);
+    CommandResult<WorkspaceDocument> Save(CharacterWorkspaceId id);
 }

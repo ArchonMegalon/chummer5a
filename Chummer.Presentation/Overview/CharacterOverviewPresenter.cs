@@ -129,7 +129,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         try
         {
-            CommandResult<string> result = await _client.SaveAsync(_currentWorkspace.Value, ct);
+            CommandResult<WorkspaceDocument> result = await _client.SaveAsync(_currentWorkspace.Value, ct);
             if (!result.Success || result.Value is null)
             {
                 Publish(State with
@@ -145,7 +145,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 IsBusy = false,
                 Error = null,
                 WorkspaceId = _currentWorkspace,
-                LastSavedXml = result.Value
+                HasSavedWorkspace = true
             });
         }
         catch (Exception ex)
@@ -182,7 +182,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Build: buildTask.Result,
             Movement: movementTask.Result,
             Awakening: awakeningTask.Result,
-            LastSavedXml: State.LastSavedXml));
+            HasSavedWorkspace: State.HasSavedWorkspace));
     }
 
     private void Publish(CharacterOverviewState state)

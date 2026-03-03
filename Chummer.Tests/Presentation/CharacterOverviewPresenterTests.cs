@@ -86,7 +86,7 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
-    public async Task SaveAsync_sets_last_saved_xml_after_workspace_load()
+    public async Task SaveAsync_marks_workspace_as_saved_after_workspace_load()
     {
         var client = new FakeChummerClient();
         var presenter = new CharacterOverviewPresenter(client);
@@ -96,7 +96,7 @@ public class CharacterOverviewPresenterTests
         await presenter.SaveAsync(CancellationToken.None);
 
         Assert.IsNull(presenter.State.Error);
-        StringAssert.Contains(presenter.State.LastSavedXml ?? string.Empty, "Updated");
+        Assert.IsTrue(presenter.State.HasSavedWorkspace);
     }
 
     private sealed class FakeChummerClient : IChummerClient
@@ -320,12 +320,12 @@ public class CharacterOverviewPresenterTests
                 Error: null));
         }
 
-        public Task<CommandResult<string>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct)
+        public Task<CommandResult<WorkspaceDocument>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct)
         {
             string xml = $"<character><name>{_name}</name><alias>{_alias}</alias></character>";
-            return Task.FromResult(new CommandResult<string>(
+            return Task.FromResult(new CommandResult<WorkspaceDocument>(
                 Success: true,
-                Value: xml,
+                Value: new WorkspaceDocument(xml),
                 Error: null));
         }
     }

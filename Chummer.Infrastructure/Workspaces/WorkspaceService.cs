@@ -99,19 +99,19 @@ public sealed class WorkspaceService : IWorkspaceService
             Error: null);
     }
 
-    public CommandResult<string> Save(CharacterWorkspaceId id)
+    public CommandResult<WorkspaceDocument> Save(CharacterWorkspaceId id)
     {
         if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
         {
-            return new CommandResult<string>(
+            return new CommandResult<WorkspaceDocument>(
                 Success: false,
                 Value: null,
                 Error: "Workspace not found.");
         }
 
-        return new CommandResult<string>(
+        return new CommandResult<WorkspaceDocument>(
             Success: true,
-            Value: document.Xml,
+            Value: document,
             Error: null);
     }
 

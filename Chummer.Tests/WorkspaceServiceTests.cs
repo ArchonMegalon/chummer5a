@@ -56,6 +56,6 @@ public class WorkspaceServiceTests
 
         var save = workspaceService.Save(imported.Id);
         Assert.IsTrue(save.Success);
-        StringAssert.Contains(save.Value ?? string.Empty, "Updated");
+        StringAssert.Contains(save.Value?.Xml ?? string.Empty, "Updated");
     }
 }

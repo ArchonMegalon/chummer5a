@@ -14,7 +14,7 @@ public sealed record CharacterOverviewState(
     CharacterBuildSection? Build,
     CharacterMovementSection? Movement,
     CharacterAwakeningSection? Awakening,
-    string? LastSavedXml)
+    bool HasSavedWorkspace)
 {
     public static CharacterOverviewState Empty { get; } = new(
         IsBusy: false,
@@ -27,5 +27,5 @@ public sealed record CharacterOverviewState(
         Build: null,
         Movement: null,
         Awakening: null,
-        LastSavedXml: null);
+        HasSavedWorkspace: false);
 }
