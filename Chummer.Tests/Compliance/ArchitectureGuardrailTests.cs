@@ -39,6 +39,7 @@ public class ArchitectureGuardrailTests
         StringAssert.Contains(text, "app.MapSettingsEndpoints();");
         StringAssert.Contains(text, "app.MapRosterEndpoints();");
         StringAssert.Contains(text, "app.MapCommandEndpoints();");
+        StringAssert.Contains(text, "app.MapWorkspaceEndpoints();");
 
         Assert.IsFalse(text.Contains("Path.GetTempPath()", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("File.", StringComparison.Ordinal));

@@ -1,8 +1,10 @@
 using Chummer.Application.Characters;
 using Chummer.Application.Tools;
+using Chummer.Application.Workspaces;
 using Chummer.Core.Characters;
 using Chummer.Core.LifeModules;
 using Chummer.Infrastructure.Files;
+using Chummer.Infrastructure.Workspaces;
 using Chummer.Infrastructure.Xml;
 using Chummer.Web.Endpoints;
 
@@ -21,6 +23,8 @@ builder.Services.AddSingleton<ILifeModulesService>(_ =>
 builder.Services.AddSingleton<IDataExportService, DataExportService>();
 builder.Services.AddSingleton<ISettingsStore, FileSettingsStore>();
 builder.Services.AddSingleton<IRosterStore, FileRosterStore>();
+builder.Services.AddSingleton<IWorkspaceStore, InMemoryWorkspaceStore>();
+builder.Services.AddSingleton<IWorkspaceService, WorkspaceService>();
 
 var app = builder.Build();
 
@@ -34,5 +38,6 @@ app.MapToolsEndpoints();
 app.MapSettingsEndpoints();
 app.MapRosterEndpoints();
 app.MapCommandEndpoints();
+app.MapWorkspaceEndpoints();
 
 app.Run();

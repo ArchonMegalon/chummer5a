@@ -319,6 +319,42 @@ public class ApiIntegrationTests
         Assert.IsTrue(response["commands"] is JsonArray);
     }
 
+    [TestMethod]
+    public async Task Workspace_endpoints_import_read_update_and_save_character()
+    {
+        using var client = CreateClient();
+
+        const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created><newskills><skills><skill><guid>s1</guid><suid>suid1</suid><skillcategory>Combat</skillcategory><isknowledge>False</isknowledge><base>6</base><karma>0</karma><specs><spec><name>Semi-Automatics</name></spec></specs></skill></skills></newskills></character>";
+        JsonObject importBody = new()
+        {
+            ["xml"] = xml
+        };
+
+        JsonObject importResponse = await PostRequiredJsonObject(client, "/api/workspaces/import", importBody);
+        string workspaceId = importResponse["id"]?.GetValue<string>() ?? string.Empty;
+        Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceId));
+
+        JsonObject profile = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/profile");
+        Assert.AreEqual("Neo", profile["name"]?.GetValue<string>());
+
+        JsonObject skills = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/skills");
+        Assert.AreEqual(1, skills["count"]?.GetValue<int>());
+
+        JsonObject patchBody = new()
+        {
+            ["name"] = "Updated Name",
+            ["alias"] = "Updated Alias",
+            ["notes"] = "Updated notes"
+        };
+
+        JsonObject patchResponse = await PatchRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/metadata", patchBody);
+        Assert.AreEqual("Updated Name", patchResponse["profile"]?["name"]?.GetValue<string>());
+
+        JsonObject saveResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/save", new JsonObject());
+        Assert.AreEqual(workspaceId, saveResponse["id"]?.GetValue<string>());
+        StringAssert.Contains(saveResponse["xml"]?.GetValue<string>() ?? string.Empty, "Updated Name");
+    }
+
     private static HttpClient CreateClient()
     {
         var client = new HttpClient
@@ -347,6 +383,21 @@ public class ApiIntegrationTests
         using HttpResponseMessage response = await client.PostAsync(relativePath, request);
         string content = await response.Content.ReadAsStringAsync();
         Assert.IsTrue(response.IsSuccessStatusCode, $"POST {relativePath} failed with {(int)response.StatusCode}: {content}");
+
+        JsonNode parsed = JsonNode.Parse(content);
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        return (JsonObject)parsed!;
+    }
+
+    private static async Task<JsonObject> PatchRequiredJsonObject(HttpClient client, string relativePath, JsonObject payload)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Patch, relativePath)
+        {
+            Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
+        };
+        using HttpResponseMessage response = await client.SendAsync(request);
+        string content = await response.Content.ReadAsStringAsync();
+        Assert.IsTrue(response.IsSuccessStatusCode, $"PATCH {relativePath} failed with {(int)response.StatusCode}: {content}");
 
         JsonNode parsed = JsonNode.Parse(content);
         Assert.IsInstanceOfType<JsonObject>(parsed);
