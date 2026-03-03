@@ -4,7 +4,7 @@ namespace Chummer.Application.Characters;
 
 public interface ICharacterFileQueries
 {
-    CharacterFileSummary ParseSummary(string xml);
+    CharacterFileSummary ParseSummary(CharacterXmlDocument document);
 
-    CharacterValidationResult Validate(string xml);
+    CharacterValidationResult Validate(CharacterXmlDocument document);
 }

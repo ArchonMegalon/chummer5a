@@ -12,13 +12,13 @@ public sealed class XmlCharacterFileQueries : ICharacterFileQueries
         _characterFileService = characterFileService;
     }
 
-    public CharacterFileSummary ParseSummary(string xml)
+    public CharacterFileSummary ParseSummary(CharacterXmlDocument document)
     {
-        return _characterFileService.ParseSummaryFromXml(xml);
+        return _characterFileService.ParseSummaryFromXml(document.Xml);
     }
 
-    public CharacterValidationResult Validate(string xml)
+    public CharacterValidationResult Validate(CharacterXmlDocument document)
     {
-        return _characterFileService.ValidateXml(xml);
+        return _characterFileService.ValidateXml(document.Xml);
     }
 }

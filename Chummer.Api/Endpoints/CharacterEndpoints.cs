@@ -10,13 +10,13 @@ public static class CharacterEndpoints
     {
         app.MapPost("/api/characters/summary", (ICharacterFileQueries characterFileQueries, CharacterXmlRequest request) =>
         {
-            var summary = characterFileQueries.ParseSummary(request.Xml);
+            var summary = characterFileQueries.ParseSummary(new CharacterXmlDocument(request.Xml));
             return Results.Ok(summary);
         });
 
         app.MapPost("/api/characters/validate", (ICharacterFileQueries characterFileQueries, CharacterXmlRequest request) =>
         {
-            var validation = characterFileQueries.Validate(request.Xml);
+            var validation = characterFileQueries.Validate(new CharacterXmlDocument(request.Xml));
             return Results.Ok(validation);
         });
 

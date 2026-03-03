@@ -19,18 +19,18 @@ public sealed class DataExportService : IDataExportService
         _sectionQueries = sectionQueries;
     }
 
-    public DataExportBundle BuildBundle(string xml)
+    public DataExportBundle BuildBundle(CharacterXmlDocument document)
     {
-        CharacterFileSummary? summary = SafeParse(() => _characterFileQueries.ParseSummary(xml));
-        summary ??= BuildFallbackSummary(xml);
+        CharacterFileSummary? summary = SafeParse(() => _characterFileQueries.ParseSummary(document));
+        summary ??= BuildFallbackSummary(document);
 
-        CharacterProfileSection? profile = SafeParse(() => ParseSection<CharacterProfileSection>("profile", xml));
-        CharacterProgressSection? progress = SafeParse(() => ParseSection<CharacterProgressSection>("progress", xml));
-        CharacterAttributesSection? attributes = SafeParse(() => ParseSection<CharacterAttributesSection>("attributes", xml));
-        CharacterSkillsSection? skills = SafeParse(() => ParseSection<CharacterSkillsSection>("skills", xml));
-        CharacterInventorySection? inventory = SafeParse(() => ParseSection<CharacterInventorySection>("inventory", xml));
-        CharacterQualitiesSection? qualities = SafeParse(() => ParseSection<CharacterQualitiesSection>("qualities", xml));
-        CharacterContactsSection? contacts = SafeParse(() => ParseSection<CharacterContactsSection>("contacts", xml));
+        CharacterProfileSection? profile = SafeParse(() => ParseSection<CharacterProfileSection>("profile", document.Xml));
+        CharacterProgressSection? progress = SafeParse(() => ParseSection<CharacterProgressSection>("progress", document.Xml));
+        CharacterAttributesSection? attributes = SafeParse(() => ParseSection<CharacterAttributesSection>("attributes", document.Xml));
+        CharacterSkillsSection? skills = SafeParse(() => ParseSection<CharacterSkillsSection>("skills", document.Xml));
+        CharacterInventorySection? inventory = SafeParse(() => ParseSection<CharacterInventorySection>("inventory", document.Xml));
+        CharacterQualitiesSection? qualities = SafeParse(() => ParseSection<CharacterQualitiesSection>("qualities", document.Xml));
+        CharacterContactsSection? contacts = SafeParse(() => ParseSection<CharacterContactsSection>("contacts", document.Xml));
 
         return new DataExportBundle(
             Summary: summary,
@@ -60,11 +60,11 @@ public sealed class DataExportService : IDataExportService
         }
     }
 
-    private static CharacterFileSummary BuildFallbackSummary(string xml)
+    private static CharacterFileSummary BuildFallbackSummary(CharacterXmlDocument document)
     {
         try
         {
-            XDocument doc = XDocument.Parse(xml, LoadOptions.None);
+            XDocument doc = XDocument.Parse(document.Xml, LoadOptions.None);
             XElement? root = doc.Root;
             string name = root?.Element("name")?.Value ?? string.Empty;
             string alias = root?.Element("alias")?.Value ?? string.Empty;

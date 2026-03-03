@@ -17,7 +17,7 @@ public class CharacterApplicationPortsTests
         const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created></character>";
 
         ICharacterFileQueries queries = new XmlCharacterFileQueries(new CharacterFileService());
-        CharacterFileSummary summary = queries.ParseSummary(xml);
+        CharacterFileSummary summary = queries.ParseSummary(new CharacterXmlDocument(xml));
 
         Assert.AreEqual("Neo", summary.Name);
         Assert.AreEqual("The One", summary.Alias);

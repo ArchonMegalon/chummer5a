@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Chummer.Application.Tools;
 using Chummer.Contracts.Api;
+using Chummer.Contracts.Characters;
 
 namespace Chummer.Api.Endpoints;
 
@@ -46,7 +47,7 @@ public static class ToolsEndpoints
 
         app.MapPost("/api/tools/data-export", (IDataExportService dataExportService, CharacterXmlRequest request) =>
         {
-            DataExportBundle bundle = dataExportService.BuildBundle(request.Xml);
+            DataExportBundle bundle = dataExportService.BuildBundle(new CharacterXmlDocument(request.Xml));
             return Results.Ok(bundle);
         });
 

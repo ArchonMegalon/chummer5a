@@ -15,14 +15,12 @@ public class XmlBoundaryGuardrailTests
 
     private static readonly Dictionary<string, int> AllowedXmlInterfaceParameterCounts = new(StringComparer.Ordinal)
     {
-        ["ICharacterFileQueries"] = 2,
         ["ICharacterInventoryQueries"] = 14,
         ["ICharacterMagicResonanceQueries"] = 12,
         ["ICharacterOverviewQueries"] = 7,
         ["ICharacterSectionQueries"] = 1,
         ["ICharacterSocialNarrativeQueries"] = 8,
-        ["ICharacterStatsQueries"] = 3,
-        ["IDataExportService"] = 1
+        ["ICharacterStatsQueries"] = 3
     };
 
     [TestMethod]

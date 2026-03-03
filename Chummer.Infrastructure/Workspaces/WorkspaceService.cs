@@ -28,7 +28,7 @@ public sealed class WorkspaceService : IWorkspaceService
     {
         string xml = document.Xml;
         CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(xml));
-        CharacterFileSummary summary = _characterFileQueries.ParseSummary(xml);
+        CharacterFileSummary summary = _characterFileQueries.ParseSummary(new CharacterXmlDocument(xml));
         return new WorkspaceImportResult(id, summary);
     }
 

@@ -25,3 +25,6 @@ public sealed record CharacterMetadataUpdate(
     string? Name,
     string? Alias,
     string? Notes);
+
+public sealed record CharacterXmlDocument(
+    string Xml);
