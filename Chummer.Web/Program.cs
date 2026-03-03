@@ -14,7 +14,18 @@ builder.Services.AddSingleton<ICharacterFileService, CharacterFileService>();
 builder.Services.AddSingleton<ICharacterSectionService, CharacterSectionService>();
 builder.Services.AddSingleton<ICharacterFileQueries, XmlCharacterFileQueries>();
 builder.Services.AddSingleton<ICharacterMetadataCommands, XmlCharacterMetadataCommands>();
-builder.Services.AddSingleton<ICharacterSectionQueries, XmlCharacterSectionQueries>();
+builder.Services.AddSingleton<ICharacterOverviewQueries, XmlCharacterOverviewQueries>();
+builder.Services.AddSingleton<ICharacterStatsQueries, XmlCharacterStatsQueries>();
+builder.Services.AddSingleton<ICharacterInventoryQueries, XmlCharacterInventoryQueries>();
+builder.Services.AddSingleton<ICharacterMagicResonanceQueries, XmlCharacterMagicResonanceQueries>();
+builder.Services.AddSingleton<ICharacterSocialNarrativeQueries, XmlCharacterSocialNarrativeQueries>();
+builder.Services.AddSingleton<ICharacterSectionQueries>(provider =>
+    new XmlCharacterSectionQueries(
+        provider.GetRequiredService<ICharacterOverviewQueries>(),
+        provider.GetRequiredService<ICharacterStatsQueries>(),
+        provider.GetRequiredService<ICharacterInventoryQueries>(),
+        provider.GetRequiredService<ICharacterMagicResonanceQueries>(),
+        provider.GetRequiredService<ICharacterSocialNarrativeQueries>()));
 builder.Services.AddSingleton<ILifeModulesService>(_ =>
 {
     string path = LifeModulesPathResolver.Resolve(AppContext.BaseDirectory, Directory.GetCurrentDirectory());

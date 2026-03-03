@@ -17,9 +17,16 @@ printf '%s' "$xml_payload" > "$payload_file"
 
 check_post() {
   local path="$1"
-  local out
+  local out status
+  local response_file
+  response_file=$(mktemp)
   echo "checking: $path"
-  if ! out=$(curl -fsS -X POST "$BASE_URL$path" -H "Content-Type: application/json" --data-binary "@$payload_file"); then
+  status=$(curl -sS -o "$response_file" -w "%{http_code}" -X POST "$BASE_URL$path" -H "Content-Type: application/json" --data-binary "@$payload_file")
+  out=$(cat "$response_file")
+  rm -f "$response_file"
+  if [[ "$status" -lt 200 || "$status" -ge 300 ]]; then
+    echo "status: $status" >&2
+    [[ -n "$out" ]] && echo "$out" >&2
     echo "failed: $path" >&2
     return 1
   fi
