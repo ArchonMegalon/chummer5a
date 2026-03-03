@@ -124,6 +124,19 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Docker_compose_exposes_blazor_head_with_api_dependency()
+    {
+        string projectPath = FindPath("Chummer.Blazor", "Chummer.Blazor.csproj");
+        string projectText = File.ReadAllText(projectPath);
+        string programPath = FindPath("Chummer.Blazor", "Program.cs");
+        string programText = File.ReadAllText(programPath);
+
+        StringAssert.Contains(projectText, "<Project Sdk=\"Microsoft.NET.Sdk.Web\">");
+        StringAssert.Contains(programText, "AddRazorComponents()");
+        StringAssert.Contains(programText, "CHUMMER_API_BASE_URL");
+    }
+
+    [TestMethod]
     public void App_command_catalog_ids_are_unique()
     {
         List<string> duplicateIds = AppCommandCatalog.All

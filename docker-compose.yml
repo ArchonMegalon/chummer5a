@@ -6,6 +6,18 @@ services:
       dockerfile: Chummer.Api/Dockerfile
     ports:
       - "${CHUMMER_WEB_PORT:-8088}:8080"
+  chummer-blazor:
+    image: chummer-blazor:local
+    build:
+      context: .
+      dockerfile: Chummer.Blazor/Dockerfile
+    depends_on:
+      - chummer-web
+    environment:
+      CHUMMER_API_BASE_URL: "http://chummer-web:8080"
+    ports:
+      - "${CHUMMER_BLAZOR_PORT:-8089}:8080"
+    profiles: ["ui"]
   chummer-tests:
     image: chummer-tests:local
     build:
