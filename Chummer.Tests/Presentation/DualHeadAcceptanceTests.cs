@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +21,7 @@ public class DualHeadAcceptanceTests
     [TestMethod]
     public async Task Avalonia_and_Blazor_overview_flows_show_equivalent_state_after_import()
     {
-        const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created><gameedition>SR5</gameedition><settings>default.xml</settings><gameplayoption>Standard</gameplayoption><gameplayoptionqualitylimit>25</gameplayoptionqualitylimit><maxnuyen>10</maxnuyen><maxkarma>25</maxkarma><contactmultiplier>3</contactmultiplier><walk>2/1/0</walk><run>4/0/0</run><sprint>2/1/0</sprint><walkalt>2/1/0</walkalt><runalt>4/0/0</runalt><sprintalt>2/1/0</sprintalt><magenabled>False</magenabled><resenabled>False</resenabled><depenabled>False</depenabled><newskills><skills><skill><guid>s1</guid><suid>suid1</suid><skillcategory>Combat</skillcategory><isknowledge>False</isknowledge><base>6</base><karma>0</karma><specs><spec><name>Semi-Automatics</name></spec></specs></skill></skills></newskills></character>";
+        string xml = File.ReadAllText(FindTestFilePath("Barrett.chum5"));
 
         CharacterOverviewState avaloniaState;
         using (HttpClient http = CreateClient())
@@ -47,12 +49,14 @@ public class DualHeadAcceptanceTests
         Assert.AreEqual(avaloniaState.Progress?.Karma, blazorState.Progress?.Karma);
         Assert.AreEqual(avaloniaState.Skills?.Count, blazorState.Skills?.Count);
         Assert.AreEqual(avaloniaState.Rules?.GameEdition, blazorState.Rules?.GameEdition);
+        Assert.AreEqual("Moa", avaloniaState.Profile?.Name);
+        Assert.AreEqual("Barrett", avaloniaState.Profile?.Alias);
     }
 
     [TestMethod]
     public async Task Avalonia_and_Blazor_metadata_save_roundtrip_match()
     {
-        const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created><gameedition>SR5</gameedition><settings>default.xml</settings><gameplayoption>Standard</gameplayoption><gameplayoptionqualitylimit>25</gameplayoptionqualitylimit><maxnuyen>10</maxnuyen><maxkarma>25</maxkarma><contactmultiplier>3</contactmultiplier><walk>2/1/0</walk><run>4/0/0</run><sprint>2/1/0</sprint><walkalt>2/1/0</walkalt><runalt>4/0/0</runalt><sprintalt>2/1/0</sprintalt><magenabled>False</magenabled><resenabled>False</resenabled><depenabled>False</depenabled><newskills><skills><skill><guid>s1</guid><suid>suid1</suid><skillcategory>Combat</skillcategory><isknowledge>False</isknowledge><base>6</base><karma>0</karma><specs><spec><name>Semi-Automatics</name></spec></specs></skill></skills></newskills></character>";
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
         UpdateWorkspaceMetadata update = new("Updated Name", "Updated Alias", "Updated Notes");
 
         CharacterOverviewState avaloniaState;
@@ -105,5 +109,24 @@ public class DualHeadAcceptanceTests
             throw new InvalidOperationException($"Invalid CHUMMER_WEB_BASE_URL: '{raw}'");
 
         return uri;
+    }
+
+    private static string FindTestFilePath(string fileName)
+    {
+        string? root = Environment.GetEnvironmentVariable("CHUMMER_REPO_ROOT");
+        string[] candidates =
+        {
+            Path.Combine(Directory.GetCurrentDirectory(), "Chummer.Tests", "TestFiles", fileName),
+            Path.Combine(Directory.GetCurrentDirectory(), "TestFiles", fileName),
+            Path.Combine(AppContext.BaseDirectory, "TestFiles", fileName),
+            Path.Combine("/src", "Chummer.Tests", "TestFiles", fileName),
+            string.IsNullOrWhiteSpace(root) ? string.Empty : Path.Combine(root, "Chummer.Tests", "TestFiles", fileName)
+        };
+
+        string? match = candidates.FirstOrDefault(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path));
+        if (match is null)
+            throw new FileNotFoundException("Could not locate test file.", fileName);
+
+        return match;
     }
 }

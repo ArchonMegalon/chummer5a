@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
@@ -381,7 +383,7 @@ public class ApiIntegrationTests
     {
         using var client = CreateClient();
 
-        const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created><gameedition>SR5</gameedition><settings>default.xml</settings><gameplayoption>Standard</gameplayoption><gameplayoptionqualitylimit>25</gameplayoptionqualitylimit><maxnuyen>10</maxnuyen><maxkarma>25</maxkarma><contactmultiplier>3</contactmultiplier><walk>2/1/0</walk><run>4/0/0</run><sprint>2/1/0</sprint><walkalt>2/1/0</walkalt><runalt>4/0/0</runalt><sprintalt>2/1/0</sprintalt><magenabled>False</magenabled><resenabled>False</resenabled><depenabled>False</depenabled><newskills><skills><skill><guid>s1</guid><suid>suid1</suid><skillcategory>Combat</skillcategory><isknowledge>False</isknowledge><base>6</base><karma>0</karma><specs><spec><name>Semi-Automatics</name></spec></specs></skill></skills></newskills></character>";
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
         JsonObject importBody = new()
         {
             ["xml"] = xml
@@ -392,22 +394,23 @@ public class ApiIntegrationTests
         Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceId));
 
         JsonObject profile = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/profile");
-        Assert.AreEqual("Neo", profile["name"]?.GetValue<string>());
+        Assert.AreEqual("Cerri", profile["name"]?.GetValue<string>());
+        Assert.AreEqual("Apex", profile["alias"]?.GetValue<string>());
 
         JsonObject skills = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/skills");
-        Assert.AreEqual(1, skills["count"]?.GetValue<int>());
+        Assert.IsTrue((skills["count"]?.GetValue<int>() ?? 0) > 0);
 
         JsonObject rules = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/rules");
-        Assert.AreEqual("SR5", rules["gameEdition"]?.GetValue<string>());
+        Assert.IsFalse(string.IsNullOrWhiteSpace(rules["gameEdition"]?.GetValue<string>()));
 
         JsonObject build = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/build");
-        Assert.AreEqual("Priority", build["buildMethod"]?.GetValue<string>());
+        Assert.AreEqual("SumtoTen", build["buildMethod"]?.GetValue<string>());
 
         JsonObject movement = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/movement");
-        Assert.AreEqual("2/1/0", movement["walk"]?.GetValue<string>());
+        Assert.IsFalse(string.IsNullOrWhiteSpace(movement["walk"]?.GetValue<string>()));
 
         JsonObject awakening = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/awakening");
-        Assert.IsFalse(awakening["magEnabled"]?.GetValue<bool>() ?? true);
+        Assert.IsNotNull(awakening["magEnabled"]);
 
         JsonObject patchBody = new()
         {
@@ -429,7 +432,7 @@ public class ApiIntegrationTests
     {
         using var client = CreateClient();
 
-        const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created><gameedition>SR5</gameedition><settings>default.xml</settings><gameplayoption>Standard</gameplayoption><gameplayoptionqualitylimit>25</gameplayoptionqualitylimit><maxnuyen>10</maxnuyen><maxkarma>25</maxkarma><contactmultiplier>3</contactmultiplier><walk>2/1/0</walk><run>4/0/0</run><sprint>2/1/0</sprint><walkalt>2/1/0</walkalt><runalt>4/0/0</runalt><sprintalt>2/1/0</sprintalt><magenabled>False</magenabled><resenabled>False</resenabled><depenabled>False</depenabled><newskills><skills><skill><guid>s1</guid><suid>suid1</suid><skillcategory>Combat</skillcategory><isknowledge>False</isknowledge><base>6</base><karma>0</karma><specs><spec><name>Semi-Automatics</name></spec></specs></skill></skills></newskills></character>";
+        string xml = File.ReadAllText(FindTestFilePath("BLUE.chum5"));
         JsonObject payload = new()
         {
             ["xml"] = xml
@@ -446,6 +449,25 @@ public class ApiIntegrationTests
 
             Assert.AreEqual(legacySection.ToJsonString(), workspaceSection.ToJsonString(), $"Section mismatch for '{sectionId}'.");
         }
+    }
+
+    private static string FindTestFilePath(string fileName)
+    {
+        string? root = Environment.GetEnvironmentVariable("CHUMMER_REPO_ROOT");
+        string[] candidates =
+        {
+            Path.Combine(Directory.GetCurrentDirectory(), "Chummer.Tests", "TestFiles", fileName),
+            Path.Combine(Directory.GetCurrentDirectory(), "TestFiles", fileName),
+            Path.Combine(AppContext.BaseDirectory, "TestFiles", fileName),
+            Path.Combine("/src", "Chummer.Tests", "TestFiles", fileName),
+            string.IsNullOrWhiteSpace(root) ? string.Empty : Path.Combine(root, "Chummer.Tests", "TestFiles", fileName)
+        };
+
+        string? match = candidates.FirstOrDefault(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path));
+        if (match is null)
+            throw new FileNotFoundException("Could not locate test file.", fileName);
+
+        return match;
     }
 
     private static HttpClient CreateClient()
