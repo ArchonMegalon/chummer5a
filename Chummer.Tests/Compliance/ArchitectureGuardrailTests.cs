@@ -46,6 +46,7 @@ public class ArchitectureGuardrailTests
         Assert.IsFalse(text.Contains("XDocument.Parse", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("public sealed record", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("app.MapPost(\"/api/characters/sections", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("Chummer.Core.LifeModules", StringComparison.Ordinal));
     }
 
     [TestMethod]

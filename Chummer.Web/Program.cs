@@ -1,8 +1,8 @@
 using Chummer.Application.Characters;
+using Chummer.Application.LifeModules;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
 using Chummer.Core.Characters;
-using Chummer.Core.LifeModules;
 using Chummer.Infrastructure.Files;
 using Chummer.Infrastructure.Workspaces;
 using Chummer.Infrastructure.Xml;
@@ -26,10 +26,10 @@ builder.Services.AddSingleton<ICharacterSectionQueries>(provider =>
         provider.GetRequiredService<ICharacterInventoryQueries>(),
         provider.GetRequiredService<ICharacterMagicResonanceQueries>(),
         provider.GetRequiredService<ICharacterSocialNarrativeQueries>()));
-builder.Services.AddSingleton<ILifeModulesService>(_ =>
+builder.Services.AddSingleton<ILifeModulesCatalogService>(_ =>
 {
-    string path = LifeModulesPathResolver.Resolve(AppContext.BaseDirectory, Directory.GetCurrentDirectory());
-    return new LifeModulesService(path);
+    string path = LifeModulesCatalogPathResolver.Resolve(AppContext.BaseDirectory, Directory.GetCurrentDirectory());
+    return new XmlLifeModulesCatalogService(path);
 });
 builder.Services.AddSingleton<IDataExportService, DataExportService>();
 builder.Services.AddSingleton<IToolCatalogService, XmlToolCatalogService>();

@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Chummer.Core.LifeModules;
+using Chummer.Contracts.LifeModules;
+using Chummer.Infrastructure.Xml;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;
@@ -15,8 +16,8 @@ public class LifeModulesServiceTests
         (string root, string xmlPath) = CreateTempLifeModulesXml();
         try
         {
-            var service = new LifeModulesService(xmlPath);
-            IReadOnlyList<LifeModuleStage> stages = service.GetStages();
+            var service = new XmlLifeModulesCatalogService(xmlPath);
+            IReadOnlyList<LifeModuleStageDto> stages = service.GetStages();
 
             Assert.AreEqual(2, stages.Count);
             Assert.AreEqual(1, stages[0].Order);
@@ -36,9 +37,9 @@ public class LifeModulesServiceTests
         (string root, string xmlPath) = CreateTempLifeModulesXml();
         try
         {
-            var service = new LifeModulesService(xmlPath);
-            IReadOnlyList<LifeModuleSummary> all = service.GetModules();
-            IReadOnlyList<LifeModuleSummary> filtered = service.GetModules("Adult");
+            var service = new XmlLifeModulesCatalogService(xmlPath);
+            IReadOnlyList<LifeModuleSummaryDto> all = service.GetModules();
+            IReadOnlyList<LifeModuleSummaryDto> filtered = service.GetModules("Adult");
 
             Assert.AreEqual(2, all.Count);
             Assert.AreEqual(1, filtered.Count);
@@ -62,7 +63,7 @@ public class LifeModulesServiceTests
 
         try
         {
-            string resolved = LifeModulesPathResolver.Resolve(baseDirectory: Path.Combine(root, "bin"), currentDirectory: root);
+            string resolved = LifeModulesCatalogPathResolver.Resolve(baseDirectory: Path.Combine(root, "bin"), currentDirectory: root);
             Assert.AreEqual(xmlPath, resolved);
         }
         finally
