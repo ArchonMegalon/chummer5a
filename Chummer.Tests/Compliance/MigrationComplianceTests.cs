@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Chummer.Contracts.Presentation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests.Compliance;
@@ -19,48 +20,9 @@ public class MigrationComplianceTests
     private static readonly Regex TabButtonRegex = new(@"<button class=""tab-btn""\s+data-tab=""([a-z0-9-]+)""", RegexOptions.Compiled);
     private static readonly Regex UiControlRegex = new(@"data-ui-control=""([a-z_]+)""", RegexOptions.Compiled);
 
-    private static readonly HashSet<string> RequiredDesktopCommands = new(StringComparer.Ordinal)
-    {
-        "file",
-        "edit",
-        "special",
-        "tools",
-        "windows",
-        "help",
-        "new_character",
-        "new_critter",
-        "open_character",
-        "open_for_printing",
-        "open_for_export",
-        "save_character",
-        "save_character_as",
-        "print_character",
-        "print_multiple",
-        "print_setup",
-        "export_character",
-        "copy",
-        "paste",
-        "dice_roller",
-        "global_settings",
-        "character_settings",
-        "translator",
-        "hero_lab_importer",
-        "xml_editor",
-        "master_index",
-        "character_roster",
-        "data_exporter",
-        "report_bug",
-        "new_window",
-        "close_window",
-        "close_all",
-        "wiki",
-        "discord",
-        "revision_history",
-        "dumpshock",
-        "about",
-        "update",
-        "restart"
-    };
+    private static readonly HashSet<string> RequiredDesktopCommands = AppCommandCatalog.All
+        .Select(command => command.Id)
+        .ToHashSet(StringComparer.Ordinal);
 
     [TestMethod]
     public void Section_parsers_are_exposed_as_api_endpoints_and_ui_actions()
@@ -121,6 +83,19 @@ public class MigrationComplianceTests
         {
             StringAssert.Contains(indexText, $"{command}:", $"Missing command handler for '{command}'.");
         }
+    }
+
+    [TestMethod]
+    public void App_command_catalog_ids_are_unique()
+    {
+        List<string> duplicateIds = AppCommandCatalog.All
+            .GroupBy(command => command.Id, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .OrderBy(id => id)
+            .ToList();
+
+        Assert.AreEqual(0, duplicateIds.Count, "Duplicate command ids in AppCommandCatalog: " + string.Join(", ", duplicateIds));
     }
 
     [TestMethod]

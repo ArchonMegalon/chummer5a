@@ -308,6 +308,17 @@ public class ApiIntegrationTests
         Assert.IsTrue(stages is JsonArray array && array.Count > 0);
     }
 
+    [TestMethod]
+    public async Task Commands_endpoint_returns_catalog()
+    {
+        using var client = CreateClient();
+
+        JsonObject response = await GetRequiredJsonObject(client, "/api/commands");
+
+        Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) > 0);
+        Assert.IsTrue(response["commands"] is JsonArray);
+    }
+
     private static HttpClient CreateClient()
     {
         var client = new HttpClient
