@@ -1,0 +1,110 @@
+@page "/"
+@implements IDisposable
+@inject ICharacterOverviewPresenter Presenter
+
+<section class="panel">
+    <h2>Import Character XML</h2>
+    <textarea @bind="ImportXml" rows="10"></textarea>
+    <div class="actions">
+        <button @onclick="ImportAsync" disabled="@State.IsBusy">Import</button>
+    </div>
+</section>
+
+<section class="panel">
+    <h2>Workspace</h2>
+    <div class="inline-fields">
+        <input @bind="LoadWorkspaceId" placeholder="Workspace id" />
+        <button @onclick="LoadWorkspaceAsync" disabled="@State.IsBusy">Load</button>
+    </div>
+    <p>Active: @(State.WorkspaceId?.Value ?? "(none)")</p>
+    <p>Saved: @(State.HasSavedWorkspace ? "Yes" : "No")</p>
+</section>
+
+<section class="panel">
+    <h2>Metadata</h2>
+    <div class="grid-fields">
+        <input @bind="MetadataName" placeholder="Name" />
+        <input @bind="MetadataAlias" placeholder="Alias" />
+        <textarea @bind="MetadataNotes" rows="3" placeholder="Notes"></textarea>
+    </div>
+    <div class="actions">
+        <button @onclick="UpdateMetadataAsync" disabled="@State.IsBusy">Update Metadata</button>
+        <button @onclick="SaveAsync" disabled="@State.IsBusy">Save Workspace</button>
+    </div>
+</section>
+
+<section class="panel">
+    <h2>Overview</h2>
+    <ul>
+        <li>Name: @(State.Profile?.Name ?? "(none)")</li>
+        <li>Alias: @(State.Profile?.Alias ?? "(none)")</li>
+        <li>Metatype: @(State.Profile?.Metatype ?? "(none)")</li>
+        <li>Build: @(State.Build?.BuildMethod ?? "(none)")</li>
+        <li>Karma: @(State.Progress?.Karma ?? 0)</li>
+        <li>Skills: @(State.Skills?.Count ?? 0)</li>
+        <li>Game Edition: @(State.Rules?.GameEdition ?? "(none)")</li>
+    </ul>
+    @if (!string.IsNullOrWhiteSpace(State.Error))
+    {
+        <p class="error">Error: @State.Error</p>
+    }
+</section>
+
+@code {
+    private CharacterOverviewStateBridge? _bridge;
+
+    private string ImportXml { get; set; } = "<character><name>Demo</name><alias>Sample</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created></character>";
+    private string LoadWorkspaceId { get; set; } = string.Empty;
+    private string MetadataName { get; set; } = string.Empty;
+    private string MetadataAlias { get; set; } = string.Empty;
+    private string MetadataNotes { get; set; } = string.Empty;
+
+    private CharacterOverviewState State => _bridge?.Current ?? Presenter.State;
+
+    protected override void OnInitialized()
+    {
+        _bridge = new CharacterOverviewStateBridge(Presenter, _ => InvokeAsync(StateHasChanged));
+    }
+
+    private async Task ImportAsync()
+    {
+        if (_bridge is null || string.IsNullOrWhiteSpace(ImportXml))
+            return;
+
+        await _bridge.ImportAsync(ImportXml, CancellationToken.None);
+        SyncMetadataDraftFromState();
+    }
+
+    private async Task LoadWorkspaceAsync()
+    {
+        if (_bridge is null || string.IsNullOrWhiteSpace(LoadWorkspaceId))
+            return;
+
+        await _bridge.LoadAsync(new CharacterWorkspaceId(LoadWorkspaceId.Trim()), CancellationToken.None);
+        SyncMetadataDraftFromState();
+    }
+
+    private async Task UpdateMetadataAsync()
+    {
+        await Presenter.UpdateMetadataAsync(new UpdateWorkspaceMetadata(
+            Name: MetadataName,
+            Alias: MetadataAlias,
+            Notes: MetadataNotes), CancellationToken.None);
+    }
+
+    private async Task SaveAsync()
+    {
+        await Presenter.SaveAsync(CancellationToken.None);
+    }
+
+    private void SyncMetadataDraftFromState()
+    {
+        MetadataName = State.Profile?.Name ?? MetadataName;
+        MetadataAlias = State.Profile?.Alias ?? MetadataAlias;
+    }
+
+    public void Dispose()
+    {
+        _bridge?.Dispose();
+    }
+}

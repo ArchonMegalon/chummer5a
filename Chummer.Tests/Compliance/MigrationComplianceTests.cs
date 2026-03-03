@@ -97,6 +97,8 @@ public class MigrationComplianceTests
         string avaloniaProjectPath = FindPath("Chummer.Avalonia", "Chummer.Avalonia.csproj");
         string blazorProjectText = File.ReadAllText(blazorProjectPath);
         string avaloniaProjectText = File.ReadAllText(avaloniaProjectPath);
+        string blazorProgramPath = FindPath("Chummer.Blazor", "Program.cs");
+        string blazorProgramText = File.ReadAllText(blazorProgramPath);
 
         StringAssert.Contains(blazorProjectText, @"..\Chummer.Presentation\Chummer.Presentation.csproj");
         StringAssert.Contains(blazorProjectText, @"..\Chummer.Contracts\Chummer.Contracts.csproj");
@@ -105,6 +107,10 @@ public class MigrationComplianceTests
 
         Assert.IsTrue(File.Exists(FindPath("Chummer.Blazor", "CharacterOverviewStateBridge.cs")));
         Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "CharacterOverviewViewModelAdapter.cs")));
+        Assert.IsTrue(File.Exists(FindPath("Chummer.Blazor", "Components", "App.razor")));
+        Assert.IsTrue(File.Exists(FindPath("Chummer.Blazor", "Components", "Pages", "Home.razor")));
+        StringAssert.Contains(blazorProgramText, "AddRazorComponents()");
+        StringAssert.Contains(blazorProgramText, "MapRazorComponents<App>()");
     }
 
     [TestMethod]
