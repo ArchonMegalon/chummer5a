@@ -1,4 +1,5 @@
 using Chummer.Contracts.Api;
+using Chummer.Contracts.Characters;
 using Chummer.Core.Characters;
 
 namespace Chummer.Web.Endpoints;

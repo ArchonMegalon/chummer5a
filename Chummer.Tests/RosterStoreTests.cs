@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Chummer.Contracts.Api;
 using Chummer.Infrastructure.Files;

@@ -13,6 +13,7 @@ public class MigrationComplianceTests
 {
     private static readonly Regex SectionMethodRegex = new(@"\bCharacter[A-Za-z0-9_]+\s+Parse([A-Za-z0-9_]+)\(string xml\)", RegexOptions.Compiled);
     private static readonly Regex SectionEndpointRegex = new(@"/api/characters/sections/([a-z0-9]+)", RegexOptions.Compiled);
+    private static readonly Regex SectionMapCallRegex = new(@"MapSection\(app,\s*""([a-z0-9]+)""", RegexOptions.Compiled);
     private static readonly Regex UiActionRegex = new(@"data-action=""([a-z0-9]+)""", RegexOptions.Compiled);
     private static readonly Regex CommandRegex = new(@"data-command=""([a-z_]+)""", RegexOptions.Compiled);
     private static readonly Regex RunCommandRegex = new(@"data-run-command=""([a-z_]+)""", RegexOptions.Compiled);
@@ -46,6 +47,8 @@ public class MigrationComplianceTests
         HashSet<string> endpointSections = SectionEndpointRegex.Matches(endpointText)
             .Select(match => match.Groups[1].Value)
             .ToHashSet(StringComparer.Ordinal);
+        endpointSections.UnionWith(SectionMapCallRegex.Matches(endpointText)
+            .Select(match => match.Groups[1].Value));
 
         HashSet<string> uiActions = UiActionRegex.Matches(indexText)
             .Select(match => match.Groups[1].Value)
