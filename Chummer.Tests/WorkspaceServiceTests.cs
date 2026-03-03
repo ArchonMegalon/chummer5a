@@ -1,5 +1,6 @@
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
 using Chummer.Infrastructure.Xml;
 using Chummer.Infrastructure.Workspaces;
@@ -44,6 +45,10 @@ public class WorkspaceServiceTests
         var awakening = workspaceService.GetAwakening(imported.Id);
         Assert.IsNotNull(awakening);
         Assert.IsFalse(awakening.MagEnabled);
+
+        var section = workspaceService.GetSection(imported.Id, "skills") as CharacterSkillsSection;
+        Assert.IsNotNull(section);
+        Assert.AreEqual(1, section.Count);
 
         var update = workspaceService.UpdateMetadata(imported.Id, new UpdateWorkspaceMetadata("Updated", "Alias", "Notes"));
         Assert.IsTrue(update.Success);

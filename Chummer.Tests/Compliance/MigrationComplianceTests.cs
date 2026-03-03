@@ -106,6 +106,16 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Workspace_routes_include_section_projection_endpoint()
+    {
+        string workspaceEndpointsPath = FindPath("Chummer.Api", "Endpoints", "WorkspaceEndpoints.cs");
+        string workspaceEndpointsText = File.ReadAllText(workspaceEndpointsPath);
+
+        StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/sections/{sectionId}");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSection(workspaceId, sectionId)");
+    }
+
+    [TestMethod]
     public void App_command_catalog_ids_are_unique()
     {
         List<string> duplicateIds = AppCommandCatalog.All

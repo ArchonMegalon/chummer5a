@@ -7,6 +7,8 @@ public interface IWorkspaceService
 {
     WorkspaceImportResult Import(string xml);
 
+    object? GetSection(CharacterWorkspaceId id, string sectionId);
+
     CharacterProfileSection? GetProfile(CharacterWorkspaceId id);
 
     CharacterProgressSection? GetProgress(CharacterWorkspaceId id);

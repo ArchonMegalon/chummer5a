@@ -31,6 +31,14 @@ public sealed class WorkspaceService : IWorkspaceService
         return new WorkspaceImportResult(id, summary);
     }
 
+    public object? GetSection(CharacterWorkspaceId id, string sectionId)
+    {
+        if (!_workspaceStore.TryGet(id, out string xml))
+            return null;
+
+        return _characterSectionQueries.ParseSection(sectionId, xml);
+    }
+
     public CharacterProfileSection? GetProfile(CharacterWorkspaceId id)
     {
         return TryParseSection<CharacterProfileSection>(id, "profile");
@@ -109,9 +117,6 @@ public sealed class WorkspaceService : IWorkspaceService
     private TSection? TryParseSection<TSection>(CharacterWorkspaceId id, string sectionId)
         where TSection : class
     {
-        if (!_workspaceStore.TryGet(id, out string xml))
-            return null;
-
-        return (TSection)_characterSectionQueries.ParseSection(sectionId, xml);
+        return GetSection(id, sectionId) as TSection;
     }
 }

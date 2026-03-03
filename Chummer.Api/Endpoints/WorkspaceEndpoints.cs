@@ -66,6 +66,20 @@ public static class WorkspaceEndpoints
             return awakening is null ? Results.NotFound() : Results.Ok(awakening);
         });
 
+        app.MapGet("/api/workspaces/{id}/sections/{sectionId}", (string id, string sectionId, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            try
+            {
+                object? section = workspaceService.GetSection(workspaceId, sectionId);
+                return section is null ? Results.NotFound() : Results.Ok(section);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+        });
+
         app.MapMethods("/api/workspaces/{id}/metadata", ["PATCH"], (string id, UpdateWorkspaceMetadata command, IWorkspaceService workspaceService) =>
         {
             CharacterWorkspaceId workspaceId = new(id);

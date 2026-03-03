@@ -377,6 +377,27 @@ public class ApiIntegrationTests
         StringAssert.Contains(saveResponse["xml"]?.GetValue<string>() ?? string.Empty, "Updated Name");
     }
 
+    [TestMethod]
+    public async Task Workspace_section_endpoint_matches_legacy_section_payload()
+    {
+        using var client = CreateClient();
+
+        const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created><gameedition>SR5</gameedition><settings>default.xml</settings><gameplayoption>Standard</gameplayoption><gameplayoptionqualitylimit>25</gameplayoptionqualitylimit><maxnuyen>10</maxnuyen><maxkarma>25</maxkarma><contactmultiplier>3</contactmultiplier><walk>2/1/0</walk><run>4/0/0</run><sprint>2/1/0</sprint><walkalt>2/1/0</walkalt><runalt>4/0/0</runalt><sprintalt>2/1/0</sprintalt><magenabled>False</magenabled><resenabled>False</resenabled><depenabled>False</depenabled><newskills><skills><skill><guid>s1</guid><suid>suid1</suid><skillcategory>Combat</skillcategory><isknowledge>False</isknowledge><base>6</base><karma>0</karma><specs><spec><name>Semi-Automatics</name></spec></specs></skill></skills></newskills></character>";
+        JsonObject payload = new()
+        {
+            ["xml"] = xml
+        };
+
+        JsonObject importResponse = await PostRequiredJsonObject(client, "/api/workspaces/import", payload);
+        string workspaceId = importResponse["id"]?.GetValue<string>() ?? string.Empty;
+        Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceId));
+
+        JsonObject legacySection = await PostRequiredJsonObject(client, "/api/characters/sections/skills", payload);
+        JsonObject workspaceSection = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/sections/skills");
+
+        Assert.AreEqual(legacySection.ToJsonString(), workspaceSection.ToJsonString());
+    }
+
     private static HttpClient CreateClient()
     {
         var client = new HttpClient
