@@ -146,6 +146,29 @@ public class ArchitectureGuardrailTests
         }
     }
 
+    [TestMethod]
+    public void Core_lifemodule_xml_services_are_removed()
+    {
+        string? coreLifeModulesDirectory = TryFindDirectory("Chummer.Core", "LifeModules");
+        if (string.IsNullOrWhiteSpace(coreLifeModulesDirectory))
+            return;
+
+        string[] legacyFiles =
+        {
+            "ILifeModulesService.cs",
+            "LifeModuleModels.cs",
+            "LifeModulesPathResolver.cs",
+            "LifeModulesService.cs"
+        };
+
+        foreach (string file in legacyFiles)
+        {
+            Assert.IsFalse(
+                File.Exists(Path.Combine(coreLifeModulesDirectory, file)),
+                $"Legacy life modules XML service file must be removed from Chummer.Core: {file}");
+        }
+    }
+
     private static string FindPath(params string[] parts)
     {
         foreach (string? root in CandidateRoots())
