@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Workspaces;
 using Chummer.Infrastructure.Workspaces;
@@ -86,6 +88,49 @@ public class WorkspaceStoreTests
             File.WriteAllText(persistedPath, "{invalid-json");
 
             bool found = store.TryGet(id, out _);
+            Assert.IsFalse(found);
+        }
+        finally
+        {
+            Directory.Delete(stateDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void File_workspace_store_lists_created_workspaces()
+    {
+        string stateDirectory = CreateTempStateDirectory();
+        try
+        {
+            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            CharacterWorkspaceId first = store.Create(new WorkspaceDocument("<character><name>First</name></character>"));
+            CharacterWorkspaceId second = store.Create(new WorkspaceDocument("<character><name>Second</name></character>"));
+
+            IReadOnlyList<CharacterWorkspaceId> listed = store.ListIds();
+
+            CollectionAssert.AreEquivalent(
+                new[] { first.Value, second.Value },
+                listed.Select(item => item.Value).ToArray());
+        }
+        finally
+        {
+            Directory.Delete(stateDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void File_workspace_store_delete_removes_workspace()
+    {
+        string stateDirectory = CreateTempStateDirectory();
+        try
+        {
+            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            CharacterWorkspaceId id = store.Create(new WorkspaceDocument("<character><name>DeleteMe</name></character>"));
+
+            bool deleted = store.Delete(id);
+            bool found = store.TryGet(id, out _);
+
+            Assert.IsTrue(deleted);
             Assert.IsFalse(found);
         }
         finally

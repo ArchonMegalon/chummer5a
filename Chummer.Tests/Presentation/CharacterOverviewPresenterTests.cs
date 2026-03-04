@@ -33,6 +33,22 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task InitializeAsync_restores_open_workspaces_from_service()
+    {
+        var client = new FakeChummerClient();
+        client.SeedWorkspace("ws-legacy-1", "Legacy One", "L1", DateTimeOffset.UtcNow.AddMinutes(-10));
+        client.SeedWorkspace("ws-legacy-2", "Legacy Two", "L2", DateTimeOffset.UtcNow.AddMinutes(-1));
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        Assert.AreEqual(2, presenter.State.OpenWorkspaces.Count);
+        Assert.AreEqual("ws-legacy-2", presenter.State.OpenWorkspaces[0].Id.Value);
+        Assert.AreEqual("ws-legacy-1", presenter.State.OpenWorkspaces[1].Id.Value);
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Restored 2 workspace(s)");
+    }
+
+    [TestMethod]
     public async Task LoadAsync_populates_profile_progress_and_skills()
     {
         var client = new FakeChummerClient();
@@ -415,6 +431,8 @@ public class CharacterOverviewPresenterTests
     {
         private string _name = "Troy Simmons";
         private string _alias = "BLUE";
+        private readonly Dictionary<string, WorkspaceListItem> _workspaces = new(StringComparer.Ordinal);
+        private int _clock;
         public UpdateWorkspaceMetadata? LastUpdateMetadata { get; private set; }
         private static readonly IReadOnlyList<AppCommandDefinition> Commands =
         [
@@ -427,8 +445,25 @@ public class CharacterOverviewPresenterTests
             new("tab-gear", "Gear", "gear", "character", true, true)
         ];
 
+        public void SeedWorkspace(string workspaceId, string name, string alias, DateTimeOffset? lastUpdatedUtc = null)
+        {
+            CharacterFileSummary summary = new(
+                Name: name,
+                Alias: alias,
+                Metatype: "Human",
+                BuildMethod: "Priority",
+                CreatedVersion: "1.0",
+                AppVersion: "1.0",
+                Karma: 0m,
+                Nuyen: 0m,
+                Created: true);
+            DateTimeOffset timestamp = lastUpdatedUtc ?? DateTimeOffset.UtcNow.AddMinutes(++_clock);
+            _workspaces[workspaceId] = new WorkspaceListItem(new CharacterWorkspaceId(workspaceId), summary, timestamp);
+        }
+
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
         {
+            SeedWorkspace("ws-1", "Imported", _alias);
             WorkspaceImportResult result = new(
                 new CharacterWorkspaceId("ws-1"),
                 new CharacterFileSummary(
@@ -443,6 +478,20 @@ public class CharacterOverviewPresenterTests
                     Created: true));
 
             return Task.FromResult(result);
+        }
+
+        public Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct)
+        {
+            IReadOnlyList<WorkspaceListItem> workspaces = _workspaces.Values
+                .OrderByDescending(workspace => workspace.LastUpdatedUtc)
+                .ToArray();
+            return Task.FromResult(workspaces);
+        }
+
+        public Task<bool> CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            bool removed = _workspaces.Remove(id.Value);
+            return Task.FromResult(removed);
         }
 
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct)
@@ -489,6 +538,7 @@ public class CharacterOverviewPresenterTests
 
         public Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)
         {
+            SeedWorkspace(id.Value, _name, _alias);
             CharacterProfileSection profile = new(
                 Name: _name,
                 Alias: _alias,
@@ -651,6 +701,7 @@ public class CharacterOverviewPresenterTests
             LastUpdateMetadata = command;
             _name = command.Name ?? _name;
             _alias = command.Alias ?? _alias;
+            SeedWorkspace(id.Value, _name, _alias);
 
             CharacterProfileSection updated = new(
                 Name: _name,
@@ -688,6 +739,7 @@ public class CharacterOverviewPresenterTests
 
         public Task<CommandResult<WorkspaceSaveReceipt>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct)
         {
+            SeedWorkspace(id.Value, _name, _alias);
             return Task.FromResult(new CommandResult<WorkspaceSaveReceipt>(
                 Success: true,
                 Value: new WorkspaceSaveReceipt(

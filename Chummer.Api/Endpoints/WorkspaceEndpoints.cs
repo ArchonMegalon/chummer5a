@@ -1,5 +1,6 @@
 using System.Text;
 using System.Xml;
+using System.Linq;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
@@ -32,6 +33,27 @@ public static class WorkspaceEndpoints
                 return Results.BadRequest(new { error = ex.Message });
             }
 
+        });
+
+        app.MapGet("/api/workspaces", (IWorkspaceService workspaceService) =>
+        {
+            IReadOnlyList<WorkspaceListItemResponse> workspaces = workspaceService.List()
+                .Select(workspace => new WorkspaceListItemResponse(
+                    Id: workspace.Id.Value,
+                    Summary: workspace.Summary,
+                    LastUpdatedUtc: workspace.LastUpdatedUtc))
+                .ToArray();
+
+            return Results.Ok(new WorkspaceListResponse(
+                Count: workspaces.Count,
+                Workspaces: workspaces));
+        });
+
+        app.MapDelete("/api/workspaces/{id}", (string id, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            bool deleted = workspaceService.Close(workspaceId);
+            return deleted ? Results.NoContent() : Results.NotFound(new { error = "Workspace not found." });
         });
 
         app.MapGet("/api/workspaces/{id}/profile", (string id, IWorkspaceService workspaceService) =>

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
@@ -42,6 +44,8 @@ public class WorkspaceServiceTests
         WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml));
         Assert.IsFalse(string.IsNullOrWhiteSpace(imported.Id.Value));
         Assert.AreEqual("Neo", imported.Summary.Name);
+        IReadOnlyList<WorkspaceListItem> listed = workspaceService.List();
+        Assert.IsTrue(listed.Any(item => string.Equals(item.Id.Value, imported.Id.Value, StringComparison.Ordinal)));
 
         var profile = workspaceService.GetProfile(imported.Id);
         Assert.IsNotNull(profile);
@@ -75,6 +79,10 @@ public class WorkspaceServiceTests
         Assert.IsTrue(save.Success);
         Assert.AreEqual(imported.Id, save.Value?.Id);
         Assert.IsTrue((save.Value?.DocumentLength ?? 0) > 0);
+
+        bool closed = workspaceService.Close(imported.Id);
+        Assert.IsTrue(closed);
+        Assert.IsFalse(workspaceService.List().Any(item => string.Equals(item.Id.Value, imported.Id.Value, StringComparison.Ordinal)));
     }
 
     private sealed class TrackingWorkspaceStore : IWorkspaceStore
@@ -93,8 +101,18 @@ public class WorkspaceServiceTests
             return false;
         }
 
+        public IReadOnlyList<CharacterWorkspaceId> ListIds()
+        {
+            return [];
+        }
+
         public void Save(CharacterWorkspaceId id, WorkspaceDocument document)
         {
+        }
+
+        public bool Delete(CharacterWorkspaceId id)
+        {
+            return false;
         }
     }
 

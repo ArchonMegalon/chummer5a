@@ -34,6 +34,11 @@ public sealed record WorkspaceSaveReceipt(
     CharacterWorkspaceId Id,
     int DocumentLength);
 
+public sealed record WorkspaceListItem(
+    CharacterWorkspaceId Id,
+    CharacterFileSummary Summary,
+    DateTimeOffset LastUpdatedUtc);
+
 public sealed record UpdateWorkspaceMetadata(
     string? Name,
     string? Alias,

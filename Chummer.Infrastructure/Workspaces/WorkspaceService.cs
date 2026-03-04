@@ -32,6 +32,50 @@ public sealed class WorkspaceService : IWorkspaceService
         return new WorkspaceImportResult(id, summary);
     }
 
+    public IReadOnlyList<WorkspaceListItem> List()
+    {
+        List<WorkspaceListItem> workspaces = [];
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        int index = 0;
+
+        foreach (CharacterWorkspaceId id in _workspaceStore.ListIds())
+        {
+            if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+                continue;
+
+            CharacterFileSummary summary;
+            try
+            {
+                summary = _characterFileQueries.ParseSummary(new CharacterDocument(ToXmlContent(document.Content, document.Format)));
+            }
+            catch
+            {
+                summary = new CharacterFileSummary(
+                    Name: $"Workspace {id.Value}",
+                    Alias: string.Empty,
+                    Metatype: string.Empty,
+                    BuildMethod: string.Empty,
+                    CreatedVersion: string.Empty,
+                    AppVersion: string.Empty,
+                    Karma: 0m,
+                    Nuyen: 0m,
+                    Created: false);
+            }
+
+            workspaces.Add(new WorkspaceListItem(
+                Id: id,
+                Summary: summary,
+                LastUpdatedUtc: now.AddSeconds(-index++)));
+        }
+
+        return workspaces;
+    }
+
+    public bool Close(CharacterWorkspaceId id)
+    {
+        return _workspaceStore.Delete(id);
+    }
+
     public object? GetSection(CharacterWorkspaceId id, string sectionId)
     {
         if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))

@@ -9,6 +9,10 @@ public interface IChummerClient
 {
     Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct);
 
+    Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct);
+
+    Task<bool> CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct);
+
     Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct);
 
     Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct);

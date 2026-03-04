@@ -7,6 +7,10 @@ public interface IWorkspaceService
 {
     WorkspaceImportResult Import(WorkspaceImportDocument document);
 
+    IReadOnlyList<WorkspaceListItem> List();
+
+    bool Close(CharacterWorkspaceId id);
+
     object? GetSection(CharacterWorkspaceId id, string sectionId);
 
     CharacterFileSummary? GetSummary(CharacterWorkspaceId id);

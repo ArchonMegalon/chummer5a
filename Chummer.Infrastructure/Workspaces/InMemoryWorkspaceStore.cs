@@ -6,22 +6,44 @@ namespace Chummer.Infrastructure.Workspaces;
 
 public sealed class InMemoryWorkspaceStore : IWorkspaceStore
 {
-    private readonly ConcurrentDictionary<string, WorkspaceDocument> _documents = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, WorkspaceEntry> _documents = new(StringComparer.Ordinal);
 
     public CharacterWorkspaceId Create(WorkspaceDocument document)
     {
         string key = Guid.NewGuid().ToString("N");
-        _documents[key] = document;
+        _documents[key] = new WorkspaceEntry(document, DateTimeOffset.UtcNow);
         return new CharacterWorkspaceId(key);
+    }
+
+    public IReadOnlyList<CharacterWorkspaceId> ListIds()
+    {
+        return _documents
+            .OrderByDescending(pair => pair.Value.LastUpdatedUtc)
+            .Select(pair => new CharacterWorkspaceId(pair.Key))
+            .ToArray();
     }
 
     public bool TryGet(CharacterWorkspaceId id, out WorkspaceDocument document)
     {
-        return _documents.TryGetValue(id.Value, out document!);
+        if (_documents.TryGetValue(id.Value, out WorkspaceEntry? entry))
+        {
+            document = entry.Document;
+            return true;
+        }
+
+        document = null!;
+        return false;
     }
 
     public void Save(CharacterWorkspaceId id, WorkspaceDocument document)
     {
-        _documents[id.Value] = document;
+        _documents[id.Value] = new WorkspaceEntry(document, DateTimeOffset.UtcNow);
     }
+
+    public bool Delete(CharacterWorkspaceId id)
+    {
+        return _documents.TryRemove(id.Value, out _);
+    }
+
+    private sealed record WorkspaceEntry(WorkspaceDocument Document, DateTimeOffset LastUpdatedUtc);
 }

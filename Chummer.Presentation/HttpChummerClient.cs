@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Linq;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
@@ -35,6 +36,30 @@ public sealed class HttpChummerClient : IChummerClient
             throw new InvalidOperationException("Import response did not include a workspace id.");
 
         return new WorkspaceImportResult(new CharacterWorkspaceId(payload.Id), payload.Summary);
+    }
+
+    public async Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct)
+    {
+        WorkspaceListResponse response = await GetRequiredAsync<WorkspaceListResponse>("/api/workspaces", ct);
+
+        return response.Workspaces
+            .Select(workspace => new WorkspaceListItem(
+                Id: new CharacterWorkspaceId(workspace.Id),
+                Summary: workspace.Summary,
+                LastUpdatedUtc: workspace.LastUpdatedUtc))
+            .ToArray();
+    }
+
+    public async Task<bool> CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        using HttpResponseMessage response = await _httpClient.DeleteAsync($"/api/workspaces/{id.Value}", ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return false;
+
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"Workspace close failed with HTTP {(int)response.StatusCode}.");
+
+        return true;
     }
 
     public async Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct)

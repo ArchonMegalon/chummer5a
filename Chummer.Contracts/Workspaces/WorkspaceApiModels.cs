@@ -15,6 +15,15 @@ public sealed record WorkspaceImportResponse(
     string Id,
     CharacterFileSummary Summary);
 
+public sealed record WorkspaceListItemResponse(
+    string Id,
+    CharacterFileSummary Summary,
+    DateTimeOffset LastUpdatedUtc);
+
+public sealed record WorkspaceListResponse(
+    int Count,
+    IReadOnlyList<WorkspaceListItemResponse> Workspaces);
+
 public sealed record WorkspaceMetadataResponse(
     CharacterProfileSection Profile);
 

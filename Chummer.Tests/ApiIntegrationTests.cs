@@ -492,6 +492,42 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Workspace_list_and_close_endpoints_manage_open_workspace_collection()
+    {
+        using var client = CreateClient();
+
+        string xmlA = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        string xmlB = File.ReadAllText(FindTestFilePath("BLUE.chum5"));
+        JsonObject importBodyA = new() { ["xml"] = xmlA };
+        JsonObject importBodyB = new() { ["xml"] = xmlB };
+
+        JsonObject importA = await PostRequiredJsonObject(client, "/api/workspaces/import", importBodyA);
+        JsonObject importB = await PostRequiredJsonObject(client, "/api/workspaces/import", importBodyB);
+        string workspaceA = importA["id"]?.GetValue<string>() ?? string.Empty;
+        string workspaceB = importB["id"]?.GetValue<string>() ?? string.Empty;
+        Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceA));
+        Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceB));
+
+        JsonObject listed = await GetRequiredJsonObject(client, "/api/workspaces");
+        Assert.IsTrue((listed["count"]?.GetValue<int>() ?? 0) >= 2);
+        JsonArray listedWorkspaces = listed["workspaces"]?.AsArray() ?? [];
+        CollectionAssert.IsSubsetOf(
+            new[] { workspaceA, workspaceB },
+            listedWorkspaces
+                .Select(node => node?["id"]?.GetValue<string>() ?? string.Empty)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToArray());
+
+        using HttpResponseMessage closeResponse = await client.DeleteAsync($"/api/workspaces/{workspaceA}");
+        Assert.AreEqual(204, (int)closeResponse.StatusCode);
+
+        JsonObject listedAfterClose = await GetRequiredJsonObject(client, "/api/workspaces");
+        JsonArray listedAfterCloseItems = listedAfterClose["workspaces"]?.AsArray() ?? [];
+        Assert.IsFalse(listedAfterCloseItems.Any(node => string.Equals(node?["id"]?.GetValue<string>(), workspaceA, StringComparison.Ordinal)));
+        Assert.IsTrue(listedAfterCloseItems.Any(node => string.Equals(node?["id"]?.GetValue<string>(), workspaceB, StringComparison.Ordinal)));
+    }
+
+    [TestMethod]
     public async Task Workspace_import_returns_bad_request_for_invalid_summary_payload()
     {
         using var client = CreateClient();

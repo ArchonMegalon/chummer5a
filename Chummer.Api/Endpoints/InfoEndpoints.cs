@@ -14,6 +14,7 @@ public static class InfoEndpoints
             {
                 "/api/info",
                 "/api/health",
+                "/api/workspaces",
                 "/api/workspaces/import"
             }
         }));

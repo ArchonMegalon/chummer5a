@@ -34,14 +34,21 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         {
             Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _client.GetCommandsAsync(ct);
             Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _client.GetNavigationTabsAsync(ct);
-            await Task.WhenAll(commandsTask, tabsTask);
+            Task<IReadOnlyList<WorkspaceListItem>> workspacesTask = _client.ListWorkspacesAsync(ct);
+            await Task.WhenAll(commandsTask, tabsTask, workspacesTask);
+
+            IReadOnlyList<OpenWorkspaceState> openWorkspaces = ToOpenWorkspaceStates(workspacesTask.Result);
 
             Publish(State with
             {
                 IsBusy = false,
                 Error = null,
                 Commands = commandsTask.Result,
-                NavigationTabs = tabsTask.Result
+                NavigationTabs = tabsTask.Result,
+                OpenWorkspaces = openWorkspaces,
+                Notice = openWorkspaces.Count == 0
+                    ? State.Notice
+                    : $"Restored {openWorkspaces.Count} workspace(s)."
             });
         }
         catch (Exception ex)
@@ -175,6 +182,23 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 return;
             case "close_all":
             case "restart":
+                CharacterWorkspaceId[] workspaceIdsToClose = State.OpenWorkspaces
+                    .Select(workspace => workspace.Id)
+                    .Distinct()
+                    .ToArray();
+
+                foreach (CharacterWorkspaceId workspaceId in workspaceIdsToClose)
+                {
+                    try
+                    {
+                        await _client.CloseWorkspaceAsync(workspaceId, ct);
+                    }
+                    catch
+                    {
+                        // Keep resetting local shell state even if a close request fails remotely.
+                    }
+                }
+
                 _currentWorkspace = null;
                 Publish(CharacterOverviewState.Empty with
                 {
@@ -197,8 +221,19 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     return;
                 }
 
+                CharacterWorkspaceId closingWorkspace = _currentWorkspace.Value;
+                bool closed;
+                try
+                {
+                    closed = await _client.CloseWorkspaceAsync(closingWorkspace, ct);
+                }
+                catch
+                {
+                    closed = false;
+                }
+
                 OpenWorkspaceState[] remainingWorkspaces = State.OpenWorkspaces
-                    .Where(workspace => !string.Equals(workspace.Id.Value, _currentWorkspace.Value.Value, StringComparison.Ordinal))
+                    .Where(workspace => !string.Equals(workspace.Id.Value, closingWorkspace.Value, StringComparison.Ordinal))
                     .OrderByDescending(workspace => workspace.LastOpenedUtc)
                     .ToArray();
 
@@ -210,7 +245,9 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                         Commands = State.Commands,
                         NavigationTabs = State.NavigationTabs,
                         LastCommandId = commandId,
-                        Notice = "Closed active workspace.",
+                        Notice = closed
+                            ? "Closed active workspace."
+                            : "Active workspace was already closed.",
                         Preferences = State.Preferences,
                         OpenWorkspaces = []
                     });
@@ -222,7 +259,9 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 Publish(State with
                 {
                     LastCommandId = commandId,
-                    Notice = $"Closed active workspace. Switched to '{nextWorkspaceId.Value}'."
+                    Notice = closed
+                        ? $"Closed active workspace. Switched to '{nextWorkspaceId.Value}'."
+                        : $"Active workspace was already closed. Switched to '{nextWorkspaceId.Value}'."
                 });
                 return;
             case "new_window":
@@ -1455,6 +1494,18 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 Name: workspaceName,
                 Alias: workspaceAlias,
                 LastOpenedUtc: now))
+            .OrderByDescending(workspace => workspace.LastOpenedUtc)
+            .ToArray();
+    }
+
+    private static IReadOnlyList<OpenWorkspaceState> ToOpenWorkspaceStates(IReadOnlyList<WorkspaceListItem> workspaces)
+    {
+        return workspaces
+            .Select(workspace => new OpenWorkspaceState(
+                Id: workspace.Id,
+                Name: string.IsNullOrWhiteSpace(workspace.Summary.Name) ? "(Unnamed Character)" : workspace.Summary.Name,
+                Alias: workspace.Summary.Alias ?? string.Empty,
+                LastOpenedUtc: workspace.LastUpdatedUtc))
             .OrderByDescending(workspace => workspace.LastOpenedUtc)
             .ToArray();
     }

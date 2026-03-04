@@ -23,6 +23,21 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         return workspaceId;
     }
 
+    public IReadOnlyList<CharacterWorkspaceId> ListIds()
+    {
+        return Directory.EnumerateFiles(_workspaceDirectory, "*.json", SearchOption.TopDirectoryOnly)
+            .Select(path => new
+            {
+                Path = path,
+                LastWriteUtc = File.GetLastWriteTimeUtc(path)
+            })
+            .OrderByDescending(item => item.LastWriteUtc)
+            .Select(item => Path.GetFileNameWithoutExtension(item.Path))
+            .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
+            .Select(fileName => new CharacterWorkspaceId(fileName))
+            .ToArray();
+    }
+
     public bool TryGet(CharacterWorkspaceId id, out WorkspaceDocument document)
     {
         string? path = TryGetPath(id);
@@ -84,6 +99,27 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         string tempPath = $"{path}.tmp";
         File.WriteAllText(tempPath, JsonSerializer.Serialize(record));
         File.Move(tempPath, path, overwrite: true);
+    }
+
+    public bool Delete(CharacterWorkspaceId id)
+    {
+        string? path = TryGetPath(id);
+        if (path is null || !File.Exists(path))
+            return false;
+
+        try
+        {
+            File.Delete(path);
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     private string? TryGetPath(CharacterWorkspaceId id)
