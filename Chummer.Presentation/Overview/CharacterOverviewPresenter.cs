@@ -13,7 +13,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
     private readonly IWorkspaceOverviewLoader _workspaceOverviewLoader;
     private readonly IWorkspaceSectionRenderer _workspaceSectionRenderer;
     private readonly IWorkspacePersistenceService _workspacePersistenceService;
-    private readonly Dictionary<string, WorkspaceViewState> _workspaceViews = new(StringComparer.Ordinal);
+    private readonly IWorkspaceViewStateStore _workspaceViewStateStore;
     private CharacterWorkspaceId? _currentWorkspace;
 
     public CharacterOverviewPresenter(
@@ -25,7 +25,8 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         IDialogCoordinator? dialogCoordinator = null,
         IWorkspaceOverviewLoader? workspaceOverviewLoader = null,
         IWorkspaceSectionRenderer? workspaceSectionRenderer = null,
-        IWorkspacePersistenceService? workspacePersistenceService = null)
+        IWorkspacePersistenceService? workspacePersistenceService = null,
+        IWorkspaceViewStateStore? workspaceViewStateStore = null)
     {
         _client = client;
         IWorkspaceSessionManager manager = workspaceSessionManager ?? new WorkspaceSessionManager();
@@ -36,6 +37,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         _workspaceOverviewLoader = workspaceOverviewLoader ?? new WorkspaceOverviewLoader();
         _workspaceSectionRenderer = workspaceSectionRenderer ?? new WorkspaceSectionRenderer();
         _workspacePersistenceService = workspacePersistenceService ?? new WorkspacePersistenceService();
+        _workspaceViewStateStore = workspaceViewStateStore ?? new WorkspaceViewStateStore();
     }
 
     public CharacterOverviewState State { get; private set; } = CharacterOverviewState.Empty;
@@ -87,12 +89,4 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         State = state;
         StateChanged?.Invoke(this, EventArgs.Empty);
     }
-
-    private sealed record WorkspaceViewState(
-        string? ActiveTabId,
-        string? ActiveActionId,
-        string? ActiveSectionId,
-        string? ActiveSectionJson,
-        IReadOnlyList<SectionRowState> ActiveSectionRows,
-        bool HasSavedWorkspace);
 }

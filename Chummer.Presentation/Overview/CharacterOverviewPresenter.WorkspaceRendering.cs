@@ -149,19 +149,11 @@ public sealed partial class CharacterOverviewPresenter
         if (_currentWorkspace is null)
             return;
 
-        _workspaceViews[_currentWorkspace.Value.Value] = new WorkspaceViewState(
-            ActiveTabId: State.ActiveTabId,
-            ActiveActionId: State.ActiveActionId,
-            ActiveSectionId: State.ActiveSectionId,
-            ActiveSectionJson: State.ActiveSectionJson,
-            ActiveSectionRows: State.ActiveSectionRows.ToArray(),
-            HasSavedWorkspace: State.HasSavedWorkspace);
+        _workspaceViewStateStore.Capture(_currentWorkspace.Value, State);
     }
 
     private WorkspaceViewState? RestoreWorkspaceView(CharacterWorkspaceId id)
     {
-        return _workspaceViews.TryGetValue(id.Value, out WorkspaceViewState? view)
-            ? view
-            : null;
+        return _workspaceViewStateStore.Restore(id);
     }
 }

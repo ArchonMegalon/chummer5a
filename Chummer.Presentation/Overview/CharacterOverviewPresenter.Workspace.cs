@@ -88,7 +88,7 @@ public sealed partial class CharacterOverviewPresenter
         bool closedActiveWorkspace = _currentWorkspace is { } activeWorkspace
             && string.Equals(activeWorkspace.Value, id.Value, StringComparison.Ordinal);
         WorkspaceSessionState session = _workspaceSessionPresenter.Close(id);
-        _workspaceViews.Remove(id.Value);
+        _workspaceViewStateStore.Remove(id);
 
         if (session.OpenWorkspaces.Count == 0)
         {
@@ -217,6 +217,7 @@ public sealed partial class CharacterOverviewPresenter
         }
 
         WorkspaceSessionState session = _workspaceSessionPresenter.CloseAll();
+        _workspaceViewStateStore.Clear();
         _currentWorkspace = null;
         Publish(CharacterOverviewState.Empty with
         {
