@@ -590,11 +590,15 @@ public class MigrationComplianceTests
         string desktopShellText = File.ReadAllText(desktopShellPath);
         string homePath = FindPath("Chummer.Blazor", "Components", "Pages", "Home.razor");
         string homeText = File.ReadAllText(homePath);
+        string deepLinkPath = FindPath("Chummer.Blazor", "Components", "Pages", "DeepLinkCheck.razor");
+        string deepLinkText = File.ReadAllText(deepLinkPath);
 
         StringAssert.Contains(mainLayoutText, "<DesktopShell />");
-        StringAssert.Contains(mainLayoutText, "IsHomeRoute()");
+        Assert.IsFalse(mainLayoutText.Contains("IsHomeRoute()", StringComparison.Ordinal));
+        Assert.IsFalse(mainLayoutText.Contains("@Body", StringComparison.Ordinal));
         StringAssert.Contains(desktopShellText, "class=\"desktop-shell\"");
         StringAssert.Contains(homeText, "@page \"/\"");
+        StringAssert.Contains(deepLinkText, "@layout Chummer.Blazor.Components.Layout.NoLayout");
         Assert.IsFalse(homeText.Contains("desktop-shell", StringComparison.Ordinal));
     }
 
