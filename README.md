@@ -119,7 +119,7 @@ Default endpoints:
 Portal notes (current milestone):
 
 * `/api`, `/openapi`, and `/docs` are served via in-process portal proxy routing.
-* `/docs/*` resolves through `CHUMMER_PORTAL_DOCS_URL` (default `http://chummer-api:8080/docs/`) while `/openapi/*` resolves through `CHUMMER_PORTAL_API_URL`.
+* `/api/*`, `/openapi/*`, and `/docs/*` share the same upstream contract through `CHUMMER_PORTAL_API_URL`.
 * `/docs` is self-hosted (no external CDN dependency) and loads local assets from the API host.
 * `CHUMMER_PROTECT_API_DOCS=true` on the API service protects `/docs` and `/openapi` with the same `X-Api-Key` middleware as protected `/api/*` routes.
 * `/blazor` is served through an in-process portal proxy to an internal `chummer-blazor-portal` instance configured with `CHUMMER_BLAZOR_PATH_BASE=/blazor`.

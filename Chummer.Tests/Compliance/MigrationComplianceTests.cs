@@ -627,16 +627,17 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
-    public void Portal_docs_route_uses_dedicated_docs_cluster()
+    public void Portal_docs_route_shares_api_cluster_contract()
     {
         string portalProgramPath = FindPath("Chummer.Portal", "Program.cs");
         string portalProgramText = File.ReadAllText(portalProgramPath);
 
-        StringAssert.Contains(portalProgramText, "CHUMMER_PORTAL_DOCS_URL");
         StringAssert.Contains(portalProgramText, "RouteId = \"portal-docs\"");
-        StringAssert.Contains(portalProgramText, "ClusterId = \"docs-cluster\"");
+        StringAssert.Contains(portalProgramText, "ClusterId = \"api-cluster\"");
         StringAssert.Contains(portalProgramText, "Path = \"/docs/{**catch-all}\"");
-        StringAssert.Contains(portalProgramText, "BuildRouteTransforms(apiRouteTransforms, \"/docs\")");
+        Assert.IsFalse(portalProgramText.Contains("CHUMMER_PORTAL_DOCS_URL", StringComparison.Ordinal));
+        Assert.IsFalse(portalProgramText.Contains("docs-cluster", StringComparison.Ordinal));
+        Assert.IsFalse(portalProgramText.Contains("BuildRouteTransforms(apiRouteTransforms, \"/docs\")", StringComparison.Ordinal));
     }
 
     [TestMethod]
@@ -683,7 +684,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "chummer-blazor-portal");
         StringAssert.Contains(readmeText, "chummer-avalonia-browser");
         StringAssert.Contains(readmeText, "chummer-portal");
-        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOCS_URL");
+        StringAssert.Contains(readmeText, "/api/*`, `/openapi/*`, and `/docs/*` share the same upstream contract through `CHUMMER_PORTAL_API_URL`.");
         StringAssert.Contains(readmeText, "CHUMMER_CLIENT_MODE");
         StringAssert.Contains(readmeText, "CHUMMER_DESKTOP_CLIENT_MODE");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR");

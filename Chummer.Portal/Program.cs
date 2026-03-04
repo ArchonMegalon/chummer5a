@@ -9,7 +9,6 @@ string avaloniaBrowserBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Co
 string avaloniaProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:AvaloniaProxyBaseUrl", "CHUMMER_PORTAL_AVALONIA_PROXY_URL", string.Empty);
 string apiBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ApiBaseUrl", "CHUMMER_PORTAL_API_URL", "http://chummer-api:8080/");
 string apiProxyKey = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ApiKey", "CHUMMER_PORTAL_API_KEY", Environment.GetEnvironmentVariable("CHUMMER_API_KEY") ?? string.Empty);
-string docsBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DocsBaseUrl", "CHUMMER_PORTAL_DOCS_URL", "http://chummer-api:8080/docs/");
 string downloadsBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "/downloads/");
 string downloadsProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsProxyBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_PROXY_URL", string.Empty);
 string releaseManifestPath = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ReleaseManifestPath", "CHUMMER_PORTAL_RELEASES_FILE", "downloads/releases.json");
@@ -37,12 +36,12 @@ var proxyRoutes = new List<RouteConfig>
     new RouteConfig
     {
         RouteId = "portal-docs",
-        ClusterId = "docs-cluster",
+        ClusterId = "api-cluster",
         Match = new RouteMatch
         {
             Path = "/docs/{**catch-all}"
         },
-        Transforms = PortalProxyUtils.BuildRouteTransforms(apiRouteTransforms, "/docs")
+        Transforms = PortalProxyUtils.BuildRouteTransforms(apiRouteTransforms)
     },
     new RouteConfig
     {
@@ -66,17 +65,6 @@ var proxyClusters = new List<ClusterConfig>
             ["primary"] = new DestinationConfig
             {
                 Address = PortalProxyUtils.NormalizeProxyAddress(apiBaseUrl)
-            }
-        }
-    },
-    new ClusterConfig
-    {
-        ClusterId = "docs-cluster",
-        Destinations = new Dictionary<string, DestinationConfig>(StringComparer.Ordinal)
-        {
-            ["primary"] = new DestinationConfig
-            {
-                Address = PortalProxyUtils.NormalizeProxyAddress(docsBaseUrl)
             }
         }
     }
@@ -179,7 +167,6 @@ app.MapGet("/", () => Results.Content(
         useAvaloniaProxy,
         apiBaseUrl,
         isApiKeyForwardingEnabled,
-        docsBaseUrl,
         downloadsBaseUrl,
         downloadsProxyBaseUrl,
         useDownloadsProxy),

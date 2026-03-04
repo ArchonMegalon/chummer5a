@@ -159,7 +159,6 @@ internal static class PortalPageBuilder
         bool useAvaloniaProxy,
         string apiBaseUrl,
         bool isApiKeyForwardingEnabled,
-        string docsBaseUrl,
         string downloadsBaseUrl,
         string downloadsProxyBaseUrl,
         bool useDownloadsProxy)
@@ -283,7 +282,7 @@ internal static class PortalPageBuilder
         html.AppendLine("    <footer>");
         html.AppendLine("      <div><code>/api</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
         html.AppendLine("      <div><code>/openapi</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
-        html.AppendLine("      <div><code>/docs</code> proxy upstream → " + HtmlEncode(docsBaseUrl) + "</div>");
+        html.AppendLine("      <div><code>/docs</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
         html.AppendLine("      <div><code>/blazor</code> " + (useBlazorProxy ? "proxy upstream → " + HtmlEncode(blazorProxyBaseUrl) : "redirect → " + HtmlEncode(blazorBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/avalonia</code> " + (useAvaloniaProxy ? "proxy upstream → " + HtmlEncode(avaloniaProxyBaseUrl) : "placeholder route at " + HtmlEncode(avaloniaBrowserBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/downloads</code> " + (useDownloadsProxy ? "proxy upstream → " + HtmlEncode(downloadsProxyBaseUrl) : "local files + manifest with fallback feed → " + HtmlEncode(downloadsBaseUrl)) + "</div>");
