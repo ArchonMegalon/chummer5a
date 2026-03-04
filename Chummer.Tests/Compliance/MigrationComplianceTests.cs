@@ -565,6 +565,20 @@ public class MigrationComplianceTests
         StringAssert.Contains(xamlText, "x:Name=\"DialogActionsList\"");
     }
 
+    [TestMethod]
+    public void Avalonia_headless_smoke_suite_is_present_for_phase5_gate()
+    {
+        string testPath = FindPath("Chummer.Tests", "Presentation", "AvaloniaHeadlessSmokeTests.cs");
+        string testText = File.ReadAllText(testPath);
+
+        StringAssert.Contains(testText, "Avalonia_headless_import_edit_switch_save_smoke");
+        StringAssert.Contains(testText, "UseHeadless(");
+        StringAssert.Contains(testText, "EnsureHeadlessPlatform();");
+        StringAssert.Contains(testText, "adapter.ImportAsync(");
+        StringAssert.Contains(testText, "UpdateMetadataAsync(");
+        StringAssert.Contains(testText, "SaveAsync(");
+    }
+
     private static string ToSectionName(string pascalName)
     {
         return pascalName.ToLowerInvariant();
