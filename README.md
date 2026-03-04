@@ -125,9 +125,24 @@ Portal notes (current milestone):
 * `/avalonia` is served through an in-process portal proxy to an internal `chummer-avalonia-browser` host service configured with `CHUMMER_AVALONIA_BROWSER_PATH_BASE=/avalonia`.
 * Set `CHUMMER_PORTAL_AVALONIA_PROXY_URL` to a different upstream or clear it to fall back to the built-in portal placeholder route.
 * `/downloads/` is a local manifest-backed page, `/downloads/releases.json` can be sourced from `CHUMMER_PORTAL_RELEASES_FILE` (default `downloads/releases.json`), and `/downloads/<artifact>` serves local files from `CHUMMER_PORTAL_RELEASES_DIR` (default `downloads`).
+* `CHUMMER_PORTAL_DOWNLOADS_URL` now defaults to `/downloads/` so the landing page stays local-first.
 * Set `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL` to route `/downloads/*` through in-process YARP proxy mode instead of local-file mode.
 * Portal can forward `X-Api-Key` to API/docs/openapi upstream routes when `CHUMMER_PORTAL_API_KEY` is set (or when `CHUMMER_API_KEY` is present in the portal service environment).
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
+
+Cloudflare Tunnel target (portal profile):
+
+* If cloudflared is in another Docker stack, point ingress at the portal host port: `http://host.docker.internal:8091`.
+* On Linux, add `extra_hosts: ["host.docker.internal:host-gateway"]` to the cloudflared service if needed.
+* If both stacks share an external Docker network, point ingress directly at `http://chummer-portal:8080` instead.
+* Keep tunnel ingress as a single origin with catch-all fallback:
+
+```yaml
+ingress:
+  - hostname: chummer.example.com
+    service: http://host.docker.internal:8091
+  - service: http_status:404
+```
 
 Content overlay notes (`CHUMMER_AMENDS_PATH`):
 
