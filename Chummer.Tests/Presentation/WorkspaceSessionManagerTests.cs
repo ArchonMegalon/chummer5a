@@ -1,0 +1,120 @@
+using Chummer.Contracts.Characters;
+using Chummer.Contracts.Workspaces;
+using Chummer.Presentation.Overview;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
+
+namespace Chummer.Tests.Presentation;
+
+[TestClass]
+public class WorkspaceSessionManagerTests
+{
+    [TestMethod]
+    public void Restore_orders_workspaces_by_last_updated_descending()
+    {
+        WorkspaceSessionManager manager = new();
+        WorkspaceListItem[] input =
+        [
+            new(
+                new CharacterWorkspaceId("ws-old"),
+                CreateSummary("Old", "O"),
+                DateTimeOffset.UtcNow.AddMinutes(-10)),
+            new(
+                new CharacterWorkspaceId("ws-new"),
+                CreateSummary("New", "N"),
+                DateTimeOffset.UtcNow.AddMinutes(-1))
+        ];
+
+        IReadOnlyList<OpenWorkspaceState> restored = manager.Restore(input);
+
+        Assert.AreEqual(2, restored.Count);
+        Assert.AreEqual("ws-new", restored[0].Id.Value);
+        Assert.AreEqual("ws-old", restored[1].Id.Value);
+    }
+
+    [TestMethod]
+    public void Activate_upserts_existing_workspace_and_moves_it_to_top()
+    {
+        WorkspaceSessionManager manager = new();
+        OpenWorkspaceState[] existing =
+        [
+            new(new CharacterWorkspaceId("ws-1"), "One", "A", DateTimeOffset.UtcNow.AddMinutes(-10)),
+            new(new CharacterWorkspaceId("ws-2"), "Two", "B", DateTimeOffset.UtcNow.AddMinutes(-5))
+        ];
+
+        IReadOnlyList<OpenWorkspaceState> updated = manager.Activate(
+            existing,
+            new CharacterWorkspaceId("ws-1"),
+            CreateProfile("One Updated", "A2"));
+
+        Assert.AreEqual(2, updated.Count);
+        Assert.AreEqual("ws-1", updated[0].Id.Value);
+        Assert.AreEqual("One Updated", updated[0].Name);
+        Assert.AreEqual("A2", updated[0].Alias);
+    }
+
+    [TestMethod]
+    public void Close_removes_workspace_and_select_next_returns_first_remaining()
+    {
+        WorkspaceSessionManager manager = new();
+        OpenWorkspaceState[] existing =
+        [
+            new(new CharacterWorkspaceId("ws-top"), "Top", "T", DateTimeOffset.UtcNow),
+            new(new CharacterWorkspaceId("ws-next"), "Next", "N", DateTimeOffset.UtcNow.AddMinutes(-1))
+        ];
+
+        IReadOnlyList<OpenWorkspaceState> remaining = manager.Close(existing, new CharacterWorkspaceId("ws-top"));
+        CharacterWorkspaceId? next = manager.SelectNext(remaining);
+
+        Assert.AreEqual(1, remaining.Count);
+        Assert.AreEqual("ws-next", remaining[0].Id.Value);
+        Assert.IsNotNull(next);
+        Assert.AreEqual("ws-next", next.Value.Value);
+    }
+
+    private static CharacterFileSummary CreateSummary(string name, string alias)
+    {
+        return new CharacterFileSummary(
+            Name: name,
+            Alias: alias,
+            Metatype: "Human",
+            BuildMethod: "Priority",
+            CreatedVersion: "1.0",
+            AppVersion: "1.0",
+            Karma: 0m,
+            Nuyen: 0m,
+            Created: true);
+    }
+
+    private static CharacterProfileSection CreateProfile(string name, string alias)
+    {
+        return new CharacterProfileSection(
+            Name: name,
+            Alias: alias,
+            PlayerName: string.Empty,
+            Metatype: "Human",
+            Metavariant: string.Empty,
+            Sex: string.Empty,
+            Age: string.Empty,
+            Height: string.Empty,
+            Weight: string.Empty,
+            Hair: string.Empty,
+            Eyes: string.Empty,
+            Skin: string.Empty,
+            Concept: string.Empty,
+            Description: string.Empty,
+            Background: string.Empty,
+            CreatedVersion: string.Empty,
+            AppVersion: string.Empty,
+            BuildMethod: "Priority",
+            GameplayOption: string.Empty,
+            Created: true,
+            Adept: false,
+            Magician: false,
+            Technomancer: false,
+            AI: false,
+            MainMugshotIndex: 0,
+            MugshotCount: 0);
+    }
+}
