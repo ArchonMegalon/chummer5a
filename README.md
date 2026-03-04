@@ -89,7 +89,7 @@ CHUMMER_PORTAL_E2E=0 bash scripts/migration-loop.sh 1
 Run the portal surface smoke directly:
 
 ```bash
-docker compose --profile test --profile portal run --build --rm chummer-playwright node /work/scripts/e2e-portal.cjs
+docker compose --profile test --profile portal run --build --rm chummer-playwright-portal
 ```
 
 Run Linux test profile directly:
@@ -117,6 +117,7 @@ Default endpoints:
 Portal notes (current milestone):
 
 * `/api`, `/openapi`, and `/docs` are served via in-process portal proxy routing.
+* `/docs/*` resolves through `CHUMMER_PORTAL_DOCS_URL` (default `http://chummer-api:8080/docs/`) while `/openapi/*` resolves through `CHUMMER_PORTAL_API_URL`.
 * `/docs` is self-hosted (no external CDN dependency) and loads local assets from the API host.
 * `/blazor` is served through an in-process portal proxy to an internal `chummer-blazor-portal` instance configured with `CHUMMER_BLAZOR_PATH_BASE=/blazor`.
 * `/avalonia` is served through an in-process portal proxy to an internal `chummer-avalonia-browser` host service configured with `CHUMMER_AVALONIA_BROWSER_PATH_BASE=/avalonia`.

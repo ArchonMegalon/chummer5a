@@ -9,7 +9,6 @@ fi
 
 docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-avalonia-browser chummer-portal
 
-docker compose --profile test --profile portal run --build --rm chummer-playwright \
-  node /work/scripts/e2e-portal.cjs
+docker compose --profile test --profile portal run --build --rm chummer-playwright-portal
 
 echo "portal e2e completed"

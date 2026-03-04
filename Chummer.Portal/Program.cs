@@ -11,7 +11,7 @@ string avaloniaProxyBaseUrl = ResolveSetting("Portal:AvaloniaProxyBaseUrl", "CHU
 string apiBaseUrl = ResolveSetting("Portal:ApiBaseUrl", "CHUMMER_PORTAL_API_URL", "http://chummer-api:8080/");
 string apiProxyKey = ResolveSetting("Portal:ApiKey", "CHUMMER_PORTAL_API_KEY", Environment.GetEnvironmentVariable("CHUMMER_API_KEY") ?? string.Empty);
 string docsBaseUrl = ResolveSetting("Portal:DocsBaseUrl", "CHUMMER_PORTAL_DOCS_URL", "http://chummer-api:8080/docs/");
-string downloadsBaseUrl = ResolveSetting("Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "https://github.com/chummer5a/chummer5a/releases/latest");
+string downloadsBaseUrl = ResolveSetting("Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "https://github.com/ArchonMegalon/chummer5a/releases/latest");
 string downloadsProxyBaseUrl = ResolveSetting("Portal:DownloadsProxyBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_PROXY_URL", string.Empty);
 string releaseManifestPath = ResolveSetting("Portal:ReleaseManifestPath", "CHUMMER_PORTAL_RELEASES_FILE", "downloads/releases.json");
 string releaseFilesPath = ResolveSetting("Portal:ReleaseFilesPath", "CHUMMER_PORTAL_RELEASES_DIR", string.Empty);
@@ -33,17 +33,17 @@ var proxyRoutes = new List<RouteConfig>
         {
             Path = "/api/{**catch-all}"
         },
-        Transforms = apiRouteTransforms
+        Transforms = BuildRouteTransforms(apiRouteTransforms)
     },
     new RouteConfig
     {
         RouteId = "portal-docs",
-        ClusterId = "api-cluster",
+        ClusterId = "docs-cluster",
         Match = new RouteMatch
         {
             Path = "/docs/{**catch-all}"
         },
-        Transforms = apiRouteTransforms
+        Transforms = BuildRouteTransforms(apiRouteTransforms, "/docs")
     },
     new RouteConfig
     {
@@ -53,7 +53,7 @@ var proxyRoutes = new List<RouteConfig>
         {
             Path = "/openapi/{**catch-all}"
         },
-        Transforms = apiRouteTransforms
+        Transforms = BuildRouteTransforms(apiRouteTransforms)
     }
 };
 
@@ -67,6 +67,17 @@ var proxyClusters = new List<ClusterConfig>
             ["primary"] = new DestinationConfig
             {
                 Address = NormalizeProxyAddress(apiBaseUrl)
+            }
+        }
+    },
+    new ClusterConfig
+    {
+        ClusterId = "docs-cluster",
+        Destinations = new Dictionary<string, DestinationConfig>(StringComparer.Ordinal)
+        {
+            ["primary"] = new DestinationConfig
+            {
+                Address = NormalizeProxyAddress(docsBaseUrl)
             }
         }
     }
@@ -257,6 +268,28 @@ static IReadOnlyList<IReadOnlyDictionary<string, string>>? BuildApiRouteTransfor
             ["Set"] = apiKey
         }
     };
+}
+
+static IReadOnlyList<IReadOnlyDictionary<string, string>>? BuildRouteTransforms(
+    IReadOnlyList<IReadOnlyDictionary<string, string>>? apiRouteTransforms,
+    string? pathRemovePrefix = null)
+{
+    List<IReadOnlyDictionary<string, string>> transforms = new();
+
+    if (!string.IsNullOrWhiteSpace(pathRemovePrefix))
+    {
+        transforms.Add(new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["PathRemovePrefix"] = pathRemovePrefix
+        });
+    }
+
+    if (apiRouteTransforms is not null)
+    {
+        transforms.AddRange(apiRouteTransforms);
+    }
+
+    return transforms.Count == 0 ? null : transforms;
 }
 
 static string ComposeRedirect(string baseUrl, string? path, QueryString queryString)
