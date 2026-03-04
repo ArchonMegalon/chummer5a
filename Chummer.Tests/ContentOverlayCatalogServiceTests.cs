@@ -107,6 +107,35 @@ public class ContentOverlayCatalogServiceTests
         }
     }
 
+    [TestMethod]
+    public void ResolveDataFile_uses_exact_file_name_and_does_not_match_fragment_prefix()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string baseData = Path.Combine(root, "data");
+            Directory.CreateDirectory(baseData);
+            string baseQualities = Path.Combine(baseData, "qualities.xml");
+            File.WriteAllText(baseQualities, "<chummer><qualities /></chummer>");
+
+            string amendsRoot = Path.Combine(root, "Amends");
+            string packRoot = Path.Combine(amendsRoot, "pack-fragment");
+            Directory.CreateDirectory(Path.Combine(packRoot, "data"));
+            File.WriteAllText(Path.Combine(packRoot, "manifest.json"),
+                "{\n  \"id\": \"pack-fragment\",\n  \"priority\": 100,\n  \"enabled\": true\n}");
+            File.WriteAllText(Path.Combine(packRoot, "data", "qualities.test-amend.xml"), "<chummer><qualities /></chummer>");
+
+            var service = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
+            string resolved = service.ResolveDataFile("qualities.xml");
+
+            Assert.AreEqual(baseQualities, resolved);
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
     private static void CreatePack(string amendsRoot, string id, int priority, bool enabled, string dataFileContent)
     {
         string packRoot = Path.Combine(amendsRoot, id);

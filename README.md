@@ -132,7 +132,9 @@ Portal notes (current milestone):
 Content overlay notes (`CHUMMER_AMENDS_PATH`):
 
 * `docker-compose.yml` mounts `./Docker/Amends` into `/app/amends` (read-only) and sets `CHUMMER_AMENDS_PATH=/app/amends` for `chummer-api`.
+* Multiple amend roots are supported with platform separators (`:` on Linux/macOS, `;` on Windows) and `,`.
 * Active overlay metadata is exposed via `/api/info` (`content.overlays`) and `/api/content/overlays`.
+* Data file resolution is exact-name replacement only (for example `lifemodules.xml`); fragment files such as `qualities.test-amend.xml` are catalog overlays and do not replace `qualities.xml`.
 * Sample pack is included at `Docker/Amends/manifest.json` with test XML content under `Docker/Amends/data` and `Docker/Amends/lang`.
 
 Desktop artifact workflow:

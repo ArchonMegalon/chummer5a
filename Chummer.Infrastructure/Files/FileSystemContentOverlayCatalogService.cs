@@ -64,26 +64,6 @@ public sealed class FileSystemContentOverlayCatalogService : IContentOverlayCata
             }
         }
 
-        string prefix = Path.GetFileNameWithoutExtension(normalizedName);
-        if (!string.IsNullOrWhiteSpace(prefix))
-        {
-            foreach (string directory in BuildResolutionOrder(_catalog.BaseDataPath, _catalog.Overlays, pack => pack.DataPath))
-            {
-                if (!Directory.Exists(directory))
-                {
-                    continue;
-                }
-
-                string? matching = Directory.EnumerateFiles(directory, prefix + "*.xml", SearchOption.TopDirectoryOnly)
-                    .OrderBy(path => path, StringComparer.Ordinal)
-                    .FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(matching))
-                {
-                    return matching;
-                }
-            }
-        }
-
         throw new FileNotFoundException($"Could not locate data file '{normalizedName}'.");
     }
 
