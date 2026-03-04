@@ -6,6 +6,7 @@ services:
       dockerfile: Chummer.Api/Dockerfile
     environment:
       CHUMMER_STATE_PATH: "/app/state"
+      CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
     ports:
       - "${CHUMMER_WEB_PORT:-8088}:8080"
     volumes:
@@ -19,6 +20,7 @@ services:
       - chummer-api
     environment:
       CHUMMER_API_BASE_URL: "http://chummer-api:8080"
+      CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
     ports:
       - "${CHUMMER_BLAZOR_PORT:-8089}:8080"
   chummer-tests:

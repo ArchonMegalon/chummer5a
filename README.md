@@ -39,6 +39,15 @@ Start API + Blazor UI:
 docker compose --profile ui up -d --build chummer-api chummer-blazor
 ```
 
+Enable API key protection (recommended for production):
+
+```bash
+export CHUMMER_API_KEY="replace-with-strong-secret"
+docker compose --profile ui up -d --build chummer-api chummer-blazor
+```
+
+When set, `Chummer.Api` enforces `X-Api-Key` for non-public `/api/*` routes and both UI heads automatically forward the key.
+
 Run migration/compliance test loop (branch helper script):
 
 ```bash

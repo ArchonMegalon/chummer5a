@@ -56,6 +56,12 @@ public partial class MainWindow : Window
             BaseAddress = ResolveApiBaseAddress(),
             Timeout = TimeSpan.FromSeconds(20)
         };
+        string? apiKey = ResolveApiKey();
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            _httpClient.DefaultRequestHeaders.Remove("X-Api-Key");
+            _httpClient.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+        }
 
         _presenter = new CharacterOverviewPresenter(new HttpChummerClient(_httpClient));
         _adapter = new CharacterOverviewViewModelAdapter(_presenter);
@@ -372,6 +378,11 @@ public partial class MainWindow : Window
         }
 
         return uri;
+    }
+
+    private static string? ResolveApiKey()
+    {
+        return Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
     }
 
     private void SyncDialogWindow(CharacterOverviewState state)
