@@ -3,9 +3,9 @@ using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 using Microsoft.AspNetCore.Components;
 
-namespace Chummer.Blazor.Components.Pages;
+namespace Chummer.Blazor.Components.Layout;
 
-public partial class Home : IDisposable
+public partial class DesktopShell : IDisposable
 {
     private CharacterOverviewStateBridge? _bridge;
     private const long MaxImportBytes = 8 * 1024 * 1024;

@@ -1,9 +1,9 @@
 using Chummer.Contracts.Presentation;
 using Microsoft.AspNetCore.Components.Web;
 
-namespace Chummer.Blazor.Components.Pages;
+namespace Chummer.Blazor.Components.Layout;
 
-public partial class Home
+public partial class DesktopShell
 {
     private IEnumerable<AppCommandDefinition> MenuCommands(string menuId)
     {

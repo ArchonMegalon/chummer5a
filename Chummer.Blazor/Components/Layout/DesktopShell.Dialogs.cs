@@ -1,8 +1,8 @@
 using Chummer.Blazor.Components.Shell;
 
-namespace Chummer.Blazor.Components.Pages;
+namespace Chummer.Blazor.Components.Layout;
 
-public partial class Home
+public partial class DesktopShell
 {
     private async Task ExecuteDialogActionAsync(string actionId)
     {

@@ -3,9 +3,9 @@ using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Microsoft.AspNetCore.Components.Forms;
 
-namespace Chummer.Blazor.Components.Pages;
+namespace Chummer.Blazor.Components.Layout;
 
-public partial class Home
+public partial class DesktopShell
 {
     private async Task ImportRawAsync()
     {

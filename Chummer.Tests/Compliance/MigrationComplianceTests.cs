@@ -578,6 +578,23 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Blazor_shell_is_promoted_to_layout_layer()
+    {
+        string mainLayoutPath = FindPath("Chummer.Blazor", "Components", "Layout", "MainLayout.razor");
+        string mainLayoutText = File.ReadAllText(mainLayoutPath);
+        string desktopShellPath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor");
+        string desktopShellText = File.ReadAllText(desktopShellPath);
+        string homePath = FindPath("Chummer.Blazor", "Components", "Pages", "Home.razor");
+        string homeText = File.ReadAllText(homePath);
+
+        StringAssert.Contains(mainLayoutText, "<DesktopShell />");
+        StringAssert.Contains(mainLayoutText, "IsHomeRoute()");
+        StringAssert.Contains(desktopShellText, "class=\"desktop-shell\"");
+        StringAssert.Contains(homeText, "@page \"/\"");
+        Assert.IsFalse(homeText.Contains("desktop-shell", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Portal_docs_route_uses_dedicated_docs_cluster()
     {
         string portalProgramPath = FindPath("Chummer.Portal", "Program.cs");
@@ -685,8 +702,8 @@ public class MigrationComplianceTests
     [TestMethod]
     public void Dual_heads_wire_keyboard_shortcuts_for_core_commands()
     {
-        string blazorHomePath = FindPath("Chummer.Blazor", "Components", "Pages", "Home.razor");
-        string blazorHomeText = File.ReadAllText(blazorHomePath);
+        string blazorShellPath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor");
+        string blazorShellText = File.ReadAllText(blazorShellPath);
         string avaloniaXamlPath = FindPath("Chummer.Avalonia", "MainWindow.axaml");
         string avaloniaXamlText = File.ReadAllText(avaloniaXamlPath);
         string avaloniaCodePath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
@@ -694,9 +711,12 @@ public class MigrationComplianceTests
         string shortcutCatalogPath = FindPath("Chummer.Presentation", "Shell", "DesktopShortcutCatalog.cs");
         string shortcutCatalogText = File.ReadAllText(shortcutCatalogPath);
 
-        StringAssert.Contains(blazorHomeText, "@onkeydown=\"OnShellKeyDown\"");
-        StringAssert.Contains(blazorHomeText, "args.MetaKey");
-        StringAssert.Contains(blazorHomeText, "DesktopShortcutCatalog.TryResolveCommandId");
+        StringAssert.Contains(blazorShellText, "@onkeydown=\"OnShellKeyDown\"");
+        StringAssert.Contains(blazorShellText, "DesktopShortcutCatalog.TryResolveCommandId");
+        string blazorShellCodePath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.Commands.cs");
+        string blazorShellCodeText = File.ReadAllText(blazorShellCodePath);
+        StringAssert.Contains(blazorShellCodeText, "args.MetaKey");
+        StringAssert.Contains(blazorShellCodeText, "DesktopShortcutCatalog.TryResolveCommandId");
 
         StringAssert.Contains(avaloniaXamlText, "KeyDown=\"Window_OnKeyDown\"");
         StringAssert.Contains(avaloniaCodeText, "Window_OnKeyDown");
