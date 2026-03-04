@@ -21,6 +21,7 @@ namespace Chummer.Tests.Presentation;
 public class DualHeadAcceptanceTests
 {
     private static readonly Uri BaseUri = ResolveBaseUri();
+    private static readonly string? ApiKey = ResolveApiKey();
 
     [TestMethod]
     public async Task Avalonia_and_Blazor_overview_flows_show_equivalent_state_after_import()
@@ -330,11 +331,19 @@ public class DualHeadAcceptanceTests
 
     private static HttpClient CreateClient()
     {
-        return new HttpClient
+        var client = new HttpClient
         {
             BaseAddress = BaseUri,
             Timeout = TimeSpan.FromSeconds(10)
         };
+
+        if (!string.IsNullOrWhiteSpace(ApiKey))
+        {
+            client.DefaultRequestHeaders.Remove("X-Api-Key");
+            client.DefaultRequestHeaders.Add("X-Api-Key", ApiKey);
+        }
+
+        return client;
     }
 
     private static Uri ResolveBaseUri()
@@ -349,6 +358,11 @@ public class DualHeadAcceptanceTests
             throw new InvalidOperationException($"Invalid CHUMMER_API_BASE_URL/CHUMMER_WEB_BASE_URL: '{raw}'");
 
         return uri;
+    }
+
+    private static string? ResolveApiKey()
+    {
+        return Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
     }
 
     private static string FindTestFilePath(string fileName)

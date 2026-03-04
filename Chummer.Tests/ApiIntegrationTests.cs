@@ -14,6 +14,7 @@ namespace Chummer.Tests;
 public class ApiIntegrationTests
 {
     private static readonly Uri BaseUri = ResolveBaseUri();
+    private static readonly string? ApiKey = ResolveApiKey();
     private static readonly string[] AllSectionIds =
     {
         "attributes",
@@ -93,6 +94,36 @@ public class ApiIntegrationTests
         Assert.AreEqual("Chummer.Api", payload["service"]?.GetValue<string>());
         Assert.AreEqual("running", payload["status"]?.GetValue<string>());
         Assert.IsTrue(payload["docs"] is JsonArray);
+    }
+
+    [TestMethod]
+    public async Task Public_endpoints_remain_accessible_without_api_key_header_when_auth_is_enabled()
+    {
+        if (string.IsNullOrWhiteSpace(ApiKey))
+            return;
+
+        using var client = CreateClient(includeApiKey: false);
+
+        JsonObject health = await GetRequiredJsonObject(client, "/api/health");
+        Assert.IsTrue(health["ok"]?.GetValue<bool>() ?? false);
+
+        JsonObject info = await GetRequiredJsonObject(client, "/api/info");
+        Assert.AreEqual("Chummer", info["service"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Protected_endpoint_requires_valid_api_key_when_auth_is_enabled()
+    {
+        if (string.IsNullOrWhiteSpace(ApiKey))
+            return;
+
+        using var client = CreateClient(includeApiKey: false);
+
+        using HttpResponseMessage response = await client.GetAsync("/api/tools/master-index");
+        string content = await response.Content.ReadAsStringAsync();
+        Assert.AreEqual(401, (int)response.StatusCode, content);
+        JsonNode? parsed = JsonNode.Parse(content);
+        Assert.AreEqual("missing_or_invalid_api_key", parsed?["error"]?.GetValue<string>());
     }
 
     [TestMethod]
@@ -521,13 +552,19 @@ public class ApiIntegrationTests
         return match;
     }
 
-    private static HttpClient CreateClient()
+    private static HttpClient CreateClient(bool includeApiKey = true)
     {
         var client = new HttpClient
         {
             BaseAddress = BaseUri,
             Timeout = TimeSpan.FromSeconds(10)
         };
+
+        if (includeApiKey && !string.IsNullOrWhiteSpace(ApiKey))
+        {
+            client.DefaultRequestHeaders.Remove("X-Api-Key");
+            client.DefaultRequestHeaders.Add("X-Api-Key", ApiKey);
+        }
 
         return client;
     }
@@ -582,5 +619,10 @@ public class ApiIntegrationTests
             throw new InvalidOperationException($"Invalid CHUMMER_API_BASE_URL/CHUMMER_WEB_BASE_URL: '{raw}'");
 
         return uri;
+    }
+
+    private static string? ResolveApiKey()
+    {
+        return Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
     }
 }

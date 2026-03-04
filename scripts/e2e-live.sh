@@ -3,6 +3,18 @@ set -euo pipefail
 
 BASE_URL="${CHUMMER_API_BASE_URL:-${CHUMMER_WEB_BASE_URL:-http://127.0.0.1:${CHUMMER_API_PORT:-${CHUMMER_WEB_PORT:-8088}}}}"
 XML_FILE="${1:-Chummer.Tests/TestFiles/BLUE.chum5}"
+API_KEY="${CHUMMER_API_KEY:-}"
+
+curl_json() {
+  local method="$1"
+  local url="$2"
+  shift 2
+  if [[ -n "$API_KEY" ]]; then
+    curl -fsS -X "$method" "$url" -H "X-Api-Key: $API_KEY" "$@"
+  else
+    curl -fsS -X "$method" "$url" "$@"
+  fi
+}
 
 if [[ ! -f "$XML_FILE" ]]; then
   echo "E2E XML file not found: $XML_FILE" >&2
@@ -21,7 +33,11 @@ check_post() {
   local response_file
   response_file=$(mktemp)
   echo "checking: $path"
-  status=$(curl -sS -o "$response_file" -w "%{http_code}" -X POST "$BASE_URL$path" -H "Content-Type: application/json" --data-binary "@$payload_file")
+  if [[ -n "$API_KEY" ]]; then
+    status=$(curl -sS -o "$response_file" -w "%{http_code}" -X POST "$BASE_URL$path" -H "Content-Type: application/json" -H "X-Api-Key: $API_KEY" --data-binary "@$payload_file")
+  else
+    status=$(curl -sS -o "$response_file" -w "%{http_code}" -X POST "$BASE_URL$path" -H "Content-Type: application/json" --data-binary "@$payload_file")
+  fi
   out=$(cat "$response_file")
   rm -f "$response_file"
   if [[ "$status" -lt 200 || "$status" -ge 300 ]]; then
@@ -37,8 +53,8 @@ check_post() {
   echo "ok: $path"
 }
 
-curl -fsS "$BASE_URL/api/info" >/dev/null
-curl -fsS "$BASE_URL/api/health" >/dev/null
+curl_json GET "$BASE_URL/api/info" >/dev/null
+curl_json GET "$BASE_URL/api/health" >/dev/null
 
 echo "service healthy at $BASE_URL"
 
@@ -89,7 +105,7 @@ check_post "/api/characters/sections/improvements"
 check_post "/api/characters/sections/customdatadirectorynames"
 check_post "/api/characters/sections/drugs"
 
-curl -fsS "$BASE_URL/api/lifemodules/stages" >/dev/null
-curl -fsS "$BASE_URL/api/lifemodules/modules" >/dev/null
+curl_json GET "$BASE_URL/api/lifemodules/stages" >/dev/null
+curl_json GET "$BASE_URL/api/lifemodules/modules" >/dev/null
 
 echo "live E2E completed"
