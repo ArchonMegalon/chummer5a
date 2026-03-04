@@ -1,14 +1,16 @@
 @page "/"
 @implements IDisposable
 @inject ICharacterOverviewPresenter Presenter
+@inject ICommandAvailabilityEvaluator AvailabilityEvaluator
+@inject IShellPresenter ShellPresenter
 @using System.Text
 @using System.Linq
 @using Microsoft.AspNetCore.Components.Forms
 @using Chummer.Presentation.Shell
 
 <div class="desktop-shell">
-    <MenuBar MenuRoots="MenuRoots.ToArray()"
-             OpenMenuId="OpenMenuId"
+    <MenuBar MenuRoots="ShellState.MenuRoots.ToArray()"
+             OpenMenuId="ShellState.OpenMenuId"
              IsBusy="State.IsBusy"
              MenuCommands="MenuCommands"
              IsCommandEnabled="IsCommandEnabled"
@@ -21,24 +23,26 @@
                IsCommandEnabled="IsCommandEnabled"
                ExecuteCommandRequested="ExecuteCommandAsync" />
 
-    <MdiStrip OpenWorkspaces="State.OpenWorkspaces"
-              ActiveWorkspaceId="State.WorkspaceId"
+    <MdiStrip OpenWorkspaces="State.Session.OpenWorkspaces"
+              ActiveWorkspaceId="State.Session.ActiveWorkspaceId"
               IsBusy="State.IsBusy"
-              OpenWorkspaceRequested="OpenWorkspaceAsync" />
+              OpenWorkspaceRequested="OpenWorkspaceAsync"
+              CloseWorkspaceRequested="CloseWorkspaceAsync" />
 
     <div class="workspace-layout">
         <aside class="left-pane">
-            <OpenWorkspaceTree OpenWorkspaces="State.OpenWorkspaces"
-                               ActiveWorkspaceId="State.WorkspaceId"
+            <OpenWorkspaceTree OpenWorkspaces="State.Session.OpenWorkspaces"
+                               ActiveWorkspaceId="State.Session.ActiveWorkspaceId"
                                IsBusy="State.IsBusy"
-                               OpenWorkspaceRequested="OpenWorkspaceAsync" />
+                               OpenWorkspaceRequested="OpenWorkspaceAsync"
+                               CloseWorkspaceRequested="CloseWorkspaceAsync" />
 
             <section class="panel tabs">
-                <h2>Workspace Tabs</h2>
+                    <h2>Workspace Tabs</h2>
                 <div class="tab-grid">
-                    @foreach (var tab in State.NavigationTabs)
+                    @foreach (var tab in ShellState.NavigationTabs)
                     {
-                        bool enabled = CommandAvailabilityEvaluator.IsNavigationTabEnabled(tab, State);
+                        bool enabled = AvailabilityEvaluator.IsNavigationTabEnabled(tab, State);
                         <button class="tab-btn @(State.ActiveTabId == tab.Id ? "active" : string.Empty)"
                                 id="@tab.Id"
                                 disabled="@(!enabled || State.IsBusy)"
@@ -54,7 +58,7 @@
                 <div class="action-grid">
                     @foreach (var action in ActiveWorkspaceActions)
                     {
-                        bool enabled = CommandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, State);
+                        bool enabled = AvailabilityEvaluator.IsWorkspaceActionEnabled(action, State);
                         <button class="action-button @(State.ActiveActionId == action.Id ? "selected" : string.Empty)"
                                 disabled="@(!enabled || State.IsBusy)"
                                 @onclick="() => ExecuteWorkspaceActionAsync(action)">
@@ -249,12 +253,10 @@
 @code {
     private CharacterOverviewStateBridge? _bridge;
     private const long MaxImportBytes = 8 * 1024 * 1024;
-    private static readonly string[] MenuOrder = ["file", "edit", "special", "tools", "windows", "help"];
 
     private string RawImportXml { get; set; } = "<character><name>Demo</name><alias>Sample</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created></character>";
     private string? ImportedFileName { get; set; }
     private string? ImportError { get; set; }
-    private string? OpenMenuId { get; set; }
     private string LoadWorkspaceId { get; set; } = string.Empty;
     private string MetadataName { get; set; } = string.Empty;
     private string MetadataAlias { get; set; } = string.Empty;
@@ -263,29 +265,29 @@
     private bool _isDisposed;
 
     private CharacterOverviewState State => _bridge?.Current ?? Presenter.State;
-
-    private IEnumerable<AppCommandDefinition> MenuRoots =>
-        State.Commands.Where(command => string.Equals(command.Group, "menu", StringComparison.Ordinal))
-            .OrderBy(command => Array.IndexOf(MenuOrder, command.Id));
+    private ShellState ShellState => ShellPresenter.State;
 
     private IEnumerable<AppCommandDefinition> HeadCommands =>
-        State.Commands.Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
+        ShellState.Commands.Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
 
     private IEnumerable<AppCommandDefinition> ToolStripCommands =>
         HeadCommands.Where(command => command.Group is "file" or "tools").Take(10);
 
     private IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions =>
         WorkspaceSurfaceActionCatalog.ForTab(State.ActiveTabId)
-            .Where(action => CommandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, State))
+            .Where(action => AvailabilityEvaluator.IsWorkspaceActionEnabled(action, State))
             .ToArray();
 
     private IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls =>
         DesktopUiControlCatalog.ForTab(State.ActiveTabId)
-            .Where(control => CommandAvailabilityEvaluator.IsUiControlEnabled(control, State))
+            .Where(control => AvailabilityEvaluator.IsUiControlEnabled(control, State))
             .ToArray();
 
     protected override async Task OnInitializedAsync()
     {
+        ShellPresenter.StateChanged += OnShellStateChanged;
+        await ShellPresenter.InitializeAsync(CancellationToken.None);
+
         _bridge = new CharacterOverviewStateBridge(Presenter, state =>
         {
             if (_isDisposed)
@@ -299,17 +301,20 @@
 
     private IEnumerable<AppCommandDefinition> MenuCommands(string menuId)
     {
-        return HeadCommands.Where(command => string.Equals(command.Group, menuId, StringComparison.Ordinal));
+        return ShellState.Commands
+            .Where(command =>
+                !string.Equals(command.Group, "menu", StringComparison.Ordinal)
+                && string.Equals(command.Group, menuId, StringComparison.Ordinal));
     }
 
     private bool IsCommandEnabled(AppCommandDefinition command)
     {
-        return CommandAvailabilityEvaluator.IsCommandEnabled(command, State);
+        return AvailabilityEvaluator.IsCommandEnabled(command, State);
     }
 
-    private void ToggleMenu(string menuId)
+    private Task ToggleMenu(string menuId)
     {
-        OpenMenuId = string.Equals(OpenMenuId, menuId, StringComparison.Ordinal) ? null : menuId;
+        return ShellPresenter.ToggleMenuAsync(menuId, CancellationToken.None);
     }
 
     private async Task ImportRawAsync()
@@ -360,7 +365,16 @@
             return;
 
         LoadWorkspaceId = workspaceId;
-        await _bridge.LoadAsync(new CharacterWorkspaceId(workspaceId), CancellationToken.None);
+        await _bridge.SwitchWorkspaceAsync(new CharacterWorkspaceId(workspaceId), CancellationToken.None);
+        SyncMetadataDraftFromState();
+    }
+
+    private async Task CloseWorkspaceAsync(string workspaceId)
+    {
+        if (_bridge is null || string.IsNullOrWhiteSpace(workspaceId))
+            return;
+
+        await _bridge.CloseWorkspaceAsync(new CharacterWorkspaceId(workspaceId), CancellationToken.None);
         SyncMetadataDraftFromState();
     }
 
@@ -386,7 +400,12 @@
         if (_bridge is null)
             return;
 
-        OpenMenuId = null;
+        await ShellPresenter.ExecuteCommandAsync(commandId, CancellationToken.None);
+        AppCommandDefinition? shellCommand = ShellState.Commands
+            .FirstOrDefault(command => string.Equals(command.Id, commandId, StringComparison.Ordinal));
+        if (string.Equals(shellCommand?.Group, "menu", StringComparison.Ordinal))
+            return;
+
         await _bridge.ExecuteCommandAsync(commandId, CancellationToken.None);
     }
 
@@ -395,7 +414,20 @@
         if (_bridge is null)
             return;
 
+        await ShellPresenter.SelectTabAsync(tabId, CancellationToken.None);
+        if (!string.Equals(ShellState.ActiveTabId, tabId, StringComparison.Ordinal))
+            return;
+
         await _bridge.SelectTabAsync(tabId, CancellationToken.None);
+    }
+
+    private void OnShellStateChanged(object? sender, EventArgs e)
+    {
+        if (_isDisposed)
+            return;
+
+        _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task HandleUiControlAsync(string controlId)
@@ -471,6 +503,7 @@
     public void Dispose()
     {
         _isDisposed = true;
+        ShellPresenter.StateChanged -= OnShellStateChanged;
         _bridge?.Dispose();
     }
 }

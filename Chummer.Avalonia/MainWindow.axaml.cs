@@ -17,6 +17,8 @@ public partial class MainWindow : Window
 {
     private readonly HttpClient _httpClient;
     private readonly CharacterOverviewPresenter _presenter;
+    private readonly IShellPresenter _shellPresenter;
+    private readonly ICommandAvailabilityEvaluator _commandAvailabilityEvaluator;
     private readonly CharacterOverviewViewModelAdapter _adapter;
     private readonly TextBox _xmlInputBox;
     private readonly TextBlock _statusText;
@@ -31,6 +33,7 @@ public partial class MainWindow : Window
     private readonly TextBlock _timeStateText;
     private readonly TextBlock _complianceStateText;
     private readonly ListBox _commandsList;
+    private readonly ListBox _openWorkspacesList;
     private readonly ListBox _navigationTabsList;
     private readonly ListBox _sectionActionsList;
     private readonly ListBox _uiControlsList;
@@ -42,6 +45,7 @@ public partial class MainWindow : Window
     private readonly ListBox _dialogActionsList;
     private DesktopDialogWindow? _dialogWindow;
     private bool _suppressCommandSelectionEvent;
+    private bool _suppressWorkspaceSelectionEvent;
     private bool _suppressTabSelectionEvent;
     private bool _suppressSectionActionSelectionEvent;
     private bool _suppressUiControlSelectionEvent;
@@ -64,7 +68,10 @@ public partial class MainWindow : Window
             _httpClient.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
         }
 
-        _presenter = new CharacterOverviewPresenter(new HttpChummerClient(_httpClient));
+        var chummerClient = new HttpChummerClient(_httpClient);
+        _presenter = new CharacterOverviewPresenter(chummerClient);
+        _shellPresenter = new ShellPresenter(chummerClient);
+        _commandAvailabilityEvaluator = new DefaultCommandAvailabilityEvaluator();
         _adapter = new CharacterOverviewViewModelAdapter(_presenter);
         _adapter.Updated += (_, _) => RefreshState();
 
@@ -82,6 +89,8 @@ public partial class MainWindow : Window
         _complianceStateText = this.FindControl<TextBlock>("ComplianceStateText")!;
         _commandsList = this.FindControl<ListBox>("CommandsList")!;
         _commandsList.SelectionChanged += CommandsList_OnSelectionChanged;
+        _openWorkspacesList = this.FindControl<ListBox>("OpenWorkspacesList")!;
+        _openWorkspacesList.SelectionChanged += OpenWorkspacesList_OnSelectionChanged;
         _navigationTabsList = this.FindControl<ListBox>("NavigationTabsList")!;
         _navigationTabsList.SelectionChanged += NavigationTabsList_OnSelectionChanged;
         _sectionActionsList = this.FindControl<ListBox>("SectionActionsList")!;
@@ -164,7 +173,11 @@ public partial class MainWindow : Window
     private async void OnOpened(object? sender, EventArgs e)
     {
         await RunUiActionAsync(
-            () => _adapter.InitializeAsync(CancellationToken.None),
+            async () =>
+            {
+                await _shellPresenter.InitializeAsync(CancellationToken.None);
+                await _adapter.InitializeAsync(CancellationToken.None);
+            },
             "initialize desktop shell");
     }
 
@@ -175,28 +188,44 @@ public partial class MainWindow : Window
             "save workspace");
     }
 
+    private async void CloseWorkspaceButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        CharacterWorkspaceId? activeWorkspaceId = _adapter.State.Session.ActiveWorkspaceId ?? _adapter.State.WorkspaceId;
+        if (activeWorkspaceId is null)
+        {
+            _statusText.Text = "State: no active workspace to close.";
+            return;
+        }
+
+        await RunUiActionAsync(
+            () => _adapter.CloseWorkspaceAsync(activeWorkspaceId.Value, CancellationToken.None),
+            "close workspace");
+    }
+
     private void RefreshState()
     {
         CharacterOverviewState state = _adapter.State;
-        int openWorkspaceCount = state.OpenWorkspaces.Count;
+        ShellState shellState = _shellPresenter.State;
+        int openWorkspaceCount = state.Session.OpenWorkspaces.Count;
+        CharacterWorkspaceId? activeWorkspaceId = state.Session.ActiveWorkspaceId ?? state.WorkspaceId;
 
         _statusText.Text = state.Error is null
-            ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(state.WorkspaceId?.Value ?? "none")}, open={openWorkspaceCount}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}"
+            ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(activeWorkspaceId?.Value ?? "none")}, open={openWorkspaceCount}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}"
             : $"State: error - {state.Error}";
         _noticeText.Text = $"Notice: {(state.Notice ?? "Ready.")}";
-        _workspaceText.Text = $"Workspace: {(state.WorkspaceId?.Value ?? "none")} (open: {openWorkspaceCount})";
+        _workspaceText.Text = $"Workspace: {(activeWorkspaceId?.Value ?? "none")} (open: {openWorkspaceCount})";
 
         _nameValue.Text = state.Profile?.Name ?? "-";
         _aliasValue.Text = state.Profile?.Alias ?? "-";
         _karmaValue.Text = state.Progress?.Karma.ToString() ?? "-";
         _skillsValue.Text = state.Skills?.Count.ToString() ?? "-";
 
-        _charStateText.Text = $"Character: {(state.WorkspaceId is null ? "none" : "loaded")}";
+        _charStateText.Text = $"Character: {(activeWorkspaceId is null ? "none" : "loaded")}";
         _serviceStateText.Text = $"Service: {(state.Error is null ? "online" : "error")}";
         _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
         _complianceStateText.Text = $"Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}";
 
-        IEnumerable<AppCommandDefinition> visibleCommands = state.Commands
+        IEnumerable<AppCommandDefinition> visibleCommands = shellState.Commands
             .Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
         if (!string.IsNullOrWhiteSpace(_activeMenuGroup))
         {
@@ -207,7 +236,7 @@ public partial class MainWindow : Window
             .Select(command => new CommandListItem(
                 command.Id,
                 command.Group,
-                CommandAvailabilityEvaluator.IsCommandEnabled(command, state)))
+                _commandAvailabilityEvaluator.IsCommandEnabled(command, state)))
             .ToArray();
 
         _suppressCommandSelectionEvent = true;
@@ -215,13 +244,27 @@ public partial class MainWindow : Window
         _commandsList.SelectedItem = commands.FirstOrDefault(item => string.Equals(item.Id, state.LastCommandId, StringComparison.Ordinal));
         _suppressCommandSelectionEvent = false;
 
-        TabListItem[] tabs = state.NavigationTabs
+        WorkspaceListItem[] openWorkspaces = state.Session.OpenWorkspaces
+            .Select(workspace => new WorkspaceListItem(
+                workspace.Id.Value,
+                workspace.Name,
+                workspace.Alias,
+                Enabled: !state.IsBusy))
+            .ToArray();
+
+        _suppressWorkspaceSelectionEvent = true;
+        _openWorkspacesList.ItemsSource = openWorkspaces;
+        _openWorkspacesList.SelectedItem = openWorkspaces.FirstOrDefault(item =>
+            string.Equals(item.Id, activeWorkspaceId?.Value, StringComparison.Ordinal));
+        _suppressWorkspaceSelectionEvent = false;
+
+        TabListItem[] tabs = shellState.NavigationTabs
             .Select(tab => new TabListItem(
                 tab.Id,
                 tab.Label,
                 tab.SectionId,
                 tab.Group,
-                CommandAvailabilityEvaluator.IsNavigationTabEnabled(tab, state)))
+                _commandAvailabilityEvaluator.IsNavigationTabEnabled(tab, state)))
             .ToArray();
 
         _suppressTabSelectionEvent = true;
@@ -230,7 +273,7 @@ public partial class MainWindow : Window
         _suppressTabSelectionEvent = false;
 
         WorkspaceSurfaceActionDefinition[] actions = WorkspaceSurfaceActionCatalog.ForTab(state.ActiveTabId)
-            .Where(action => CommandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, state))
+            .Where(action => _commandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, state))
             .ToArray();
         SectionActionListItem[] sectionActionItems = actions
             .Select(action => new SectionActionListItem(action))
@@ -241,7 +284,7 @@ public partial class MainWindow : Window
         _suppressSectionActionSelectionEvent = false;
 
         DesktopUiControlDefinition[] uiControls = DesktopUiControlCatalog.ForTab(state.ActiveTabId)
-            .Where(control => CommandAvailabilityEvaluator.IsUiControlEnabled(control, state))
+            .Where(control => _commandAvailabilityEvaluator.IsUiControlEnabled(control, state))
             .ToArray();
         _suppressUiControlSelectionEvent = true;
         _uiControlsList.ItemsSource = uiControls.Select(control => new UiControlListItem(control.Id, control.Label)).ToArray();
@@ -297,11 +340,28 @@ public partial class MainWindow : Window
             return;
 
         await RunUiActionAsync(
-            () => _adapter.ExecuteCommandAsync(command.Id, CancellationToken.None),
+            async () =>
+            {
+                await _shellPresenter.ExecuteCommandAsync(command.Id, CancellationToken.None);
+                await _adapter.ExecuteCommandAsync(command.Id, CancellationToken.None);
+            },
             $"execute command '{command.Id}'");
         _suppressCommandSelectionEvent = true;
         _commandsList.SelectedItem = null;
         _suppressCommandSelectionEvent = false;
+    }
+
+    private async void OpenWorkspacesList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressWorkspaceSelectionEvent)
+            return;
+
+        if (_openWorkspacesList.SelectedItem is not WorkspaceListItem workspace || !workspace.Enabled)
+            return;
+
+        await RunUiActionAsync(
+            () => _adapter.SwitchWorkspaceAsync(new CharacterWorkspaceId(workspace.Id), CancellationToken.None),
+            $"switch workspace '{workspace.Id}'");
     }
 
     private async void NavigationTabsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -313,7 +373,14 @@ public partial class MainWindow : Window
             return;
 
         await RunUiActionAsync(
-            () => _adapter.SelectTabAsync(tab.Id, CancellationToken.None),
+            async () =>
+            {
+                await _shellPresenter.SelectTabAsync(tab.Id, CancellationToken.None);
+                if (!string.Equals(_shellPresenter.State.ActiveTabId, tab.Id, StringComparison.Ordinal))
+                    return;
+
+                await _adapter.SelectTabAsync(tab.Id, CancellationToken.None);
+            },
             $"select tab '{tab.Id}'");
     }
 
@@ -436,6 +503,19 @@ public partial class MainWindow : Window
             _noticeText.Text = $"Notice: {operationName} failed.";
             _serviceStateText.Text = "Service: error";
             _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
+        }
+    }
+
+    private sealed record WorkspaceListItem(
+        string Id,
+        string Name,
+        string Alias,
+        bool Enabled)
+    {
+        public override string ToString()
+        {
+            string label = string.IsNullOrWhiteSpace(Alias) ? Name : $"{Name} ({Alias})";
+            return $"{label} [{Id}] {(Enabled ? "enabled" : "disabled")}";
         }
     }
 

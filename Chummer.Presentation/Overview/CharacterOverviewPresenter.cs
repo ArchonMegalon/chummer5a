@@ -3,26 +3,33 @@ using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 
 namespace Chummer.Presentation.Overview;
 
 public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 {
-    private static readonly Regex DiceExpressionRegex = new(@"^\s*(\d+)d(\d+)([+-]\d+)?\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private readonly IChummerClient _client;
-    private readonly IWorkspaceSessionManager _workspaceSessionManager;
+    private readonly IWorkspaceSessionPresenter _workspaceSessionPresenter;
     private readonly IDesktopDialogFactory _dialogFactory;
+    private readonly IOverviewCommandDispatcher _commandDispatcher;
+    private readonly IDialogCoordinator _dialogCoordinator;
+    private readonly Dictionary<string, WorkspaceViewState> _workspaceViews = new(StringComparer.Ordinal);
     private CharacterWorkspaceId? _currentWorkspace;
 
     public CharacterOverviewPresenter(
         IChummerClient client,
         IWorkspaceSessionManager? workspaceSessionManager = null,
-        IDesktopDialogFactory? dialogFactory = null)
+        IDesktopDialogFactory? dialogFactory = null,
+        IWorkspaceSessionPresenter? workspaceSessionPresenter = null,
+        IOverviewCommandDispatcher? commandDispatcher = null,
+        IDialogCoordinator? dialogCoordinator = null)
     {
         _client = client;
-        _workspaceSessionManager = workspaceSessionManager ?? new WorkspaceSessionManager();
+        IWorkspaceSessionManager manager = workspaceSessionManager ?? new WorkspaceSessionManager();
+        _workspaceSessionPresenter = workspaceSessionPresenter ?? new WorkspaceSessionPresenter(manager);
         _dialogFactory = dialogFactory ?? new DesktopDialogFactory();
+        _commandDispatcher = commandDispatcher ?? new OverviewCommandDispatcher();
+        _dialogCoordinator = dialogCoordinator ?? new DialogCoordinator();
     }
 
     public CharacterOverviewState State { get; private set; } = CharacterOverviewState.Empty;
@@ -44,18 +51,19 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Task<IReadOnlyList<WorkspaceListItem>> workspacesTask = _client.ListWorkspacesAsync(ct);
             await Task.WhenAll(commandsTask, tabsTask, workspacesTask);
 
-            IReadOnlyList<OpenWorkspaceState> openWorkspaces = _workspaceSessionManager.Restore(workspacesTask.Result);
+            WorkspaceSessionState session = _workspaceSessionPresenter.Restore(workspacesTask.Result);
 
             Publish(State with
             {
                 IsBusy = false,
                 Error = null,
+                Session = session,
                 Commands = commandsTask.Result,
                 NavigationTabs = tabsTask.Result,
-                OpenWorkspaces = openWorkspaces,
-                Notice = openWorkspaces.Count == 0
+                OpenWorkspaces = session.OpenWorkspaces,
+                Notice = session.OpenWorkspaces.Count == 0
                     ? State.Notice
-                    : $"Restored {openWorkspaces.Count} workspace(s)."
+                    : $"Restored {session.OpenWorkspaces.Count} workspace(s)."
             });
         }
         catch (Exception ex)
@@ -113,6 +121,87 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         }
     }
 
+    public async Task SwitchWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(id.Value))
+        {
+            Publish(State with { Error = "Workspace id is required." });
+            return;
+        }
+
+        if (!_workspaceSessionPresenter.Contains(id))
+        {
+            await LoadAsync(id, ct);
+            return;
+        }
+
+        await LoadAsync(id, ct);
+    }
+
+    public async Task CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(id.Value))
+        {
+            Publish(State with { Error = "Workspace id is required." });
+            return;
+        }
+
+        bool closed;
+        try
+        {
+            closed = await _client.CloseWorkspaceAsync(id, ct);
+        }
+        catch
+        {
+            closed = false;
+        }
+
+        bool closedActiveWorkspace = _currentWorkspace is { } activeWorkspace
+            && string.Equals(activeWorkspace.Value, id.Value, StringComparison.Ordinal);
+        WorkspaceSessionState session = _workspaceSessionPresenter.Close(id);
+        _workspaceViews.Remove(id.Value);
+
+        if (session.OpenWorkspaces.Count == 0)
+        {
+            _currentWorkspace = null;
+            Publish(CharacterOverviewState.Empty with
+            {
+                Session = session,
+                Commands = State.Commands,
+                NavigationTabs = State.NavigationTabs,
+                LastCommandId = State.LastCommandId,
+                Notice = closed
+                    ? "Closed active workspace."
+                    : "Active workspace was already closed.",
+                Preferences = State.Preferences,
+                OpenWorkspaces = session.OpenWorkspaces
+            });
+            return;
+        }
+
+        if (closedActiveWorkspace && session.ActiveWorkspaceId is { } nextWorkspace)
+        {
+            await LoadWorkspaceAsync(nextWorkspace, ct, session, updateSession: false);
+            Publish(State with
+            {
+                Notice = closed
+                    ? $"Closed active workspace. Switched to '{nextWorkspace.Value}'."
+                    : $"Active workspace was already closed. Switched to '{nextWorkspace.Value}'."
+            });
+            return;
+        }
+
+        Publish(State with
+        {
+            Session = session,
+            OpenWorkspaces = session.OpenWorkspaces,
+            Error = null,
+            Notice = closed
+                ? $"Closed workspace '{id.Value}'."
+                : $"Workspace '{id.Value}' was already closed."
+        });
+    }
+
     public async Task ExecuteCommandAsync(string commandId, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(commandId))
@@ -127,194 +216,18 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Error = null
         });
 
-        if (OverviewCommandPolicy.IsMenuCommand(commandId))
-        {
-            Publish(State with
-            {
-                Error = null,
-                Notice = $"Menu '{commandId}' is handled by the active UI shell."
-            });
-            return;
-        }
+        OverviewCommandExecutionContext context = new(
+            State: State,
+            CurrentWorkspace: _currentWorkspace,
+            DialogFactory: _dialogFactory,
+            Publish: Publish,
+            SaveAsync: SaveAsync,
+            LoadAsync: LoadAsync,
+            CreateResetState: CreateWorkspaceResetState,
+            CloseAllAsync: CloseAllWorkspacesAsync,
+            CloseWorkspaceAsync: CloseWorkspaceAsync);
 
-        if (OverviewCommandPolicy.IsImportHintCommand(commandId))
-        {
-            Publish(State with
-            {
-                Error = null,
-                Notice = "Use the file import action in this head to open a character document."
-            });
-            return;
-        }
-
-        if (OverviewCommandPolicy.IsDialogCommand(commandId))
-        {
-            Publish(State with
-            {
-                Error = null,
-                ActiveDialog = _dialogFactory.CreateCommandDialog(
-                    commandId,
-                    State.Profile,
-                    State.Preferences,
-                    State.ActiveSectionJson,
-                    _currentWorkspace)
-            });
-            return;
-        }
-
-        if (OverviewCommandPolicy.IsEditorRelayCommand(commandId))
-        {
-            Publish(State with
-            {
-                Error = null,
-                Notice = $"Command '{commandId}' dispatched to the active section editor."
-            });
-            return;
-        }
-
-        switch (commandId)
-        {
-            case "save_character":
-            case "save_character_as":
-                await SaveAsync(ct);
-                return;
-            case "refresh_character":
-                if (_currentWorkspace is null)
-                {
-                    Publish(State with { Error = "No workspace loaded." });
-                    return;
-                }
-
-                await LoadAsync(_currentWorkspace.Value, ct);
-                return;
-            case "new_character":
-                _currentWorkspace = null;
-                Publish(CharacterOverviewState.Empty with
-                {
-                    Commands = State.Commands,
-                    NavigationTabs = State.NavigationTabs,
-                    LastCommandId = commandId,
-                    Notice = "New character workspace initialized.",
-                    Preferences = State.Preferences,
-                    OpenWorkspaces = State.OpenWorkspaces
-                });
-                return;
-            case "new_critter":
-                _currentWorkspace = null;
-                Publish(CharacterOverviewState.Empty with
-                {
-                    Commands = State.Commands,
-                    NavigationTabs = State.NavigationTabs,
-                    LastCommandId = commandId,
-                    Notice = "New critter workspace initialized.",
-                    Preferences = State.Preferences,
-                    OpenWorkspaces = State.OpenWorkspaces
-                });
-                return;
-            case "close_all":
-            case "restart":
-                CharacterWorkspaceId[] workspaceIdsToClose = State.OpenWorkspaces
-                    .Select(workspace => workspace.Id)
-                    .Distinct()
-                    .ToArray();
-
-                foreach (CharacterWorkspaceId workspaceId in workspaceIdsToClose)
-                {
-                    try
-                    {
-                        await _client.CloseWorkspaceAsync(workspaceId, ct);
-                    }
-                    catch
-                    {
-                        // Keep resetting local shell state even if a close request fails remotely.
-                    }
-                }
-
-                _currentWorkspace = null;
-                Publish(CharacterOverviewState.Empty with
-                {
-                    Commands = State.Commands,
-                    NavigationTabs = State.NavigationTabs,
-                    LastCommandId = commandId,
-                    Notice = "Workspace reset complete.",
-                    Preferences = State.Preferences,
-                    OpenWorkspaces = []
-                });
-                return;
-            case "close_window":
-                if (_currentWorkspace is null)
-                {
-                    Publish(State with
-                    {
-                        Error = null,
-                        Notice = "No open workspace to close."
-                    });
-                    return;
-                }
-
-                CharacterWorkspaceId closingWorkspace = _currentWorkspace.Value;
-                bool closed;
-                try
-                {
-                    closed = await _client.CloseWorkspaceAsync(closingWorkspace, ct);
-                }
-                catch
-                {
-                    closed = false;
-                }
-
-                IReadOnlyList<OpenWorkspaceState> remainingWorkspaces = _workspaceSessionManager.Close(State.OpenWorkspaces, closingWorkspace);
-
-                if (remainingWorkspaces.Count == 0)
-                {
-                    _currentWorkspace = null;
-                    Publish(CharacterOverviewState.Empty with
-                    {
-                        Commands = State.Commands,
-                        NavigationTabs = State.NavigationTabs,
-                        LastCommandId = commandId,
-                        Notice = closed
-                            ? "Closed active workspace."
-                            : "Active workspace was already closed.",
-                        Preferences = State.Preferences,
-                        OpenWorkspaces = []
-                    });
-                    return;
-                }
-
-                CharacterWorkspaceId? nextWorkspaceId = _workspaceSessionManager.SelectNext(remainingWorkspaces);
-                if (nextWorkspaceId is null)
-                {
-                    _currentWorkspace = null;
-                    Publish(CharacterOverviewState.Empty with
-                    {
-                        Commands = State.Commands,
-                        NavigationTabs = State.NavigationTabs,
-                        LastCommandId = commandId,
-                        Notice = "Closed active workspace.",
-                        Preferences = State.Preferences,
-                        OpenWorkspaces = []
-                    });
-                    return;
-                }
-
-                CharacterWorkspaceId selectedWorkspace = nextWorkspaceId.Value;
-                await LoadWorkspaceAsync(selectedWorkspace, ct, remainingWorkspaces);
-                Publish(State with
-                {
-                    LastCommandId = commandId,
-                    Notice = closed
-                        ? $"Closed active workspace. Switched to '{selectedWorkspace.Value}'."
-                        : $"Active workspace was already closed. Switched to '{selectedWorkspace.Value}'."
-                });
-                return;
-            default:
-                Publish(State with
-                {
-                    Error = $"Command '{commandId}' is not implemented in shared presenter yet."
-                });
-                return;
-        }
+        await _commandDispatcher.DispatchAsync(commandId, context, ct);
     }
 
     public Task HandleUiControlAsync(string controlId, CancellationToken ct)
@@ -409,245 +322,13 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
     public async Task ExecuteDialogActionAsync(string actionId, CancellationToken ct)
     {
-        DesktopDialogState? dialog = State.ActiveDialog;
-        if (dialog is null)
-            return;
+        DialogCoordinationContext context = new(
+            State: State,
+            Publish: Publish,
+            UpdateMetadataAsync: UpdateMetadataAsync,
+            GetState: () => State);
 
-        if (string.IsNullOrWhiteSpace(actionId))
-        {
-            Publish(State with { Error = "Dialog action id is required." });
-            return;
-        }
-
-        switch (actionId)
-        {
-            case "cancel":
-            case "close":
-                Publish(State with
-                {
-                    ActiveDialog = null,
-                    Error = null
-                });
-                return;
-            default:
-                break;
-        }
-
-        if (string.Equals(dialog.Id, "dialog.workspace.metadata", StringComparison.Ordinal) && string.Equals(actionId, "apply_metadata", StringComparison.Ordinal))
-        {
-            await ApplyMetadataDialogAsync(dialog, ct);
-            return;
-        }
-
-        if (string.Equals(dialog.Id, "dialog.dice_roller", StringComparison.Ordinal) && string.Equals(actionId, "roll", StringComparison.Ordinal))
-        {
-            RollDice(dialog);
-            return;
-        }
-
-        if (string.Equals(dialog.Id, "dialog.global_settings", StringComparison.Ordinal) && string.Equals(actionId, "save", StringComparison.Ordinal))
-        {
-            ApplyGlobalSettings(dialog);
-            return;
-        }
-
-        if (string.Equals(dialog.Id, "dialog.character_settings", StringComparison.Ordinal) && string.Equals(actionId, "save", StringComparison.Ordinal))
-        {
-            ApplyCharacterSettings(dialog);
-            return;
-        }
-
-        if (string.Equals(dialog.Id, "dialog.ui.open_notes", StringComparison.Ordinal) && string.Equals(actionId, "save", StringComparison.Ordinal))
-        {
-            string notes = DesktopDialogFieldValueParser.GetValue(dialog, "uiNotesEditor") ?? string.Empty;
-            Publish(State with
-            {
-                ActiveDialog = null,
-                Error = null,
-                Preferences = State.Preferences with
-                {
-                    CharacterNotes = notes
-                },
-                Notice = "Notes saved."
-            });
-            return;
-        }
-
-        if (string.Equals(dialog.Id, "dialog.ui.contact_connection", StringComparison.Ordinal) && string.Equals(actionId, "apply", StringComparison.Ordinal))
-        {
-            string connection = DesktopDialogFieldValueParser.GetValue(dialog, "uiContactConnection") ?? "0";
-            string loyalty = DesktopDialogFieldValueParser.GetValue(dialog, "uiContactLoyalty") ?? "0";
-            Publish(State with
-            {
-                ActiveDialog = null,
-                Error = null,
-                Notice = $"Contact connection/loyalty applied ({connection}/{loyalty})."
-            });
-            return;
-        }
-
-        if ((string.Equals(dialog.Id, "dialog.data_exporter", StringComparison.Ordinal)
-            || string.Equals(dialog.Id, "dialog.export_character", StringComparison.Ordinal))
-            && string.Equals(actionId, "download", StringComparison.Ordinal))
-        {
-            Publish(State with
-            {
-                ActiveDialog = null,
-                Error = null,
-                Notice = "Export bundle prepared for download."
-            });
-            return;
-        }
-
-        Publish(State with
-        {
-            ActiveDialog = null,
-            Error = null,
-            Notice = $"{dialog.Title}: action '{actionId}' executed."
-        });
-    }
-
-    private void ApplyGlobalSettings(DesktopDialogState dialog)
-    {
-        int uiScalePercent = DesktopDialogFieldValueParser.ParseInt(dialog, "globalUiScale", State.Preferences.UiScalePercent);
-        string theme = DesktopDialogFieldValueParser.GetValue(dialog, "globalTheme") ?? State.Preferences.Theme;
-        string language = DesktopDialogFieldValueParser.GetValue(dialog, "globalLanguage") ?? State.Preferences.Language;
-        bool compactMode = DesktopDialogFieldValueParser.ParseBool(dialog, "globalCompactMode", State.Preferences.CompactMode);
-
-        Publish(State with
-        {
-            ActiveDialog = null,
-            Error = null,
-            Preferences = State.Preferences with
-            {
-                UiScalePercent = uiScalePercent,
-                Theme = theme,
-                Language = language,
-                CompactMode = compactMode
-            },
-            Notice = "Global settings updated."
-        });
-    }
-
-    private void ApplyCharacterSettings(DesktopDialogState dialog)
-    {
-        string priority = DesktopDialogFieldValueParser.GetValue(dialog, "characterPriority") ?? State.Preferences.CharacterPriority;
-        int karmaNuyenRatio = DesktopDialogFieldValueParser.ParseInt(dialog, "characterKarmaNuyen", State.Preferences.KarmaNuyenRatio);
-        bool houseRules = DesktopDialogFieldValueParser.ParseBool(dialog, "characterHouseRulesEnabled", State.Preferences.HouseRulesEnabled);
-        string notes = DesktopDialogFieldValueParser.GetValue(dialog, "characterNotes") ?? State.Preferences.CharacterNotes;
-
-        Publish(State with
-        {
-            ActiveDialog = null,
-            Error = null,
-            Build = State.Build is null ? null : State.Build with { BuildMethod = priority },
-            Preferences = State.Preferences with
-            {
-                CharacterPriority = priority,
-                KarmaNuyenRatio = karmaNuyenRatio,
-                HouseRulesEnabled = houseRules,
-                CharacterNotes = notes
-            },
-            Notice = "Character settings updated."
-        });
-    }
-
-    private async Task ApplyMetadataDialogAsync(DesktopDialogState dialog, CancellationToken ct)
-    {
-        string? name = DesktopDialogFieldValueParser.GetValue(dialog, "metadataName");
-        string? alias = DesktopDialogFieldValueParser.GetValue(dialog, "metadataAlias");
-        string? notes = DesktopDialogFieldValueParser.GetValue(dialog, "metadataNotes");
-        string? normalizedNotes = string.IsNullOrWhiteSpace(notes) ? null : notes;
-
-        await UpdateMetadataAsync(new UpdateWorkspaceMetadata(
-            Name: string.IsNullOrWhiteSpace(name) ? null : name.Trim(),
-            Alias: string.IsNullOrWhiteSpace(alias) ? null : alias.Trim(),
-            Notes: normalizedNotes), ct);
-
-        if (State.Error is null)
-        {
-            Publish(State with
-            {
-                ActiveDialog = null,
-                Error = null,
-                Notice = "Metadata updated."
-            });
-        }
-    }
-
-    private void RollDice(DesktopDialogState dialog)
-    {
-        string expression = DesktopDialogFieldValueParser.GetValue(dialog, "diceExpression") ?? "1d6";
-        if (!TryRollExpression(expression, out int total, out int hits, out string error))
-        {
-            Publish(State with { Error = error });
-            return;
-        }
-
-        string summary = $"{expression} => total {total}, hits {hits}";
-        List<DesktopDialogField> fields = dialog.Fields
-            .Where(field => !string.Equals(field.Id, "diceResult", StringComparison.Ordinal))
-            .ToList();
-        fields.Add(new DesktopDialogField(
-            Id: "diceResult",
-            Label: "Last Result",
-            Value: summary,
-            Placeholder: summary,
-            IsMultiline: false,
-            IsReadOnly: true));
-
-        Publish(State with
-        {
-            Error = null,
-            Notice = summary,
-            ActiveDialog = dialog with
-            {
-                Message = "Expression rolled using Shadowrun-style d6 hits.",
-                Fields = fields
-            }
-        });
-    }
-
-    private static bool TryRollExpression(string expression, out int total, out int hits, out string error)
-    {
-        total = 0;
-        hits = 0;
-        error = string.Empty;
-
-        Match match = DiceExpressionRegex.Match(expression);
-        if (!match.Success)
-        {
-            error = "Dice expression must match NdM with optional +K modifier (example: 12d6+2).";
-            return false;
-        }
-
-        int count = int.Parse(match.Groups[1].Value);
-        int sides = int.Parse(match.Groups[2].Value);
-        int modifier = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) : 0;
-
-        if (count < 1 || count > 100 || sides < 2 || sides > 100)
-        {
-            error = "Dice expression is outside supported limits.";
-            return false;
-        }
-
-        for (int index = 0; index < count; index++)
-        {
-            int value = Random.Shared.Next(1, sides + 1);
-            total += value;
-            if (sides == 6 && value >= 5)
-            {
-                hits++;
-            }
-        }
-
-        total += modifier;
-        if (sides != 6)
-        {
-            hits = 0;
-        }
-
-        return true;
+        await _dialogCoordinator.CoordinateAsync(actionId, context, ct);
     }
 
     public Task CloseDialogAsync(CancellationToken ct)
@@ -820,6 +501,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 ActiveSectionJson = sectionJson,
                 ActiveSectionRows = SectionRowProjector.BuildRows(section)
             });
+            CaptureWorkspaceView();
         }
         catch (Exception ex)
         {
@@ -859,6 +541,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 ActiveSectionJson = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }),
                 ActiveSectionRows = SectionRowProjector.BuildRows(summaryNode)
             });
+            CaptureWorkspaceView();
         }
         catch (Exception ex)
         {
@@ -898,6 +581,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 ActiveSectionJson = JsonSerializer.Serialize(validation, new JsonSerializerOptions { WriteIndented = true }),
                 ActiveSectionRows = SectionRowProjector.BuildRows(validationNode)
             });
+            CaptureWorkspaceView();
         }
         catch (Exception ex)
         {
@@ -913,8 +597,11 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
     private async Task LoadWorkspaceAsync(
         CharacterWorkspaceId id,
         CancellationToken ct,
-        IReadOnlyList<OpenWorkspaceState>? openWorkspaceSeed = null)
+        WorkspaceSessionState? sessionSeed = null,
+        bool updateSession = true)
     {
+        CaptureWorkspaceView();
+
         Task<CharacterProfileSection> profileTask = _client.GetProfileAsync(id, ct);
         Task<CharacterProgressSection> progressTask = _client.GetProgressAsync(id, ct);
         Task<CharacterSkillsSection> skillsTask = _client.GetSkillsAsync(id, ct);
@@ -925,16 +612,39 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         await Task.WhenAll(profileTask, progressTask, skillsTask, rulesTask, buildTask, movementTask, awakeningTask);
 
+        WorkspaceSessionState session;
+        if (sessionSeed is not null)
+        {
+            session = _workspaceSessionPresenter.Switch(id);
+            if (session.ActiveWorkspaceId is null
+                || !string.Equals(session.ActiveWorkspaceId.Value.Value, id.Value, StringComparison.Ordinal))
+            {
+                session = _workspaceSessionPresenter.Open(id, profileTask.Result);
+            }
+        }
+        else if (updateSession)
+        {
+            session = _workspaceSessionPresenter.Open(id, profileTask.Result);
+        }
+        else
+        {
+            session = _workspaceSessionPresenter.Switch(id);
+            if (session.ActiveWorkspaceId is null
+                || !string.Equals(session.ActiveWorkspaceId.Value.Value, id.Value, StringComparison.Ordinal))
+            {
+                session = _workspaceSessionPresenter.Open(id, profileTask.Result);
+            }
+        }
+
+        WorkspaceViewState? restoredView = RestoreWorkspaceView(id);
         _currentWorkspace = id;
-        IReadOnlyList<OpenWorkspaceState> openWorkspaces = _workspaceSessionManager.Activate(
-            openWorkspaceSeed ?? State.OpenWorkspaces,
-            id,
-            profileTask.Result);
+
         Publish(new CharacterOverviewState(
             IsBusy: false,
             Error: null,
+            Session: session,
             WorkspaceId: id,
-            OpenWorkspaces: openWorkspaces,
+            OpenWorkspaces: session.OpenWorkspaces,
             Profile: profileTask.Result,
             Progress: progressTask.Result,
             Skills: skillsTask.Result,
@@ -942,11 +652,11 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Build: buildTask.Result,
             Movement: movementTask.Result,
             Awakening: awakeningTask.Result,
-            ActiveTabId: null,
-            ActiveActionId: null,
-            ActiveSectionId: null,
-            ActiveSectionJson: null,
-            ActiveSectionRows: [],
+            ActiveTabId: restoredView?.ActiveTabId,
+            ActiveActionId: restoredView?.ActiveActionId,
+            ActiveSectionId: restoredView?.ActiveSectionId,
+            ActiveSectionJson: restoredView?.ActiveSectionJson,
+            ActiveSectionRows: restoredView?.ActiveSectionRows ?? [],
             LastCommandId: State.LastCommandId,
             Notice: State.Notice,
             ActiveDialog: null,
@@ -956,9 +666,87 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             HasSavedWorkspace: false));
     }
 
+    private async Task CloseAllWorkspacesAsync(CancellationToken ct, string notice)
+    {
+        CaptureWorkspaceView();
+        CharacterWorkspaceId[] workspaceIdsToClose = _workspaceSessionPresenter.State.OpenWorkspaces
+            .GroupBy(workspace => workspace.Id.Value, StringComparer.Ordinal)
+            .Select(group => group.First().Id)
+            .ToArray();
+
+        foreach (CharacterWorkspaceId workspaceId in workspaceIdsToClose)
+        {
+            try
+            {
+                await _client.CloseWorkspaceAsync(workspaceId, ct);
+            }
+            catch
+            {
+                // Keep resetting local shell state even if a close request fails remotely.
+            }
+        }
+
+        WorkspaceSessionState session = _workspaceSessionPresenter.CloseAll();
+        _currentWorkspace = null;
+        Publish(CharacterOverviewState.Empty with
+        {
+            Session = session,
+            Commands = State.Commands,
+            NavigationTabs = State.NavigationTabs,
+            LastCommandId = State.LastCommandId,
+            Notice = notice,
+            Preferences = State.Preferences,
+            OpenWorkspaces = session.OpenWorkspaces
+        });
+    }
+
+    private CharacterOverviewState CreateWorkspaceResetState(string commandId, string notice)
+    {
+        CaptureWorkspaceView();
+        _currentWorkspace = null;
+        WorkspaceSessionState session = _workspaceSessionPresenter.ClearActive();
+        return CharacterOverviewState.Empty with
+        {
+            Session = session,
+            Commands = State.Commands,
+            NavigationTabs = State.NavigationTabs,
+            LastCommandId = commandId,
+            Notice = notice,
+            Preferences = State.Preferences,
+            OpenWorkspaces = session.OpenWorkspaces
+        };
+    }
+
+    private void CaptureWorkspaceView()
+    {
+        if (_currentWorkspace is null)
+            return;
+
+        _workspaceViews[_currentWorkspace.Value.Value] = new WorkspaceViewState(
+            ActiveTabId: State.ActiveTabId,
+            ActiveActionId: State.ActiveActionId,
+            ActiveSectionId: State.ActiveSectionId,
+            ActiveSectionJson: State.ActiveSectionJson,
+            ActiveSectionRows: State.ActiveSectionRows.ToArray());
+    }
+
+    private WorkspaceViewState? RestoreWorkspaceView(CharacterWorkspaceId id)
+    {
+        return _workspaceViews.TryGetValue(id.Value, out WorkspaceViewState? view)
+            ? view
+            : null;
+    }
+
     private void Publish(CharacterOverviewState state)
     {
         State = state;
         StateChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    private sealed record WorkspaceViewState(
+        string? ActiveTabId,
+        string? ActiveActionId,
+        string? ActiveSectionId,
+        string? ActiveSectionJson,
+        IReadOnlyList<SectionRowState> ActiveSectionRows);
 }

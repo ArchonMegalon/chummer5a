@@ -15,6 +15,10 @@ public interface ICharacterOverviewPresenter
 
     Task LoadAsync(CharacterWorkspaceId id, CancellationToken ct);
 
+    Task SwitchWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct);
+
+    Task CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct);
+
     Task ExecuteCommandAsync(string commandId, CancellationToken ct);
 
     Task HandleUiControlAsync(string controlId, CancellationToken ct);

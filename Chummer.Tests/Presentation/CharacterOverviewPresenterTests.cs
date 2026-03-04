@@ -108,6 +108,46 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task SwitchWorkspaceAsync_restores_workspace_specific_tab_and_section_context()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.SelectTabAsync("tab-info", CancellationToken.None);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
+        await presenter.SelectTabAsync("tab-gear", CancellationToken.None);
+
+        await presenter.SwitchWorkspaceAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
+        Assert.AreEqual("tab-info", presenter.State.ActiveTabId);
+        Assert.AreEqual("profile", presenter.State.ActiveSectionId);
+
+        await presenter.SwitchWorkspaceAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
+        Assert.AreEqual("ws-2", presenter.State.WorkspaceId?.Value);
+        Assert.AreEqual("tab-gear", presenter.State.ActiveTabId);
+        Assert.AreEqual("gear", presenter.State.ActiveSectionId);
+    }
+
+    [TestMethod]
+    public async Task CloseWorkspaceAsync_closes_active_workspace_and_switches_to_recent_workspace()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
+        await presenter.CloseWorkspaceAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
+
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
+        Assert.AreEqual("ws-1", presenter.State.Session.ActiveWorkspaceId?.Value);
+        Assert.AreEqual(1, presenter.State.Session.OpenWorkspaces.Count);
+        Assert.AreEqual("ws-1", presenter.State.Session.OpenWorkspaces[0].Id.Value);
+    }
+
+    [TestMethod]
     public async Task ExecuteCommandAsync_close_window_switches_to_previous_workspace()
     {
         var client = new FakeChummerClient();

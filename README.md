@@ -20,6 +20,8 @@ The `Docker` branch is an active migration branch and no longer follows a WinFor
 * `Chummer.Application`, `Chummer.Contracts`, `Chummer.Infrastructure`, and `Chummer.Presentation` provide the shared behavior seam.
 * `Chummer.Blazor` and `Chummer.Avalonia` are the two UI heads over the same presentation/API path.
 * `Chummer.Web` is currently retained as a static legacy-shell parity artifact during migration.
+* Runtime compose flows target `chummer-api` and `chummer-blazor`; no `chummer-web` service is part of the active product path.
+* Migration execution backlog: [`docs/MIGRATION_BACKLOG.md`](docs/MIGRATION_BACKLOG.md).
 
 `docker-compose.yml` runs the API container under the service name `chummer-api`.
 

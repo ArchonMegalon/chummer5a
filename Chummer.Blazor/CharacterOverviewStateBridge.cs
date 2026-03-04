@@ -30,6 +30,16 @@ public sealed class CharacterOverviewStateBridge : IDisposable
         return _presenter.LoadAsync(workspaceId, ct);
     }
 
+    public Task SwitchWorkspaceAsync(CharacterWorkspaceId workspaceId, CancellationToken ct)
+    {
+        return _presenter.SwitchWorkspaceAsync(workspaceId, ct);
+    }
+
+    public Task CloseWorkspaceAsync(CharacterWorkspaceId workspaceId, CancellationToken ct)
+    {
+        return _presenter.CloseWorkspaceAsync(workspaceId, ct);
+    }
+
     public Task ExecuteCommandAsync(string commandId, CancellationToken ct)
     {
         return _presenter.ExecuteCommandAsync(commandId, ct);

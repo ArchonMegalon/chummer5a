@@ -1,6 +1,7 @@
 using Chummer.Blazor.Components;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
+using Chummer.Presentation.Shell;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,8 @@ builder.Services.AddHttpClient<IChummerClient, HttpChummerClient>((_, client) =>
 });
 
 builder.Services.AddScoped<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
+builder.Services.AddScoped<IShellPresenter, ShellPresenter>();
+builder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
 
 var app = builder.Build();
 

@@ -35,6 +35,28 @@ public class CharacterOverviewViewModelAdapterTests
     }
 
     [TestMethod]
+    public async Task SwitchWorkspaceAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+
+        await adapter.SwitchWorkspaceAsync(new CharacterWorkspaceId("ws-switch"), CancellationToken.None);
+
+        Assert.AreEqual("ws-switch", presenter.SwitchedWorkspaceId?.Value);
+    }
+
+    [TestMethod]
+    public async Task CloseWorkspaceAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+
+        await adapter.CloseWorkspaceAsync(new CharacterWorkspaceId("ws-close"), CancellationToken.None);
+
+        Assert.AreEqual("ws-close", presenter.ClosedWorkspaceId?.Value);
+    }
+
+    [TestMethod]
     public async Task SelectTabAsync_delegates_to_presenter()
     {
         var presenter = new FakeCharacterOverviewPresenter();

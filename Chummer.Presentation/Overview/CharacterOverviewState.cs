@@ -7,6 +7,7 @@ namespace Chummer.Presentation.Overview;
 public sealed record CharacterOverviewState(
     bool IsBusy,
     string? Error,
+    WorkspaceSessionState Session,
     CharacterWorkspaceId? WorkspaceId,
     IReadOnlyList<OpenWorkspaceState> OpenWorkspaces,
     CharacterProfileSection? Profile,
@@ -32,6 +33,7 @@ public sealed record CharacterOverviewState(
     public static CharacterOverviewState Empty { get; } = new(
         IsBusy: false,
         Error: null,
+        Session: WorkspaceSessionState.Empty,
         WorkspaceId: null,
         OpenWorkspaces: [],
         Profile: null,

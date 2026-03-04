@@ -33,3 +33,4 @@ This compares a curated desktop command set with web command handlers and fails 
 - Add missing command handlers and connect them to real backend workflows.
 - Replace placeholder handlers with full UX flows.
 - Extend tests from presence checks to behavior-compliance checks.
+- Track implementation slices in `docs/MIGRATION_BACKLOG.md`.

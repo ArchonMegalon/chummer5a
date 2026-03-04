@@ -35,6 +35,28 @@ public class CharacterOverviewStateBridgeTests
     }
 
     [TestMethod]
+    public async Task SwitchWorkspaceAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var bridge = new CharacterOverviewStateBridge(presenter, _ => { });
+
+        await bridge.SwitchWorkspaceAsync(new CharacterWorkspaceId("ws-switch"), CancellationToken.None);
+
+        Assert.AreEqual("ws-switch", presenter.SwitchedWorkspaceId?.Value);
+    }
+
+    [TestMethod]
+    public async Task CloseWorkspaceAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var bridge = new CharacterOverviewStateBridge(presenter, _ => { });
+
+        await bridge.CloseWorkspaceAsync(new CharacterWorkspaceId("ws-close"), CancellationToken.None);
+
+        Assert.AreEqual("ws-close", presenter.ClosedWorkspaceId?.Value);
+    }
+
+    [TestMethod]
     public async Task SelectTabAsync_delegates_to_presenter()
     {
         var presenter = new FakeCharacterOverviewPresenter();

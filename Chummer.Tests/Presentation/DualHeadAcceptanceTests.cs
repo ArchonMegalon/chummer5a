@@ -13,6 +13,7 @@ using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
+using Chummer.Presentation.Shell;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests.Presentation;
@@ -327,6 +328,181 @@ public class DualHeadAcceptanceTests
         Assert.AreEqual(GetDecimal(avaloniaRoot, "Karma"), GetDecimal(blazorRoot, "Karma"));
         Assert.AreEqual(GetDecimal(avaloniaRoot, "Nuyen"), GetDecimal(blazorRoot, "Nuyen"));
         Assert.AreEqual(avaloniaState.ActiveSectionRows.Count, blazorState.ActiveSectionRows.Count);
+    }
+
+    [TestMethod]
+    public async Task Avalonia_and_Blazor_shell_surfaces_expose_identical_ids()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+        ICommandAvailabilityEvaluator evaluator = new DefaultCommandAvailabilityEvaluator();
+
+        CharacterOverviewState avaloniaState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+            await adapter.InitializeAsync(CancellationToken.None);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
+            await adapter.SelectTabAsync("tab-info", CancellationToken.None);
+            avaloniaState = adapter.State;
+        }
+
+        CharacterOverviewState blazorState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            await bridge.InitializeAsync(CancellationToken.None);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
+            await bridge.SelectTabAsync("tab-info", CancellationToken.None);
+            blazorState = callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+        }
+
+        string[] avaloniaCommandIds = avaloniaState.Commands
+            .Where(command => evaluator.IsCommandEnabled(command, avaloniaState))
+            .Select(command => command.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+        string[] blazorCommandIds = blazorState.Commands
+            .Where(command => evaluator.IsCommandEnabled(command, blazorState))
+            .Select(command => command.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+        CollectionAssert.AreEquivalent(avaloniaCommandIds, blazorCommandIds);
+
+        string[] avaloniaTabIds = avaloniaState.NavigationTabs
+            .Where(tab => evaluator.IsNavigationTabEnabled(tab, avaloniaState))
+            .Select(tab => tab.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+        string[] blazorTabIds = blazorState.NavigationTabs
+            .Where(tab => evaluator.IsNavigationTabEnabled(tab, blazorState))
+            .Select(tab => tab.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+        CollectionAssert.AreEquivalent(avaloniaTabIds, blazorTabIds);
+
+        string[] avaloniaActionIds = WorkspaceSurfaceActionCatalog.ForTab(avaloniaState.ActiveTabId)
+            .Where(action => evaluator.IsWorkspaceActionEnabled(action, avaloniaState))
+            .Select(action => action.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+        string[] blazorActionIds = WorkspaceSurfaceActionCatalog.ForTab(blazorState.ActiveTabId)
+            .Where(action => evaluator.IsWorkspaceActionEnabled(action, blazorState))
+            .Select(action => action.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+        CollectionAssert.AreEquivalent(avaloniaActionIds, blazorActionIds);
+
+        string[] avaloniaControlIds = DesktopUiControlCatalog.ForTab(avaloniaState.ActiveTabId)
+            .Where(control => evaluator.IsUiControlEnabled(control, avaloniaState))
+            .Select(control => control.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+        string[] blazorControlIds = DesktopUiControlCatalog.ForTab(blazorState.ActiveTabId)
+            .Where(control => evaluator.IsUiControlEnabled(control, blazorState))
+            .Select(control => control.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+        CollectionAssert.AreEquivalent(avaloniaControlIds, blazorControlIds);
+    }
+
+    [TestMethod]
+    public async Task Avalonia_and_Blazor_two_workspace_import_switch_save_flow_matches()
+    {
+        byte[] firstDocument = Encoding.UTF8.GetBytes(File.ReadAllText(FindTestFilePath("Apex Predator.chum5")));
+        byte[] secondDocument = Encoding.UTF8.GetBytes(File.ReadAllText(FindTestFilePath("Barrett.chum5")));
+        CharacterWorkspaceId avaloniaFirstWorkspace;
+        CharacterWorkspaceId avaloniaSecondWorkspace;
+        CharacterOverviewState avaloniaAfterSwitchToFirst;
+        CharacterOverviewState avaloniaAfterSwitchToSecond;
+
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+
+            await adapter.InitializeAsync(CancellationToken.None);
+            await adapter.ImportAsync(firstDocument, CancellationToken.None);
+            avaloniaFirstWorkspace = adapter.State.WorkspaceId!.Value;
+            await adapter.SelectTabAsync("tab-skills", CancellationToken.None);
+            await presenter.UpdateMetadataAsync(new UpdateWorkspaceMetadata("Avalonia One", "AV1", "Notes 1"), CancellationToken.None);
+            await presenter.SaveAsync(CancellationToken.None);
+
+            await adapter.ImportAsync(secondDocument, CancellationToken.None);
+            avaloniaSecondWorkspace = adapter.State.WorkspaceId!.Value;
+            await adapter.SelectTabAsync("tab-info", CancellationToken.None);
+            await presenter.UpdateMetadataAsync(new UpdateWorkspaceMetadata("Avalonia Two", "AV2", "Notes 2"), CancellationToken.None);
+            await presenter.SaveAsync(CancellationToken.None);
+
+            await adapter.SwitchWorkspaceAsync(avaloniaFirstWorkspace, CancellationToken.None);
+            avaloniaAfterSwitchToFirst = adapter.State;
+
+            await adapter.SwitchWorkspaceAsync(avaloniaSecondWorkspace, CancellationToken.None);
+            avaloniaAfterSwitchToSecond = adapter.State;
+        }
+
+        CharacterWorkspaceId blazorFirstWorkspace;
+        CharacterWorkspaceId blazorSecondWorkspace;
+        CharacterOverviewState blazorAfterSwitchToFirst;
+        CharacterOverviewState blazorAfterSwitchToSecond;
+
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            CharacterOverviewState Snapshot() => callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+
+            await bridge.InitializeAsync(CancellationToken.None);
+            await bridge.ImportAsync(firstDocument, CancellationToken.None);
+            blazorFirstWorkspace = Snapshot().WorkspaceId!.Value;
+            await bridge.SelectTabAsync("tab-skills", CancellationToken.None);
+            await presenter.UpdateMetadataAsync(new UpdateWorkspaceMetadata("Blazor One", "BZ1", "Notes 1"), CancellationToken.None);
+            await presenter.SaveAsync(CancellationToken.None);
+
+            await bridge.ImportAsync(secondDocument, CancellationToken.None);
+            blazorSecondWorkspace = Snapshot().WorkspaceId!.Value;
+            await bridge.SelectTabAsync("tab-info", CancellationToken.None);
+            await presenter.UpdateMetadataAsync(new UpdateWorkspaceMetadata("Blazor Two", "BZ2", "Notes 2"), CancellationToken.None);
+            await presenter.SaveAsync(CancellationToken.None);
+
+            await bridge.SwitchWorkspaceAsync(blazorFirstWorkspace, CancellationToken.None);
+            blazorAfterSwitchToFirst = Snapshot();
+
+            await bridge.SwitchWorkspaceAsync(blazorSecondWorkspace, CancellationToken.None);
+            blazorAfterSwitchToSecond = Snapshot();
+        }
+
+        Assert.AreNotEqual(avaloniaFirstWorkspace.Value, avaloniaSecondWorkspace.Value);
+        Assert.AreNotEqual(blazorFirstWorkspace.Value, blazorSecondWorkspace.Value);
+
+        Assert.IsTrue(avaloniaAfterSwitchToFirst.Session.OpenWorkspaces.Count >= 2);
+        Assert.IsTrue(blazorAfterSwitchToFirst.Session.OpenWorkspaces.Count >= 2);
+        CollectionAssert.IsSubsetOf(
+            new[] { avaloniaFirstWorkspace.Value, avaloniaSecondWorkspace.Value },
+            avaloniaAfterSwitchToFirst.Session.OpenWorkspaces.Select(workspace => workspace.Id.Value).ToArray());
+        CollectionAssert.IsSubsetOf(
+            new[] { blazorFirstWorkspace.Value, blazorSecondWorkspace.Value },
+            blazorAfterSwitchToFirst.Session.OpenWorkspaces.Select(workspace => workspace.Id.Value).ToArray());
+
+        Assert.AreEqual(avaloniaFirstWorkspace.Value, avaloniaAfterSwitchToFirst.WorkspaceId?.Value);
+        Assert.AreEqual(blazorFirstWorkspace.Value, blazorAfterSwitchToFirst.WorkspaceId?.Value);
+        Assert.AreEqual("tab-skills", avaloniaAfterSwitchToFirst.ActiveTabId);
+        Assert.AreEqual("tab-skills", blazorAfterSwitchToFirst.ActiveTabId);
+        Assert.AreEqual("skills", avaloniaAfterSwitchToFirst.ActiveSectionId);
+        Assert.AreEqual("skills", blazorAfterSwitchToFirst.ActiveSectionId);
+
+        Assert.AreEqual(avaloniaSecondWorkspace.Value, avaloniaAfterSwitchToSecond.WorkspaceId?.Value);
+        Assert.AreEqual(blazorSecondWorkspace.Value, blazorAfterSwitchToSecond.WorkspaceId?.Value);
+        Assert.AreEqual("tab-info", avaloniaAfterSwitchToSecond.ActiveTabId);
+        Assert.AreEqual("tab-info", blazorAfterSwitchToSecond.ActiveTabId);
+        Assert.AreEqual("profile", avaloniaAfterSwitchToSecond.ActiveSectionId);
+        Assert.AreEqual("profile", blazorAfterSwitchToSecond.ActiveSectionId);
+        Assert.AreEqual("Avalonia Two", avaloniaAfterSwitchToSecond.Profile?.Name);
+        Assert.AreEqual("Blazor Two", blazorAfterSwitchToSecond.Profile?.Name);
     }
 
     private static HttpClient CreateClient()

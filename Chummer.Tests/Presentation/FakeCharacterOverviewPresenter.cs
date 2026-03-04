@@ -15,6 +15,10 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
 
     public CharacterWorkspaceId? LoadedWorkspaceId { get; private set; }
 
+    public CharacterWorkspaceId? SwitchedWorkspaceId { get; private set; }
+
+    public CharacterWorkspaceId? ClosedWorkspaceId { get; private set; }
+
     public string? ImportedContent { get; private set; }
 
     public UpdateWorkspaceMetadata? UpdatedMetadata { get; private set; }
@@ -54,6 +58,18 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
     public Task LoadAsync(CharacterWorkspaceId id, CancellationToken ct)
     {
         LoadedWorkspaceId = id;
+        return Task.CompletedTask;
+    }
+
+    public Task SwitchWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        SwitchedWorkspaceId = id;
+        return Task.CompletedTask;
+    }
+
+    public Task CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        ClosedWorkspaceId = id;
         return Task.CompletedTask;
     }
 

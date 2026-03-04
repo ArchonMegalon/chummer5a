@@ -1,4 +1,5 @@
 services:
+  # Primary migration runtime: API + Blazor head. Legacy Chummer.Web is intentionally excluded.
   chummer-api:
     image: chummer-api:local
     build:
@@ -8,7 +9,7 @@ services:
       CHUMMER_STATE_PATH: "/app/state"
       CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
     ports:
-      - "${CHUMMER_WEB_PORT:-8088}:8080"
+      - "${CHUMMER_API_PORT:-${CHUMMER_WEB_PORT:-8088}}:8080"
     volumes:
       - chummer-state:/app/state
   chummer-blazor:

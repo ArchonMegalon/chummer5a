@@ -27,6 +27,22 @@ public class ArchitectureGuardrailTests
         "using Microsoft.JSInterop"
     };
 
+    private static readonly string[] UiHeadProjects =
+    {
+        "Chummer.Blazor",
+        "Chummer.Avalonia"
+    };
+
+    private static readonly string[] ForbiddenUiHeadLayerUsings =
+    {
+        "using Chummer.Application",
+        "using Chummer.Core",
+        "using Chummer.Infrastructure",
+        "global using Chummer.Application",
+        "global using Chummer.Core",
+        "global using Chummer.Infrastructure"
+    };
+
     [TestMethod]
     public void Program_host_file_stays_transport_only()
     {
@@ -83,6 +99,25 @@ public class ArchitectureGuardrailTests
     }
 
     [TestMethod]
+    public void Ui_head_projects_do_not_import_non_presentation_layers()
+    {
+        foreach (string project in UiHeadProjects)
+        {
+            string directory = FindDirectory(project);
+            foreach (string file in EnumerateUiHeadSourceFiles(directory))
+            {
+                string text = File.ReadAllText(file);
+                foreach (string bannedUsing in ForbiddenUiHeadLayerUsings)
+                {
+                    Assert.IsFalse(
+                        text.Contains(bannedUsing, StringComparison.Ordinal),
+                        $"Forbidden layer import '{bannedUsing}' found in {file}.");
+                }
+            }
+        }
+    }
+
+    [TestMethod]
     public void Tools_endpoints_stay_transport_only()
     {
         string endpointPath = FindPath("Chummer.Api", "Endpoints", "ToolsEndpoints.cs");
@@ -92,6 +127,22 @@ public class ArchitectureGuardrailTests
         Assert.IsFalse(text.Contains("File.", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("Path.Combine", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("XDocument", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void Workspace_endpoints_stay_transport_only()
+    {
+        string endpointPath = FindPath("Chummer.Api", "Endpoints", "WorkspaceEndpoints.cs");
+        string text = File.ReadAllText(endpointPath);
+
+        StringAssert.Contains(text, "IWorkspaceService workspaceService");
+        Assert.IsFalse(text.Contains("Directory.", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("File.", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("Path.Combine", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("XDocument", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("ICharacterFileQueries", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("ICharacterSectionQueries", StringComparison.Ordinal));
+        Assert.IsFalse(text.Contains("ICharacterMetadataCommands", StringComparison.Ordinal));
     }
 
     [TestMethod]
@@ -229,6 +280,17 @@ public class ArchitectureGuardrailTests
             .Select(include => Path.GetFileNameWithoutExtension(include.Replace('\\', Path.DirectorySeparatorChar)))
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .ToHashSet(StringComparer.Ordinal);
+    }
+
+    private static IEnumerable<string> EnumerateUiHeadSourceFiles(string directory)
+    {
+        return Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
+            .Where(path =>
+            {
+                string extension = Path.GetExtension(path);
+                return string.Equals(extension, ".cs", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(extension, ".razor", StringComparison.OrdinalIgnoreCase);
+            });
     }
 
     private static string FindDirectory(params string[] parts)

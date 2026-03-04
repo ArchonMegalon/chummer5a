@@ -19,6 +19,11 @@
                             @onclick="() => OpenWorkspaceAsync(workspace.Id.Value)">
                         <code>@workspace.Id.Value</code> - @workspace.Name
                     </button>
+                    <button class="mini-btn"
+                            disabled="@IsBusy"
+                            @onclick="() => CloseWorkspaceAsync(workspace.Id.Value)">
+                        Close
+                    </button>
                 </li>
             }
         }
@@ -38,8 +43,16 @@
     [Parameter]
     public EventCallback<string> OpenWorkspaceRequested { get; set; }
 
+    [Parameter]
+    public EventCallback<string> CloseWorkspaceRequested { get; set; }
+
     private Task OpenWorkspaceAsync(string workspaceId)
     {
         return OpenWorkspaceRequested.InvokeAsync(workspaceId);
+    }
+
+    private Task CloseWorkspaceAsync(string workspaceId)
+    {
+        return CloseWorkspaceRequested.InvokeAsync(workspaceId);
     }
 }

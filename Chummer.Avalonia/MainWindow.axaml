@@ -20,6 +20,7 @@
       <Button Content="Import Character File" Width="170" Click="ImportFileButton_OnClick" />
       <Button Content="Import Raw (Debug)" Width="150" Click="ImportButton_OnClick" />
       <Button Content="Save Workspace" Width="140" Click="SaveButton_OnClick" />
+      <Button Content="Close Active Workspace" Width="190" Click="CloseWorkspaceButton_OnClick" />
       <TextBlock Name="WorkspaceText" VerticalAlignment="Center" Text="Workspace: none" />
     </StackPanel>
 
@@ -27,15 +28,17 @@
 
     <Grid Grid.Row="3" ColumnDefinitions="2*,3*" ColumnSpacing="10">
       <Border Grid.Column="0" Padding="8" BorderThickness="1" BorderBrush="#475569">
-        <Grid RowDefinitions="Auto,*,Auto,*,Auto,*,Auto,*" RowSpacing="8">
+        <Grid RowDefinitions="Auto,*,Auto,*,Auto,*,Auto,*,Auto,*" RowSpacing="8">
           <TextBlock Grid.Row="0" Text="Commands" FontWeight="Bold" />
           <ListBox Grid.Row="1" Name="CommandsList" />
-          <TextBlock Grid.Row="2" Text="Navigation Tabs" FontWeight="Bold" />
-          <ListBox Grid.Row="3" Name="NavigationTabsList" />
-          <TextBlock Grid.Row="4" Text="Section Actions" FontWeight="Bold" />
-          <ListBox Grid.Row="5" Name="SectionActionsList" />
-          <TextBlock Grid.Row="6" Text="Desktop Controls" FontWeight="Bold" />
-          <ListBox Grid.Row="7" Name="UiControlsList" />
+          <TextBlock Grid.Row="2" Text="Open Workspaces" FontWeight="Bold" />
+          <ListBox Grid.Row="3" Name="OpenWorkspacesList" />
+          <TextBlock Grid.Row="4" Text="Navigation Tabs" FontWeight="Bold" />
+          <ListBox Grid.Row="5" Name="NavigationTabsList" />
+          <TextBlock Grid.Row="6" Text="Section Actions" FontWeight="Bold" />
+          <ListBox Grid.Row="7" Name="SectionActionsList" />
+          <TextBlock Grid.Row="8" Text="Desktop Controls" FontWeight="Bold" />
+          <ListBox Grid.Row="9" Name="UiControlsList" />
         </Grid>
       </Border>
 

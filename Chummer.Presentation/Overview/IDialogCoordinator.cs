@@ -1,0 +1,14 @@
+using Chummer.Contracts.Workspaces;
+
+namespace Chummer.Presentation.Overview;
+
+public interface IDialogCoordinator
+{
+    Task CoordinateAsync(string actionId, DialogCoordinationContext context, CancellationToken ct);
+}
+
+public sealed record DialogCoordinationContext(
+    CharacterOverviewState State,
+    Action<CharacterOverviewState> Publish,
+    Func<UpdateWorkspaceMetadata, CancellationToken, Task> UpdateMetadataAsync,
+    Func<CharacterOverviewState> GetState);
