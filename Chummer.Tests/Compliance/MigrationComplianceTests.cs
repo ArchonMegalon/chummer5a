@@ -633,6 +633,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "pattern = re.compile(r'^chummer-(?P<app>avalonia|blazor-desktop)-");
         StringAssert.Contains(workflowText, "'id': f'{app}-{rid}'");
         StringAssert.Contains(workflowText, "'url': f'/downloads/files/{artifact.name}'");
+        StringAssert.Contains(workflowText, "Chummer.Application/**");
+        StringAssert.Contains(workflowText, "Chummer.Core/**");
+        StringAssert.Contains(workflowText, "Chummer.Desktop.Runtime/**");
+        StringAssert.Contains(workflowText, "Chummer.Infrastructure/**");
         StringAssert.Contains(workflowText, "Chummer.Portal/**");
         StringAssert.Contains(workflowText, "scripts/generate-releases-manifest.sh");
         StringAssert.Contains(workflowText, "scripts/publish-download-bundle.sh");

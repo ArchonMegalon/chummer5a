@@ -14,9 +14,13 @@ on:
     paths:
       - '.github/workflows/desktop-downloads-matrix.yml'
       - 'Chummer.Avalonia/**'
+      - 'Chummer.Application/**'
       - 'Chummer.Blazor.Desktop/**'
       - 'Chummer.Blazor/**'
+      - 'Chummer.Core/**'
       - 'Chummer.Contracts/**'
+      - 'Chummer.Desktop.Runtime/**'
+      - 'Chummer.Infrastructure/**'
       - 'Chummer.Portal/**'
       - 'Chummer.Presentation/**'
       - 'global.json'
