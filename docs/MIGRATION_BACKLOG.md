@@ -214,7 +214,7 @@ Progress: `Chummer.Portal` now proxies `/api/*`, `/docs/*`, and `/blazor/*` thro
 
 - [ ] `MIG-102` Move Blazor head to stable `/blazor/` app-base deployment behind the portal.
 Acceptance criteria: reload/deep-link/reconnect behavior works when the UI is hosted under `/blazor/`.
-Progress: added path-base aware Blazor hosting plus dedicated `chummer-blazor-portal` service (`CHUMMER_BLAZOR_PATH_BASE=/blazor`) behind portal `/blazor/*` proxy routing; remaining work is explicit deep-link/reconnect acceptance coverage for the portal path.
+Progress: added path-base aware Blazor hosting plus dedicated `chummer-blazor-portal` service (`CHUMMER_BLAZOR_PATH_BASE=/blazor`) behind portal `/blazor/*` proxy routing; added optional portal E2E gate (`CHUMMER_PORTAL_E2E=1`) validating `/blazor/health` plus portal route availability, with reconnect-specific browser assertions still pending.
 
 - [x] `MIG-103` Add OpenAPI + interactive docs surface to `Chummer.Api` and wire through portal `/docs/`.
 Acceptance criteria: generated OpenAPI document and interactive docs are reachable and validated in CI.
@@ -222,7 +222,7 @@ Progress: added built-in ASP.NET OpenAPI generation to `Chummer.Api` with `/open
 
 - [ ] `MIG-104` Add desktop download manifest + artifacts surface behind portal `/downloads/`.
 Acceptance criteria: platform download matrix is generated from CI artifacts and exposed through a versioned manifest.
-Progress: portal now serves local `/downloads/` and file-backed `/downloads/releases.json` (`CHUMMER_PORTAL_RELEASES_FILE`) with fallback release feed; CI artifact wiring and matrix population remain.
+Progress: portal now serves local `/downloads/` and file-backed `/downloads/releases.json` (`CHUMMER_PORTAL_RELEASES_FILE`) with fallback release feed; portal E2E smoke validates downloads/docs/api/blazor routes; CI artifact wiring and matrix population remain.
 
 - [ ] `MIG-105` Add browser-hosted Avalonia head entry path (`/avalonia/`) behind the same public origin.
 Acceptance criteria: browser head is reachable from portal and clearly separated from native desktop distribution.

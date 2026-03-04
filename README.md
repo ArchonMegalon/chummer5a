@@ -73,6 +73,18 @@ Run migration/compliance test loop (branch helper script):
 bash scripts/migration-loop.sh 1
 ```
 
+Optional: include portal surface smoke in the loop.
+
+```bash
+CHUMMER_PORTAL_E2E=1 bash scripts/migration-loop.sh 1
+```
+
+Run the portal surface smoke directly:
+
+```bash
+docker compose --profile test --profile portal run --build --rm chummer-playwright node /work/scripts/e2e-portal.cjs
+```
+
 Run Linux test profile directly:
 
 ```bash
