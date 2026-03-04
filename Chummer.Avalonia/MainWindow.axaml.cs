@@ -464,19 +464,18 @@ public partial class MainWindow : Window
 
     private async void Window_OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control))
-            return;
-
-        string? commandId = e.Key switch
+        bool commandModifier = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
+        bool shiftModifier = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        bool altModifier = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
+        if (!DesktopShortcutCatalog.TryResolveCommandId(
+                e.Key.ToString(),
+                commandModifier,
+                shiftModifier,
+                altModifier,
+                out string commandId))
         {
-            Key.S => "save_character",
-            Key.W => "close_window",
-            Key.G => "global_settings",
-            _ => null
-        };
-
-        if (string.IsNullOrWhiteSpace(commandId))
             return;
+        }
 
         e.Handled = true;
         await RunUiActionAsync(

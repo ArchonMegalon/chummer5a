@@ -669,18 +669,26 @@ public class MigrationComplianceTests
         string avaloniaXamlText = File.ReadAllText(avaloniaXamlPath);
         string avaloniaCodePath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
         string avaloniaCodeText = File.ReadAllText(avaloniaCodePath);
+        string shortcutCatalogPath = FindPath("Chummer.Presentation", "Shell", "DesktopShortcutCatalog.cs");
+        string shortcutCatalogText = File.ReadAllText(shortcutCatalogPath);
 
         StringAssert.Contains(blazorHomeText, "@onkeydown=\"OnShellKeyDown\"");
-        StringAssert.Contains(blazorHomeText, "args.CtrlKey");
-        StringAssert.Contains(blazorHomeText, "\"save_character\"");
-        StringAssert.Contains(blazorHomeText, "\"close_window\"");
-        StringAssert.Contains(blazorHomeText, "\"global_settings\"");
+        StringAssert.Contains(blazorHomeText, "args.MetaKey");
+        StringAssert.Contains(blazorHomeText, "DesktopShortcutCatalog.TryResolveCommandId");
 
         StringAssert.Contains(avaloniaXamlText, "KeyDown=\"Window_OnKeyDown\"");
         StringAssert.Contains(avaloniaCodeText, "Window_OnKeyDown");
-        StringAssert.Contains(avaloniaCodeText, "Key.S => \"save_character\"");
-        StringAssert.Contains(avaloniaCodeText, "Key.W => \"close_window\"");
-        StringAssert.Contains(avaloniaCodeText, "Key.G => \"global_settings\"");
+        StringAssert.Contains(avaloniaCodeText, "DesktopShortcutCatalog.TryResolveCommandId");
+
+        StringAssert.Contains(shortcutCatalogText, "\"save_character\"");
+        StringAssert.Contains(shortcutCatalogText, "\"save_character_as\"");
+        StringAssert.Contains(shortcutCatalogText, "\"close_window\"");
+        StringAssert.Contains(shortcutCatalogText, "\"global_settings\"");
+        StringAssert.Contains(shortcutCatalogText, "\"open_character\"");
+        StringAssert.Contains(shortcutCatalogText, "\"new_character\"");
+        StringAssert.Contains(shortcutCatalogText, "\"new_critter\"");
+        StringAssert.Contains(shortcutCatalogText, "\"print_character\"");
+        StringAssert.Contains(shortcutCatalogText, "\"refresh_character\"");
     }
 
     [TestMethod]
