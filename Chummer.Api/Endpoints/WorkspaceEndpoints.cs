@@ -1,4 +1,5 @@
 using System.Text;
+using System.Xml;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
@@ -19,6 +20,14 @@ public static class WorkspaceEndpoints
                     Summary: result.Summary));
             }
             catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+            catch (FormatException ex)
+            {
+                return Results.BadRequest(new { error = ex.Message });
+            }
+            catch (XmlException ex)
             {
                 return Results.BadRequest(new { error = ex.Message });
             }

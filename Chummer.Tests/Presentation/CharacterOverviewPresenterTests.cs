@@ -291,6 +291,37 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteWorkspaceActionAsync_metadata_blank_notes_are_treated_as_no_change()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+        WorkspaceSurfaceActionDefinition action = WorkspaceSurfaceActionCatalog.All
+            .First(item => string.Equals(item.Id, "tab-info.metadata", StringComparison.Ordinal));
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.UpdateMetadataAsync(new UpdateWorkspaceMetadata(null, null, "Existing Notes"), CancellationToken.None);
+        await presenter.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("metadataNotes", string.Empty, CancellationToken.None);
+        await presenter.ExecuteDialogActionAsync("apply_metadata", CancellationToken.None);
+
+        Assert.IsNotNull(client.LastUpdateMetadata);
+        Assert.IsNull(client.LastUpdateMetadata!.Notes);
+        Assert.AreEqual("Existing Notes", presenter.State.Preferences.CharacterNotes);
+    }
+
+    [TestMethod]
+    public async Task UpdateMetadataAsync_updates_preference_notes_when_notes_are_provided()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.UpdateMetadataAsync(new UpdateWorkspaceMetadata(null, null, "Desk Notes"), CancellationToken.None);
+
+        Assert.AreEqual("Desk Notes", presenter.State.Preferences.CharacterNotes);
+    }
+
+    [TestMethod]
     public async Task ExecuteDialogActionAsync_roll_updates_dice_dialog_result_field()
     {
         var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
@@ -353,6 +384,7 @@ public class CharacterOverviewPresenterTests
     {
         private string _name = "Troy Simmons";
         private string _alias = "BLUE";
+        public UpdateWorkspaceMetadata? LastUpdateMetadata { get; private set; }
         private static readonly IReadOnlyList<AppCommandDefinition> Commands =
         [
             new("new_character", "command.new_character", "file", false, true),
@@ -585,6 +617,7 @@ public class CharacterOverviewPresenterTests
 
         public Task<CommandResult<CharacterProfileSection>> UpdateMetadataAsync(CharacterWorkspaceId id, UpdateWorkspaceMetadata command, CancellationToken ct)
         {
+            LastUpdateMetadata = command;
             _name = command.Name ?? _name;
             _alias = command.Alias ?? _alias;
 

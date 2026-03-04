@@ -461,6 +461,24 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Workspace_import_returns_bad_request_for_invalid_summary_payload()
+    {
+        using var client = CreateClient();
+
+        JsonObject payload = new()
+        {
+            ["xml"] = "<character><name>Broken</name><alias>X</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>not-a-number</karma><nuyen>2500</nuyen><created>True</created></character>"
+        };
+
+        using StringContent request = new(payload.ToJsonString(), Encoding.UTF8, "application/json");
+        using HttpResponseMessage response = await client.PostAsync("/api/workspaces/import", request);
+        string body = await response.Content.ReadAsStringAsync();
+
+        Assert.AreEqual(400, (int)response.StatusCode, body);
+        StringAssert.Contains(body, "error");
+    }
+
+    [TestMethod]
     public async Task Workspace_section_endpoint_matches_legacy_section_payload_for_all_sections()
     {
         using var client = CreateClient();

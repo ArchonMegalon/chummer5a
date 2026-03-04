@@ -1,3 +1,4 @@
+using System;
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
@@ -11,6 +12,22 @@ namespace Chummer.Tests;
 [TestClass]
 public class WorkspaceServiceTests
 {
+    [TestMethod]
+    public void Import_does_not_create_workspace_when_summary_parse_fails()
+    {
+        TrackingWorkspaceStore store = new();
+        IWorkspaceService workspaceService = new WorkspaceService(
+            store,
+            new ThrowingCharacterFileQueries(),
+            new NoopCharacterSectionQueries(),
+            new NoopCharacterMetadataCommands());
+
+        Assert.ThrowsExactly<FormatException>(() => workspaceService.Import(new WorkspaceImportDocument(
+            "<character><name>Broken</name></character>",
+            WorkspaceDocumentFormat.Chum5Xml)));
+        Assert.AreEqual(0, store.CreateCallCount);
+    }
+
     [TestMethod]
     public void Import_get_profile_update_and_save_roundtrip()
     {
@@ -58,5 +75,55 @@ public class WorkspaceServiceTests
         Assert.IsTrue(save.Success);
         Assert.AreEqual(imported.Id, save.Value?.Id);
         Assert.IsTrue((save.Value?.DocumentLength ?? 0) > 0);
+    }
+
+    private sealed class TrackingWorkspaceStore : IWorkspaceStore
+    {
+        public int CreateCallCount { get; private set; }
+
+        public CharacterWorkspaceId Create(WorkspaceDocument document)
+        {
+            CreateCallCount++;
+            return new CharacterWorkspaceId(Guid.NewGuid().ToString("N"));
+        }
+
+        public bool TryGet(CharacterWorkspaceId id, out WorkspaceDocument document)
+        {
+            document = null!;
+            return false;
+        }
+
+        public void Save(CharacterWorkspaceId id, WorkspaceDocument document)
+        {
+        }
+    }
+
+    private sealed class ThrowingCharacterFileQueries : ICharacterFileQueries
+    {
+        public CharacterFileSummary ParseSummary(CharacterDocument document)
+        {
+            throw new FormatException("Malformed summary payload.");
+        }
+
+        public CharacterValidationResult Validate(CharacterDocument document)
+        {
+            return new CharacterValidationResult(false, []);
+        }
+    }
+
+    private sealed class NoopCharacterSectionQueries : ICharacterSectionQueries
+    {
+        public object ParseSection(string sectionId, CharacterDocument document)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    private sealed class NoopCharacterMetadataCommands : ICharacterMetadataCommands
+    {
+        public UpdateCharacterMetadataResult UpdateMetadata(UpdateCharacterMetadataCommand command)
+        {
+            throw new NotSupportedException();
+        }
     }
 }

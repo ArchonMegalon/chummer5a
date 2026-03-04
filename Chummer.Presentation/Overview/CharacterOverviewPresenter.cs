@@ -468,11 +468,12 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         string? name = GetDialogFieldValue(dialog, "metadataName");
         string? alias = GetDialogFieldValue(dialog, "metadataAlias");
         string? notes = GetDialogFieldValue(dialog, "metadataNotes");
+        string? normalizedNotes = string.IsNullOrWhiteSpace(notes) ? null : notes;
 
         await UpdateMetadataAsync(new UpdateWorkspaceMetadata(
             Name: string.IsNullOrWhiteSpace(name) ? null : name.Trim(),
             Alias: string.IsNullOrWhiteSpace(alias) ? null : alias.Trim(),
-            Notes: notes), ct);
+            Notes: normalizedNotes), ct);
 
         if (State.Error is null)
         {
@@ -706,6 +707,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
     public async Task UpdateMetadataAsync(UpdateWorkspaceMetadata command, CancellationToken ct)
     {
+        string? normalizedNotes = string.IsNullOrWhiteSpace(command.Notes) ? null : command.Notes;
+
         if (_currentWorkspace is null)
         {
             Publish(State with
@@ -739,7 +742,10 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 IsBusy = false,
                 Error = null,
                 WorkspaceId = _currentWorkspace,
-                Profile = result.Value
+                Profile = result.Value,
+                Preferences = normalizedNotes is null
+                    ? State.Preferences
+                    : State.Preferences with { CharacterNotes = normalizedNotes }
             });
         }
         catch (Exception ex)
@@ -934,7 +940,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             [
                 new DesktopDialogField("metadataName", "Name", State.Profile?.Name ?? string.Empty, "Character Name"),
                 new DesktopDialogField("metadataAlias", "Alias", State.Profile?.Alias ?? string.Empty, "Street Name"),
-                new DesktopDialogField("metadataNotes", "Notes", string.Empty, "Notes", true)
+                new DesktopDialogField("metadataNotes", "Notes", State.Preferences.CharacterNotes, "Notes", true)
             ],
             Actions:
             [

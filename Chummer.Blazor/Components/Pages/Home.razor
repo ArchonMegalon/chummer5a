@@ -388,10 +388,14 @@
 
     private async Task UpdateMetadataAsync()
     {
+        string? name = string.IsNullOrWhiteSpace(MetadataName) ? null : MetadataName.Trim();
+        string? alias = string.IsNullOrWhiteSpace(MetadataAlias) ? null : MetadataAlias.Trim();
+        string? notes = string.IsNullOrWhiteSpace(MetadataNotes) ? null : MetadataNotes;
+
         await Presenter.UpdateMetadataAsync(new UpdateWorkspaceMetadata(
-            Name: MetadataName,
-            Alias: MetadataAlias,
-            Notes: MetadataNotes), CancellationToken.None);
+            Name: name,
+            Alias: alias,
+            Notes: notes), CancellationToken.None);
     }
 
     private async Task SaveAsync()
@@ -428,11 +432,6 @@
     {
         if (_bridge is null)
             return;
-
-        if (action.Kind == WorkspaceSurfaceActionKind.Metadata)
-        {
-            await UpdateMetadataAsync();
-        }
 
         await _bridge.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
     }
