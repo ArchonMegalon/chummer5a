@@ -1,12 +1,54 @@
 using System.Text;
+using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
 
 string blazorBaseUrl = ResolveSetting("Portal:BlazorBaseUrl", "CHUMMER_PORTAL_BLAZOR_URL", "http://127.0.0.1:8089/");
-string apiBaseUrl = ResolveSetting("Portal:ApiBaseUrl", "CHUMMER_PORTAL_API_URL", "http://127.0.0.1:8088/");
-string docsBaseUrl = ResolveSetting("Portal:DocsBaseUrl", "CHUMMER_PORTAL_DOCS_URL", "http://127.0.0.1:8088/docs/");
+string apiBaseUrl = ResolveSetting("Portal:ApiBaseUrl", "CHUMMER_PORTAL_API_URL", "http://chummer-api:8080/");
+string docsBaseUrl = ResolveSetting("Portal:DocsBaseUrl", "CHUMMER_PORTAL_DOCS_URL", "http://chummer-api:8080/docs/");
 string downloadsBaseUrl = ResolveSetting("Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "https://github.com/chummer5a/chummer5a/releases/latest");
+
+RouteConfig[] proxyRoutes =
+[
+    new RouteConfig
+    {
+        RouteId = "portal-api",
+        ClusterId = "api-cluster",
+        Match = new RouteMatch
+        {
+            Path = "/api/{**catch-all}"
+        }
+    },
+    new RouteConfig
+    {
+        RouteId = "portal-docs",
+        ClusterId = "api-cluster",
+        Match = new RouteMatch
+        {
+            Path = "/docs/{**catch-all}"
+        }
+    }
+];
+
+ClusterConfig[] proxyClusters =
+[
+    new ClusterConfig
+    {
+        ClusterId = "api-cluster",
+        Destinations = new Dictionary<string, DestinationConfig>(StringComparer.Ordinal)
+        {
+            ["primary"] = new DestinationConfig
+            {
+                Address = NormalizeProxyAddress(apiBaseUrl)
+            }
+        }
+    }
+];
+
+builder.Services.AddReverseProxy()
+    .LoadFromMemory(proxyRoutes, proxyClusters);
+
+var app = builder.Build();
 
 app.MapGet("/health", () => Results.Ok(new
 {
@@ -30,15 +72,10 @@ app.MapGet("/downloads/releases.json", () => Results.Json(new
 app.MapGet("/blazor/{**path}", (HttpContext context, string? path) =>
     Results.Redirect(ComposeRedirect(blazorBaseUrl, path, context.Request.QueryString)));
 
-app.MapGet("/api/{**path}", (HttpContext context, string? path) =>
-    Results.Redirect(ComposeRedirect(apiBaseUrl, path, context.Request.QueryString)));
-
-app.MapGet("/docs/{**path}", (HttpContext context, string? path) =>
-    Results.Redirect(ComposeRedirect(docsBaseUrl, path, context.Request.QueryString)));
-
 app.MapGet("/downloads/{**path}", (HttpContext context, string? path) =>
     Results.Redirect(ComposeRedirect(downloadsBaseUrl, path, context.Request.QueryString)));
 
+app.MapReverseProxy();
 app.Run();
 
 string ResolveSetting(string key, string envVar, string fallback)
@@ -46,6 +83,17 @@ string ResolveSetting(string key, string envVar, string fallback)
     return builder.Configuration[key]
         ?? Environment.GetEnvironmentVariable(envVar)
         ?? fallback;
+}
+
+static string NormalizeProxyAddress(string baseUrl)
+{
+    if (Uri.TryCreate(baseUrl, UriKind.Absolute, out Uri? absoluteBase))
+    {
+        string normalized = absoluteBase.ToString();
+        return normalized.EndsWith("/", StringComparison.Ordinal) ? normalized : $"{normalized}/";
+    }
+
+    return baseUrl.EndsWith("/", StringComparison.Ordinal) ? baseUrl : $"{baseUrl}/";
 }
 
 static string ComposeRedirect(string baseUrl, string? path, QueryString queryString)
@@ -145,7 +193,7 @@ static string BuildLandingHtml(string blazorBaseUrl, string apiBaseUrl, string d
     html.AppendLine("  <main class=\"shell\">");
     html.AppendLine("    <header>");
     html.AppendLine("      <h1>Chummer Portal</h1>");
-    html.AppendLine("      <p class=\"lead\">Single landing surface for migration heads. Current milestone provides redirect-based routing; in-process proxying is tracked separately.</p>");
+    html.AppendLine("      <p class=\"lead\">Single landing surface for migration heads. Current milestone proxies <code>/api</code> and <code>/docs</code> in-process; <code>/blazor</code> stays redirect-based until subpath hardening lands.</p>");
     html.AppendLine("    </header>");
     html.AppendLine("    <section class=\"grid\">");
     html.AppendLine("      <article class=\"card\">");
@@ -170,8 +218,9 @@ static string BuildLandingHtml(string blazorBaseUrl, string apiBaseUrl, string d
     html.AppendLine("      </article>");
     html.AppendLine("    </section>");
     html.AppendLine("    <footer>");
-    html.AppendLine("      <div>Targets: <code>/blazor</code> → " + HtmlEncode(blazorBaseUrl) + "</div>");
-    html.AppendLine("      <div><code>/api</code> → " + HtmlEncode(apiBaseUrl) + " | <code>/docs</code> → " + HtmlEncode(docsBaseUrl) + " | <code>/downloads</code> → " + HtmlEncode(downloadsBaseUrl) + "</div>");
+    html.AppendLine("      <div><code>/api</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
+    html.AppendLine("      <div><code>/docs</code> proxy upstream → " + HtmlEncode(docsBaseUrl) + " | <code>/blazor</code> redirect → " + HtmlEncode(blazorBaseUrl) + "</div>");
+    html.AppendLine("      <div><code>/downloads</code> redirect → " + HtmlEncode(downloadsBaseUrl) + "</div>");
     html.AppendLine("    </footer>");
     html.AppendLine("  </main>");
     html.AppendLine("</body>");

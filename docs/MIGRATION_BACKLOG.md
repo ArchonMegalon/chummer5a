@@ -210,6 +210,7 @@ Progress: added `Chummer.Portal` (`net10.0`) plus compose `portal` profile servi
 
 - [ ] `MIG-101` Replace portal redirects with in-process reverse proxy routing for `/blazor/*`, `/api/*`, `/docs/*`, `/downloads/*`.
 Acceptance criteria: one public origin can route subpaths to internal services without exposing per-service public ports.
+Progress: first pass in `Chummer.Portal` now proxies `/api/*` and `/docs/*` through in-process routing; `/blazor/*` and `/downloads/*` remain redirect-based until subpath hosting and artifact serving are finalized.
 
 - [ ] `MIG-102` Move Blazor head to stable `/blazor/` app-base deployment behind the portal.
 Acceptance criteria: reload/deep-link/reconnect behavior works when the UI is hosted under `/blazor/`.

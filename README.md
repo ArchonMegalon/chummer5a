@@ -88,8 +88,9 @@ Default endpoints:
 
 Portal notes (current milestone):
 
-* `/blazor`, `/api`, `/docs`, and `/downloads` are redirect-based routes.
-* In-process reverse proxy pathing and subpath hosting hardening are tracked in `docs/MIGRATION_BACKLOG.md` Phase 10 tasks.
+* `/api` and `/docs` are served via in-process portal proxy routing.
+* `/blazor` and `/downloads` are currently redirect-based routes.
+* Subpath-hosted Blazor hardening remains tracked in `docs/MIGRATION_BACKLOG.md` Phase 10 tasks.
 
 ## Legacy WinForms Requirements
 | Operating System | .NET Framework |
