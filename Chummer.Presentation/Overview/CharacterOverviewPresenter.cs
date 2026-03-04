@@ -127,23 +127,56 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Error = null
         });
 
+        if (OverviewCommandPolicy.IsMenuCommand(commandId))
+        {
+            Publish(State with
+            {
+                Error = null,
+                Notice = $"Menu '{commandId}' is handled by the active UI shell."
+            });
+            return;
+        }
+
+        if (OverviewCommandPolicy.IsImportHintCommand(commandId))
+        {
+            Publish(State with
+            {
+                Error = null,
+                Notice = "Use the file import action in this head to open a character document."
+            });
+            return;
+        }
+
+        if (OverviewCommandPolicy.IsDialogCommand(commandId))
+        {
+            Publish(State with
+            {
+                Error = null,
+                ActiveDialog = _dialogFactory.CreateCommandDialog(
+                    commandId,
+                    State.Profile,
+                    State.Preferences,
+                    State.ActiveSectionJson,
+                    _currentWorkspace)
+            });
+            return;
+        }
+
+        if (OverviewCommandPolicy.IsEditorRelayCommand(commandId))
+        {
+            Publish(State with
+            {
+                Error = null,
+                Notice = $"Command '{commandId}' dispatched to the active section editor."
+            });
+            return;
+        }
+
         switch (commandId)
         {
             case "save_character":
             case "save_character_as":
                 await SaveAsync(ct);
-                return;
-            case "file":
-            case "edit":
-            case "special":
-            case "tools":
-            case "windows":
-            case "help":
-                Publish(State with
-                {
-                    Error = null,
-                    Notice = $"Menu '{commandId}' is handled by the active UI shell."
-                });
                 return;
             case "refresh_character":
                 if (_currentWorkspace is null)
@@ -176,15 +209,6 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     Notice = "New critter workspace initialized.",
                     Preferences = State.Preferences,
                     OpenWorkspaces = State.OpenWorkspaces
-                });
-                return;
-            case "open_character":
-            case "open_for_printing":
-            case "open_for_export":
-                Publish(State with
-                {
-                    Error = null,
-                    Notice = "Use the file import action in this head to open a character document."
                 });
                 return;
             case "close_all":
@@ -282,46 +306,6 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     Notice = closed
                         ? $"Closed active workspace. Switched to '{selectedWorkspace.Value}'."
                         : $"Active workspace was already closed. Switched to '{selectedWorkspace.Value}'."
-                });
-                return;
-            case "new_window":
-            case "wiki":
-            case "discord":
-            case "revision_history":
-            case "dumpshock":
-            case "print_setup":
-            case "print_multiple":
-            case "print_character":
-            case "dice_roller":
-            case "global_settings":
-            case "character_settings":
-            case "translator":
-            case "xml_editor":
-            case "master_index":
-            case "character_roster":
-            case "data_exporter":
-            case "export_character":
-            case "report_bug":
-            case "about":
-            case "hero_lab_importer":
-            case "update":
-                Publish(State with
-                {
-                    Error = null,
-                    ActiveDialog = _dialogFactory.CreateCommandDialog(
-                        commandId,
-                        State.Profile,
-                        State.Preferences,
-                        State.ActiveSectionJson,
-                        _currentWorkspace)
-                });
-                return;
-            case "copy":
-            case "paste":
-                Publish(State with
-                {
-                    Error = null,
-                    Notice = $"Command '{commandId}' dispatched to the active section editor."
                 });
                 return;
             default:
