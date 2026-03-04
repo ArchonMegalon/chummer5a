@@ -164,7 +164,8 @@ public class MigrationComplianceTests
             @"Chummer.Portal\Chummer.Portal.csproj",
             @"Chummer.Avalonia\Chummer.Avalonia.csproj",
             @"Chummer.Avalonia.Browser\Chummer.Avalonia.Browser.csproj",
-            @"Chummer.Blazor\Chummer.Blazor.csproj"
+            @"Chummer.Blazor\Chummer.Blazor.csproj",
+            @"Chummer.Blazor.Desktop\Chummer.Blazor.Desktop.csproj"
         };
 
         foreach (string requiredProject in requiredProjects)
@@ -545,6 +546,30 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Blazor_desktop_host_project_is_present_and_photino_backed()
+    {
+        string projectPath = FindPath("Chummer.Blazor.Desktop", "Chummer.Blazor.Desktop.csproj");
+        string projectText = File.ReadAllText(projectPath);
+        string programPath = FindPath("Chummer.Blazor.Desktop", "Program.cs");
+        string programText = File.ReadAllText(programPath);
+        string indexPath = FindPath("Chummer.Blazor.Desktop", "wwwroot", "index.html");
+        string indexText = File.ReadAllText(indexPath);
+
+        StringAssert.Contains(projectText, "Photino.Blazor");
+        StringAssert.Contains(projectText, @"..\Chummer.Blazor\Chummer.Blazor.csproj");
+        StringAssert.Contains(projectText, @"..\Chummer.Presentation\Chummer.Presentation.csproj");
+
+        StringAssert.Contains(programText, "PhotinoBlazorAppBuilder.CreateDefault");
+        StringAssert.Contains(programText, "RootComponents.Add<App>(\"app\")");
+        StringAssert.Contains(programText, "CHUMMER_API_BASE_URL");
+        StringAssert.Contains(programText, "CHUMMER_API_KEY");
+
+        StringAssert.Contains(indexText, "<app>Loading...</app>");
+        StringAssert.Contains(indexText, "_content/Chummer.Blazor/app.css");
+        StringAssert.Contains(indexText, "_framework/blazor.webview.js");
+    }
+
+    [TestMethod]
     public void Portal_docs_route_uses_dedicated_docs_cluster()
     {
         string portalProgramPath = FindPath("Chummer.Portal", "Program.cs");
@@ -555,6 +580,28 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalProgramText, "ClusterId = \"docs-cluster\"");
         StringAssert.Contains(portalProgramText, "Path = \"/docs/{**catch-all}\"");
         StringAssert.Contains(portalProgramText, "BuildRouteTransforms(apiRouteTransforms, \"/docs\")");
+    }
+
+    [TestMethod]
+    public void Desktop_download_matrix_includes_avalonia_and_blazor_desktop_artifacts()
+    {
+        string workflowPath = FindPath(".github", "workflows", "desktop-downloads-matrix.yml");
+        string workflowText = File.ReadAllText(workflowPath);
+
+        StringAssert.Contains(workflowText, "project: Chummer.Avalonia/Chummer.Avalonia.csproj");
+        StringAssert.Contains(workflowText, "project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj");
+        StringAssert.Contains(workflowText, "pattern = re.compile(r'^chummer-(?P<app>avalonia|blazor-desktop)-");
+        StringAssert.Contains(workflowText, "'id': f'{app}-{rid}'");
+    }
+
+    [TestMethod]
+    public void Dockerfile_tests_includes_blazor_desktop_project_for_container_build_checks()
+    {
+        string dockerfilePath = FindPath("Docker", "Dockerfile.tests");
+        string dockerfileText = File.ReadAllText(dockerfilePath);
+
+        StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj Chummer.Blazor.Desktop/");
+        StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/ Chummer.Blazor.Desktop/");
     }
 
     [TestMethod]

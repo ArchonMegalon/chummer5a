@@ -191,7 +191,7 @@ app.MapGet("/downloads/releases.json", () => Results.Json(
     new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 
 app.MapGet("/downloads/", () => Results.Content(
-    BuildDownloadsHtml(downloadsBaseUrl),
+    BuildDownloadsHtml(downloadsBaseUrl, HasConfiguredFallbackSource(downloadsBaseUrl)),
     "text/html; charset=utf-8"));
 
 if (!useBlazorProxy)
@@ -399,24 +399,45 @@ static string? ResolveDownloadFilePath(string rootDirectory, string? path)
 
 static DownloadReleaseManifest BuildFallbackManifest(string fallbackDownloadsUrl)
 {
+    IReadOnlyList<DownloadArtifact> downloads = Array.Empty<DownloadArtifact>();
+    if (HasConfiguredFallbackSource(fallbackDownloadsUrl))
+    {
+        downloads =
+        [
+            new DownloadArtifact(
+                Id: "configured-fallback-source",
+                Platform: "Configured fallback source",
+                Url: fallbackDownloadsUrl,
+                Sha256: string.Empty)
+        ];
+    }
+
     return new DownloadReleaseManifest(
         Version: "nightly",
         Channel: "docker",
         PublishedAt: DateTimeOffset.UtcNow,
-        Downloads:
-        [
-            new DownloadArtifact(
-                Id: "latest-release",
-                Platform: "Latest release feed",
-                Url: fallbackDownloadsUrl,
-                Sha256: string.Empty)
-        ]);
+        Downloads: downloads);
 }
 
-static string BuildDownloadsHtml(string fallbackDownloadsUrl)
+static bool HasConfiguredFallbackSource(string fallbackDownloadsUrl)
+{
+    if (string.IsNullOrWhiteSpace(fallbackDownloadsUrl))
+    {
+        return false;
+    }
+
+    string normalized = fallbackDownloadsUrl.Trim().TrimEnd('/');
+    return !string.Equals(normalized, "/downloads", StringComparison.OrdinalIgnoreCase);
+}
+
+static string BuildDownloadsHtml(string fallbackDownloadsUrl, bool hasFallbackSource)
 {
     string escapedFallbackUrl = HtmlEncode(fallbackDownloadsUrl);
     string escapedScriptFallbackUrl = JavaScriptStringEncode(fallbackDownloadsUrl);
+    string fallbackLinkHiddenAttribute = hasFallbackSource ? string.Empty : " hidden";
+    string fallbackUnavailableText = hasFallbackSource
+        ? "Manifest unavailable; showing configured fallback source when available."
+        : "Manifest unavailable and no fallback source is configured.";
     return $$"""
 <!doctype html>
 <html lang="en">
@@ -450,8 +471,8 @@ static string BuildDownloadsHtml(string fallbackDownloadsUrl)
       <section class="content">
         <div id="meta" class="meta">Loading release manifest...</div>
         <ul id="download-list"></ul>
-        <div id="empty" class="ghost" hidden>No platform artifacts published yet. Use the fallback release feed.</div>
-        <a href="{{escapedFallbackUrl}}" id="fallback-link">Open fallback release feed</a>
+        <div id="empty" class="ghost" hidden>No platform artifacts published yet.</div>
+        <a href="{{escapedFallbackUrl}}" id="fallback-link"{{fallbackLinkHiddenAttribute}}>Open configured fallback source</a>
       </section>
     </main>
     <script>
@@ -500,7 +521,7 @@ static string BuildDownloadsHtml(string fallbackDownloadsUrl)
             list.appendChild(row);
           }
         } catch (error) {
-          meta.textContent = 'Manifest unavailable; showing fallback release feed.';
+          meta.textContent = '{{fallbackUnavailableText}}';
           empty.hidden = false;
         }
       })();

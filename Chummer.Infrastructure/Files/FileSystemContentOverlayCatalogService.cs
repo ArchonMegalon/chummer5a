@@ -55,7 +55,11 @@ public sealed class FileSystemContentOverlayCatalogService : IContentOverlayCata
             throw new InvalidOperationException("Data file name must not include directory separators.");
         }
 
-        foreach (string directory in BuildResolutionOrder(_catalog.BaseDataPath, _catalog.Overlays, pack => pack.DataPath))
+        foreach (string directory in BuildResolutionOrder(
+                     _catalog.BaseDataPath,
+                     _catalog.Overlays,
+                     pack => pack.DataPath,
+                     pack => string.Equals(pack.Mode, ContentOverlayModes.ReplaceFile, StringComparison.Ordinal)))
         {
             string candidate = Path.Combine(directory, normalizedName);
             if (File.Exists(candidate))
@@ -102,8 +106,17 @@ public sealed class FileSystemContentOverlayCatalogService : IContentOverlayCata
         IReadOnlyList<ContentOverlayPack> overlays,
         Func<ContentOverlayPack, string> selector)
     {
+        return BuildResolutionOrder(baseDirectory, overlays, selector, pack => true);
+    }
+
+    private static IEnumerable<string> BuildResolutionOrder(
+        string baseDirectory,
+        IReadOnlyList<ContentOverlayPack> overlays,
+        Func<ContentOverlayPack, string> selector,
+        Func<ContentOverlayPack, bool> predicate)
+    {
         foreach (ContentOverlayPack pack in overlays
-                     .Where(pack => pack.Enabled)
+                     .Where(pack => pack.Enabled && predicate(pack))
                      .OrderByDescending(pack => pack.Priority)
                      .ThenByDescending(pack => pack.Id, StringComparer.Ordinal))
         {
@@ -231,7 +244,22 @@ public sealed class FileSystemContentOverlayCatalogService : IContentOverlayCata
             LanguagePath: Directory.Exists(languagePath) ? languagePath : string.Empty,
             Priority: manifest.Priority ?? 0,
             Enabled: manifest.Enabled ?? true,
+            Mode: NormalizeMode(manifest.Mode),
             Description: description);
+    }
+
+    private static string NormalizeMode(string? mode)
+    {
+        if (string.IsNullOrWhiteSpace(mode))
+        {
+            return ContentOverlayModes.ReplaceFile;
+        }
+
+        return mode.Trim().ToLowerInvariant() switch
+        {
+            ContentOverlayModes.MergeCatalog => ContentOverlayModes.MergeCatalog,
+            _ => ContentOverlayModes.ReplaceFile
+        };
     }
 
     private static ContentOverlayManifest LoadManifest(string rootPath)
@@ -264,5 +292,6 @@ public sealed class FileSystemContentOverlayCatalogService : IContentOverlayCata
         string? Name = null,
         int? Priority = null,
         bool? Enabled = null,
+        string? Mode = null,
         string? Description = null);
 }

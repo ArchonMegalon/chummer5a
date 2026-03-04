@@ -124,9 +124,10 @@ Portal notes (current milestone):
 * `/blazor` is served through an in-process portal proxy to an internal `chummer-blazor-portal` instance configured with `CHUMMER_BLAZOR_PATH_BASE=/blazor`.
 * `/avalonia` is served through an in-process portal proxy to an internal `chummer-avalonia-browser` host service configured with `CHUMMER_AVALONIA_BROWSER_PATH_BASE=/avalonia`.
 * Set `CHUMMER_PORTAL_AVALONIA_PROXY_URL` to a different upstream or clear it to fall back to the built-in portal placeholder route.
-* `/downloads/` is a local manifest-backed page, `/downloads/releases.json` can be sourced from `CHUMMER_PORTAL_RELEASES_FILE` (default `downloads/releases.json`), and `/downloads/<artifact>` serves local files from `CHUMMER_PORTAL_RELEASES_DIR` (default `downloads`).
+* `/downloads/` is a local manifest-backed page, `/downloads/releases.json` is sourced from `CHUMMER_PORTAL_RELEASES_FILE` (default `/app/downloads/releases.json`), and `/downloads/<artifact>` serves files from `CHUMMER_PORTAL_RELEASES_DIR` (default `/app/downloads`).
 * `CHUMMER_PORTAL_DOWNLOADS_URL` now defaults to `/downloads/` so the landing page stays local-first.
 * Set `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL` to route `/downloads/*` through in-process YARP proxy mode instead of local-file mode.
+* `docker-compose.yml` mounts `./Docker/Downloads` into `/app/downloads` for the portal service; populate this folder from CI desktop artifacts to make `/downloads` serve real binaries.
 * Portal can forward `X-Api-Key` to API/docs/openapi upstream routes when `CHUMMER_PORTAL_API_KEY` is set (or when `CHUMMER_API_KEY` is present in the portal service environment).
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
 
@@ -149,13 +150,15 @@ Content overlay notes (`CHUMMER_AMENDS_PATH`):
 * `docker-compose.yml` mounts `./Docker/Amends` into `/app/amends` (read-only) and sets `CHUMMER_AMENDS_PATH=/app/amends` for `chummer-api`.
 * Multiple amend roots are supported with platform separators (`:` on Linux/macOS, `;` on Windows) and `,`.
 * Active overlay metadata is exposed via `/api/info` (`content.overlays`) and `/api/content/overlays`.
-* Data file resolution is exact-name replacement only (for example `lifemodules.xml`); fragment files such as `qualities.test-amend.xml` are catalog overlays and do not replace `qualities.xml`.
-* Sample pack is included at `Docker/Amends/manifest.json` with test XML content under `Docker/Amends/data` and `Docker/Amends/lang`.
+* Overlay manifests accept `mode`:
+  `replace-file` (default) keeps exact-name file precedence and powers full-file overrides like `lifemodules.xml`.
+  `merge-catalog` applies fragment overlays like `qualities.test-amend.xml` and `en-us.test-amend.xml` onto canonical targets (`qualities.xml`, `en-us.xml`) using deterministic priority order.
+* Sample pack is included at `Docker/Amends/manifest.json` and is configured for `merge-catalog` with test XML content under `Docker/Amends/data` and `Docker/Amends/lang`.
 
 Desktop artifact workflow:
 
-* `.github/workflows/desktop-downloads-matrix.yml` publishes Avalonia desktop artifacts for multiple RIDs and generates `releases.json` with SHA-256 checksums.
-* The workflow uploads a `desktop-download-bundle` artifact containing all archives plus manifest; deployment can copy its `releases.json` to the portal manifest path.
+* `.github/workflows/desktop-downloads-matrix.yml` publishes both Avalonia and Blazor desktop artifacts for multiple RIDs and generates `releases.json` with SHA-256 checksums.
+* The workflow uploads a `desktop-download-bundle` artifact containing all archives plus manifest; deployment should copy bundle contents into `Docker/Downloads` (or your mounted downloads volume) so portal `/downloads` serves real artifacts.
 
 ## Legacy WinForms Requirements
 | Operating System | .NET Framework |

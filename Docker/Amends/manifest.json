@@ -3,5 +3,6 @@
   "name": "Local Test Amend",
   "priority": 100,
   "enabled": true,
+  "mode": "merge-catalog",
   "description": "Sample overlay pack for Docker validation"
 }

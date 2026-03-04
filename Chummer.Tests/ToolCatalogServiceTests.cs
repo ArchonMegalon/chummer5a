@@ -37,6 +37,44 @@ public class ToolCatalogServiceTests
     }
 
     [TestMethod]
+    public void Master_index_merge_catalog_fragment_merges_into_canonical_file()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string dataDir = Path.Combine(root, "data");
+            Directory.CreateDirectory(dataDir);
+            File.WriteAllText(
+                Path.Combine(dataDir, "qualities.xml"),
+                "<chummer><qualities><quality><id>base</id><name>Base</name></quality></qualities></chummer>");
+
+            string amendsRoot = Path.Combine(root, "Amends");
+            string overlayData = Path.Combine(amendsRoot, "data");
+            Directory.CreateDirectory(overlayData);
+            File.WriteAllText(
+                Path.Combine(amendsRoot, "manifest.json"),
+                "{\n  \"id\": \"merge-pack\",\n  \"priority\": 100,\n  \"enabled\": true,\n  \"mode\": \"merge-catalog\"\n}");
+            File.WriteAllText(
+                Path.Combine(overlayData, "qualities.test-amend.xml"),
+                "<chummer><qualities><quality><id>addon</id><name>Addon</name></quality></qualities></chummer>");
+
+            var overlays = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
+            var service = new XmlToolCatalogService(overlays);
+            MasterIndexResponse response = service.GetMasterIndex();
+
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(1, response.Files.Count);
+            Assert.AreEqual("qualities.xml", response.Files[0].File);
+            Assert.AreEqual("chummer", response.Files[0].Root);
+            Assert.IsTrue(response.Files[0].ElementCount >= 7);
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
+    [TestMethod]
     public void Translator_languages_reads_name_when_present_and_falls_back_to_code()
     {
         string root = CreateTempDirectory();
@@ -54,6 +92,37 @@ public class ToolCatalogServiceTests
             Assert.AreEqual(2, response.Languages.Count);
             Assert.IsTrue(response.Languages.Any(language => language.Code == "en-us" && language.Name == "English"));
             Assert.IsTrue(response.Languages.Any(language => language.Code == "fr-fr" && language.Name == "fr-fr"));
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
+    [TestMethod]
+    public void Translator_languages_merge_catalog_fragment_uses_canonical_language_code()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string amendsRoot = Path.Combine(root, "Amends");
+            string overlayLang = Path.Combine(amendsRoot, "lang");
+            Directory.CreateDirectory(overlayLang);
+            File.WriteAllText(
+                Path.Combine(amendsRoot, "manifest.json"),
+                "{\n  \"id\": \"merge-lang\",\n  \"priority\": 100,\n  \"enabled\": true,\n  \"mode\": \"merge-catalog\"\n}");
+            File.WriteAllText(
+                Path.Combine(overlayLang, "en-us.test-amend.xml"),
+                "<chummer><name>English Overlay</name></chummer>");
+
+            var overlays = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
+            var service = new XmlToolCatalogService(overlays);
+            TranslatorLanguagesResponse response = service.GetTranslatorLanguages();
+
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(1, response.Languages.Count);
+            Assert.AreEqual("en-us", response.Languages[0].Code);
+            Assert.AreEqual("English Overlay", response.Languages[0].Name);
         }
         finally
         {

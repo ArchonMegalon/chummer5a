@@ -10,3 +10,5 @@ Persistent user preferences:
 2. Prefer pre-approved scripts/command prefixes to avoid permission escalation.
    - Use existing approved scripts and commands by default.
    - If a script can be adjusted to stay within approved execution paths, do that before requesting escalation.
+3. Always prefer editing/running preapproved scripts first to avoid permission escalation.
+   - If a task can be completed by updating and executing an already preapproved script path/prefix, do that before proposing new escalations.

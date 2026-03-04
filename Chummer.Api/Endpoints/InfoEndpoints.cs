@@ -61,6 +61,7 @@ public static class InfoEndpoints
                 languagePath = overlay.LanguagePath,
                 priority = overlay.Priority,
                 enabled = overlay.Enabled,
+                mode = overlay.Mode,
                 description = overlay.Description
             })
         };

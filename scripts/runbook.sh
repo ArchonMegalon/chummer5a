@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RUNBOOK_MODE="${RUNBOOK_MODE:-${1:-tunnel}}"
+RUNBOOK_ARG_FRAMEWORK="${2:-}"
+RUNBOOK_ARG_FILTER="${3:-}"
+TUNNEL_CONTAINER="${TUNNEL_CONTAINER:-cloudflared_v2}"
+DOCKER_NETWORK="${DOCKER_NETWORK:-arr_net_v2}"
+UPSTREAM_PRIMARY="${UPSTREAM_PRIMARY:-http://172.17.0.1:8088}"
+UPSTREAM_UI="${UPSTREAM_UI:-http://172.17.0.1:8089}"
+UPSTREAM_LEGACY="${UPSTREAM_LEGACY:-http://chummer-web:8080}"
+UPSTREAM_UI_SERVICE="${UPSTREAM_UI_SERVICE:-http://chummer-blazor:8080}"
+UPSTREAM_HOST_INTERNAL="${UPSTREAM_HOST_INTERNAL:-http://host.docker.internal:8088}"
+
+if ! command -v rg >/dev/null 2>&1; then
+  echo "ripgrep (rg) is required for this runbook." >&2
+  exit 1
+fi
+
+if [[ "$RUNBOOK_MODE" == "migration" ]]; then
+  LOOPS="${MIGRATION_LOOPS:-1}"
+  LOG_FILE="${RUNBOOK_LOG_FILE:-/tmp/migration-loop-runbook.log}"
+  set +e
+  bash scripts/migration-loop.sh "$LOOPS" 2>&1 | tee "$LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== migration failure extract =="
+  rg -n "Failed|failed|\\[xUnit.net\\]|error|Test summary|Stack Trace" "$LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "local-tests" ]]; then
+  TEST_PROJECT="${TEST_PROJECT:-Chummer.Tests/Chummer.Tests.csproj}"
+  TEST_FRAMEWORK="${TEST_FRAMEWORK:-$RUNBOOK_ARG_FRAMEWORK}"
+  TEST_FILTER="${TEST_FILTER:-$RUNBOOK_ARG_FILTER}"
+  TEST_LOG_FILE="${TEST_LOG_FILE:-/tmp/chummer-local-tests.log}"
+  framework_args=()
+  filter_args=()
+  if [[ -n "$TEST_FRAMEWORK" ]]; then
+    framework_args=(-f "$TEST_FRAMEWORK")
+  fi
+  if [[ -n "$TEST_FILTER" ]]; then
+    filter_args=(--filter "$TEST_FILTER")
+  fi
+  set +e
+  dotnet test "$TEST_PROJECT" -c Release "${framework_args[@]}" "${filter_args[@]}" --logger "console;verbosity=normal" 2>&1 | tee "$TEST_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== local test failure extract =="
+  rg -n "^\\s*Failed\\s|\\[xUnit.net\\]|Total tests:|Passed!|Failed!|Stack Trace|Error Message" "$TEST_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
+  status=0
+
+  require_path() {
+    local path="$1"
+    if [[ ! -e "$path" ]]; then
+      echo "missing path: $path" >&2
+      status=1
+    fi
+  }
+
+  require_match() {
+    local pattern="$1"
+    local path="$2"
+    if ! rg -q -- "$pattern" "$path"; then
+      echo "missing pattern '$pattern' in $path" >&2
+      status=1
+    fi
+  }
+
+  require_path "Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj"
+  require_path "Chummer.Blazor.Desktop/Program.cs"
+  require_path "Chummer.Blazor.Desktop/wwwroot/index.html"
+
+  require_match "Chummer.Blazor.Desktop\\\\Chummer.Blazor.Desktop.csproj" "Chummer.sln"
+  require_match "Photino.Blazor" "Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj"
+  require_match "RootComponents.Add<App>\\(\"app\"\\)" "Chummer.Blazor.Desktop/Program.cs"
+  require_match "CHUMMER_API_BASE_URL" "Chummer.Blazor.Desktop/Program.cs"
+  require_match "Chummer.Blazor.Desktop" "Chummer.Tests/Compliance/ArchitectureGuardrailTests.cs"
+  require_match "\\{92C5A638-B7DB-4D42-BC96-C11A063D0EF5\\}\\.Release\\|Any CPU\\.Build\\.0" "Chummer.sln"
+  require_match "Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "chummer-\\(\\?P<app>avalonia\\|blazor-desktop\\)-" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "id': f'\\{app\\}-\\{rid\\}'" ".github/workflows/desktop-downloads-matrix.yml"
+
+  if [[ "$status" -ne 0 ]]; then
+    echo "desktop-gate checks failed" >&2
+    exit "$status"
+  fi
+
+  echo "desktop-gate checks passed"
+  exit 0
+fi
+
+if [[ "$RUNBOOK_MODE" == "desktop-build" ]]; then
+  DESKTOP_PROJECT="${DESKTOP_PROJECT:-${RUNBOOK_ARG_FRAMEWORK:-Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj}}"
+  DESKTOP_FRAMEWORK="${DESKTOP_FRAMEWORK:-${RUNBOOK_ARG_FILTER:-net10.0}}"
+  DESKTOP_LOG_FILE="${DESKTOP_LOG_FILE:-/tmp/chummer-desktop-build.log}"
+  set +e
+  docker compose run --build --rm chummer-tests sh -lc \
+    "cd /src && dotnet build '$DESKTOP_PROJECT' -c Release -f '$DESKTOP_FRAMEWORK' --nologo" \
+    2>&1 | tee "$DESKTOP_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== desktop build extract =="
+  rg -n "Build succeeded|Build FAILED|error CS|error NU|error :" "$DESKTOP_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "docker-tests" ]]; then
+  TEST_PROJECT="${TEST_PROJECT:-Chummer.Tests/Chummer.Tests.csproj}"
+  TEST_FRAMEWORK="${TEST_FRAMEWORK:-${RUNBOOK_ARG_FRAMEWORK:-net10.0}}"
+  TEST_FILTER="${TEST_FILTER:-$RUNBOOK_ARG_FILTER}"
+  TEST_LOG_FILE="${TEST_LOG_FILE:-/tmp/chummer-docker-tests.log}"
+  framework_arg=""
+  filter_arg=""
+  if [[ -n "$TEST_FRAMEWORK" ]]; then
+    framework_arg="-f $TEST_FRAMEWORK"
+  fi
+  if [[ -n "$TEST_FILTER" ]]; then
+    filter_arg="--filter \"$TEST_FILTER\""
+  fi
+  set +e
+  docker compose run --rm chummer-tests sh -lc \
+    "cd /src && dotnet test '$TEST_PROJECT' -c Release $framework_arg $filter_arg --logger \"console;verbosity=normal\"" \
+    2>&1 | tee "$TEST_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== docker test failure extract =="
+  rg -n "^\\s*Failed\\s|\\[xUnit.net\\]|Total tests:|Passed!|Failed!|Stack Trace|Error Message|Test Run Failed" "$TEST_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "push" ]]; then
+  echo "== push mode =="
+  echo "branch: $(git rev-parse --abbrev-ref HEAD)"
+  echo "status: $(git status --short --branch | head -n 1)"
+
+  echo
+  echo "== attempt 1: https origin push =="
+  if git push; then
+    echo "push completed via https origin"
+    exit 0
+  fi
+
+  echo
+  echo "== attempt 2: ssh push with local key =="
+  GIT_SSH_COMMAND='ssh -i /home/tibor/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new' \
+    git push git@github.com:ArchonMegalon/chummer5a.git Docker
+  echo "push completed via ssh"
+  exit 0
+fi
+
+echo "== docker ps (chummer/cloudflared) =="
+docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | rg -i 'chummer|cloudflared' || true
+
+echo
+echo "== recent cloudflared config/events for chummer (24h) =="
+docker logs --since 24h "$TUNNEL_CONTAINER" 2>&1 \
+  | rg -n 'Updated to new configuration|chummer\.girschele\.com|originService=.*chummer|lookup chummer-web|Unable to reach the origin service' -i \
+  | tail -n 200 || true
+
+echo
+echo "== network probe from Docker network: $DOCKER_NETWORK =="
+docker run --rm \
+  --network "$DOCKER_NETWORK" \
+  -e U1="$UPSTREAM_PRIMARY" \
+  -e U2="$UPSTREAM_UI" \
+  -e U3="$UPSTREAM_LEGACY" \
+  -e U4="$UPSTREAM_UI_SERVICE" \
+  -e U5="$UPSTREAM_HOST_INTERNAL" \
+  busybox sh -lc '
+for u in "$U1" "$U2" "$U3" "$U4" "$U5"; do
+  echo "--- origin: $u"
+  for p in / /api/health /api/info; do
+    echo "GET $p"
+    wget -qSO- --timeout=3 "$u$p" -O - 2>&1 || true
+    echo
+  done
+  echo
+ done
+'

@@ -16,6 +16,12 @@ public sealed record ContentOverlayCatalog(
     string BaseLanguagePath,
     IReadOnlyList<ContentOverlayPack> Overlays);
 
+public static class ContentOverlayModes
+{
+    public const string ReplaceFile = "replace-file";
+    public const string MergeCatalog = "merge-catalog";
+}
+
 public sealed record ContentOverlayPack(
     string Id,
     string Name,
@@ -24,4 +30,5 @@ public sealed record ContentOverlayPack(
     string LanguagePath,
     int Priority,
     bool Enabled,
+    string Mode,
     string Description);

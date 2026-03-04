@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using Chummer.Application.Content;
 using Chummer.Infrastructure.Files;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -68,6 +69,7 @@ public class ContentOverlayCatalogServiceTests
 
             Assert.AreEqual(1, catalog.Overlays.Count);
             Assert.AreEqual("local-test-amend", catalog.Overlays[0].Id);
+            Assert.AreEqual(ContentOverlayModes.ReplaceFile, catalog.Overlays[0].Mode);
             Assert.AreEqual(2, service.GetLanguageDirectories().Count);
             Assert.IsTrue(service.GetLanguageDirectories().Contains(Path.Combine(amendsRoot, "lang"), StringComparer.Ordinal));
         }
@@ -100,6 +102,36 @@ public class ContentOverlayCatalogServiceTests
             CollectionAssert.AreEqual(
                 new[] { "pack-one", "pack-two" },
                 catalog.Overlays.Select(overlay => overlay.Id).ToArray());
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
+    [TestMethod]
+    public void ResolveDataFile_ignores_merge_catalog_pack_for_full_file_replacement()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string baseData = Path.Combine(root, "data");
+            Directory.CreateDirectory(baseData);
+            string baseLifeModules = Path.Combine(baseData, "lifemodules.xml");
+            File.WriteAllText(baseLifeModules, "<chummer><source>base</source></chummer>");
+
+            string amendsRoot = Path.Combine(root, "Amends");
+            string packRoot = Path.Combine(amendsRoot, "pack-merge");
+            Directory.CreateDirectory(Path.Combine(packRoot, "data"));
+            File.WriteAllText(Path.Combine(packRoot, "manifest.json"),
+                "{\n  \"id\": \"pack-merge\",\n  \"priority\": 100,\n  \"enabled\": true,\n  \"mode\": \"merge-catalog\"\n}");
+            File.WriteAllText(Path.Combine(packRoot, "data", "lifemodules.xml"), "<chummer><source>overlay</source></chummer>");
+
+            var service = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
+            string resolved = service.ResolveDataFile("lifemodules.xml");
+
+            Assert.AreEqual(baseLifeModules, resolved);
+            Assert.AreEqual(ContentOverlayModes.MergeCatalog, service.GetCatalog().Overlays[0].Mode);
         }
         finally
         {

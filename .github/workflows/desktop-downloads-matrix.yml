@@ -8,6 +8,8 @@ on:
     paths:
       - '.github/workflows/desktop-downloads-matrix.yml'
       - 'Chummer.Avalonia/**'
+      - 'Chummer.Blazor.Desktop/**'
+      - 'Chummer.Blazor/**'
       - 'Chummer.Contracts/**'
       - 'Chummer.Presentation/**'
       - 'global.json'
@@ -16,26 +18,61 @@ permissions:
   contents: read
 
 jobs:
-  build-avalonia:
-    name: Build ${{ matrix.rid }}
+  build-desktop:
+    name: Build ${{ matrix.app }} ${{ matrix.rid }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - app: avalonia
+            project: Chummer.Avalonia/Chummer.Avalonia.csproj
+            os: windows-latest
             rid: win-x64
             archive_ext: zip
-          - os: windows-latest
+          - app: avalonia
+            project: Chummer.Avalonia/Chummer.Avalonia.csproj
+            os: windows-latest
             rid: win-arm64
             archive_ext: zip
-          - os: ubuntu-latest
+          - app: avalonia
+            project: Chummer.Avalonia/Chummer.Avalonia.csproj
+            os: ubuntu-latest
             rid: linux-x64
             archive_ext: tar.gz
-          - os: ubuntu-latest
+          - app: avalonia
+            project: Chummer.Avalonia/Chummer.Avalonia.csproj
+            os: ubuntu-latest
             rid: linux-arm64
             archive_ext: tar.gz
-          - os: macos-latest
+          - app: avalonia
+            project: Chummer.Avalonia/Chummer.Avalonia.csproj
+            os: macos-latest
+            rid: osx-arm64
+            archive_ext: tar.gz
+          - app: blazor-desktop
+            project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
+            os: windows-latest
+            rid: win-x64
+            archive_ext: zip
+          - app: blazor-desktop
+            project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
+            os: windows-latest
+            rid: win-arm64
+            archive_ext: zip
+          - app: blazor-desktop
+            project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
+            os: ubuntu-latest
+            rid: linux-x64
+            archive_ext: tar.gz
+          - app: blazor-desktop
+            project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
+            os: ubuntu-latest
+            rid: linux-arm64
+            archive_ext: tar.gz
+          - app: blazor-desktop
+            project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
+            os: macos-latest
             rid: osx-arm64
             archive_ext: tar.gz
 
@@ -49,18 +86,19 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore
-        run: dotnet restore Chummer.Avalonia/Chummer.Avalonia.csproj
+        run: dotnet restore ${{ matrix.project }}
 
-      - name: Publish Avalonia desktop
+      - name: Publish desktop app
         shell: bash
         run: |
           set -euo pipefail
-          out_dir="out/${{ matrix.rid }}"
-          dotnet publish Chummer.Avalonia/Chummer.Avalonia.csproj \
+          out_dir="out/${{ matrix.app }}/${{ matrix.rid }}"
+          dotnet publish "${{ matrix.project }}" \
             -c Release \
             -r "${{ matrix.rid }}" \
             --self-contained true \
             -p:PublishSingleFile=true \
+            -p:PublishTrimmed=false \
             -p:IncludeNativeLibrariesForSelfExtract=true \
             -o "$out_dir"
 
@@ -69,9 +107,9 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path dist -Force | Out-Null
-          $archive = "dist/chummer-avalonia-${{ matrix.rid }}.zip"
+          $archive = "dist/chummer-${{ matrix.app }}-${{ matrix.rid }}.zip"
           if (Test-Path $archive) { Remove-Item $archive -Force }
-          Compress-Archive -Path "out/${{ matrix.rid }}/*" -DestinationPath $archive -Force
+          Compress-Archive -Path "out/${{ matrix.app }}/${{ matrix.rid }}/*" -DestinationPath $archive -Force
 
       - name: Package archive (Linux/macOS)
         if: runner.os != 'Windows'
@@ -79,19 +117,19 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          tar -C "out/${{ matrix.rid }}" -czf "dist/chummer-avalonia-${{ matrix.rid }}.tar.gz" .
+          tar -C "out/${{ matrix.app }}/${{ matrix.rid }}" -czf "dist/chummer-${{ matrix.app }}-${{ matrix.rid }}.tar.gz" .
 
       - name: Upload RID artifact
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-${{ matrix.rid }}
-          path: dist/chummer-avalonia-${{ matrix.rid }}.${{ matrix.archive_ext }}
+          name: desktop-${{ matrix.app }}-${{ matrix.rid }}
+          path: dist/chummer-${{ matrix.app }}-${{ matrix.rid }}.${{ matrix.archive_ext }}
           if-no-files-found: error
           retention-days: 14
 
   generate-manifest:
     name: Generate Downloads Manifest
-    needs: build-avalonia
+    needs: build-desktop
     runs-on: ubuntu-latest
 
     steps:
@@ -117,6 +155,10 @@ jobs:
           dist = Path('dist')
           dist.mkdir(parents=True, exist_ok=True)
 
+          app_labels = {
+              'avalonia': 'Avalonia Desktop',
+              'blazor-desktop': 'Blazor Desktop',
+          }
           platform_names = {
               'win-x64': 'Windows x64',
               'win-arm64': 'Windows ARM64',
@@ -126,7 +168,7 @@ jobs:
           }
 
           downloads = []
-          pattern = re.compile(r'^chummer-avalonia-(?P<rid>[^.]+)\.(?P<ext>zip|tar\.gz)$')
+          pattern = re.compile(r'^chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>[^.]+)\.(?P<ext>zip|tar\.gz)$')
           for artifact in sorted(dist.iterdir()):
               if not artifact.is_file():
                   continue
@@ -134,12 +176,13 @@ jobs:
               if not match:
                   continue
 
+              app = match.group('app')
               rid = match.group('rid')
               sha256 = hashlib.sha256(artifact.read_bytes()).hexdigest()
               downloads.append(
                   {
-                      'id': f'avalonia-{rid}',
-                      'platform': platform_names.get(rid, rid),
+                      'id': f'{app}-{rid}',
+                      'platform': f"{app_labels.get(app, app)} {platform_names.get(rid, rid)}",
                       'url': f'/downloads/{artifact.name}',
                       'sha256': sha256,
                   }
