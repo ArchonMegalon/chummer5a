@@ -490,6 +490,20 @@ public class MigrationComplianceTests
         StringAssert.Contains(testText, "Avalonia_and_Blazor_workspace_action_summary_matches");
     }
 
+    [TestMethod]
+    public void Blazor_shell_component_suite_is_present_for_phase4_gate()
+    {
+        string testPath = FindPath("Chummer.Tests", "Presentation", "BlazorShellComponentTests.cs");
+        string testText = File.ReadAllText(testPath);
+
+        StringAssert.Contains(testText, "MenuBar_renders_open_menu_items_and_applies_enablement_state");
+        StringAssert.Contains(testText, "MenuBar_invokes_toggle_and_execute_callbacks");
+        StringAssert.Contains(testText, "ToolStrip_applies_selected_and_disabled_states");
+        StringAssert.Contains(testText, "WorkspaceLeftPane_renders_shell_controls_and_invokes_callbacks");
+        StringAssert.Contains(testText, "SectionPane_switches_between_placeholder_and_section_payload");
+        StringAssert.Contains(testText, "DialogHost_renders_dialog_and_emits_events");
+    }
+
     private static string ToSectionName(string pascalName)
     {
         return pascalName.ToLowerInvariant();

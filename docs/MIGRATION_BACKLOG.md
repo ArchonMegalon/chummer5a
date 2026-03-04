@@ -104,8 +104,9 @@ Progress: command routing (`OverviewCommandDispatcher`), dialog orchestration (`
 Acceptance criteria: page-level code only wires components and events; no business/state transition logic remains in the page.
 Progress: all major regions are now separate shell components (`MenuBar`, `ToolStrip`, `MdiStrip`, `WorkspaceLeftPane`, `SummaryHeader`, `MetadataPanel`, `SectionPane`, `ImportPanel`, `CommandPanel`, `ResultPanel`, `DialogHost`, `StatusStrip`), leaving `Home.razor` as composition and event wiring.
 
-- [ ] `MIG-041` Add Blazor component tests for menu/toolstrip/workspace/tab/section/dialog components.
+- [x] `MIG-041` Add Blazor component tests for menu/toolstrip/workspace/tab/section/dialog components.
 Acceptance criteria: component tests validate enable/disable rules and state-driven rendering behaviors.
+Progress: added `Chummer.Tests/Presentation/BlazorShellComponentTests.cs` with bUnit coverage for `MenuBar`, `ToolStrip`, `WorkspaceLeftPane`, `SectionPane`, and `DialogHost`, including callback wiring and enable/disable state assertions.
 
 - [ ] `MIG-042` Add Playwright UI E2E for import -> open workspace -> tab switch -> metadata update -> command execute -> save.
 Acceptance criteria: E2E passes against dockerized `chummer-api` + `chummer-blazor`.
