@@ -214,6 +214,7 @@ Progress: first pass in `Chummer.Portal` now proxies `/api/*` and `/docs/*` thro
 
 - [ ] `MIG-102` Move Blazor head to stable `/blazor/` app-base deployment behind the portal.
 Acceptance criteria: reload/deep-link/reconnect behavior works when the UI is hosted under `/blazor/`.
+Progress: Blazor now supports configurable path base via `CHUMMER_BLAZOR_PATH_BASE` and emits dynamic `<base href>` from `NavigationManager.BaseUri`; remaining work is end-to-end portal-hosted `/blazor/` routing cutover.
 
 - [ ] `MIG-103` Add OpenAPI + interactive docs surface to `Chummer.Api` and wire through portal `/docs/`.
 Acceptance criteria: generated OpenAPI document and interactive docs are reachable and validated in CI.

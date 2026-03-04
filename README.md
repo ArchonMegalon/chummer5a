@@ -90,6 +90,7 @@ Portal notes (current milestone):
 
 * `/api` and `/docs` are served via in-process portal proxy routing.
 * `/blazor` and `/downloads` are currently redirect-based routes.
+* `CHUMMER_BLAZOR_PATH_BASE` can be set (for example `/blazor`) to prepare Blazor for subpath hosting without changing default local test behavior.
 * Subpath-hosted Blazor hardening remains tracked in `docs/MIGRATION_BACKLOG.md` Phase 10 tasks.
 
 ## Legacy WinForms Requirements

@@ -22,6 +22,7 @@ services:
     environment:
       CHUMMER_API_BASE_URL: "http://chummer-api:8080"
       CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
+      CHUMMER_BLAZOR_PATH_BASE: "${CHUMMER_BLAZOR_PATH_BASE:-}"
     ports:
       - "${CHUMMER_BLAZOR_PORT:-8089}:8080"
   chummer-portal:
