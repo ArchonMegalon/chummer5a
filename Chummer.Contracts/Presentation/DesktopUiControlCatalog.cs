@@ -1,3 +1,5 @@
+using Chummer.Contracts.Rulesets;
+
 namespace Chummer.Contracts.Presentation;
 
 public static class DesktopUiControlCatalog
@@ -50,16 +52,29 @@ public static class DesktopUiControlCatalog
         new("contact_connection", "Connection/Loyalty", "tab-contacts", true, true)
     ];
 
+    public static IReadOnlyList<DesktopUiControlDefinition> ForRuleset(string? rulesetId)
+    {
+        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
+        return All
+            .Where(control => string.Equals(control.RulesetId, effectiveRulesetId, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+    }
+
     public static IReadOnlyList<DesktopUiControlDefinition> ForTab(string? tabId)
+        => ForTab(tabId, rulesetId: null);
+
+    public static IReadOnlyList<DesktopUiControlDefinition> ForTab(string? tabId, string? rulesetId)
     {
         string effectiveTabId = string.IsNullOrWhiteSpace(tabId) ? "tab-info" : tabId;
-        DesktopUiControlDefinition[] controls = All
+        DesktopUiControlDefinition[] rulesetScopedControls = ForRuleset(rulesetId).ToArray();
+
+        DesktopUiControlDefinition[] controls = rulesetScopedControls
             .Where(control => string.Equals(control.TabId, effectiveTabId, StringComparison.Ordinal))
             .ToArray();
         if (controls.Length > 0)
             return controls;
 
-        return All
+        return rulesetScopedControls
             .Where(control => string.Equals(control.TabId, "tab-info", StringComparison.Ordinal))
             .ToArray();
     }

@@ -1,24 +1,29 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Rulesets;
 
 namespace Chummer.Contracts.Workspaces;
 
 public sealed record WorkspaceImportRequest(
     string? ContentBase64,
     string? Format,
-    string? Xml);
+    string? Xml,
+    string? RulesetId = null);
 
 public sealed record WorkspaceImportResult(
     CharacterWorkspaceId Id,
-    CharacterFileSummary Summary);
+    CharacterFileSummary Summary,
+    string RulesetId = RulesetDefaults.Sr5);
 
 public sealed record WorkspaceImportResponse(
     string Id,
-    CharacterFileSummary Summary);
+    CharacterFileSummary Summary,
+    string RulesetId = RulesetDefaults.Sr5);
 
 public sealed record WorkspaceListItemResponse(
     string Id,
     CharacterFileSummary Summary,
-    DateTimeOffset LastUpdatedUtc);
+    DateTimeOffset LastUpdatedUtc,
+    string RulesetId = RulesetDefaults.Sr5);
 
 public sealed record WorkspaceListResponse(
     int Count,
@@ -29,11 +34,13 @@ public sealed record WorkspaceMetadataResponse(
 
 public sealed record WorkspaceSaveResponse(
     string Id,
-    int DocumentLength);
+    int DocumentLength,
+    string RulesetId = RulesetDefaults.Sr5);
 
 public sealed record WorkspaceDownloadResponse(
     string Id,
     string Format,
     string ContentBase64,
     string FileName,
-    int DocumentLength);
+    int DocumentLength,
+    string RulesetId = RulesetDefaults.Sr5);

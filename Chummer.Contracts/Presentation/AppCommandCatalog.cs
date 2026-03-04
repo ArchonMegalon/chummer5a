@@ -1,3 +1,5 @@
+using Chummer.Contracts.Rulesets;
+
 namespace Chummer.Contracts.Presentation;
 
 public static class AppCommandCatalog
@@ -44,4 +46,12 @@ public static class AppCommandCatalog
         new("update", "command.update", "help", false, true),
         new("restart", "command.restart", "help", false, true)
     ];
+
+    public static IReadOnlyList<AppCommandDefinition> ForRuleset(string? rulesetId)
+    {
+        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
+        return All
+            .Where(command => string.Equals(command.RulesetId, effectiveRulesetId, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+    }
 }

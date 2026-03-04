@@ -708,6 +708,57 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Ruleset_seam_contracts_are_declared_without_changing_default_sr5_catalog_behavior()
+    {
+        string rulesetContractsPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetContracts.cs");
+        string rulesetContractsText = File.ReadAllText(rulesetContractsPath);
+        string workspaceModelsPath = FindPath("Chummer.Contracts", "Workspaces", "CharacterWorkspaceModels.cs");
+        string workspaceModelsText = File.ReadAllText(workspaceModelsPath);
+        string workspaceApiModelsPath = FindPath("Chummer.Contracts", "Workspaces", "WorkspaceApiModels.cs");
+        string workspaceApiModelsText = File.ReadAllText(workspaceApiModelsPath);
+        string commandDefinitionPath = FindPath("Chummer.Contracts", "Presentation", "AppCommandDefinition.cs");
+        string commandDefinitionText = File.ReadAllText(commandDefinitionPath);
+        string tabDefinitionPath = FindPath("Chummer.Contracts", "Presentation", "NavigationTabDefinition.cs");
+        string tabDefinitionText = File.ReadAllText(tabDefinitionPath);
+        string actionDefinitionPath = FindPath("Chummer.Contracts", "Presentation", "WorkspaceSurfaceActionDefinition.cs");
+        string actionDefinitionText = File.ReadAllText(actionDefinitionPath);
+        string controlDefinitionPath = FindPath("Chummer.Contracts", "Presentation", "DesktopUiControlDefinition.cs");
+        string controlDefinitionText = File.ReadAllText(controlDefinitionPath);
+        string commandCatalogPath = FindPath("Chummer.Contracts", "Presentation", "AppCommandCatalog.cs");
+        string commandCatalogText = File.ReadAllText(commandCatalogPath);
+        string tabCatalogPath = FindPath("Chummer.Contracts", "Presentation", "NavigationTabCatalog.cs");
+        string tabCatalogText = File.ReadAllText(tabCatalogPath);
+        string actionCatalogPath = FindPath("Chummer.Contracts", "Presentation", "WorkspaceSurfaceActionCatalog.cs");
+        string actionCatalogText = File.ReadAllText(actionCatalogPath);
+        string controlCatalogPath = FindPath("Chummer.Contracts", "Presentation", "DesktopUiControlCatalog.cs");
+        string controlCatalogText = File.ReadAllText(controlCatalogPath);
+
+        StringAssert.Contains(rulesetContractsText, "public static class RulesetDefaults");
+        StringAssert.Contains(rulesetContractsText, "public readonly record struct RulesetId");
+        StringAssert.Contains(rulesetContractsText, "public sealed record WorkspacePayloadEnvelope");
+        StringAssert.Contains(rulesetContractsText, "public interface IRulesetPlugin");
+        StringAssert.Contains(rulesetContractsText, "public interface IRulesetSerializer");
+        StringAssert.Contains(rulesetContractsText, "public interface IRulesetShellDefinitionProvider");
+        StringAssert.Contains(rulesetContractsText, "public interface IRulesetCatalogProvider");
+        StringAssert.Contains(rulesetContractsText, "public interface IRulesetRuleHost");
+        StringAssert.Contains(rulesetContractsText, "public interface IRulesetScriptHost");
+
+        StringAssert.Contains(workspaceModelsText, "string RulesetId = RulesetDefaults.Sr5");
+        StringAssert.Contains(workspaceApiModelsText, "string RulesetId = RulesetDefaults.Sr5");
+        StringAssert.Contains(commandDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
+        StringAssert.Contains(tabDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
+        StringAssert.Contains(actionDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
+        StringAssert.Contains(controlDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
+
+        StringAssert.Contains(commandCatalogText, "ForRuleset(string? rulesetId)");
+        StringAssert.Contains(tabCatalogText, "ForRuleset(string? rulesetId)");
+        StringAssert.Contains(actionCatalogText, "ForRuleset(string? rulesetId)");
+        StringAssert.Contains(actionCatalogText, "ForTab(string? tabId, string? rulesetId)");
+        StringAssert.Contains(controlCatalogText, "ForRuleset(string? rulesetId)");
+        StringAssert.Contains(controlCatalogText, "ForTab(string? tabId, string? rulesetId)");
+    }
+
+    [TestMethod]
     public void Architecture_guardrails_treat_portal_as_ui_head()
     {
         string guardrailPath = FindPath("Chummer.Tests", "Compliance", "ArchitectureGuardrailTests.cs");

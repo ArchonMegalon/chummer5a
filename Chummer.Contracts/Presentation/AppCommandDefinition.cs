@@ -1,3 +1,5 @@
+using Chummer.Contracts.Rulesets;
+
 namespace Chummer.Contracts.Presentation;
 
 public sealed record AppCommandDefinition(
@@ -5,4 +7,5 @@ public sealed record AppCommandDefinition(
     string LabelKey,
     string Group,
     bool RequiresOpenCharacter,
-    bool EnabledByDefault);
+    bool EnabledByDefault,
+    string RulesetId = RulesetDefaults.Sr5);

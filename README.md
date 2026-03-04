@@ -23,6 +23,7 @@ The `Docker` branch is an active migration branch and no longer follows a WinFor
 
 * `Chummer.Api` is the HTTP host for headless services and workspace routes.
 * `Chummer.Application`, `Chummer.Contracts`, `Chummer.Infrastructure`, and `Chummer.Presentation` provide the shared behavior seam.
+* `Chummer.Contracts.Rulesets` defines host-neutral ruleset/plugin/script interfaces plus a shared workspace payload envelope for future SR6-style expansion without changing current SR5 behavior.
 * `Chummer.Blazor` is the browser/web head, `Chummer.Avalonia` is the native desktop head, and `Chummer.Blazor.Desktop` is the desktop webview host.
 * `Chummer.Portal` is the single public gateway surface and `Chummer.Avalonia.Browser` provides the browser-hosted `/avalonia` route behind the portal profile.
 * `Chummer.Web` is currently retained as a temporary legacy-shell parity artifact during migration.
@@ -166,7 +167,7 @@ Desktop artifact workflow:
 * `.github/workflows/desktop-downloads-matrix.yml` publishes both Avalonia and Blazor desktop artifacts for multiple RIDs and generates `releases.json` with SHA-256 checksums.
 * The workflow uploads a `desktop-download-bundle` artifact in portal layout (`releases.json` + `files/*`) for direct sync into mounted portal downloads storage.
 * Desktop heads default to in-process runtime (`CHUMMER_CLIENT_MODE=inprocess` by default). Set `CHUMMER_CLIENT_MODE=http` only when intentionally running as a thin API client, and provide `CHUMMER_API_BASE_URL` (required) plus `CHUMMER_API_KEY` (optional). Legacy alias `CHUMMER_DESKTOP_CLIENT_MODE` remains supported.
-* Push trigger coverage includes shared runtime/presentation layers and portal/download publication paths (`Chummer.Application/**`, `Chummer.Core/**`, `Chummer.Contracts/**`, `Chummer.Desktop.Runtime/**`, `Chummer.Infrastructure/**`, `Chummer.Presentation/**`, `Chummer.Portal/**`, `scripts/generate-releases-manifest.sh`, `scripts/publish-download-bundle.sh`, `scripts/validate-amend-manifests.sh`) so desktop and download-surface changes run the same artifact pipeline.
+* Push trigger coverage includes shared runtime/presentation layers and portal/download publication paths (`Chummer.Application/**`, `Chummer.Core/**`, `Chummer.Contracts/**`, `Chummer.Desktop.Runtime/**`, `Chummer.Infrastructure/**`, `Chummer.Presentation/**`, `Chummer.Portal/**`, `scripts/generate-releases-manifest.sh`, `scripts/publish-download-bundle.sh`, `scripts/verify-releases-manifest.sh`, `scripts/validate-amend-manifests.sh`) so desktop and download-surface changes run the same artifact pipeline.
 * Automatic deployment: set repository variable `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` and Docker-branch pushes will publish the bundle using `scripts/publish-download-bundle.sh`.
 * `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` is resolved on the workflow runner filesystem; automatic deployment requires a runner that can write to the portal downloads storage (for example, self-hosted runner with shared mount/network volume).
 * Optional live deployment smoke: set repository variable `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` (portal base URL or direct `.../downloads/releases.json`) to have the deploy job verify the published manifest contains at least one artifact.

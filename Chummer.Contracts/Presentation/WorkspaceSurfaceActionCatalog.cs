@@ -1,3 +1,5 @@
+using Chummer.Contracts.Rulesets;
+
 namespace Chummer.Contracts.Presentation;
 
 public static class WorkspaceSurfaceActionCatalog
@@ -105,16 +107,29 @@ public static class WorkspaceSurfaceActionCatalog
         new("tab-improvements.progress", "Career Progress", "tab-improvements", WorkspaceSurfaceActionKind.Section, "progress", true, true)
     ];
 
+    public static IReadOnlyList<WorkspaceSurfaceActionDefinition> ForRuleset(string? rulesetId)
+    {
+        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
+        return All
+            .Where(action => string.Equals(action.RulesetId, effectiveRulesetId, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+    }
+
     public static IReadOnlyList<WorkspaceSurfaceActionDefinition> ForTab(string? tabId)
+        => ForTab(tabId, rulesetId: null);
+
+    public static IReadOnlyList<WorkspaceSurfaceActionDefinition> ForTab(string? tabId, string? rulesetId)
     {
         string effectiveTabId = string.IsNullOrWhiteSpace(tabId) ? "tab-info" : tabId;
-        WorkspaceSurfaceActionDefinition[] actions = All
+        WorkspaceSurfaceActionDefinition[] rulesetScopedActions = ForRuleset(rulesetId).ToArray();
+
+        WorkspaceSurfaceActionDefinition[] actions = rulesetScopedActions
             .Where(action => string.Equals(action.TabId, effectiveTabId, StringComparison.Ordinal))
             .ToArray();
         if (actions.Length > 0)
             return actions;
 
-        return All
+        return rulesetScopedActions
             .Where(action => string.Equals(action.TabId, "tab-info", StringComparison.Ordinal))
             .ToArray();
     }

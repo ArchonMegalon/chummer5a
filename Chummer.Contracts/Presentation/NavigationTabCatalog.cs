@@ -1,3 +1,5 @@
+using Chummer.Contracts.Rulesets;
+
 namespace Chummer.Contracts.Presentation;
 
 public static class NavigationTabCatalog
@@ -22,4 +24,12 @@ public static class NavigationTabCatalog
         new("tab-calendar", "Calendar", "calendar", "character", true, true),
         new("tab-improvements", "Improvements", "improvements", "character", true, true)
     ];
+
+    public static IReadOnlyList<NavigationTabDefinition> ForRuleset(string? rulesetId)
+    {
+        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
+        return All
+            .Where(tab => string.Equals(tab.RulesetId, effectiveRulesetId, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+    }
 }
