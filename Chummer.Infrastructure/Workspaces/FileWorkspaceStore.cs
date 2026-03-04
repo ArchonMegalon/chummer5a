@@ -32,7 +32,27 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
             return false;
         }
 
-        PersistedWorkspaceRecord? record = JsonSerializer.Deserialize<PersistedWorkspaceRecord>(File.ReadAllText(path));
+        PersistedWorkspaceRecord? record;
+        try
+        {
+            record = JsonSerializer.Deserialize<PersistedWorkspaceRecord>(File.ReadAllText(path));
+        }
+        catch (IOException)
+        {
+            document = null!;
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            document = null!;
+            return false;
+        }
+        catch (JsonException)
+        {
+            document = null!;
+            return false;
+        }
+
         if (record is null)
         {
             document = null!;
@@ -61,7 +81,9 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
             throw new InvalidOperationException("Workspace id contains unsupported characters.");
 
         PersistedWorkspaceRecord record = new(document.Content, document.Format.ToString());
-        File.WriteAllText(path, JsonSerializer.Serialize(record));
+        string tempPath = $"{path}.tmp";
+        File.WriteAllText(tempPath, JsonSerializer.Serialize(record));
+        File.Move(tempPath, path, overwrite: true);
     }
 
     private string? TryGetPath(CharacterWorkspaceId id)

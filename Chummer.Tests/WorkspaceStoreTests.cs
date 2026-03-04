@@ -73,6 +73,27 @@ public class WorkspaceStoreTests
         }
     }
 
+    [TestMethod]
+    public void File_workspace_store_returns_false_for_corrupt_payload()
+    {
+        string stateDirectory = CreateTempStateDirectory();
+        try
+        {
+            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            CharacterWorkspaceId id = store.Create(new WorkspaceDocument("<character><name>Neo</name></character>"));
+            string persistedPath = Path.Combine(stateDirectory, "workspaces", $"{id.Value}.json");
+
+            File.WriteAllText(persistedPath, "{invalid-json");
+
+            bool found = store.TryGet(id, out _);
+            Assert.IsFalse(found);
+        }
+        finally
+        {
+            Directory.Delete(stateDirectory, recursive: true);
+        }
+    }
+
     private static string CreateTempStateDirectory()
     {
         string path = Path.Combine(Path.GetTempPath(), "chummer-tests", Guid.NewGuid().ToString("N"));
