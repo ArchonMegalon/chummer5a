@@ -1,0 +1,86 @@
+@using Chummer.Contracts.Presentation
+
+<aside class="left-pane">
+    <OpenWorkspaceTree OpenWorkspaces="State.Session.OpenWorkspaces"
+                       ActiveWorkspaceId="State.Session.ActiveWorkspaceId"
+                       IsBusy="State.IsBusy"
+                       OpenWorkspaceRequested="OpenWorkspaceRequested"
+                       CloseWorkspaceRequested="CloseWorkspaceRequested" />
+
+    <section class="panel tabs">
+        <h2>Workspace Tabs</h2>
+        <div class="tab-grid">
+            @foreach (NavigationTabDefinition tab in NavigationTabs)
+            {
+                bool enabled = IsNavigationTabEnabled(tab);
+                <button class="tab-btn @(State.ActiveTabId == tab.Id ? "active" : string.Empty)"
+                        id="@tab.Id"
+                        disabled="@(!enabled || State.IsBusy)"
+                        @onclick="() => SelectTabRequested.InvokeAsync(tab.Id)">
+                    @tab.Label
+                </button>
+            }
+        </div>
+    </section>
+
+    <section class="panel section-actions">
+        <h2>Section Actions</h2>
+        <div class="action-grid">
+            @foreach (WorkspaceSurfaceActionDefinition action in ActiveWorkspaceActions)
+            {
+                <button class="action-button @(State.ActiveActionId == action.Id ? "selected" : string.Empty)"
+                        disabled="@State.IsBusy"
+                        @onclick="() => ExecuteWorkspaceActionRequested.InvokeAsync(action)">
+                    @action.Label
+                </button>
+            }
+        </div>
+    </section>
+
+    <section class="panel controls">
+        <h2>Desktop Controls</h2>
+        <div class="mini-grid">
+            @foreach (DesktopUiControlDefinition control in ActiveUiControls)
+            {
+                <button class="mini-btn"
+                        data-ui-control="@control.Id"
+                        disabled="@State.IsBusy"
+                        @onclick="() => HandleUiControlRequested.InvokeAsync(control.Id)">
+                    @control.Label
+                </button>
+            }
+        </div>
+    </section>
+</aside>
+
+@code {
+    [Parameter]
+    public CharacterOverviewState State { get; set; } = CharacterOverviewState.Empty;
+
+    [Parameter]
+    public IReadOnlyList<NavigationTabDefinition> NavigationTabs { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls { get; set; } = [];
+
+    [Parameter]
+    public Func<NavigationTabDefinition, bool> IsNavigationTabEnabled { get; set; } = _ => false;
+
+    [Parameter]
+    public EventCallback<string> OpenWorkspaceRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<string> CloseWorkspaceRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<string> SelectTabRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<WorkspaceSurfaceActionDefinition> ExecuteWorkspaceActionRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<string> HandleUiControlRequested { get; set; }
+}

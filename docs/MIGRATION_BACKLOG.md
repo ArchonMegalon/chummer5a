@@ -100,9 +100,9 @@ Progress: command routing (`OverviewCommandDispatcher`), dialog orchestration (`
 
 ### Phase 4: Finish Blazor shell as thin renderer
 
-- [ ] `MIG-040` Split remaining orchestration in `Home.razor` into shell-region components.
+- [x] `MIG-040` Split remaining orchestration in `Home.razor` into shell-region components.
 Acceptance criteria: page-level code only wires components and events; no business/state transition logic remains in the page.
-Progress: dialog region extracted to `Components/Shell/DialogHost.razor`; summary header extracted to `Components/Shell/SummaryHeader.razor`; metadata editor and section preview are now extracted to `Components/Shell/MetadataPanel.razor` and `Components/Shell/SectionPane.razor`; command and result regions are now extracted to `Components/Shell/CommandPanel.razor` and `Components/Shell/ResultPanel.razor`; import region is now extracted to `Components/Shell/ImportPanel.razor`; workspace shell regions still need extraction.
+Progress: all major regions are now separate shell components (`MenuBar`, `ToolStrip`, `MdiStrip`, `WorkspaceLeftPane`, `SummaryHeader`, `MetadataPanel`, `SectionPane`, `ImportPanel`, `CommandPanel`, `ResultPanel`, `DialogHost`, `StatusStrip`), leaving `Home.razor` as composition and event wiring.
 
 - [ ] `MIG-041` Add Blazor component tests for menu/toolstrip/workspace/tab/section/dialog components.
 Acceptance criteria: component tests validate enable/disable rules and state-driven rendering behaviors.
