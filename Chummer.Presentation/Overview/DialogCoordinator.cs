@@ -69,16 +69,117 @@ public sealed class DialogCoordinator : IDialogCoordinator
         if (string.Equals(dialog.Id, "dialog.ui.open_notes", StringComparison.Ordinal) && string.Equals(actionId, "save", StringComparison.Ordinal))
         {
             string notes = DesktopDialogFieldValueParser.GetValue(dialog, "uiNotesEditor") ?? string.Empty;
-            context.Publish(context.State with
+            PublishDialogNotice(context, "Notes saved.", context.State.Preferences with
             {
-                ActiveDialog = null,
-                Error = null,
-                Preferences = context.State.Preferences with
-                {
-                    CharacterNotes = notes
-                },
-                Notice = "Notes saved."
+                CharacterNotes = notes
             });
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.create_entry", StringComparison.Ordinal) && string.Equals(actionId, "add", StringComparison.Ordinal))
+        {
+            string entryName = ReadDialogValue(dialog, "uiCreateEntryName", "New entry");
+            PublishDialogNotice(context, $"Entry '{entryName}' added.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.edit_entry", StringComparison.Ordinal) && string.Equals(actionId, "apply", StringComparison.Ordinal))
+        {
+            string entryName = ReadDialogValue(dialog, "uiEditEntryName", "Current Entry");
+            PublishDialogNotice(context, $"Entry renamed to '{entryName}'.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.delete_entry", StringComparison.Ordinal) && string.Equals(actionId, "delete", StringComparison.Ordinal))
+        {
+            PublishDialogNotice(context, "Entry deleted.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.gear_add", StringComparison.Ordinal) && string.Equals(actionId, "add", StringComparison.Ordinal))
+        {
+            string gearName = ReadDialogValue(dialog, "uiGearName", "Ares Predator");
+            PublishDialogNotice(context, $"Gear '{gearName}' added.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.gear_edit", StringComparison.Ordinal) && string.Equals(actionId, "apply", StringComparison.Ordinal))
+        {
+            string gearName = ReadDialogValue(dialog, "uiGearEditName", "Selected Gear");
+            PublishDialogNotice(context, $"Gear renamed to '{gearName}'.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.gear_delete", StringComparison.Ordinal) && string.Equals(actionId, "delete", StringComparison.Ordinal))
+        {
+            PublishDialogNotice(context, "Gear deleted.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.magic_add", StringComparison.Ordinal) && string.Equals(actionId, "add", StringComparison.Ordinal))
+        {
+            string magicName = ReadDialogValue(dialog, "uiMagicName", "Spell or Power");
+            PublishDialogNotice(context, $"Spell/power '{magicName}' added.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.magic_delete", StringComparison.Ordinal) && string.Equals(actionId, "delete", StringComparison.Ordinal))
+        {
+            PublishDialogNotice(context, "Spell/power deleted.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.skill_add", StringComparison.Ordinal) && string.Equals(actionId, "add", StringComparison.Ordinal))
+        {
+            string skillName = ReadDialogValue(dialog, "uiSkillName", "Perception");
+            PublishDialogNotice(context, $"Skill '{skillName}' added.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.skill_specialize", StringComparison.Ordinal) && string.Equals(actionId, "apply", StringComparison.Ordinal))
+        {
+            string specialization = ReadDialogValue(dialog, "uiSkillSpec", "Visual");
+            PublishDialogNotice(context, $"Skill specialization set to '{specialization}'.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.skill_remove", StringComparison.Ordinal) && string.Equals(actionId, "delete", StringComparison.Ordinal))
+        {
+            PublishDialogNotice(context, "Skill removed.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.combat_add_weapon", StringComparison.Ordinal) && string.Equals(actionId, "add", StringComparison.Ordinal))
+        {
+            string weaponName = ReadDialogValue(dialog, "uiWeaponName", "Colt M23");
+            PublishDialogNotice(context, $"Weapon '{weaponName}' added.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.combat_add_armor", StringComparison.Ordinal) && string.Equals(actionId, "add", StringComparison.Ordinal))
+        {
+            string armorName = ReadDialogValue(dialog, "uiArmorName", "Armor Jacket");
+            PublishDialogNotice(context, $"Armor '{armorName}' added.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.contact_add", StringComparison.Ordinal) && string.Equals(actionId, "add", StringComparison.Ordinal))
+        {
+            string contactName = ReadDialogValue(dialog, "uiContactName", "Contact Name");
+            PublishDialogNotice(context, $"Contact '{contactName}' added.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.contact_edit", StringComparison.Ordinal) && string.Equals(actionId, "apply", StringComparison.Ordinal))
+        {
+            string contactName = ReadDialogValue(dialog, "uiContactEditName", "Selected Contact");
+            PublishDialogNotice(context, $"Contact renamed to '{contactName}'.");
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.contact_remove", StringComparison.Ordinal) && string.Equals(actionId, "delete", StringComparison.Ordinal))
+        {
+            PublishDialogNotice(context, "Contact removed.");
             return;
         }
 
@@ -86,12 +187,7 @@ public sealed class DialogCoordinator : IDialogCoordinator
         {
             string connection = DesktopDialogFieldValueParser.GetValue(dialog, "uiContactConnection") ?? "0";
             string loyalty = DesktopDialogFieldValueParser.GetValue(dialog, "uiContactLoyalty") ?? "0";
-            context.Publish(context.State with
-            {
-                ActiveDialog = null,
-                Error = null,
-                Notice = $"Contact connection/loyalty applied ({connection}/{loyalty})."
-            });
+            PublishDialogNotice(context, $"Contact connection/loyalty applied ({connection}/{loyalty}).");
             return;
         }
 
@@ -99,12 +195,7 @@ public sealed class DialogCoordinator : IDialogCoordinator
             || string.Equals(dialog.Id, "dialog.export_character", StringComparison.Ordinal))
             && string.Equals(actionId, "download", StringComparison.Ordinal))
         {
-            context.Publish(context.State with
-            {
-                ActiveDialog = null,
-                Error = null,
-                Notice = "Export bundle prepared for download."
-            });
+            PublishDialogNotice(context, "Export bundle prepared for download.");
             return;
         }
 
@@ -246,6 +337,29 @@ public sealed class DialogCoordinator : IDialogCoordinator
                 Fields = fields
             }
         });
+    }
+
+    private static void PublishDialogNotice(
+        DialogCoordinationContext context,
+        string notice,
+        DesktopPreferenceState? preferences = null)
+    {
+        context.Publish(context.State with
+        {
+            ActiveDialog = null,
+            Error = null,
+            Preferences = preferences ?? context.State.Preferences,
+            Notice = notice
+        });
+    }
+
+    private static string ReadDialogValue(
+        DesktopDialogState dialog,
+        string fieldId,
+        string fallback)
+    {
+        string? value = DesktopDialogFieldValueParser.GetValue(dialog, fieldId);
+        return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
     }
 
     private static bool TryRollExpression(string expression, out int total, out int hits, out string error)

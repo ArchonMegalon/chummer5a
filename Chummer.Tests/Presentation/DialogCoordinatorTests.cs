@@ -211,4 +211,100 @@ public class DialogCoordinatorTests
         Assert.AreEqual("Character imported.", published.Notice);
         Assert.AreEqual("ws-imported", published.WorkspaceId?.Value);
     }
+
+    [TestMethod]
+    public async Task CoordinateAsync_add_gear_adds_item_and_closes_dialog()
+    {
+        DialogCoordinator coordinator = new();
+        CharacterOverviewState published = CharacterOverviewState.Empty with
+        {
+            ActiveDialog = new DesktopDialogState(
+                Id: "dialog.ui.gear_add",
+                Title: "Add Gear",
+                Message: null,
+                Fields:
+                [
+                    new DesktopDialogField("uiGearName", "Gear Name", "Ares Alpha", "Ares Predator")
+                ],
+                Actions:
+                [
+                    new DesktopDialogAction("add", "Add", true)
+                ])
+        };
+
+        DialogCoordinationContext context = new(
+            State: published,
+            Publish: state => published = state,
+            ImportAsync: static (_, _) => Task.CompletedTask,
+            UpdateMetadataAsync: static (_, _) => Task.CompletedTask,
+            GetState: () => published);
+
+        await coordinator.CoordinateAsync("add", context, CancellationToken.None);
+
+        Assert.IsNull(published.ActiveDialog);
+        Assert.AreEqual("Gear 'Ares Alpha' added.", published.Notice);
+    }
+
+    [TestMethod]
+    public async Task CoordinateAsync_apply_contact_edit_updates_notice_and_closes_dialog()
+    {
+        DialogCoordinator coordinator = new();
+        CharacterOverviewState published = CharacterOverviewState.Empty with
+        {
+            ActiveDialog = new DesktopDialogState(
+                Id: "dialog.ui.contact_edit",
+                Title: "Edit Contact",
+                Message: null,
+                Fields:
+                [
+                    new DesktopDialogField("uiContactEditName", "Name", "Nines", "Selected Contact")
+                ],
+                Actions:
+                [
+                    new DesktopDialogAction("apply", "Apply", true)
+                ])
+        };
+
+        DialogCoordinationContext context = new(
+            State: published,
+            Publish: state => published = state,
+            ImportAsync: static (_, _) => Task.CompletedTask,
+            UpdateMetadataAsync: static (_, _) => Task.CompletedTask,
+            GetState: () => published);
+
+        await coordinator.CoordinateAsync("apply", context, CancellationToken.None);
+
+        Assert.IsNull(published.ActiveDialog);
+        Assert.AreEqual("Contact renamed to 'Nines'.", published.Notice);
+    }
+
+    [TestMethod]
+    public async Task CoordinateAsync_delete_skill_remove_closes_dialog_with_notice()
+    {
+        DialogCoordinator coordinator = new();
+        CharacterOverviewState published = CharacterOverviewState.Empty with
+        {
+            ActiveDialog = new DesktopDialogState(
+                Id: "dialog.ui.skill_remove",
+                Title: "Remove Skill",
+                Message: null,
+                Fields: [],
+                Actions:
+                [
+                    new DesktopDialogAction("delete", "Delete", true)
+                ])
+        };
+
+        DialogCoordinationContext context = new(
+            State: published,
+            Publish: state => published = state,
+            ImportAsync: static (_, _) => Task.CompletedTask,
+            UpdateMetadataAsync: static (_, _) => Task.CompletedTask,
+            GetState: () => published);
+
+        await coordinator.CoordinateAsync("delete", context, CancellationToken.None);
+
+        Assert.IsNull(published.ActiveDialog);
+        Assert.AreEqual("Skill removed.", published.Notice);
+    }
 }

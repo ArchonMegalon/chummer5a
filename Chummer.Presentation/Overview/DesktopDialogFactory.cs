@@ -288,7 +288,10 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 "Edit Entry",
                 null,
                 [new DesktopDialogField("uiEditEntryName", "Entry Name", "Current Entry", "Current Entry")],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("apply", "Apply", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "delete_entry" => new DesktopDialogState(
                 "dialog.ui.delete_entry",
                 "Delete Entry",
@@ -336,19 +339,28 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 "Add Gear",
                 null,
                 [new DesktopDialogField("uiGearName", "Gear Name", string.Empty, "Ares Predator")],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("add", "Add", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "gear_edit" => new DesktopDialogState(
                 "dialog.ui.gear_edit",
                 "Edit Gear",
                 null,
                 [new DesktopDialogField("uiGearEditName", "Gear Name", "Selected Gear", "Selected Gear")],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("apply", "Apply", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "gear_delete" => new DesktopDialogState(
                 "dialog.ui.gear_delete",
                 "Delete Gear",
                 "Deleted selected gear item.",
                 [],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("delete", "Delete", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "gear_mount" => new DesktopDialogState(
                 "dialog.ui.gear_mount",
                 "Mount Gear",
@@ -366,13 +378,19 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 "Add Spell/Power",
                 null,
                 [new DesktopDialogField("uiMagicName", "Name", string.Empty, "Spell or Power")],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("add", "Add", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "magic_delete" => new DesktopDialogState(
                 "dialog.ui.magic_delete",
                 "Delete Spell/Power",
                 "Removed selected spell/power.",
                 [],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("delete", "Delete", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "magic_bind" => new DesktopDialogState(
                 "dialog.ui.magic_bind",
                 "Bind/Link",
@@ -390,19 +408,28 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 "Add Skill",
                 null,
                 [new DesktopDialogField("uiSkillName", "Skill", string.Empty, "Perception")],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("add", "Add", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "skill_specialize" => new DesktopDialogState(
                 "dialog.ui.skill_specialize",
                 "Specialize Skill",
                 null,
                 [new DesktopDialogField("uiSkillSpec", "Specialization", string.Empty, "Visual")],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("apply", "Apply", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "skill_remove" => new DesktopDialogState(
                 "dialog.ui.skill_remove",
                 "Remove Skill",
                 "Removed selected skill.",
                 [],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("delete", "Delete", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "skill_group" => new DesktopDialogState(
                 "dialog.ui.skill_group",
                 "Skill Group",
@@ -414,13 +441,19 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 "Add Weapon",
                 null,
                 [new DesktopDialogField("uiWeaponName", "Weapon", string.Empty, "Colt M23")],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("add", "Add", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "combat_add_armor" => new DesktopDialogState(
                 "dialog.ui.combat_add_armor",
                 "Add Armor",
                 null,
                 [new DesktopDialogField("uiArmorName", "Armor", string.Empty, "Armor Jacket")],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("add", "Add", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "combat_reload" => new DesktopDialogState(
                 "dialog.ui.combat_reload",
                 "Reload Weapon",
@@ -438,19 +471,28 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 "Add Contact",
                 null,
                 [new DesktopDialogField("uiContactName", "Name", string.Empty, "Contact Name")],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("add", "Add", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "contact_edit" => new DesktopDialogState(
                 "dialog.ui.contact_edit",
                 "Edit Contact",
                 null,
                 [new DesktopDialogField("uiContactEditName", "Name", "Selected Contact", "Selected Contact")],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("apply", "Apply", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "contact_remove" => new DesktopDialogState(
                 "dialog.ui.contact_remove",
                 "Remove Contact",
                 "Removed selected contact.",
                 [],
-                [new DesktopDialogAction("close", "Close", true)]),
+                [
+                    new DesktopDialogAction("delete", "Delete", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "contact_connection" => new DesktopDialogState(
                 "dialog.ui.contact_connection",
                 "Connection / Loyalty",

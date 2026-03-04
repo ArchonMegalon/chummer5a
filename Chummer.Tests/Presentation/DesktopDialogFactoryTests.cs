@@ -70,6 +70,20 @@ public class DesktopDialogFactoryTests
     }
 
     [TestMethod]
+    public void CreateUiControlDialog_mutating_controls_use_explicit_action_ids()
+    {
+        DesktopDialogFactory factory = new();
+
+        DesktopDialogState gearAddDialog = factory.CreateUiControlDialog("gear_add", DesktopPreferenceState.Default);
+        DesktopDialogState gearEditDialog = factory.CreateUiControlDialog("gear_edit", DesktopPreferenceState.Default);
+        DesktopDialogState gearDeleteDialog = factory.CreateUiControlDialog("gear_delete", DesktopPreferenceState.Default);
+
+        Assert.IsNotNull(gearAddDialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "add", StringComparison.Ordinal)));
+        Assert.IsNotNull(gearEditDialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "apply", StringComparison.Ordinal)));
+        Assert.IsNotNull(gearDeleteDialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "delete", StringComparison.Ordinal)));
+    }
+
+    [TestMethod]
     public void DialogFieldValueParser_normalizes_and_parses_checkbox_values()
     {
         DesktopDialogField checkboxField = new(
