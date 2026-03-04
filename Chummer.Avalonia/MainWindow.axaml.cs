@@ -4,6 +4,7 @@ using System.Text;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
@@ -47,7 +48,6 @@ public partial class MainWindow : Window
     private bool _suppressSectionActionSelectionEvent;
     private bool _suppressUiControlSelectionEvent;
     private bool _suppressDialogActionSelectionEvent;
-    private string? _activeMenuGroup;
 
     public MainWindow(
         ICharacterOverviewPresenter presenter,
@@ -62,6 +62,7 @@ public partial class MainWindow : Window
         _commandAvailabilityEvaluator = commandAvailabilityEvaluator;
         _adapter = adapter;
         _adapter.Updated += (_, _) => RefreshState();
+        _shellPresenter.StateChanged += ShellPresenter_OnStateChanged;
 
         _xmlInputBox = XmlInputBox;
         _statusText = StatusText;
@@ -105,6 +106,7 @@ public partial class MainWindow : Window
             _dialogWindow = null;
         }
 
+        _shellPresenter.StateChanged -= ShellPresenter_OnStateChanged;
         _adapter.Dispose();
         base.OnClosed(e);
     }
@@ -219,9 +221,9 @@ public partial class MainWindow : Window
 
         IEnumerable<AppCommandDefinition> visibleCommands = shellState.Commands
             .Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
-        if (!string.IsNullOrWhiteSpace(_activeMenuGroup))
+        if (!string.IsNullOrWhiteSpace(shellState.OpenMenuId))
         {
-            visibleCommands = visibleCommands.Where(command => string.Equals(command.Group, _activeMenuGroup, StringComparison.Ordinal));
+            visibleCommands = visibleCommands.Where(command => string.Equals(command.Group, shellState.OpenMenuId, StringComparison.Ordinal));
         }
 
         CommandListItem[] commands = visibleCommands
@@ -314,14 +316,20 @@ public partial class MainWindow : Window
         SyncDialogWindow(state);
     }
 
-    private void MenuButton_OnClick(object? sender, RoutedEventArgs e)
+    private async void MenuButton_OnClick(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button button || button.Content is null)
             return;
 
         string menuId = button.Content.ToString()!.Trim().ToLowerInvariant();
-        _activeMenuGroup = string.Equals(_activeMenuGroup, menuId, StringComparison.Ordinal) ? null : menuId;
-        RefreshState();
+        await RunUiActionAsync(
+            () => _shellPresenter.ToggleMenuAsync(menuId, CancellationToken.None),
+            $"toggle menu '{menuId}'");
+    }
+
+    private void ShellPresenter_OnStateChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(RefreshState);
     }
 
     private async void CommandsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
