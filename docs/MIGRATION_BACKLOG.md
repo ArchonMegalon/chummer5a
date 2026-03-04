@@ -224,7 +224,7 @@ Progress: added built-in ASP.NET OpenAPI generation to `Chummer.Api` with `/open
 Acceptance criteria: platform download matrix is generated from CI artifacts and exposed through a versioned manifest.
 Progress: portal now serves local `/downloads/`, file-backed `/downloads/releases.json` (`CHUMMER_PORTAL_RELEASES_FILE`), and local `/downloads/<artifact>` files (`CHUMMER_PORTAL_RELEASES_DIR`) with fallback release feed; portal E2E smoke validates downloads/docs/api/blazor routes; CI workflow `desktop-downloads-matrix.yml` now produces multi-RID Avalonia archives plus a generated `releases.json` in `desktop-download-bundle` artifact.
 
-- [ ] `MIG-105` Add browser-hosted Avalonia head entry path (`/avalonia/`) behind the same public origin.
+- [x] `MIG-105` Add browser-hosted Avalonia head entry path (`/avalonia/`) behind the same public origin.
 Acceptance criteria: browser head is reachable from portal and clearly separated from native desktop distribution.
 Progress: added `Chummer.Avalonia.Browser` host service (`net10.0`) routed behind portal `/avalonia/*` by default in the `portal` compose profile, with path-base health checks (`/avalonia/health`) and a separate placeholder fallback when proxying is disabled.
 
