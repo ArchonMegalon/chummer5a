@@ -140,8 +140,8 @@
                     <label class="wide">Notes <textarea @bind="MetadataNotes" rows="3"></textarea></label>
                 </div>
                 <div class="actions">
-                    <button @onclick="UpdateMetadataAsync" disabled="@State.IsBusy">Update Metadata</button>
-                    <button @onclick="SaveAsync" disabled="@State.IsBusy">Save Workspace</button>
+                    <button @onclick="UpdateMetadataAsync" disabled="@(State.IsBusy || State.WorkspaceId is null)">Update Metadata</button>
+                    <button @onclick="SaveAsync" disabled="@(State.IsBusy || State.WorkspaceId is null)">Save Workspace</button>
                     <button @onclick="LoadWorkspaceAsync" disabled="@State.IsBusy || string.IsNullOrWhiteSpace(LoadWorkspaceId)">Load Workspace</button>
                 </div>
                 <div class="inline-fields">
@@ -350,6 +350,7 @@
         if (_bridge is null || string.IsNullOrWhiteSpace(RawImportXml))
             return;
 
+        ImportError = null;
         await _bridge.ImportAsync(Encoding.UTF8.GetBytes(RawImportXml), CancellationToken.None);
         SyncMetadataDraftFromState();
     }
@@ -485,6 +486,9 @@
     {
         MetadataName = State.Profile?.Name ?? MetadataName;
         MetadataAlias = State.Profile?.Alias ?? MetadataAlias;
+        // Notes are not currently part of the overview profile payload. Reset draft notes to avoid
+        // accidentally carrying notes from a previously loaded workspace.
+        MetadataNotes = string.Empty;
     }
 
     public void Dispose()
