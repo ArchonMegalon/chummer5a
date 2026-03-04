@@ -93,18 +93,10 @@ public sealed partial class CharacterOverviewPresenter
         if (session.OpenWorkspaces.Count == 0)
         {
             _currentWorkspace = null;
-            Publish(CharacterOverviewState.Empty with
-            {
-                Session = session,
-                Commands = State.Commands,
-                NavigationTabs = State.NavigationTabs,
-                LastCommandId = State.LastCommandId,
-                Notice = closed
-                    ? "Closed active workspace."
-                    : "Active workspace was already closed.",
-                Preferences = State.Preferences,
-                OpenWorkspaces = session.OpenWorkspaces
-            });
+            Publish(_workspaceShellStateFactory.CreateEmptyShellState(
+                State,
+                session,
+                closed ? "Closed active workspace." : "Active workspace was already closed."));
             return;
         }
 
@@ -219,16 +211,7 @@ public sealed partial class CharacterOverviewPresenter
         WorkspaceSessionState session = _workspaceSessionPresenter.CloseAll();
         _workspaceViewStateStore.Clear();
         _currentWorkspace = null;
-        Publish(CharacterOverviewState.Empty with
-        {
-            Session = session,
-            Commands = State.Commands,
-            NavigationTabs = State.NavigationTabs,
-            LastCommandId = State.LastCommandId,
-            Notice = notice,
-            Preferences = State.Preferences,
-            OpenWorkspaces = session.OpenWorkspaces
-        });
+        Publish(_workspaceShellStateFactory.CreateEmptyShellState(State, session, notice));
     }
 
     private CharacterOverviewState CreateWorkspaceResetState(string commandId, string notice)
@@ -236,15 +219,6 @@ public sealed partial class CharacterOverviewPresenter
         CaptureWorkspaceView();
         _currentWorkspace = null;
         WorkspaceSessionState session = _workspaceSessionPresenter.ClearActive();
-        return CharacterOverviewState.Empty with
-        {
-            Session = session,
-            Commands = State.Commands,
-            NavigationTabs = State.NavigationTabs,
-            LastCommandId = commandId,
-            Notice = notice,
-            Preferences = State.Preferences,
-            OpenWorkspaces = session.OpenWorkspaces
-        };
+        return _workspaceShellStateFactory.CreateEmptyShellState(State, session, notice, commandId);
     }
 }
