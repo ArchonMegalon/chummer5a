@@ -8,9 +8,14 @@
 [![License](https://img.shields.io/github/license/chummer5a/chummer5a)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![Donations](https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg)](https://ko-fi.com/Z8Z7IP4E)
 
-## Basic Overview
+## Project Overview
 
-Chummer is a character creation and management application for the tabletop RPG [Shadowrun, Fifth Edition](https://www.shadowruntabletop.com/products-page/getting-started/shadowrun-fifth-edition) running on Windows. Not only can you create your character quickly and easily, but you can also use Chummer during your character's shadowrunning career, to accurately track your Karma, Nuyen, ammo, and everything else all in one place. Chummer also includes support for a number of optional rules and house rules and even includes support for critters and is useful for players and Game Masters alike! It also supports a number of languages: supports multiple languages: English (US), French, German, Japanese, Portuguese (Brazil) and Chinese (Simplified) files are pre-installed, while additional languages can be added and shared through use of our in-house translator tool.
+Chummer is a character creation and management application for the tabletop RPG [Shadowrun, Fifth Edition](https://www.shadowruntabletop.com/products-page/getting-started/shadowrun-fifth-edition).
+
+This repository currently has two active tracks:
+
+* **Legacy path**: the WinForms desktop app (`Chummer`) that continues to serve as compatibility reference and regression oracle.
+* **Modern migration path (Docker branch)**: API + shared presentation seam + two UI heads (`Chummer.Blazor`, `Chummer.Avalonia`).
 
 ## Docker Branch Status
 
@@ -19,15 +24,19 @@ The `Docker` branch is an active migration branch and no longer follows a WinFor
 * `Chummer.Api` is the HTTP host for headless services and workspace routes.
 * `Chummer.Application`, `Chummer.Contracts`, `Chummer.Infrastructure`, and `Chummer.Presentation` provide the shared behavior seam.
 * `Chummer.Blazor` and `Chummer.Avalonia` are the two UI heads over the same presentation/API path.
-* `Chummer.Web` is currently retained as a static legacy-shell parity artifact during migration.
+* `Chummer.Web` is currently retained as a temporary legacy-shell parity artifact during migration.
 * Runtime compose flows target `chummer-api` and `chummer-blazor`; no `chummer-web` service is part of the active product path.
 * Migration execution backlog: [`docs/MIGRATION_BACKLOG.md`](docs/MIGRATION_BACKLOG.md).
 
-`docker-compose.yml` runs the API container under the service name `chummer-api`.
+`docker-compose.yml` exposes:
+
+* `chummer-api` (default service)
+* `chummer-blazor` (default service)
+* `chummer-tests` (under the `test` profile only)
 
 ## Running the Docker Branch
 
-The `Docker` branch is validated on Linux with `net10.0` tests through Docker.
+The `Docker` branch is validated on Linux with `net10.0` tests through Docker and uses .NET 10 containers.
 
 Start API only:
 
@@ -38,14 +47,14 @@ docker compose up -d --build chummer-api
 Start API + Blazor UI:
 
 ```bash
-docker compose --profile ui up -d --build chummer-api chummer-blazor
+docker compose up -d --build chummer-api chummer-blazor
 ```
 
 Enable API key protection (recommended for production):
 
 ```bash
 export CHUMMER_API_KEY="replace-with-strong-secret"
-docker compose --profile ui up -d --build chummer-api chummer-blazor
+docker compose up -d --build chummer-api chummer-blazor
 ```
 
 When set, `Chummer.Api` enforces `X-Api-Key` for non-public `/api/*` routes and both UI heads automatically forward the key.
@@ -56,14 +65,20 @@ Run migration/compliance test loop (branch helper script):
 bash scripts/migration-loop.sh 1
 ```
 
+Run Linux test profile directly:
+
+```bash
+docker compose --profile test run --rm chummer-tests
+```
+
 Default endpoints:
 
 * API root: `http://127.0.0.1:8088/`
 * API health: `http://127.0.0.1:8088/api/health`
-* Blazor UI (when `ui` profile is enabled): `http://127.0.0.1:8089/`
-* Blazor health (when `ui` profile is enabled): `http://127.0.0.1:8089/health`
+* Blazor UI: `http://127.0.0.1:8089/`
+* Blazor health: `http://127.0.0.1:8089/health`
 
-## Requirements
+## Legacy WinForms Requirements
 | Operating System | .NET Framework |
 | --- | --- |
 | Windows 7 SP1 or 8.1+ | 4.8+ |

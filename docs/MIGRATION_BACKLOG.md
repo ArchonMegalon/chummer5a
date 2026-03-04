@@ -174,25 +174,45 @@ Acceptance criteria: migration/compliance tests no longer require `Chummer.Web` 
 - [ ] `MIG-082` Cleanup branch artifacts and finalize migration status documentation.
 Acceptance criteria: docs describe migrated architecture as current state and list decommissioned legacy shell components.
 
+### Phase 9: Security and operations hardening
+
+- [ ] `MIG-090` Replace API-key-only production posture with real authn/authz strategy.
+Acceptance criteria: production deployment path supports identity-backed authentication and authorization; API key mode remains documented as minimal/dev fallback.
+
+- [ ] `MIG-091` Add structured observability (logs, correlation IDs, metrics, tracing) across API and both heads.
+Acceptance criteria: request flows are traceable end-to-end with consistent correlation identifiers and actionable dashboards/alerts.
+
+- [ ] `MIG-092` Add API runtime guardrails for request/operation limits.
+Acceptance criteria: explicit request size limits, rate limiting, and timeout/cancellation policies are configured and test-covered.
+
+- [ ] `MIG-093` Define workspace retention/cleanup and operational runbook.
+Acceptance criteria: workspace lifecycle policy (retention, cleanup, recovery) is documented and enforced by automated jobs or service policies.
+
+- [ ] `MIG-094` Publish first-class release artifacts for API, Blazor, and Avalonia.
+Acceptance criteria: CI produces versioned, reproducible deliverables for all active heads and documents deployment procedures.
+
+- [ ] `MIG-095` Add benchmark guardrails for import/section/save paths.
+Acceptance criteria: `Chummer.Benchmarks` includes migration-critical workloads with performance budgets checked in CI.
+
 ## Immediate Sprint Proposal (Next 2 Sprints)
 
 ### Sprint A
 
-1. `MIG-001`
-2. `MIG-002`
-3. `MIG-010`
-4. `MIG-011`
-5. `MIG-020`
-6. `MIG-024`
+1. `MIG-033`
+2. `MIG-040`
+3. `MIG-041`
+4. `MIG-050`
+5. `MIG-051`
+6. `MIG-052`
 
 ### Sprint B
 
-1. `MIG-030`
-2. `MIG-031`
-3. `MIG-050`
-4. `MIG-051`
-5. `MIG-041`
-6. `MIG-052`
+1. `MIG-042`
+2. `MIG-043`
+3. `MIG-060`
+4. `MIG-070`
+5. `MIG-071`
+6. `MIG-090`
 
 ## Definition of Done for Migration Completion
 
@@ -201,3 +221,4 @@ Acceptance criteria: docs describe migrated architecture as current state and li
 3. Presenter decomposition removes monolithic orchestration from `CharacterOverviewPresenter`.
 4. Save, download, export, and print semantics are explicit and independently test-covered.
 5. `Chummer.Web` is removed from runtime-critical flows.
+6. Production path includes authenticated access, observability, and operational guardrails.

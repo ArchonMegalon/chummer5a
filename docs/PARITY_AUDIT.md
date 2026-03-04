@@ -1,36 +1,40 @@
-# Chummer Web Parity Audit
+# Multi-Head Parity Audit
 
-Date: 2026-03-03
-Scope: `Chummer` desktop WinForms vs `Chummer.Web` Linux-native web app
+Date: 2026-03-04
+Scope: shared behavior parity across `Chummer.Blazor` and `Chummer.Avalonia` over `Chummer.Api` + `Chummer.Presentation`
 
 ## Current status
 
-- Backend section parsing APIs are broad and test-covered.
-- Live docker E2E and unit tests are green for existing coverage.
-- UI parity with desktop is partial and currently not close to full feature equivalence.
+- The Docker branch is now a real multi-head migration path.
+- `Chummer.Api` remains a thin host with workspace-focused endpoints.
+- `Chummer.Blazor` and `Chummer.Avalonia` both render shared presenter state.
+- `Chummer.Web` is treated as a temporary legacy-shell parity artifact, not the target UI path.
+- Architecture/compliance tests and Linux docker migration loop are green.
 
-## Major gaps
+## Primary risk
 
-1. Desktop workflow parity is incomplete.
-   - Character creation/career multi-tab deep interactions and modal selection flows are not fully ported.
-2. Menu/tool parity is incomplete.
-   - Several desktop commands are missing or mapped to lightweight placeholder behavior.
-3. Behavioral parity tests are incomplete.
-   - Existing compliance tests mostly verify endpoint/button presence, not full workflow equivalence.
+Execution drift, not architecture shape:
 
-## New audit gate
+1. The shared presenter seam can regress into a monolith if responsibilities are not split aggressively.
+2. Shell/session behavior can drift between heads if command/tab/action enablement is duplicated.
+3. Workspace internals are still XML-shaped and need to be pushed to import/export edges.
+
+## Required parity gates
 
 Run:
 
 ```bash
+bash scripts/migration-loop.sh 1
 bash scripts/audit-ui-parity.sh
+docker compose --profile test run --rm chummer-tests \
+  dotnet test Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0 \
+  --filter "FullyQualifiedName~ArchitectureGuardrailTests|FullyQualifiedName~MigrationComplianceTests|FullyQualifiedName~DualHeadAcceptanceTests"
 ```
-
-This compares a curated desktop command set with web command handlers and fails when required handlers are missing.
 
 ## Migration direction
 
-- Add missing command handlers and connect them to real backend workflows.
-- Replace placeholder handlers with full UX flows.
-- Extend tests from presence checks to behavior-compliance checks.
-- Track implementation slices in `docs/MIGRATION_BACKLOG.md`.
+- Keep one shell contract and one behavior path in `Chummer.Presentation`.
+- Keep both heads thin and renderer-oriented.
+- Complete parity by tab family via `/api/workspaces/{id}/sections/{sectionId}`.
+- Add explicit save/download/export semantics and reduce XML coupling.
+- Track all work as issue-sized slices in `docs/MIGRATION_BACKLOG.md`.
