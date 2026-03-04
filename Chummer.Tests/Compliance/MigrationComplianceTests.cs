@@ -595,6 +595,22 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Runbook_supports_download_manifest_generation_mode()
+    {
+        string runbookPath = FindPath("scripts", "runbook.sh");
+        string runbookText = File.ReadAllText(runbookPath);
+        string generatorPath = FindPath("scripts", "generate-releases-manifest.sh");
+        string generatorText = File.ReadAllText(generatorPath);
+
+        StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-manifest\"");
+        StringAssert.Contains(runbookText, "bash scripts/generate-releases-manifest.sh");
+
+        StringAssert.Contains(generatorText, "Docker/Downloads/releases.json");
+        StringAssert.Contains(generatorText, "Chummer.Portal/downloads/releases.json");
+        StringAssert.Contains(generatorText, "/downloads/files/");
+    }
+
+    [TestMethod]
     public void Dockerfile_tests_includes_blazor_desktop_project_for_container_build_checks()
     {
         string dockerfilePath = FindPath("Docker", "Dockerfile.tests");

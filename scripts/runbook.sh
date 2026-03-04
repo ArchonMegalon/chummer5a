@@ -86,6 +86,10 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "chummer-\\(\\?P<app>avalonia\\|blazor-desktop\\)-" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "id': f'\\{app\\}-\\{rid\\}'" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "RUNBOOK_MODE\" == \"downloads-manifest\"" "scripts/runbook.sh"
+  require_match "bash scripts/generate-releases-manifest.sh" "scripts/runbook.sh"
+  require_match "Docker/Downloads/releases.json" "scripts/generate-releases-manifest.sh"
+  require_match "Chummer.Portal/downloads/releases.json" "scripts/generate-releases-manifest.sh"
 
   if [[ "$status" -ne 0 ]]; then
     echo "desktop-gate checks failed" >&2
@@ -109,6 +113,22 @@ if [[ "$RUNBOOK_MODE" == "desktop-build" ]]; then
   echo
   echo "== desktop build extract =="
   rg -n "Build succeeded|Build FAILED|error CS|error NU|error :" "$DESKTOP_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "downloads-manifest" ]]; then
+  MANIFEST_LOG_FILE="${MANIFEST_LOG_FILE:-/tmp/chummer-downloads-manifest.log}"
+  set +e
+  bash scripts/generate-releases-manifest.sh 2>&1 | tee "$MANIFEST_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== manifest preview =="
+  if [[ -f Docker/Downloads/releases.json ]]; then
+    cat Docker/Downloads/releases.json
+  else
+    echo "Docker/Downloads/releases.json not found"
+  fi
   exit "$status"
 fi
 
