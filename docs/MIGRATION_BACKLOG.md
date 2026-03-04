@@ -112,8 +112,9 @@ Progress: added `Chummer.Tests/Presentation/BlazorShellComponentTests.cs` with b
 Acceptance criteria: E2E passes against dockerized `chummer-api` + `chummer-blazor`.
 Progress: added `scripts/e2e-ui-playwright.cjs`, dockerized `chummer-playwright` test service, and `scripts/e2e-ui.sh` gate execution with end-to-end flow coverage through import/workspace/tab/metadata/command/save.
 
-- [ ] `MIG-043` Wire Blazor component + Playwright suites into CI.
+- [x] `MIG-043` Wire Blazor component + Playwright suites into CI.
 Acceptance criteria: CI publishes failures as blocking checks with reproducible run commands.
+Progress: `docker-architecture-guardrails.yml` now includes explicit `blazor-component-tests` and `blazor-playwright-e2e` jobs, with reproducible script commands (`bash scripts/test-blazor-components.sh`, `bash scripts/e2e-ui.sh`).
 
 ### Phase 5: Rebuild Avalonia head as product shell
 

@@ -30,6 +30,50 @@ jobs:
         if: always()
         run: docker compose down --remove-orphans --volumes
 
+  blazor-component-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore Chummer.Tests/Chummer.Tests.csproj -p:TargetFramework=net10.0
+
+      - name: Blazor component suite
+        run: bash scripts/test-blazor-components.sh
+
+  blazor-playwright-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker info
+        run: |
+          docker version
+          docker compose version
+
+      - name: Start api + blazor stack
+        env:
+          CHUMMER_API_KEY: migration-smoke-key
+        run: docker compose up -d --build --remove-orphans chummer-api chummer-blazor
+
+      - name: Playwright UI E2E
+        env:
+          CHUMMER_API_KEY: migration-smoke-key
+          CHUMMER_UI_PLAYWRIGHT: "1"
+        run: bash scripts/e2e-ui.sh
+
+      - name: Compose cleanup
+        if: always()
+        run: docker compose down --remove-orphans --volumes
+
   linux-headless-tests:
     runs-on: ubuntu-latest
     steps:

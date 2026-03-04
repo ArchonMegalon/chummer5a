@@ -525,6 +525,21 @@ public class MigrationComplianceTests
         StringAssert.Contains(playwrightScriptText, "playwright UI flow completed");
     }
 
+    [TestMethod]
+    public void Ci_wires_blazor_component_and_playwright_jobs_for_phase4_gate()
+    {
+        string componentSuitePath = FindPath("scripts", "test-blazor-components.sh");
+        string componentSuiteText = File.ReadAllText(componentSuitePath);
+        string uiE2ePath = FindPath("scripts", "e2e-ui.sh");
+        string uiE2eText = File.ReadAllText(uiE2ePath);
+
+        StringAssert.Contains(componentSuiteText, "dotnet test Chummer.Tests/Chummer.Tests.csproj");
+        StringAssert.Contains(componentSuiteText, "FullyQualifiedName~BlazorShellComponentTests");
+
+        StringAssert.Contains(uiE2eText, "CHUMMER_UI_PLAYWRIGHT");
+        StringAssert.Contains(uiE2eText, "docker compose --profile test run --rm -T chummer-playwright");
+    }
+
     private static string ToSectionName(string pascalName)
     {
         return pascalName.ToLowerInvariant();
