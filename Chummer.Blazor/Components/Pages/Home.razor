@@ -110,22 +110,12 @@
         </main>
 
         <aside class="right-pane">
-            <section class="panel import">
-                <h2>Import Character File</h2>
-                <InputFile OnChange="ImportFileAsync"
-                           accept=".chum5,.xml,text/xml,application/xml"
-                           disabled="@State.IsBusy" />
-                <p class="hint">File: @(ImportedFileName ?? "(none)")</p>
-                @if (!string.IsNullOrWhiteSpace(ImportError))
-                {
-                    <p class="error">@ImportError</p>
-                }
-                <details>
-                    <summary>Raw XML Debug Import</summary>
-                    <textarea @bind="RawImportXml" rows="8"></textarea>
-                    <button @onclick="ImportRawAsync" disabled="@State.IsBusy">Import Raw XML</button>
-                </details>
-            </section>
+            <ImportPanel IsBusy="State.IsBusy"
+                         ImportedFileName="ImportedFileName"
+                         ImportError="ImportError"
+                         @bind-RawImportXml="RawImportXml"
+                         ImportFileRequested="ImportFileAsync"
+                         ImportRawRequested="ImportRawAsync" />
 
             <CommandPanel State="State"
                           Commands="HeadCommands.ToArray()"
