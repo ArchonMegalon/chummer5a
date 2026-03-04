@@ -83,6 +83,8 @@ Default endpoints:
 
 * API root: `http://127.0.0.1:8088/`
 * API health: `http://127.0.0.1:8088/api/health`
+* API OpenAPI: `http://127.0.0.1:8088/openapi/v1.json`
+* API docs UI: `http://127.0.0.1:8088/docs/`
 * Blazor UI: `http://127.0.0.1:8089/`
 * Blazor health: `http://127.0.0.1:8089/health`
 * Portal landing (profile `portal`): `http://127.0.0.1:8091/`

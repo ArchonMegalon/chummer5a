@@ -4,6 +4,7 @@ set -euo pipefail
 BASE_URL="${CHUMMER_API_BASE_URL:-${CHUMMER_WEB_BASE_URL:-http://127.0.0.1:${CHUMMER_API_PORT:-${CHUMMER_WEB_PORT:-8088}}}}"
 XML_FILE="${1:-Chummer.Tests/TestFiles/BLUE.chum5}"
 API_KEY="${CHUMMER_API_KEY:-}"
+READY_TIMEOUT_SECONDS="${CHUMMER_READY_TIMEOUT_SECONDS:-60}"
 
 curl_json() {
   local method="$1"
@@ -14,6 +15,20 @@ curl_json() {
   else
     curl -fsS -X "$method" "$url" "$@"
   fi
+}
+
+wait_for_service() {
+  local deadline=$((SECONDS + READY_TIMEOUT_SECONDS))
+  echo "waiting for API readiness at $BASE_URL/api/health (timeout: ${READY_TIMEOUT_SECONDS}s)"
+  while (( SECONDS < deadline )); do
+    if curl_json GET "$BASE_URL/api/health" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "API did not become ready within ${READY_TIMEOUT_SECONDS}s" >&2
+  return 1
 }
 
 if [[ ! -f "$XML_FILE" ]]; then
@@ -53,8 +68,19 @@ check_post() {
   echo "ok: $path"
 }
 
+wait_for_service
 curl_json GET "$BASE_URL/api/info" >/dev/null
 curl_json GET "$BASE_URL/api/health" >/dev/null
+openapi_json="$(curl_json GET "$BASE_URL/openapi/v1.json")"
+if ! printf '%s' "$openapi_json" | grep -q '"openapi"'; then
+  echo "OpenAPI document is missing expected marker" >&2
+  exit 1
+fi
+docs_html="$(curl_json GET "$BASE_URL/docs/")"
+if ! printf '%s' "$docs_html" | grep -qi 'swagger-ui'; then
+  echo "Docs UI did not return expected swagger content" >&2
+  exit 1
+fi
 
 echo "service healthy at $BASE_URL"
 

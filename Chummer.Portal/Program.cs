@@ -257,7 +257,7 @@ static string BuildLandingHtml(
     html.AppendLine("      </article>");
     html.AppendLine("      <article class=\"card\">");
     html.AppendLine("        <h2>API Docs</h2>");
-    html.AppendLine("        <p>Planned OpenAPI + Scalar endpoint for external consumers.</p>");
+    html.AppendLine("        <p>Interactive OpenAPI docs for external consumers.</p>");
     html.AppendLine("        <a href=\"/docs/\">Open Docs</a>");
     html.AppendLine("      </article>");
     html.AppendLine("      <article class=\"card\">");
