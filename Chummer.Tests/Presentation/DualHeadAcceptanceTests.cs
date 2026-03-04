@@ -280,6 +280,81 @@ public class DualHeadAcceptanceTests
     }
 
     [TestMethod]
+    public async Task Avalonia_and_Blazor_dialog_workflow_keeps_shell_regions_in_parity()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+        ICommandAvailabilityEvaluator evaluator = new DefaultCommandAvailabilityEvaluator();
+
+        ShellRegionSnapshot avaloniaBeforeDialog;
+        ShellRegionSnapshot avaloniaDialogOpen;
+        ShellRegionSnapshot avaloniaAfterDialogSave;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+            await adapter.InitializeAsync(CancellationToken.None);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
+            await adapter.SelectTabAsync("tab-info", CancellationToken.None);
+            avaloniaBeforeDialog = BuildShellRegionSnapshot(adapter.State, evaluator);
+
+            await adapter.ExecuteCommandAsync("global_settings", CancellationToken.None);
+            avaloniaDialogOpen = BuildShellRegionSnapshot(adapter.State, evaluator);
+
+            await adapter.UpdateDialogFieldAsync("globalTheme", "mint", CancellationToken.None);
+            await adapter.UpdateDialogFieldAsync("globalUiScale", "130", CancellationToken.None);
+            await adapter.ExecuteDialogActionAsync("save", CancellationToken.None);
+            avaloniaAfterDialogSave = BuildShellRegionSnapshot(adapter.State, evaluator);
+        }
+
+        ShellRegionSnapshot blazorBeforeDialog;
+        ShellRegionSnapshot blazorDialogOpen;
+        ShellRegionSnapshot blazorAfterDialogSave;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            CharacterOverviewState Snapshot() => callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+
+            await bridge.InitializeAsync(CancellationToken.None);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
+            await bridge.SelectTabAsync("tab-info", CancellationToken.None);
+            blazorBeforeDialog = BuildShellRegionSnapshot(Snapshot(), evaluator);
+
+            await bridge.ExecuteCommandAsync("global_settings", CancellationToken.None);
+            blazorDialogOpen = BuildShellRegionSnapshot(Snapshot(), evaluator);
+
+            await bridge.UpdateDialogFieldAsync("globalTheme", "mint", CancellationToken.None);
+            await bridge.UpdateDialogFieldAsync("globalUiScale", "130", CancellationToken.None);
+            await bridge.ExecuteDialogActionAsync("save", CancellationToken.None);
+            blazorAfterDialogSave = BuildShellRegionSnapshot(Snapshot(), evaluator);
+        }
+
+        AssertShellRegionsEqual(avaloniaBeforeDialog, blazorBeforeDialog, "before-dialog");
+        AssertShellRegionsEqual(avaloniaDialogOpen, blazorDialogOpen, "dialog-open");
+        AssertShellRegionsEqual(avaloniaAfterDialogSave, blazorAfterDialogSave, "after-dialog-save");
+
+        Assert.IsTrue(avaloniaBeforeDialog.OpenWorkspaceCount >= 1);
+        Assert.AreEqual(avaloniaBeforeDialog.OpenWorkspaceCount, avaloniaDialogOpen.OpenWorkspaceCount);
+        Assert.AreEqual(avaloniaDialogOpen.OpenWorkspaceCount, avaloniaAfterDialogSave.OpenWorkspaceCount);
+        Assert.IsTrue(blazorBeforeDialog.OpenWorkspaceCount >= 1);
+        Assert.AreEqual(blazorBeforeDialog.OpenWorkspaceCount, blazorDialogOpen.OpenWorkspaceCount);
+        Assert.AreEqual(blazorDialogOpen.OpenWorkspaceCount, blazorAfterDialogSave.OpenWorkspaceCount);
+
+        Assert.AreEqual("dialog.global_settings", avaloniaDialogOpen.DialogId);
+        Assert.AreEqual("dialog.global_settings", blazorDialogOpen.DialogId);
+        Assert.AreEqual("Global Settings", avaloniaDialogOpen.DialogTitle);
+        Assert.AreEqual("Global Settings", blazorDialogOpen.DialogTitle);
+        Assert.IsNull(avaloniaAfterDialogSave.DialogId);
+        Assert.IsNull(blazorAfterDialogSave.DialogId);
+        Assert.AreEqual("mint", avaloniaAfterDialogSave.Theme);
+        Assert.AreEqual("mint", blazorAfterDialogSave.Theme);
+        Assert.AreEqual(130, avaloniaAfterDialogSave.UiScalePercent);
+        Assert.AreEqual(130, blazorAfterDialogSave.UiScalePercent);
+    }
+
+    [TestMethod]
     public async Task Avalonia_and_Blazor_workspace_action_summary_matches()
     {
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
@@ -504,6 +579,82 @@ public class DualHeadAcceptanceTests
         Assert.AreEqual("Avalonia Two", avaloniaAfterSwitchToSecond.Profile?.Name);
         Assert.AreEqual("Blazor Two", blazorAfterSwitchToSecond.Profile?.Name);
     }
+
+    private static ShellRegionSnapshot BuildShellRegionSnapshot(CharacterOverviewState state, ICommandAvailabilityEvaluator evaluator)
+    {
+        string[] enabledCommandIds = state.Commands
+            .Where(command => evaluator.IsCommandEnabled(command, state))
+            .Select(command => command.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+
+        string[] enabledTabIds = state.NavigationTabs
+            .Where(tab => evaluator.IsNavigationTabEnabled(tab, state))
+            .Select(tab => tab.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray();
+
+        string[] dialogFieldIds = state.ActiveDialog?.Fields
+            .Select(field => field.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray() ?? Array.Empty<string>();
+
+        string[] dialogActionIds = state.ActiveDialog?.Actions
+            .Select(action => action.Id)
+            .OrderBy(id => id, StringComparer.Ordinal)
+            .ToArray() ?? Array.Empty<string>();
+
+        return new ShellRegionSnapshot(
+            HasActiveWorkspace: state.WorkspaceId is not null,
+            OpenWorkspaceCount: state.Session.OpenWorkspaces.Count,
+            ActiveTabId: state.ActiveTabId,
+            Theme: state.Preferences.Theme,
+            UiScalePercent: state.Preferences.UiScalePercent,
+            EnabledCommandIds: enabledCommandIds,
+            EnabledTabIds: enabledTabIds,
+            DialogId: state.ActiveDialog?.Id,
+            DialogTitle: state.ActiveDialog?.Title,
+            DialogFieldIds: dialogFieldIds,
+            DialogActionIds: dialogActionIds);
+    }
+
+    private static void AssertShellRegionsEqual(ShellRegionSnapshot avalonia, ShellRegionSnapshot blazor, string phase)
+    {
+        Assert.AreEqual(avalonia.HasActiveWorkspace, blazor.HasActiveWorkspace, $"Active workspace presence mismatch at phase '{phase}'.");
+        Assert.AreEqual(avalonia.ActiveTabId, blazor.ActiveTabId, $"Active tab mismatch at phase '{phase}'.");
+        Assert.AreEqual(avalonia.DialogId, blazor.DialogId, $"Dialog id mismatch at phase '{phase}'.");
+        Assert.AreEqual(avalonia.DialogTitle, blazor.DialogTitle, $"Dialog title mismatch at phase '{phase}'.");
+
+        CollectionAssert.AreEquivalent(
+            avalonia.EnabledCommandIds,
+            blazor.EnabledCommandIds,
+            $"Enabled command ids mismatch at phase '{phase}'.");
+        CollectionAssert.AreEquivalent(
+            avalonia.EnabledTabIds,
+            blazor.EnabledTabIds,
+            $"Enabled tab ids mismatch at phase '{phase}'.");
+        CollectionAssert.AreEquivalent(
+            avalonia.DialogFieldIds,
+            blazor.DialogFieldIds,
+            $"Dialog field ids mismatch at phase '{phase}'.");
+        CollectionAssert.AreEquivalent(
+            avalonia.DialogActionIds,
+            blazor.DialogActionIds,
+            $"Dialog action ids mismatch at phase '{phase}'.");
+    }
+
+    private sealed record ShellRegionSnapshot(
+        bool HasActiveWorkspace,
+        int OpenWorkspaceCount,
+        string? ActiveTabId,
+        string? Theme,
+        int UiScalePercent,
+        string[] EnabledCommandIds,
+        string[] EnabledTabIds,
+        string? DialogId,
+        string? DialogTitle,
+        string[] DialogFieldIds,
+        string[] DialogActionIds);
 
     private static HttpClient CreateClient()
     {

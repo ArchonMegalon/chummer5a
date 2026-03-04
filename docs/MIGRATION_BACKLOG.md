@@ -130,8 +130,9 @@ Progress: switched `MainWindow.axaml` controls to `x:Name` and removed `FindCont
 Acceptance criteria: tests run in CI without display server dependencies.
 Progress: added `AvaloniaHeadlessSmokeTests` scaffold and compliance coverage; active execution is currently preprocessor-disabled due a reproducible Linux/container headless deadlock discovered during migration-loop validation.
 
-- [ ] `MIG-053` Add dual-head parity tests focused on shell regions and dialog workflows, not only presenter state snapshots.
+- [x] `MIG-053` Add dual-head parity tests focused on shell regions and dialog workflows, not only presenter state snapshots.
 Acceptance criteria: parity tests fail when one head renders divergent shell affordances for the same state.
+Progress: added `Avalonia_and_Blazor_dialog_workflow_keeps_shell_regions_in_parity` in `DualHeadAcceptanceTests`, comparing enabled command/tab shells, open-workspace shell region, and dialog field/action surfaces before, during, and after a shared dialog workflow.
 
 ### Phase 6: Migrate tab families through workspace sections
 
