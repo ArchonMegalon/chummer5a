@@ -33,7 +33,8 @@ public class ArchitectureGuardrailTests
         "Chummer.Blazor",
         "Chummer.Blazor.Desktop",
         "Chummer.Avalonia",
-        "Chummer.Avalonia.Browser"
+        "Chummer.Avalonia.Browser",
+        "Chummer.Portal"
     };
 
     private static readonly string[] ForbiddenUiHeadLayerUsings =

@@ -693,6 +693,17 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Architecture_guardrails_treat_portal_as_ui_head()
+    {
+        string guardrailPath = FindPath("Chummer.Tests", "Compliance", "ArchitectureGuardrailTests.cs");
+        string guardrailText = File.ReadAllText(guardrailPath);
+
+        StringAssert.Contains(guardrailText, "private static readonly string[] UiHeadProjects");
+        StringAssert.Contains(guardrailText, "\"Chummer.Portal\"");
+        StringAssert.Contains(guardrailText, "Ui_head_projects_do_not_import_non_presentation_layers");
+    }
+
+    [TestMethod]
     public void Runbook_supports_download_manifest_generation_mode()
     {
         string runbookPath = FindPath("scripts", "runbook.sh");
