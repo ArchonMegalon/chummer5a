@@ -15,7 +15,7 @@ Chummer is a character creation and management application for the tabletop RPG 
 This repository currently has two active tracks:
 
 * **Legacy path**: the WinForms desktop app (`Chummer`) that continues to serve as compatibility reference and regression oracle.
-* **Modern migration path (Docker branch)**: API + shared presentation seam + two UI heads (`Chummer.Blazor`, `Chummer.Avalonia`).
+* **Modern migration path (Docker branch)**: API + shared presentation seam + gateway + multi-head UI stack (`Chummer.Blazor`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`).
 
 ## Docker Branch Status
 
@@ -23,7 +23,8 @@ The `Docker` branch is an active migration branch and no longer follows a WinFor
 
 * `Chummer.Api` is the HTTP host for headless services and workspace routes.
 * `Chummer.Application`, `Chummer.Contracts`, `Chummer.Infrastructure`, and `Chummer.Presentation` provide the shared behavior seam.
-* `Chummer.Blazor` and `Chummer.Avalonia` are the two UI heads over the same presentation/API path.
+* `Chummer.Blazor` is the browser/web head, `Chummer.Avalonia` is the native desktop head, and `Chummer.Blazor.Desktop` is the desktop webview host.
+* `Chummer.Portal` is the single public gateway surface and `Chummer.Avalonia.Browser` provides the browser-hosted `/avalonia` route behind the portal profile.
 * `Chummer.Web` is currently retained as a temporary legacy-shell parity artifact during migration.
 * Runtime compose flows target `chummer-api` and `chummer-blazor`; no `chummer-web` service is part of the active product path.
 * Migration execution backlog: [`docs/MIGRATION_BACKLOG.md`](docs/MIGRATION_BACKLOG.md).
@@ -161,7 +162,9 @@ Desktop artifact workflow:
 * `.github/workflows/desktop-downloads-matrix.yml` publishes both Avalonia and Blazor desktop artifacts for multiple RIDs and generates `releases.json` with SHA-256 checksums.
 * The workflow uploads a `desktop-download-bundle` artifact in portal layout (`releases.json` + `files/*`) for direct sync into mounted portal downloads storage.
 * Desktop heads default to in-process runtime (`CHUMMER_DESKTOP_CLIENT_MODE=inprocess` by default); set `CHUMMER_DESKTOP_CLIENT_MODE=http` to route desktop calls through `CHUMMER_API_BASE_URL`/`CHUMMER_API_KEY`.
+* Push trigger coverage includes portal/download publication paths (`Chummer.Portal/**`, `scripts/generate-releases-manifest.sh`, `scripts/publish-download-bundle.sh`) so download-surface changes run the same artifact pipeline.
 * Automatic deployment: set repository variable `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` and Docker-branch pushes will publish the bundle using `scripts/publish-download-bundle.sh`.
+* `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` is resolved on the workflow runner filesystem; automatic deployment requires a runner that can write to the portal downloads storage (for example, self-hosted runner with shared mount/network volume).
 * Manual deployment remains available through workflow dispatch with `deploy_portal_downloads=true`.
 
 ## Legacy WinForms Requirements

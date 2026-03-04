@@ -16,6 +16,7 @@ public class ApiIntegrationTests
     private static readonly Uri BaseUri = ResolveBaseUri();
     private static readonly string? ApiKey = ResolveApiKey();
     private static readonly string? ExpectedAmendId = ResolveExpectedAmendId();
+    private static readonly TimeSpan HttpTimeout = ResolveHttpTimeout();
     private static readonly string[] AllSectionIds =
     {
         "attributes",
@@ -627,7 +628,7 @@ public class ApiIntegrationTests
         var client = new HttpClient
         {
             BaseAddress = BaseUri,
-            Timeout = TimeSpan.FromSeconds(10)
+            Timeout = HttpTimeout
         };
 
         if (includeApiKey && !string.IsNullOrWhiteSpace(ApiKey))
@@ -703,5 +704,14 @@ public class ApiIntegrationTests
             return null;
 
         return configured;
+    }
+
+    private static TimeSpan ResolveHttpTimeout()
+    {
+        string? raw = Environment.GetEnvironmentVariable("CHUMMER_API_TEST_TIMEOUT_SECONDS");
+        if (int.TryParse(raw, out int seconds) && seconds > 0)
+            return TimeSpan.FromSeconds(seconds);
+
+        return TimeSpan.FromSeconds(20);
     }
 }

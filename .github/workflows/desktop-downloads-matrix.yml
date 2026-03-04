@@ -17,8 +17,11 @@ on:
       - 'Chummer.Blazor.Desktop/**'
       - 'Chummer.Blazor/**'
       - 'Chummer.Contracts/**'
+      - 'Chummer.Portal/**'
       - 'Chummer.Presentation/**'
       - 'global.json'
+      - 'scripts/generate-releases-manifest.sh'
+      - 'scripts/publish-download-bundle.sh'
 
 permissions:
   contents: read

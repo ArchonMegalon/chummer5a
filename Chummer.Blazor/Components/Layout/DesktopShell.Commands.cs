@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Presentation.Shell;
 using Microsoft.AspNetCore.Components.Web;
 
 namespace Chummer.Blazor.Components.Layout;

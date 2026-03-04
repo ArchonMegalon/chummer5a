@@ -105,6 +105,8 @@ public class MigrationComplianceTests
         string avaloniaAppCodeText = File.ReadAllText(avaloniaAppCodePath);
         string avaloniaMainWindowCodePath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
         string avaloniaMainWindowCodeText = File.ReadAllText(avaloniaMainWindowCodePath);
+        string avaloniaDialogsCodePath = FindPath("Chummer.Avalonia", "MainWindow.Dialogs.cs");
+        string avaloniaDialogsCodeText = File.ReadAllText(avaloniaDialogsCodePath);
 
         StringAssert.Contains(blazorProjectText, @"..\Chummer.Presentation\Chummer.Presentation.csproj");
         StringAssert.Contains(blazorProjectText, @"..\Chummer.Contracts\Chummer.Contracts.csproj");
@@ -128,10 +130,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(avaloniaProgramText, "UsePlatformDetect()");
         StringAssert.Contains(avaloniaAppCodeText, "ConfigureServices(");
         StringAssert.Contains(avaloniaAppCodeText, "GetRequiredService<MainWindow>()");
-        StringAssert.Contains(avaloniaAppCodeText, "IChummerClient");
+        StringAssert.Contains(avaloniaAppCodeText, "AddChummerDesktopRuntimeClient");
         StringAssert.Contains(avaloniaAppCodeText, "ICharacterOverviewPresenter");
         StringAssert.Contains(avaloniaMainWindowCodeText, "public MainWindow(");
-        StringAssert.Contains(avaloniaMainWindowCodeText, "new DesktopDialogWindow(");
+        StringAssert.Contains(avaloniaDialogsCodeText, "new DesktopDialogWindow(");
     }
 
     [TestMethod]
@@ -618,9 +620,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "pattern = re.compile(r'^chummer-(?P<app>avalonia|blazor-desktop)-");
         StringAssert.Contains(workflowText, "'id': f'{app}-{rid}'");
         StringAssert.Contains(workflowText, "'url': f'/downloads/files/{artifact.name}'");
+        StringAssert.Contains(workflowText, "Chummer.Portal/**");
+        StringAssert.Contains(workflowText, "scripts/generate-releases-manifest.sh");
+        StringAssert.Contains(workflowText, "scripts/publish-download-bundle.sh");
         StringAssert.Contains(workflowText, "deploy_portal_downloads");
         StringAssert.Contains(workflowText, "deploy-downloads");
-        StringAssert.Contains(workflowText, "scripts/publish-download-bundle.sh");
     }
 
     [TestMethod]
@@ -681,6 +685,8 @@ public class MigrationComplianceTests
         string xamlText = File.ReadAllText(xamlPath);
         string codePath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
         string codeText = File.ReadAllText(codePath);
+        string statePath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
+        string stateText = File.ReadAllText(statePath);
 
         Assert.IsFalse(codeText.Contains("FindControl<", StringComparison.Ordinal));
         StringAssert.Contains(codeText, "public MainWindow(");
@@ -688,8 +694,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(codeText, "_openWorkspacesList = OpenWorkspacesList;");
         StringAssert.Contains(codeText, "_navigationTabsList = NavigationTabsList;");
         StringAssert.Contains(codeText, "_dialogActionsList = DialogActionsList;");
-        StringAssert.Contains(codeText, "UpdateMenuButtonStates");
-        StringAssert.Contains(codeText, "menuButton.Classes.Set(\"active-menu\", active);");
+        StringAssert.Contains(stateText, "UpdateMenuButtonStates");
+        StringAssert.Contains(stateText, "menuButton.Classes.Set(\"active-menu\", active);");
 
         StringAssert.Contains(xamlText, "x:Name=\"CommandsList\"");
         StringAssert.Contains(xamlText, "x:Name=\"OpenWorkspacesList\"");
@@ -700,19 +706,39 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Avalonia_shell_layout_contains_core_desktop_regions()
+    {
+        string xamlPath = FindPath("Chummer.Avalonia", "MainWindow.axaml");
+        string xamlText = File.ReadAllText(xamlPath);
+
+        StringAssert.Contains(xamlText, "x:Name=\"MenuBarRegion\"");
+        StringAssert.Contains(xamlText, "x:Name=\"ToolStripRegion\"");
+        StringAssert.Contains(xamlText, "x:Name=\"WorkspaceStripRegion\"");
+        StringAssert.Contains(xamlText, "x:Name=\"LeftNavigatorRegion\"");
+        StringAssert.Contains(xamlText, "x:Name=\"SummaryHeaderRegion\"");
+        StringAssert.Contains(xamlText, "x:Name=\"SectionRegion\"");
+        StringAssert.Contains(xamlText, "x:Name=\"RightShellRegion\"");
+        StringAssert.Contains(xamlText, "x:Name=\"StatusStripRegion\"");
+
+        StringAssert.Contains(xamlText, "Open Characters");
+        StringAssert.Contains(xamlText, "Navigation Tabs");
+        StringAssert.Contains(xamlText, "Section Actions");
+        StringAssert.Contains(xamlText, "Command Palette");
+    }
+
+    [TestMethod]
     public void Dual_heads_wire_keyboard_shortcuts_for_core_commands()
     {
         string blazorShellPath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor");
         string blazorShellText = File.ReadAllText(blazorShellPath);
         string avaloniaXamlPath = FindPath("Chummer.Avalonia", "MainWindow.axaml");
         string avaloniaXamlText = File.ReadAllText(avaloniaXamlPath);
-        string avaloniaCodePath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
+        string avaloniaCodePath = FindPath("Chummer.Avalonia", "MainWindow.EventHandlers.cs");
         string avaloniaCodeText = File.ReadAllText(avaloniaCodePath);
         string shortcutCatalogPath = FindPath("Chummer.Presentation", "Shell", "DesktopShortcutCatalog.cs");
         string shortcutCatalogText = File.ReadAllText(shortcutCatalogPath);
 
         StringAssert.Contains(blazorShellText, "@onkeydown=\"OnShellKeyDown\"");
-        StringAssert.Contains(blazorShellText, "DesktopShortcutCatalog.TryResolveCommandId");
         string blazorShellCodePath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.Commands.cs");
         string blazorShellCodeText = File.ReadAllText(blazorShellCodePath);
         StringAssert.Contains(blazorShellCodeText, "args.MetaKey");

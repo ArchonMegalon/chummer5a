@@ -2,6 +2,8 @@ using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Workspaces;
+using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 
 namespace Chummer.Avalonia;

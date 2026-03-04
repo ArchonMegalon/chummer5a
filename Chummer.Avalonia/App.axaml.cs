@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Chummer.Avalonia;
 
-public partial class App : Application
+public partial class App : global::Avalonia.Application
 {
     private ServiceProvider? _serviceProvider;
 

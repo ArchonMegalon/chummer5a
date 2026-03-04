@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Presentation.Overview;
 
 namespace Chummer.Avalonia;
 
