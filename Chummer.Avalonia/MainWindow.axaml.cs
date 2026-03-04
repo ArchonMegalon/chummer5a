@@ -113,7 +113,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        await _adapter.ImportAsync(Encoding.UTF8.GetBytes(importText), CancellationToken.None);
+        await RunUiActionAsync(
+            () => _adapter.ImportAsync(Encoding.UTF8.GetBytes(importText), CancellationToken.None),
+            "import debug XML");
     }
 
     private async void ImportFileButton_OnClick(object? sender, RoutedEventArgs e)
@@ -124,37 +126,44 @@ public partial class MainWindow : Window
             return;
         }
 
-        IReadOnlyList<IStorageFile> files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        await RunUiActionAsync(async () =>
         {
-            Title = "Open Character File",
-            AllowMultiple = false,
-            FileTypeFilter =
-            [
-                new FilePickerFileType("Chummer Character Files")
-                {
-                    Patterns = ["*.chum5", "*.xml"]
-                }
-            ]
-        });
+            IReadOnlyList<IStorageFile> files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Open Character File",
+                AllowMultiple = false,
+                FileTypeFilter =
+                [
+                    new FilePickerFileType("Chummer Character Files")
+                    {
+                        Patterns = ["*.chum5", "*.xml"]
+                    }
+                ]
+            });
 
-        IStorageFile? file = files.FirstOrDefault();
-        if (file is null)
-            return;
+            IStorageFile? file = files.FirstOrDefault();
+            if (file is null)
+                return;
 
-        await using Stream stream = await file.OpenReadAsync();
-        using MemoryStream memory = new();
-        await stream.CopyToAsync(memory, CancellationToken.None);
-        await _adapter.ImportAsync(memory.ToArray(), CancellationToken.None);
+            await using Stream stream = await file.OpenReadAsync();
+            using MemoryStream memory = new();
+            await stream.CopyToAsync(memory, CancellationToken.None);
+            await _adapter.ImportAsync(memory.ToArray(), CancellationToken.None);
+        }, "import character file");
     }
 
     private async void OnOpened(object? sender, EventArgs e)
     {
-        await _adapter.InitializeAsync(CancellationToken.None);
+        await RunUiActionAsync(
+            () => _adapter.InitializeAsync(CancellationToken.None),
+            "initialize desktop shell");
     }
 
     private async void SaveButton_OnClick(object? sender, RoutedEventArgs e)
     {
-        await _presenter.SaveAsync(CancellationToken.None);
+        await RunUiActionAsync(
+            () => _presenter.SaveAsync(CancellationToken.None),
+            "save workspace");
     }
 
     private void RefreshState()
@@ -260,7 +269,7 @@ public partial class MainWindow : Window
         SyncDialogWindow(state);
     }
 
-    private async void MenuButton_OnClick(object? sender, RoutedEventArgs e)
+    private void MenuButton_OnClick(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button button || button.Content is null)
             return;
@@ -278,7 +287,9 @@ public partial class MainWindow : Window
         if (_commandsList.SelectedItem is not CommandListItem command || !command.Enabled)
             return;
 
-        await _adapter.ExecuteCommandAsync(command.Id, CancellationToken.None);
+        await RunUiActionAsync(
+            () => _adapter.ExecuteCommandAsync(command.Id, CancellationToken.None),
+            $"execute command '{command.Id}'");
         _suppressCommandSelectionEvent = true;
         _commandsList.SelectedItem = null;
         _suppressCommandSelectionEvent = false;
@@ -292,7 +303,9 @@ public partial class MainWindow : Window
         if (_navigationTabsList.SelectedItem is not TabListItem tab || !tab.Enabled)
             return;
 
-        await _adapter.SelectTabAsync(tab.Id, CancellationToken.None);
+        await RunUiActionAsync(
+            () => _adapter.SelectTabAsync(tab.Id, CancellationToken.None),
+            $"select tab '{tab.Id}'");
     }
 
     private async void SectionActionsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -303,7 +316,9 @@ public partial class MainWindow : Window
         if (_sectionActionsList.SelectedItem is not SectionActionListItem action)
             return;
 
-        await _adapter.ExecuteWorkspaceActionAsync(action.Action, CancellationToken.None);
+        await RunUiActionAsync(
+            () => _adapter.ExecuteWorkspaceActionAsync(action.Action, CancellationToken.None),
+            $"execute workspace action '{action.Id}'");
         _suppressSectionActionSelectionEvent = true;
         _sectionActionsList.SelectedItem = null;
         _suppressSectionActionSelectionEvent = false;
@@ -317,7 +332,9 @@ public partial class MainWindow : Window
         if (_uiControlsList.SelectedItem is not UiControlListItem control)
             return;
 
-        await _adapter.HandleUiControlAsync(control.Id, CancellationToken.None);
+        await RunUiActionAsync(
+            () => _adapter.HandleUiControlAsync(control.Id, CancellationToken.None),
+            $"handle desktop control '{control.Id}'");
         _suppressUiControlSelectionEvent = true;
         _uiControlsList.SelectedItem = null;
         _suppressUiControlSelectionEvent = false;
@@ -331,7 +348,9 @@ public partial class MainWindow : Window
         if (_dialogActionsList.SelectedItem is not DialogActionListItem action)
             return;
 
-        await _adapter.ExecuteDialogActionAsync(action.Id, CancellationToken.None);
+        await RunUiActionAsync(
+            () => _adapter.ExecuteDialogActionAsync(action.Id, CancellationToken.None),
+            $"execute dialog action '{action.Id}'");
         _suppressDialogActionSelectionEvent = true;
         _dialogActionsList.SelectedItem = null;
         _suppressDialogActionSelectionEvent = false;
@@ -384,6 +403,25 @@ public partial class MainWindow : Window
         if (ReferenceEquals(sender, _dialogWindow))
         {
             _dialogWindow = null;
+        }
+    }
+
+    private async Task RunUiActionAsync(Func<Task> operation, string operationName)
+    {
+        try
+        {
+            await operation();
+        }
+        catch (OperationCanceledException)
+        {
+            // UI-triggered operations are best-effort; canceled actions should not fault the window thread.
+        }
+        catch (Exception ex)
+        {
+            _statusText.Text = $"State: error - {operationName} failed: {ex.Message}";
+            _noticeText.Text = $"Notice: {operationName} failed.";
+            _serviceStateText.Text = "Service: error";
+            _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
         }
     }
 

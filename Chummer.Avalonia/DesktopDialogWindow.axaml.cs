@@ -136,18 +136,22 @@ public partial class DesktopDialogWindow : Window
                 if (_adapter is null)
                     return;
 
-                await _adapter.ExecuteDialogActionAsync(action.Id, CancellationToken.None);
+                await ExecuteSafeAsync(
+                    () => _adapter.ExecuteDialogActionAsync(action.Id, CancellationToken.None),
+                    $"execute action '{action.Id}'");
             };
             _dialogActionsPanel.Children.Add(button);
         }
     }
 
-    private void QueueDialogFieldUpdate(string fieldId, string value)
+    private async void QueueDialogFieldUpdate(string fieldId, string value)
     {
         if (_adapter is null)
             return;
 
-        _ = _adapter.UpdateDialogFieldAsync(fieldId, value, CancellationToken.None);
+        await ExecuteSafeAsync(
+            () => _adapter.UpdateDialogFieldAsync(fieldId, value, CancellationToken.None),
+            $"update field '{fieldId}'");
     }
 
     private void OnClosing(object? sender, WindowClosingEventArgs e)
@@ -158,7 +162,9 @@ public partial class DesktopDialogWindow : Window
         if (_adapter is null)
             return;
 
-        _ = _adapter.CloseDialogAsync(CancellationToken.None);
+        _ = ExecuteSafeAsync(
+            () => _adapter.CloseDialogAsync(CancellationToken.None),
+            "close dialog");
     }
 
     private static bool ParseCheckbox(string value)
@@ -169,5 +175,22 @@ public partial class DesktopDialogWindow : Window
         return string.Equals(value, "1", StringComparison.Ordinal)
             || string.Equals(value, "on", StringComparison.OrdinalIgnoreCase)
             || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task ExecuteSafeAsync(Func<Task> action, string operationName)
+    {
+        try
+        {
+            await action();
+        }
+        catch (OperationCanceledException)
+        {
+            // Dialog operations are best-effort while users interact with fields and buttons.
+        }
+        catch (Exception ex)
+        {
+            _dialogMessageText.Text = $"Unable to {operationName}: {ex.Message}";
+            _dialogMessageText.IsVisible = true;
+        }
     }
 }
