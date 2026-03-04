@@ -301,25 +301,4 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import json
-          import os
-          import urllib.request
-
-          raw_url = (os.environ.get("CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL") or "").strip()
-          if not raw_url:
-              raise SystemExit("CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL was empty.")
-
-          manifest_url = raw_url.rstrip("/")
-          if not manifest_url.endswith("/downloads/releases.json"):
-              manifest_url = f"{manifest_url}/downloads/releases.json"
-
-          with urllib.request.urlopen(manifest_url, timeout=30) as response:
-              manifest = json.load(response)
-
-          downloads = manifest.get("downloads") or []
-          if not isinstance(downloads, list) or not downloads:
-              raise SystemExit(f"Deployed manifest at {manifest_url} has no downloads.")
-
-          print(f"Verified deployed manifest at {manifest_url} with {len(downloads)} artifact(s).")
-          PY
+          bash scripts/verify-releases-manifest.sh "$CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL"

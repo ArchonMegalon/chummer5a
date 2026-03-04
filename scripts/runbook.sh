@@ -185,6 +185,23 @@ if [[ "$RUNBOOK_MODE" == "downloads-sync" ]]; then
   exit "$status"
 fi
 
+if [[ "$RUNBOOK_MODE" == "downloads-verify" ]]; then
+  DOWNLOADS_VERIFY_TARGET="${DOWNLOADS_VERIFY_TARGET:-${RUNBOOK_ARG_FRAMEWORK:-${CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL:-}}}"
+  VERIFY_LOG_FILE="${VERIFY_LOG_FILE:-/tmp/chummer-downloads-verify.log}"
+  if [[ -z "$DOWNLOADS_VERIFY_TARGET" ]]; then
+    echo "Set DOWNLOADS_VERIFY_TARGET, CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL, or pass a URL/path as arg #2." >&2
+    exit 1
+  fi
+  set +e
+  bash scripts/verify-releases-manifest.sh "$DOWNLOADS_VERIFY_TARGET" 2>&1 | tee "$VERIFY_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== manifest verification summary =="
+  rg -n "Verified manifest|has no downloads|not found|empty" "$VERIFY_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
 if [[ "$RUNBOOK_MODE" == "docker-tests" ]]; then
   TEST_PROJECT="${TEST_PROJECT:-Chummer.Tests/Chummer.Tests.csproj}"
   TEST_FRAMEWORK="${TEST_FRAMEWORK:-${RUNBOOK_ARG_FRAMEWORK:-net10.0}}"

@@ -683,7 +683,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "deploy-downloads");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
         StringAssert.Contains(workflowText, "Verify deployed portal manifest has artifacts");
-        StringAssert.Contains(workflowText, "/downloads/releases.json");
+        StringAssert.Contains(workflowText, "scripts/verify-releases-manifest.sh");
     }
 
     [TestMethod]
@@ -732,9 +732,11 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-manifest\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync\"");
+        StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-verify\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"amend-checksums\"");
         StringAssert.Contains(runbookText, "bash scripts/generate-releases-manifest.sh");
         StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle.sh");
+        StringAssert.Contains(runbookText, "bash scripts/verify-releases-manifest.sh");
         StringAssert.Contains(runbookText, "bash scripts/validate-amend-manifests.sh");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_BUILD");
         StringAssert.Contains(runbookText, "docker compose run $build_arg --rm chummer-tests");
@@ -746,6 +748,12 @@ public class MigrationComplianceTests
         StringAssert.Contains(publisherText, "Expected desktop-download-bundle layout");
         StringAssert.Contains(publisherText, "generate-releases-manifest.sh");
         StringAssert.Contains(publisherText, "Published ${#artifacts[@]} desktop artifact(s)");
+
+        string verifierPath = FindPath("scripts", "verify-releases-manifest.sh");
+        string verifierText = File.ReadAllText(verifierPath);
+        StringAssert.Contains(verifierText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(verifierText, "/downloads/releases.json");
+        StringAssert.Contains(verifierText, "has no downloads");
 
         StringAssert.Contains(amendValidatorText, "checksums map is required");
         StringAssert.Contains(amendValidatorText, "missing checksum entry");
