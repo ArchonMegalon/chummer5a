@@ -301,6 +301,7 @@
     private string MetadataAlias { get; set; } = string.Empty;
     private string MetadataNotes { get; set; } = string.Empty;
     private string _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
+    private bool _isDisposed;
 
     private CharacterOverviewState State => _bridge?.Current ?? Presenter.State;
 
@@ -324,6 +325,9 @@
     {
         _bridge = new CharacterOverviewStateBridge(Presenter, state =>
         {
+            if (_isDisposed)
+                return;
+
             _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
             _ = InvokeAsync(StateHasChanged);
         });
@@ -493,6 +497,7 @@
 
     public void Dispose()
     {
+        _isDisposed = true;
         _bridge?.Dispose();
     }
 }
