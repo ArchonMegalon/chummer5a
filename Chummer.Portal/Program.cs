@@ -9,11 +9,13 @@ string blazorProxyBaseUrl = ResolveSetting("Portal:BlazorProxyBaseUrl", "CHUMMER
 string apiBaseUrl = ResolveSetting("Portal:ApiBaseUrl", "CHUMMER_PORTAL_API_URL", "http://chummer-api:8080/");
 string docsBaseUrl = ResolveSetting("Portal:DocsBaseUrl", "CHUMMER_PORTAL_DOCS_URL", "http://chummer-api:8080/docs/");
 string downloadsBaseUrl = ResolveSetting("Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "https://github.com/chummer5a/chummer5a/releases/latest");
+string downloadsProxyBaseUrl = ResolveSetting("Portal:DownloadsProxyBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_PROXY_URL", string.Empty);
 string releaseManifestPath = ResolveSetting("Portal:ReleaseManifestPath", "CHUMMER_PORTAL_RELEASES_FILE", "downloads/releases.json");
 string releaseFilesPath = ResolveSetting("Portal:ReleaseFilesPath", "CHUMMER_PORTAL_RELEASES_DIR", string.Empty);
 string resolvedManifestPath = ResolveManifestPath(releaseManifestPath);
 string resolvedReleaseFilesPath = ResolveReleaseFilesPath(releaseFilesPath, resolvedManifestPath);
 bool useBlazorProxy = !string.IsNullOrWhiteSpace(blazorProxyBaseUrl);
+bool useDownloadsProxy = !string.IsNullOrWhiteSpace(downloadsProxyBaseUrl);
 
 var proxyRoutes = new List<RouteConfig>
 {
@@ -77,6 +79,31 @@ if (useBlazorProxy)
     });
 }
 
+if (useDownloadsProxy)
+{
+    proxyRoutes.Add(new RouteConfig
+    {
+        RouteId = "portal-downloads",
+        ClusterId = "downloads-cluster",
+        Match = new RouteMatch
+        {
+            Path = "/downloads/{**catch-all}"
+        }
+    });
+
+    proxyClusters.Add(new ClusterConfig
+    {
+        ClusterId = "downloads-cluster",
+        Destinations = new Dictionary<string, DestinationConfig>(StringComparer.Ordinal)
+        {
+            ["primary"] = new DestinationConfig
+            {
+                Address = NormalizeProxyAddress(downloadsProxyBaseUrl)
+            }
+        }
+    });
+}
+
 builder.Services.AddReverseProxy()
     .LoadFromMemory(proxyRoutes, proxyClusters);
 
@@ -90,7 +117,15 @@ app.MapGet("/health", () => Results.Ok(new
 }));
 
 app.MapGet("/", () => Results.Content(
-    BuildLandingHtml(blazorBaseUrl, blazorProxyBaseUrl, useBlazorProxy, apiBaseUrl, docsBaseUrl, downloadsBaseUrl),
+    BuildLandingHtml(
+        blazorBaseUrl,
+        blazorProxyBaseUrl,
+        useBlazorProxy,
+        apiBaseUrl,
+        docsBaseUrl,
+        downloadsBaseUrl,
+        downloadsProxyBaseUrl,
+        useDownloadsProxy),
     "text/html; charset=utf-8"));
 
 app.MapGet("/downloads/releases.json", () => Results.Json(
@@ -107,17 +142,20 @@ if (!useBlazorProxy)
         Results.Redirect(ComposeRedirect(blazorBaseUrl, path, context.Request.QueryString)));
 }
 
-app.MapGet("/downloads/{**path}", (HttpContext context, string? path) =>
+if (!useDownloadsProxy)
 {
-    string? filePath = ResolveDownloadFilePath(resolvedReleaseFilesPath, path);
-    if (!string.IsNullOrWhiteSpace(filePath))
+    app.MapGet("/downloads/{**path}", (HttpContext context, string? path) =>
     {
-        string fileName = Path.GetFileName(filePath);
-        return Results.File(filePath, "application/octet-stream", fileName, enableRangeProcessing: true);
-    }
+        string? filePath = ResolveDownloadFilePath(resolvedReleaseFilesPath, path);
+        if (!string.IsNullOrWhiteSpace(filePath))
+        {
+            string fileName = Path.GetFileName(filePath);
+            return Results.File(filePath, "application/octet-stream", fileName, enableRangeProcessing: true);
+        }
 
-    return Results.Redirect(ComposeRedirect(downloadsBaseUrl, path, context.Request.QueryString));
-});
+        return Results.Redirect(ComposeRedirect(downloadsBaseUrl, path, context.Request.QueryString));
+    });
+}
 
 app.MapReverseProxy();
 app.Run();
@@ -374,7 +412,9 @@ static string BuildLandingHtml(
     bool useBlazorProxy,
     string apiBaseUrl,
     string docsBaseUrl,
-    string downloadsBaseUrl)
+    string downloadsBaseUrl,
+    string downloadsProxyBaseUrl,
+    bool useDownloadsProxy)
 {
     var html = new StringBuilder();
     html.AppendLine("<!doctype html>");
@@ -488,7 +528,7 @@ static string BuildLandingHtml(
     html.AppendLine("      <div><code>/api</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
     html.AppendLine("      <div><code>/docs</code> proxy upstream → " + HtmlEncode(docsBaseUrl) + "</div>");
     html.AppendLine("      <div><code>/blazor</code> " + (useBlazorProxy ? "proxy upstream → " + HtmlEncode(blazorProxyBaseUrl) : "redirect → " + HtmlEncode(blazorBaseUrl)) + "</div>");
-    html.AppendLine("      <div><code>/downloads</code> local files + manifest with fallback feed → " + HtmlEncode(downloadsBaseUrl) + "</div>");
+    html.AppendLine("      <div><code>/downloads</code> " + (useDownloadsProxy ? "proxy upstream → " + HtmlEncode(downloadsProxyBaseUrl) : "local files + manifest with fallback feed → " + HtmlEncode(downloadsBaseUrl)) + "</div>");
     html.AppendLine("    </footer>");
     html.AppendLine("  </main>");
     html.AppendLine("</body>");

@@ -114,6 +114,7 @@ Portal notes (current milestone):
 * `/api` and `/docs` are served via in-process portal proxy routing.
 * `/blazor` is served through an in-process portal proxy to an internal `chummer-blazor-portal` instance configured with `CHUMMER_BLAZOR_PATH_BASE=/blazor`.
 * `/downloads/` is a local manifest-backed page, `/downloads/releases.json` can be sourced from `CHUMMER_PORTAL_RELEASES_FILE` (default `downloads/releases.json`), and `/downloads/<artifact>` serves local files from `CHUMMER_PORTAL_RELEASES_DIR` (default `downloads`).
+* Set `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL` to route `/downloads/*` through in-process YARP proxy mode instead of local-file mode.
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
 
 Desktop artifact workflow:

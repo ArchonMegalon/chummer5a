@@ -208,9 +208,9 @@ Acceptance criteria: `Chummer.Benchmarks` includes migration-critical workloads 
 Acceptance criteria: portal provides a single public home with deterministic links for `/blazor`, `/api`, `/docs`, and `/downloads`.
 Progress: added `Chummer.Portal` (`net10.0`) plus compose `portal` profile service (`chummer-portal`) exposing a landing page and redirect-based route shims for the target entry paths.
 
-- [ ] `MIG-101` Replace portal redirects with in-process reverse proxy routing for `/blazor/*`, `/api/*`, `/docs/*`, `/downloads/*`.
+- [x] `MIG-101` Replace portal redirects with in-process reverse proxy routing for `/blazor/*`, `/api/*`, `/docs/*`, `/downloads/*`.
 Acceptance criteria: one public origin can route subpaths to internal services without exposing per-service public ports.
-Progress: `Chummer.Portal` now proxies `/api/*`, `/docs/*`, and `/blazor/*` through in-process routing; `/downloads/*` remains redirect-based pending artifact/manifest hosting.
+Progress: `Chummer.Portal` now proxies `/api/*`, `/docs/*`, `/blazor/*`, and supports `/downloads/*` in-process proxy mode via `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL`; default mode serves local download files/manifests with fallback redirect.
 
 - [ ] `MIG-102` Move Blazor head to stable `/blazor/` app-base deployment behind the portal.
 Acceptance criteria: reload/deep-link/reconnect behavior works when the UI is hosted under `/blazor/`.
