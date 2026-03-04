@@ -14,6 +14,7 @@ namespace Chummer.Avalonia;
 
 public partial class MainWindow : Window
 {
+    private readonly HttpClient _httpClient;
     private readonly CharacterOverviewPresenter _presenter;
     private readonly CharacterOverviewViewModelAdapter _adapter;
     private readonly TextBox _xmlInputBox;
@@ -50,13 +51,13 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        HttpClient httpClient = new()
+        _httpClient = new HttpClient
         {
             BaseAddress = ResolveApiBaseAddress(),
             Timeout = TimeSpan.FromSeconds(20)
         };
 
-        _presenter = new CharacterOverviewPresenter(new HttpChummerClient(httpClient));
+        _presenter = new CharacterOverviewPresenter(new HttpChummerClient(_httpClient));
         _adapter = new CharacterOverviewViewModelAdapter(_presenter);
         _adapter.Updated += (_, _) => RefreshState();
 
@@ -101,6 +102,7 @@ public partial class MainWindow : Window
         }
 
         _adapter.Dispose();
+        _httpClient.Dispose();
         base.OnClosed(e);
     }
 
