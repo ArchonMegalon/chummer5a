@@ -623,6 +623,11 @@ public class MigrationComplianceTests
         Assert.IsFalse(mainLayoutText.Contains("IsHomeRoute()", StringComparison.Ordinal));
         Assert.IsFalse(mainLayoutText.Contains("@Body", StringComparison.Ordinal));
         StringAssert.Contains(desktopShellText, "class=\"desktop-shell\"");
+        StringAssert.Contains(desktopShellText, "ImportedFileName=\"@ImportedFileName\"");
+        StringAssert.Contains(desktopShellText, "ImportError=\"@ImportError\"");
+        StringAssert.Contains(desktopShellText, "LastUiUtc=\"@_lastUiUtc\"");
+        Assert.IsFalse(desktopShellText.Contains("ImportedFileName=\"ImportedFileName\"", StringComparison.Ordinal));
+        Assert.IsFalse(desktopShellText.Contains("ImportError=\"ImportError\"", StringComparison.Ordinal));
         StringAssert.Contains(homeText, "@page \"/\"");
         StringAssert.Contains(deepLinkText, "@layout Chummer.Blazor.Components.Layout.NoLayout");
         Assert.IsFalse(homeText.Contains("desktop-shell", StringComparison.Ordinal));

@@ -535,6 +535,27 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Workspace_import_accepts_content_base64_payload_with_utf8_bom()
+    {
+        using var client = CreateClient();
+
+        byte[] xmlBytes = File.ReadAllBytes(FindTestFilePath("BLUE.chum5"));
+        JsonObject importBody = new()
+        {
+            ["contentBase64"] = Convert.ToBase64String(xmlBytes),
+            ["format"] = "Chum5Xml"
+        };
+
+        JsonObject importResponse = await PostRequiredJsonObject(client, "/api/workspaces/import", importBody);
+        string workspaceId = importResponse["id"]?.GetValue<string>() ?? string.Empty;
+        Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceId));
+
+        JsonObject summary = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/summary");
+        Assert.AreEqual("Troy Simmons", summary["name"]?.GetValue<string>());
+        Assert.AreEqual("BLUE", summary["alias"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Workspace_list_and_close_endpoints_manage_open_workspace_collection()
     {
         using var client = CreateClient();

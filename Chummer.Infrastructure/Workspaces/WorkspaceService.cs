@@ -217,6 +217,9 @@ public sealed class WorkspaceService : IWorkspaceService
         if (format != WorkspaceDocumentFormat.Chum5Xml)
             throw new InvalidOperationException($"Workspace format '{format}' is not supported.");
 
+        if (!string.IsNullOrEmpty(content) && content[0] == '\uFEFF')
+            return content[1..];
+
         return content;
     }
 

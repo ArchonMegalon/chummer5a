@@ -85,6 +85,23 @@ public class WorkspaceServiceTests
         Assert.IsFalse(workspaceService.List().Any(item => string.Equals(item.Id.Value, imported.Id.Value, StringComparison.Ordinal)));
     }
 
+    [TestMethod]
+    public void Import_accepts_xml_with_utf8_bom_prefix()
+    {
+        const string xml = "\uFEFF<character><name>BOM Runner</name><alias>BOM</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>0</karma><nuyen>0</nuyen><created>True</created></character>";
+
+        IWorkspaceStore store = new InMemoryWorkspaceStore();
+        ICharacterFileQueries fileQueries = new XmlCharacterFileQueries(new CharacterFileService());
+        ICharacterSectionQueries sectionQueries = new XmlCharacterSectionQueries(new CharacterSectionService());
+        ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
+        IWorkspaceService workspaceService = new WorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
+
+        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml));
+        Assert.IsFalse(string.IsNullOrWhiteSpace(imported.Id.Value));
+        Assert.AreEqual("BOM Runner", imported.Summary.Name);
+        Assert.AreEqual("BOM", imported.Summary.Alias);
+    }
+
     private sealed class TrackingWorkspaceStore : IWorkspaceStore
     {
         public int CreateCallCount { get; private set; }
