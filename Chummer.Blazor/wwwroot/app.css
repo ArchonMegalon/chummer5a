@@ -224,6 +224,25 @@ button:disabled {
     font-size: 0.78rem;
 }
 
+.section-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 0.5rem;
+    font-size: 0.8rem;
+}
+
+.section-table th,
+.section-table td {
+    border: 1px solid #cbd5e1;
+    padding: 0.25rem 0.35rem;
+    vertical-align: top;
+}
+
+.section-table th {
+    background: #f1f5f9;
+    text-align: left;
+}
+
 .command-list {
     margin: 0;
     padding: 0;

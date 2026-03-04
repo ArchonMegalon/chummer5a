@@ -2,6 +2,7 @@ using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 namespace Chummer.Presentation.Overview;
@@ -607,6 +608,68 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             || string.Equals(raw, "yes", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static IReadOnlyList<SectionRowState> BuildSectionRows(JsonNode? node)
+    {
+        if (node is null)
+            return [];
+
+        List<SectionRowState> rows = [];
+        FlattenSectionNode(node, string.Empty, rows);
+        if (rows.Count > 120)
+        {
+            return rows.Take(120).ToArray();
+        }
+
+        return rows;
+    }
+
+    private static void FlattenSectionNode(JsonNode node, string path, List<SectionRowState> rows)
+    {
+        switch (node)
+        {
+            case JsonObject obj:
+                foreach ((string key, JsonNode? child) in obj)
+                {
+                    if (child is null)
+                        continue;
+
+                    string nextPath = string.IsNullOrWhiteSpace(path) ? key : $"{path}.{key}";
+                    FlattenSectionNode(child, nextPath, rows);
+                }
+
+                return;
+            case JsonArray array:
+                if (array.Count == 0)
+                {
+                    rows.Add(new SectionRowState(path, "[]"));
+                    return;
+                }
+
+                bool simpleArray = array.All(item => item is null or JsonValue);
+                if (simpleArray)
+                {
+                    string value = string.Join(", ", array.Select(item => item?.ToJsonString() ?? "null"));
+                    rows.Add(new SectionRowState(path, value));
+                    return;
+                }
+
+                for (int index = 0; index < array.Count; index++)
+                {
+                    JsonNode? child = array[index];
+                    if (child is null)
+                        continue;
+
+                    string nextPath = $"{path}[{index}]";
+                    FlattenSectionNode(child, nextPath, rows);
+                }
+
+                return;
+            case JsonValue value:
+                rows.Add(new SectionRowState(path, value.ToJsonString()));
+                return;
+        }
+    }
+
     public Task CloseDialogAsync(CancellationToken ct)
     {
         Publish(State with
@@ -761,6 +824,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         try
         {
             var section = await _client.GetSectionAsync(_currentWorkspace.Value, sectionId, ct);
+            string sectionJson = section.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
             Publish(State with
             {
                 IsBusy = false,
@@ -768,7 +832,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 ActiveTabId = tabId ?? State.ActiveTabId,
                 ActiveActionId = actionId ?? State.ActiveActionId,
                 ActiveSectionId = sectionId,
-                ActiveSectionJson = section.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
+                ActiveSectionJson = sectionJson,
+                ActiveSectionRows = BuildSectionRows(section)
             });
         }
         catch (Exception ex)
@@ -798,6 +863,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         try
         {
             CharacterFileSummary summary = await _client.GetSummaryAsync(_currentWorkspace.Value, ct);
+            JsonNode? summaryNode = JsonSerializer.SerializeToNode(summary);
             Publish(State with
             {
                 IsBusy = false,
@@ -805,7 +871,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 ActiveTabId = action.TabId,
                 ActiveActionId = action.Id,
                 ActiveSectionId = "summary",
-                ActiveSectionJson = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true })
+                ActiveSectionJson = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }),
+                ActiveSectionRows = BuildSectionRows(summaryNode)
             });
         }
         catch (Exception ex)
@@ -835,6 +902,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         try
         {
             CharacterValidationResult validation = await _client.ValidateAsync(_currentWorkspace.Value, ct);
+            JsonNode? validationNode = JsonSerializer.SerializeToNode(validation);
             Publish(State with
             {
                 IsBusy = false,
@@ -842,7 +910,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 ActiveTabId = action.TabId,
                 ActiveActionId = action.Id,
                 ActiveSectionId = "validate",
-                ActiveSectionJson = JsonSerializer.Serialize(validation, new JsonSerializerOptions { WriteIndented = true })
+                ActiveSectionJson = JsonSerializer.Serialize(validation, new JsonSerializerOptions { WriteIndented = true }),
+                ActiveSectionRows = BuildSectionRows(validationNode)
             });
         }
         catch (Exception ex)
@@ -1302,6 +1371,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             ActiveActionId: null,
             ActiveSectionId: null,
             ActiveSectionJson: null,
+            ActiveSectionRows: [],
             LastCommandId: State.LastCommandId,
             Notice: State.Notice,
             ActiveDialog: null,

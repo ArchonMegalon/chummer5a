@@ -267,6 +267,7 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual("summary", presenter.State.ActiveSectionId);
         Assert.AreEqual("tab-info.summary", presenter.State.ActiveActionId);
         StringAssert.Contains(presenter.State.ActiveSectionJson ?? string.Empty, "\"Name\": \"Troy Simmons\"");
+        Assert.IsTrue(presenter.State.ActiveSectionRows.Count > 0);
     }
 
     [TestMethod]
@@ -345,6 +346,7 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual("tab-info", presenter.State.ActiveTabId);
         Assert.AreEqual("profile", presenter.State.ActiveSectionId);
         StringAssert.Contains(presenter.State.ActiveSectionJson ?? string.Empty, "\"sectionId\": \"profile\"");
+        Assert.IsTrue(presenter.State.ActiveSectionRows.Count > 0);
     }
 
     private sealed class FakeChummerClient : IChummerClient

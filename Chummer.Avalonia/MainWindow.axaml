@@ -77,6 +77,8 @@
         <Border Grid.Row="2" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
           <StackPanel>
             <TextBlock Text="Active Section Preview" FontWeight="Bold" Margin="0,0,0,6" />
+            <TextBlock Text="Section Rows" FontWeight="Bold" Margin="0,0,0,4" />
+            <ListBox Name="SectionRowsList" Height="120" />
             <TextBox Name="SectionPreviewBox"
                      MinHeight="170"
                      AcceptsReturn="True"

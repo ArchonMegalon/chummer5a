@@ -157,6 +157,20 @@
                 }
                 else
                 {
+                    <table class="section-table">
+                        <thead>
+                            <tr><th>Field</th><th>Value</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in State.ActiveSectionRows)
+                            {
+                                <tr>
+                                    <td><code>@row.Path</code></td>
+                                    <td><code>@row.Value</code></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                     <pre>@State.ActiveSectionJson</pre>
                 }
             </section>

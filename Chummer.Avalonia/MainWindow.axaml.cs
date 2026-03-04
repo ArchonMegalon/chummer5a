@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private readonly ListBox _navigationTabsList;
     private readonly ListBox _sectionActionsList;
     private readonly ListBox _uiControlsList;
+    private readonly ListBox _sectionRowsList;
     private readonly TextBox _sectionPreviewBox;
     private readonly TextBlock _dialogTitleText;
     private readonly TextBlock _dialogMessageText;
@@ -79,6 +80,7 @@ public partial class MainWindow : Window
         _sectionActionsList.SelectionChanged += SectionActionsList_OnSelectionChanged;
         _uiControlsList = this.FindControl<ListBox>("UiControlsList")!;
         _uiControlsList.SelectionChanged += UiControlsList_OnSelectionChanged;
+        _sectionRowsList = this.FindControl<ListBox>("SectionRowsList")!;
         _sectionPreviewBox = this.FindControl<TextBox>("SectionPreviewBox")!;
         _dialogTitleText = this.FindControl<TextBlock>("DialogTitleText")!;
         _dialogMessageText = this.FindControl<TextBlock>("DialogMessageText")!;
@@ -229,6 +231,9 @@ public partial class MainWindow : Window
         _suppressUiControlSelectionEvent = false;
 
         _sectionPreviewBox.Text = state.ActiveSectionJson ?? string.Empty;
+        _sectionRowsList.ItemsSource = state.ActiveSectionRows
+            .Select(row => new SectionRowListItem(row.Path, row.Value))
+            .ToArray();
 
         if (state.ActiveDialog is null)
         {
@@ -417,6 +422,14 @@ public partial class MainWindow : Window
         public override string ToString()
         {
             return $"{Label}: {Value}";
+        }
+    }
+
+    private sealed record SectionRowListItem(string Path, string Value)
+    {
+        public override string ToString()
+        {
+            return $"{Path} = {Value}";
         }
     }
 
