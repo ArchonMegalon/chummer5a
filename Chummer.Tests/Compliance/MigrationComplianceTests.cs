@@ -631,6 +631,8 @@ public class MigrationComplianceTests
     {
         string portalProgramPath = FindPath("Chummer.Portal", "Program.cs");
         string portalProgramText = File.ReadAllText(portalProgramPath);
+        string portalSettingsPath = FindPath("Chummer.Portal", "appsettings.json");
+        string portalSettingsText = File.ReadAllText(portalSettingsPath);
 
         StringAssert.Contains(portalProgramText, "RouteId = \"portal-docs\"");
         StringAssert.Contains(portalProgramText, "ClusterId = \"api-cluster\"");
@@ -638,6 +640,7 @@ public class MigrationComplianceTests
         Assert.IsFalse(portalProgramText.Contains("CHUMMER_PORTAL_DOCS_URL", StringComparison.Ordinal));
         Assert.IsFalse(portalProgramText.Contains("docs-cluster", StringComparison.Ordinal));
         Assert.IsFalse(portalProgramText.Contains("BuildRouteTransforms(apiRouteTransforms, \"/docs\")", StringComparison.Ordinal));
+        Assert.IsFalse(portalSettingsText.Contains("DocsBaseUrl", StringComparison.Ordinal));
     }
 
     [TestMethod]
