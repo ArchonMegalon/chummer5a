@@ -1523,9 +1523,62 @@
         { id: "delete", label: "Delete", primary: true, onClick: () => { closeDesktopDialog(); showNote("Selected entry deleted."); } },
         { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
       ]),
-      move_up: () => showNote("Moved selection up."),
-      move_down: () => showNote("Moved selection down."),
-      toggle_free_paid: () => showNote("Toggled free/paid state for selected item."),
+      move_up: () => {
+        openDesktopDialog("Move Up", `<p class="note">Move selected row upward in the active list.</p>`, [
+          {
+            id: "apply",
+            label: "Apply",
+            primary: true,
+            onClick: () => {
+              updateNotesFromDialog("uiContactConnection", "Move Up");
+              closeDesktopDialog();
+              showNote("Moved selection up.");
+            }
+          },
+          { id: "close", label: "Close", onClick: closeDesktopDialog }
+        ]);
+      },
+      move_down: () => {
+        openDesktopDialog("Move Down", `<p class="note">Move selected row downward in the active list.</p>`, [
+          {
+            id: "apply",
+            label: "Apply",
+            primary: true,
+            onClick: () => {
+              updateNotesFromDialog("uiContactLoyalty", "Move Down");
+              closeDesktopDialog();
+              showNote("Moved selection down.");
+            }
+          },
+          { id: "close", label: "Close", onClick: closeDesktopDialog }
+        ]);
+      },
+      toggle_free_paid: () => {
+        openDesktopDialog(
+          "Free / Paid",
+          `<label>Status
+             <select id="uiFreePaidState">
+               <option value="Free">Free</option>
+               <option value="Paid">Paid</option>
+             </select>
+           </label>`,
+          [
+            {
+              id: "apply",
+              label: "Apply",
+              primary: true,
+              onClick: () => {
+                const state = byId("uiFreePaidState").value;
+                byId("metaNotes").value = `${byId("metaNotes").value || ""}\nCost Mode: ${state}`.trim();
+                syncCurrentDocumentFromForm();
+                closeDesktopDialog();
+                showNote(`Set selected entry to ${state}.`);
+              }
+            },
+            { id: "close", label: "Close", onClick: closeDesktopDialog }
+          ]
+        );
+      },
       show_source: () => openDesktopDialog("Source", `<p class="note">Source book and page metadata is shown here.</p>`),
       open_notes: () => {
         openDesktopDialog(
@@ -1549,20 +1602,125 @@
       },
       gear_add: () => openDesktopDialog("Add Gear", `<label>Gear Name <input id="uiGearName" placeholder="Ares Predator" /></label>`),
       gear_edit: () => openDesktopDialog("Edit Gear", `<label>Gear Name <input id="uiGearEditName" value="Selected Gear" /></label>`),
-      gear_delete: () => showNote("Deleted selected gear item."),
-      gear_mount: () => showNote("Mounted selected gear on compatible host."),
+      gear_delete: () => openDesktopDialog("Delete Gear", `<p class="note">Delete selected gear item?</p>`, [
+        {
+          id: "delete",
+          label: "Delete",
+          primary: true,
+          onClick: () => {
+            byId("metaNotes").value = `${byId("metaNotes").value || ""}\nGear removed.`.trim();
+            syncCurrentDocumentFromForm();
+            closeDesktopDialog();
+            showNote("Deleted selected gear item.");
+          }
+        },
+        { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+      ]),
+      gear_mount: () => openDesktopDialog(
+        "Mount Gear",
+        `<label>Mount Point <input id="uiGearMountPoint" placeholder="Internal" /></label>`,
+        [
+          {
+            id: "mount",
+            label: "Mount",
+            primary: true,
+            onClick: () => {
+              const mountPoint = byId("uiGearMountPoint").value.trim() || "Internal";
+              byId("metaNotes").value = `${byId("metaNotes").value || ""}\nMounted gear: ${mountPoint}`.trim();
+              syncCurrentDocumentFromForm();
+              closeDesktopDialog();
+              showNote(`Mounted selected gear to ${mountPoint}.`);
+            }
+          },
+          { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+        ]
+      ),
       gear_source: () => openDesktopDialog("Gear Source", `<p class="note">Gear source references are displayed here.</p>`),
       magic_add: () => openDesktopDialog("Add Spell/Power", `<label>Name <input id="uiMagicName" placeholder="Spell or Power" /></label>`),
-      magic_delete: () => showNote("Removed selected spell/power."),
-      magic_bind: () => showNote("Bind/link workflow started for selected magical item."),
+      magic_delete: () => openDesktopDialog("Delete Spell/Power", `<p class="note">Remove selected spell/power?</p>`, [
+        {
+          id: "remove",
+          label: "Remove",
+          primary: true,
+          onClick: () => {
+            closeDesktopDialog();
+            showNote("Removed selected spell/power.");
+          }
+        },
+        { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+      ]),
+      magic_bind: () => openDesktopDialog(
+        "Bind / Link",
+        `<label>Target <input id="uiMagicBindTarget" placeholder="Focus / Spirit / Device" /></label>`,
+        [
+          {
+            id: "bind",
+            label: "Bind",
+            primary: true,
+            onClick: () => {
+              const target = byId("uiMagicBindTarget").value.trim() || "selected target";
+              closeDesktopDialog();
+              showNote(`Bind/link workflow started for ${target}.`);
+            }
+          },
+          { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+        ]
+      ),
       magic_source: () => openDesktopDialog("Magic Source", `<p class="note">Magical source references are displayed here.</p>`),
       skill_add: () => openDesktopDialog("Add Skill", `<label>Skill <input id="uiSkillName" placeholder="Perception" /></label>`),
       skill_specialize: () => openDesktopDialog("Specialize Skill", `<label>Specialization <input id="uiSkillSpec" placeholder="Visual" /></label>`),
-      skill_remove: () => showNote("Removed selected skill."),
-      skill_group: () => showNote("Opened skill group assignment."),
+      skill_remove: () => openDesktopDialog("Remove Skill", `<p class="note">Remove selected skill from character sheet?</p>`, [
+        {
+          id: "remove",
+          label: "Remove",
+          primary: true,
+          onClick: () => {
+            closeDesktopDialog();
+            showNote("Removed selected skill.");
+          }
+        },
+        { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+      ]),
+      skill_group: () => openDesktopDialog(
+        "Skill Group",
+        `<label>Group <input id="uiSkillGroupName" placeholder="Athletics" /></label>`,
+        [
+          {
+            id: "assign",
+            label: "Assign",
+            primary: true,
+            onClick: () => {
+              const groupName = byId("uiSkillGroupName").value.trim() || "Custom Group";
+              closeDesktopDialog();
+              showNote(`Assigned skill to group '${groupName}'.`);
+            }
+          },
+          { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+        ]
+      ),
       combat_add_weapon: () => openDesktopDialog("Add Weapon", `<label>Weapon <input id="uiWeaponName" placeholder="Colt M23" /></label>`),
       combat_add_armor: () => openDesktopDialog("Add Armor", `<label>Armor <input id="uiArmorName" placeholder="Armor Jacket" /></label>`),
-      combat_reload: () => showNote("Reloaded selected weapon."),
+      combat_reload: () => openDesktopDialog(
+        "Reload Weapon",
+        `<div class="grid">
+           <label>Magazine Size <input id="uiReloadCapacity" type="number" min="1" value="15" /></label>
+           <label>Rounds Loaded <input id="uiReloadLoaded" type="number" min="0" value="15" /></label>
+         </div>`,
+        [
+          {
+            id: "reload",
+            label: "Reload",
+            primary: true,
+            onClick: () => {
+              const capacity = Number.parseInt(byId("uiReloadCapacity").value, 10) || 15;
+              const loaded = Number.parseInt(byId("uiReloadLoaded").value, 10) || capacity;
+              closeDesktopDialog();
+              showNote(`Reloaded selected weapon (${Math.min(loaded, capacity)}/${capacity}).`);
+            }
+          },
+          { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+        ]
+      ),
       combat_damage_track: () => {
         const current = Number.parseInt(String(byId("summaryStreetCred").value || "0"), 10) || 0;
         updateSummaryField("summaryStreetCred", Math.max(0, current - 1));
@@ -1570,7 +1728,18 @@
       },
       contact_add: () => openDesktopDialog("Add Contact", `<label>Name <input id="uiContactName" placeholder="Contact Name" /></label>`),
       contact_edit: () => openDesktopDialog("Edit Contact", `<label>Name <input id="uiContactEditName" value="Selected Contact" /></label>`),
-      contact_remove: () => showNote("Removed selected contact."),
+      contact_remove: () => openDesktopDialog("Remove Contact", `<p class="note">Remove selected contact?</p>`, [
+        {
+          id: "remove",
+          label: "Remove",
+          primary: true,
+          onClick: () => {
+            closeDesktopDialog();
+            showNote("Removed selected contact.");
+          }
+        },
+        { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+      ]),
       contact_connection: () => {
         openDesktopDialog(
           "Connection / Loyalty",
