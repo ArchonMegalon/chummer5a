@@ -15,15 +15,23 @@ public static class ServiceCollectionExtensions
     private const string StatePathEnvironmentVariable = "CHUMMER_STATE_PATH";
     private const string WorkspaceStorePathEnvironmentVariable = "CHUMMER_WORKSPACE_STORE_PATH";
     private const string AmendsPathEnvironmentVariable = "CHUMMER_AMENDS_PATH";
+    private const string RequireContentBundleEnvironmentVariable = "CHUMMER_REQUIRE_CONTENT_BUNDLE";
 
     public static IServiceCollection AddChummerHeadlessCore(
         this IServiceCollection services,
         string baseDirectory,
-        string currentDirectory)
+        string currentDirectory,
+        bool requireContentBundle = false)
     {
         ArgumentNullException.ThrowIfNull(services);
         string stateDirectory = ResolveStateDirectory(baseDirectory);
         string? amendsDirectory = Environment.GetEnvironmentVariable(AmendsPathEnvironmentVariable);
+        bool validateContentBundle = requireContentBundle || ResolveBooleanEnvironmentVariable(RequireContentBundleEnvironmentVariable);
+        var overlays = new FileSystemContentOverlayCatalogService(baseDirectory, currentDirectory, amendsDirectory);
+        if (validateContentBundle)
+        {
+            ValidateContentBundle(overlays);
+        }
 
         services.AddSingleton<ICharacterFileService, CharacterFileService>();
         services.AddSingleton<ICharacterSectionService, CharacterSectionService>();
@@ -41,8 +49,7 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<ICharacterInventoryQueries>(),
                 provider.GetRequiredService<ICharacterMagicResonanceQueries>(),
                 provider.GetRequiredService<ICharacterSocialNarrativeQueries>()));
-        services.AddSingleton<IContentOverlayCatalogService>(_ =>
-            new FileSystemContentOverlayCatalogService(baseDirectory, currentDirectory, amendsDirectory));
+        services.AddSingleton<IContentOverlayCatalogService>(overlays);
 
         services.AddSingleton<ILifeModulesCatalogService>(provider =>
         {
@@ -68,6 +75,47 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    private static void ValidateContentBundle(IContentOverlayCatalogService overlays)
+    {
+        ArgumentNullException.ThrowIfNull(overlays);
+
+        IReadOnlyList<string> dataDirectories = overlays.GetDataDirectories();
+        if (dataDirectories.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "Content bundle validation failed: no data directories were discovered. " +
+                "Set CHUMMER_AMENDS_PATH correctly or include bundled /data content.");
+        }
+
+        IReadOnlyList<string> languageDirectories = overlays.GetLanguageDirectories();
+        if (languageDirectories.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "Content bundle validation failed: no language directories were discovered. " +
+                "Set CHUMMER_AMENDS_PATH correctly or include bundled /lang content.");
+        }
+
+        try
+        {
+            overlays.ResolveDataFile("lifemodules.xml");
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or InvalidOperationException)
+        {
+            throw new InvalidOperationException(
+                "Content bundle validation failed: required data file 'lifemodules.xml' is missing from effective content paths.",
+                ex);
+        }
+
+        bool hasAnyLanguageXml = languageDirectories
+            .Any(directory => Directory.Exists(directory)
+                && Directory.EnumerateFiles(directory, "*.xml", SearchOption.TopDirectoryOnly).Any());
+        if (!hasAnyLanguageXml)
+        {
+            throw new InvalidOperationException(
+                "Content bundle validation failed: no language XML files were discovered in effective language paths.");
+        }
+    }
+
     private static string ResolveStateDirectory(string baseDirectory)
     {
         string? configured = Environment.GetEnvironmentVariable(StatePathEnvironmentVariable);
@@ -75,5 +123,11 @@ public static class ServiceCollectionExtensions
             return configured;
 
         return Path.Combine(baseDirectory, "state");
+    }
+
+    private static bool ResolveBooleanEnvironmentVariable(string variableName)
+    {
+        string? raw = Environment.GetEnvironmentVariable(variableName);
+        return bool.TryParse(raw, out bool parsed) && parsed;
     }
 }

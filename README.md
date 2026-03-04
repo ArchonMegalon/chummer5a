@@ -150,6 +150,8 @@ ingress:
 Content overlay notes (`CHUMMER_AMENDS_PATH`):
 
 * `docker-compose.yml` mounts `./Docker/Amends` into `/app/amends` (read-only) and sets `CHUMMER_AMENDS_PATH=/app/amends` for `chummer-api`.
+* API startup now enforces content-bundle validation by default (`requireContentBundle: true`) and fails fast if effective content paths do not provide required bundle files such as `lifemodules.xml`.
+* Set `CHUMMER_REQUIRE_CONTENT_BUNDLE=true` for other hosts (for example desktop in-process runtime) when you want the same fail-fast content validation behavior.
 * Multiple amend roots are supported with platform separators (`:` on Linux/macOS, `;` on Windows) and `,`.
 * Active overlay metadata is exposed via `/api/info` (`content.overlays`) and `/api/content/overlays`.
 * Overlay manifests accept `mode`:

@@ -220,6 +220,24 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Api_startup_enforces_content_bundle_validation_contract()
+    {
+        string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
+        string apiProgramText = File.ReadAllText(apiProgramPath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(apiProgramText, "requireContentBundle: true");
+        StringAssert.Contains(serviceRegistrationText, "CHUMMER_REQUIRE_CONTENT_BUNDLE");
+        StringAssert.Contains(serviceRegistrationText, "ValidateContentBundle");
+        StringAssert.Contains(serviceRegistrationText, "lifemodules.xml");
+        StringAssert.Contains(serviceRegistrationText, "language XML files");
+        StringAssert.Contains(readmeText, "CHUMMER_REQUIRE_CONTENT_BUNDLE");
+    }
+
+    [TestMethod]
     public void App_command_catalog_ids_are_unique()
     {
         List<string> duplicateIds = AppCommandCatalog.All

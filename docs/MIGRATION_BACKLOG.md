@@ -170,7 +170,7 @@ Acceptance criteria: after process restart, persisted workspaces reopen with det
 
 - [ ] `MIG-074` Make content packaging deterministic (data/lang assets) for docker runtime.
 Acceptance criteria: API container startup validates required content bundle and fails fast when missing.
-Progress: introduced `CHUMMER_AMENDS_PATH` overlay discovery in infrastructure with deterministic priority ordering, docker-mounted sample pack (`Docker/Amends`), and API visibility via `/api/info` + `/api/content/overlays`; next step is strict startup validation and manifest checksum enforcement.
+Progress: introduced `CHUMMER_AMENDS_PATH` overlay discovery in infrastructure with deterministic priority ordering, docker-mounted sample pack (`Docker/Amends`), API visibility via `/api/info` + `/api/content/overlays`, and fail-fast startup validation (`requireContentBundle: true` in `Chummer.Api` + `CHUMMER_REQUIRE_CONTENT_BUNDLE` host toggle). Next step is manifest checksum enforcement.
 
 ### Phase 8: Retire static legacy shell
 

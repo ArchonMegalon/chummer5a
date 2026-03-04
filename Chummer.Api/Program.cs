@@ -5,7 +5,7 @@ using Chummer.Api.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddChummerHeadlessCore(AppContext.BaseDirectory, Directory.GetCurrentDirectory());
+builder.Services.AddChummerHeadlessCore(AppContext.BaseDirectory, Directory.GetCurrentDirectory(), requireContentBundle: true);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
