@@ -124,29 +124,12 @@ public sealed partial class CharacterOverviewPresenter
         CaptureWorkspaceView();
         WorkspaceOverviewLoadResult loadedOverview = await _workspaceOverviewLoader.LoadAsync(_client, id, ct);
 
-        WorkspaceSessionState session;
-        if (sessionSeed is not null)
-        {
-            session = _workspaceSessionPresenter.Switch(id);
-            if (session.ActiveWorkspaceId is null
-                || !string.Equals(session.ActiveWorkspaceId.Value.Value, id.Value, StringComparison.Ordinal))
-            {
-                session = _workspaceSessionPresenter.Open(id, loadedOverview.Profile);
-            }
-        }
-        else if (updateSession)
-        {
-            session = _workspaceSessionPresenter.Open(id, loadedOverview.Profile);
-        }
-        else
-        {
-            session = _workspaceSessionPresenter.Switch(id);
-            if (session.ActiveWorkspaceId is null
-                || !string.Equals(session.ActiveWorkspaceId.Value.Value, id.Value, StringComparison.Ordinal))
-            {
-                session = _workspaceSessionPresenter.Open(id, loadedOverview.Profile);
-            }
-        }
+        WorkspaceSessionState session = _workspaceSessionActivationService.Activate(
+            _workspaceSessionPresenter,
+            id,
+            loadedOverview.Profile,
+            sessionSeed,
+            updateSession);
 
         WorkspaceViewState? restoredView = RestoreWorkspaceView(id);
         bool hasSavedWorkspace = restoredView?.HasSavedWorkspace ?? false;

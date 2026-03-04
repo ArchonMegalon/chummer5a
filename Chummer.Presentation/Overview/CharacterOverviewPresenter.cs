@@ -16,6 +16,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
     private readonly IWorkspaceViewStateStore _workspaceViewStateStore;
     private readonly IWorkspaceShellStateFactory _workspaceShellStateFactory;
     private readonly IWorkspaceRemoteCloseService _workspaceRemoteCloseService;
+    private readonly IWorkspaceSessionActivationService _workspaceSessionActivationService;
     private CharacterWorkspaceId? _currentWorkspace;
 
     public CharacterOverviewPresenter(
@@ -30,7 +31,8 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         IWorkspacePersistenceService? workspacePersistenceService = null,
         IWorkspaceViewStateStore? workspaceViewStateStore = null,
         IWorkspaceShellStateFactory? workspaceShellStateFactory = null,
-        IWorkspaceRemoteCloseService? workspaceRemoteCloseService = null)
+        IWorkspaceRemoteCloseService? workspaceRemoteCloseService = null,
+        IWorkspaceSessionActivationService? workspaceSessionActivationService = null)
     {
         _client = client;
         IWorkspaceSessionManager manager = workspaceSessionManager ?? new WorkspaceSessionManager();
@@ -44,6 +46,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         _workspaceViewStateStore = workspaceViewStateStore ?? new WorkspaceViewStateStore();
         _workspaceShellStateFactory = workspaceShellStateFactory ?? new WorkspaceShellStateFactory();
         _workspaceRemoteCloseService = workspaceRemoteCloseService ?? new WorkspaceRemoteCloseService();
+        _workspaceSessionActivationService = workspaceSessionActivationService ?? new WorkspaceSessionActivationService();
     }
 
     public CharacterOverviewState State { get; private set; } = CharacterOverviewState.Empty;
