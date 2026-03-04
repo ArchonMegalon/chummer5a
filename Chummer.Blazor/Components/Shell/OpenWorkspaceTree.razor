@@ -1,0 +1,45 @@
+@using Chummer.Presentation.Overview
+@using Chummer.Contracts.Workspaces
+
+<section class="panel navigator">
+    <h2>Character Navigator</h2>
+    <ul class="tree-list" id="openCharactersTree">
+        @if (OpenWorkspaces.Count == 0)
+        {
+            <li>(empty)</li>
+        }
+        else
+        {
+            @foreach (OpenWorkspaceState workspace in OpenWorkspaces)
+            {
+                bool isActive = string.Equals(ActiveWorkspaceId?.Value, workspace.Id.Value, StringComparison.Ordinal);
+                <li>
+                    <button class="command-button @(isActive ? "selected" : string.Empty)"
+                            disabled="@IsBusy"
+                            @onclick="() => OpenWorkspaceAsync(workspace.Id.Value)">
+                        <code>@workspace.Id.Value</code> - @workspace.Name
+                    </button>
+                </li>
+            }
+        }
+    </ul>
+</section>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<OpenWorkspaceState> OpenWorkspaces { get; set; } = [];
+
+    [Parameter]
+    public CharacterWorkspaceId? ActiveWorkspaceId { get; set; }
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OpenWorkspaceRequested { get; set; }
+
+    private Task OpenWorkspaceAsync(string workspaceId)
+    {
+        return OpenWorkspaceRequested.InvokeAsync(workspaceId);
+    }
+}

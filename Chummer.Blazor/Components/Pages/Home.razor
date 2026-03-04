@@ -5,87 +5,31 @@
 @using Microsoft.AspNetCore.Components.Forms
 
 <div class="desktop-shell">
-    <div class="menu-bar">
-        @foreach (var menu in MenuRoots)
-        {
-            <button class="menu-btn @(OpenMenuId == menu.Id ? "active" : string.Empty)"
-                    @onclick="() => ToggleMenu(menu.Id)">
-                @menu.Id.Replace('_', ' ')
-            </button>
-        }
-    </div>
+    <MenuBar MenuRoots="MenuRoots.ToArray()"
+             OpenMenuId="OpenMenuId"
+             IsBusy="State.IsBusy"
+             MenuCommands="MenuCommands"
+             IsCommandEnabled="IsCommandEnabled"
+             ToggleMenuRequested="ToggleMenu"
+             ExecuteCommandRequested="ExecuteCommandAsync" />
 
-    @if (!string.IsNullOrWhiteSpace(OpenMenuId))
-    {
-        <div class="menu-dropdown">
-            @foreach (var command in MenuCommands(OpenMenuId!))
-            {
-                bool enabled = IsCommandEnabled(command);
-                <button class="menu-item"
-                        disabled="@(!enabled || State.IsBusy)"
-                        @onclick="() => ExecuteCommandAsync(command.Id)">
-                    @command.Id.Replace('_', ' ')
-                </button>
-            }
-        </div>
-    }
+    <ToolStrip Commands="ToolStripCommands.ToArray()"
+               LastCommandId="State.LastCommandId"
+               IsBusy="State.IsBusy"
+               IsCommandEnabled="IsCommandEnabled"
+               ExecuteCommandRequested="ExecuteCommandAsync" />
 
-    <div class="tool-strip">
-        @foreach (var command in ToolStripCommands)
-        {
-            bool enabled = IsCommandEnabled(command);
-            <button class="tool-btn @(State.LastCommandId == command.Id ? "selected" : string.Empty)"
-                    disabled="@(!enabled || State.IsBusy)"
-                    @onclick="() => ExecuteCommandAsync(command.Id)">
-                @command.Id.Replace('_', ' ')
-            </button>
-        }
-    </div>
-
-    <div class="mdi-strip" id="mdiStrip">
-        @if (State.OpenWorkspaces.Count == 0)
-        {
-            <span class="mdi-doc">No open character</span>
-        }
-        else
-        {
-            @foreach (var workspace in State.OpenWorkspaces)
-            {
-                bool isActive = string.Equals(State.WorkspaceId?.Value, workspace.Id.Value, StringComparison.Ordinal);
-                <button class="mdi-doc @(isActive ? "active" : string.Empty)"
-                        disabled="@State.IsBusy"
-                        @onclick="() => OpenWorkspaceAsync(workspace.Id.Value)">
-                    @(string.IsNullOrWhiteSpace(workspace.Alias) ? workspace.Name : $"{workspace.Name} ({workspace.Alias})")
-                </button>
-            }
-        }
-    </div>
+    <MdiStrip OpenWorkspaces="State.OpenWorkspaces"
+              ActiveWorkspaceId="State.WorkspaceId"
+              IsBusy="State.IsBusy"
+              OpenWorkspaceRequested="OpenWorkspaceAsync" />
 
     <div class="workspace-layout">
         <aside class="left-pane">
-            <section class="panel navigator">
-                <h2>Character Navigator</h2>
-                <ul class="tree-list" id="openCharactersTree">
-                    @if (State.OpenWorkspaces.Count == 0)
-                    {
-                        <li>(empty)</li>
-                    }
-                    else
-                    {
-                        @foreach (var workspace in State.OpenWorkspaces)
-                        {
-                            bool isActive = string.Equals(State.WorkspaceId?.Value, workspace.Id.Value, StringComparison.Ordinal);
-                            <li>
-                                <button class="command-button @(isActive ? "selected" : string.Empty)"
-                                        disabled="@State.IsBusy"
-                                        @onclick="() => OpenWorkspaceAsync(workspace.Id.Value)">
-                                    <code>@workspace.Id.Value</code> - @workspace.Name
-                                </button>
-                            </li>
-                        }
-                    }
-                </ul>
-            </section>
+            <OpenWorkspaceTree OpenWorkspaces="State.OpenWorkspaces"
+                               ActiveWorkspaceId="State.WorkspaceId"
+                               IsBusy="State.IsBusy"
+                               OpenWorkspaceRequested="OpenWorkspaceAsync" />
 
             <section class="panel tabs">
                 <h2>Workspace Tabs</h2>
@@ -240,12 +184,9 @@
         </aside>
     </div>
 
-    <div class="status-strip">
-        <span id="charState">Character: @(State.WorkspaceId is null ? "none" : "loaded")</span>
-        <span id="serviceState">Service: @(string.IsNullOrWhiteSpace(State.Error) ? "online" : "error")</span>
-        <span id="timeState">Time: @_lastUiUtc</span>
-        <span id="complianceState">Compliance: shared presenter path</span>
-    </div>
+    <StatusStrip WorkspaceId="State.WorkspaceId"
+                 Error="State.Error"
+                 LastUiUtc="_lastUiUtc" />
 </div>
 
 @if (State.ActiveDialog is { } dialog)

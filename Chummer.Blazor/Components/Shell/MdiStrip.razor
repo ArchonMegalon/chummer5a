@@ -1,0 +1,40 @@
+@using Chummer.Presentation.Overview
+@using Chummer.Contracts.Workspaces
+
+<div class="mdi-strip" id="mdiStrip">
+    @if (OpenWorkspaces.Count == 0)
+    {
+        <span class="mdi-doc">No open character</span>
+    }
+    else
+    {
+        @foreach (OpenWorkspaceState workspace in OpenWorkspaces)
+        {
+            bool isActive = string.Equals(ActiveWorkspaceId?.Value, workspace.Id.Value, StringComparison.Ordinal);
+            <button class="mdi-doc @(isActive ? "active" : string.Empty)"
+                    disabled="@IsBusy"
+                    @onclick="() => OpenWorkspaceAsync(workspace.Id.Value)">
+                @(string.IsNullOrWhiteSpace(workspace.Alias) ? workspace.Name : $"{workspace.Name} ({workspace.Alias})")
+            </button>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IReadOnlyList<OpenWorkspaceState> OpenWorkspaces { get; set; } = [];
+
+    [Parameter]
+    public CharacterWorkspaceId? ActiveWorkspaceId { get; set; }
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OpenWorkspaceRequested { get; set; }
+
+    private Task OpenWorkspaceAsync(string workspaceId)
+    {
+        return OpenWorkspaceRequested.InvokeAsync(workspaceId);
+    }
+}

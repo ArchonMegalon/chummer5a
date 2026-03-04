@@ -1,0 +1,19 @@
+@using Chummer.Contracts.Workspaces
+
+<div class="status-strip">
+    <span id="charState">Character: @(WorkspaceId is null ? "none" : "loaded")</span>
+    <span id="serviceState">Service: @(string.IsNullOrWhiteSpace(Error) ? "online" : "error")</span>
+    <span id="timeState">Time: @LastUiUtc</span>
+    <span id="complianceState">Compliance: shared presenter path</span>
+</div>
+
+@code {
+    [Parameter]
+    public CharacterWorkspaceId? WorkspaceId { get; set; }
+
+    [Parameter]
+    public string? Error { get; set; }
+
+    [Parameter]
+    public string LastUiUtc { get; set; } = string.Empty;
+}
