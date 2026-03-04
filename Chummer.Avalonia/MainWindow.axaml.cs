@@ -9,6 +9,7 @@ using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
+using Chummer.Presentation.Shell;
 
 namespace Chummer.Avalonia;
 
@@ -195,7 +196,6 @@ public partial class MainWindow : Window
         _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
         _complianceStateText.Text = $"Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}";
 
-        bool hasWorkspace = state.WorkspaceId is not null;
         IEnumerable<AppCommandDefinition> visibleCommands = state.Commands
             .Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
         if (!string.IsNullOrWhiteSpace(_activeMenuGroup))
@@ -207,7 +207,7 @@ public partial class MainWindow : Window
             .Select(command => new CommandListItem(
                 command.Id,
                 command.Group,
-                command.EnabledByDefault && (!command.RequiresOpenCharacter || hasWorkspace)))
+                CommandAvailabilityEvaluator.IsCommandEnabled(command, state)))
             .ToArray();
 
         _suppressCommandSelectionEvent = true;
@@ -221,7 +221,7 @@ public partial class MainWindow : Window
                 tab.Label,
                 tab.SectionId,
                 tab.Group,
-                tab.EnabledByDefault && (!tab.RequiresOpenCharacter || hasWorkspace)))
+                CommandAvailabilityEvaluator.IsNavigationTabEnabled(tab, state)))
             .ToArray();
 
         _suppressTabSelectionEvent = true;
@@ -230,7 +230,7 @@ public partial class MainWindow : Window
         _suppressTabSelectionEvent = false;
 
         WorkspaceSurfaceActionDefinition[] actions = WorkspaceSurfaceActionCatalog.ForTab(state.ActiveTabId)
-            .Where(action => action.EnabledByDefault && (!action.RequiresOpenCharacter || hasWorkspace))
+            .Where(action => CommandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, state))
             .ToArray();
         SectionActionListItem[] sectionActionItems = actions
             .Select(action => new SectionActionListItem(action))
@@ -241,7 +241,7 @@ public partial class MainWindow : Window
         _suppressSectionActionSelectionEvent = false;
 
         DesktopUiControlDefinition[] uiControls = DesktopUiControlCatalog.ForTab(state.ActiveTabId)
-            .Where(control => control.EnabledByDefault && (!control.RequiresOpenCharacter || hasWorkspace))
+            .Where(control => CommandAvailabilityEvaluator.IsUiControlEnabled(control, state))
             .ToArray();
         _suppressUiControlSelectionEvent = true;
         _uiControlsList.ItemsSource = uiControls.Select(control => new UiControlListItem(control.Id, control.Label)).ToArray();

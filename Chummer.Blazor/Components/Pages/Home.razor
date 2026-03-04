@@ -2,7 +2,9 @@
 @implements IDisposable
 @inject ICharacterOverviewPresenter Presenter
 @using System.Text
+@using System.Linq
 @using Microsoft.AspNetCore.Components.Forms
+@using Chummer.Presentation.Shell
 
 <div class="desktop-shell">
     <MenuBar MenuRoots="MenuRoots.ToArray()"
@@ -36,7 +38,7 @@
                 <div class="tab-grid">
                     @foreach (var tab in State.NavigationTabs)
                     {
-                        bool enabled = tab.EnabledByDefault && (!tab.RequiresOpenCharacter || State.WorkspaceId is not null);
+                        bool enabled = CommandAvailabilityEvaluator.IsNavigationTabEnabled(tab, State);
                         <button class="tab-btn @(State.ActiveTabId == tab.Id ? "active" : string.Empty)"
                                 id="@tab.Id"
                                 disabled="@(!enabled || State.IsBusy)"
@@ -52,7 +54,7 @@
                 <div class="action-grid">
                     @foreach (var action in ActiveWorkspaceActions)
                     {
-                        bool enabled = action.EnabledByDefault && (!action.RequiresOpenCharacter || State.WorkspaceId is not null);
+                        bool enabled = CommandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, State);
                         <button class="action-button @(State.ActiveActionId == action.Id ? "selected" : string.Empty)"
                                 disabled="@(!enabled || State.IsBusy)"
                                 @onclick="() => ExecuteWorkspaceActionAsync(action)">
@@ -273,10 +275,14 @@
         HeadCommands.Where(command => command.Group is "file" or "tools").Take(10);
 
     private IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions =>
-        WorkspaceSurfaceActionCatalog.ForTab(State.ActiveTabId);
+        WorkspaceSurfaceActionCatalog.ForTab(State.ActiveTabId)
+            .Where(action => CommandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, State))
+            .ToArray();
 
     private IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls =>
-        DesktopUiControlCatalog.ForTab(State.ActiveTabId);
+        DesktopUiControlCatalog.ForTab(State.ActiveTabId)
+            .Where(control => CommandAvailabilityEvaluator.IsUiControlEnabled(control, State))
+            .ToArray();
 
     protected override async Task OnInitializedAsync()
     {
@@ -298,7 +304,7 @@
 
     private bool IsCommandEnabled(AppCommandDefinition command)
     {
-        return command.EnabledByDefault && (!command.RequiresOpenCharacter || State.WorkspaceId is not null);
+        return CommandAvailabilityEvaluator.IsCommandEnabled(command, State);
     }
 
     private void ToggleMenu(string menuId)
