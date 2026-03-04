@@ -1,4 +1,13 @@
 @inherits LayoutComponentBase
 
 <h1 style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;">Chummer Blazor Head</h1>
-@Body
+
+<div class="app-frame">
+    <header class="app-chrome">
+        <div class="app-title">Chummer Blazor Head</div>
+        <div class="app-subtitle">Shared presenter workspace shell</div>
+    </header>
+    <main class="app-content">
+        @Body
+    </main>
+</div>

@@ -6,6 +6,37 @@ html, body {
     color: #111827;
 }
 
+.app-frame {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    background: linear-gradient(180deg, #d9e2ec 0%, #f0f2f5 18%, #f0f2f5 100%);
+}
+
+.app-chrome {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.5rem 0.8rem;
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    border-bottom: 2px solid #334155;
+    color: #e2e8f0;
+}
+
+.app-title {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.app-subtitle {
+    font-size: 0.82rem;
+    color: #cbd5e1;
+}
+
+.app-content {
+    padding: 0.35rem 0.5rem 0.85rem;
+}
+
 textarea,
 input,
 select,
@@ -371,6 +402,12 @@ button:disabled {
 }
 
 @media (max-width: 1200px) {
+    .app-chrome {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.15rem;
+    }
+
     .workspace-layout {
         grid-template-columns: 1fr;
     }
