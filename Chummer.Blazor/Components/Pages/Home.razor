@@ -195,60 +195,11 @@
                  LastUiUtc="_lastUiUtc" />
 </div>
 
-@if (State.ActiveDialog is { } dialog)
-{
-    <div id="dialogBackdrop" class="dialog-backdrop" @onclick="CloseDialogAsync">
-        <div class="desktop-dialog" role="dialog" aria-modal="true" @onclick:stopPropagation="true">
-            <div class="dialog-titlebar">
-                <span id="dialogTitle">@dialog.Title</span>
-                <button id="dialogClose" class="dialog-close" @onclick="CloseDialogAsync">X</button>
-            </div>
-            <div id="dialogBody" class="dialog-body">
-                @if (!string.IsNullOrWhiteSpace(dialog.Message))
-                {
-                    <p class="note">@dialog.Message</p>
-                }
-                @foreach (var field in dialog.Fields)
-                {
-                    <label>
-                        @field.Label
-                        @if (string.Equals(field.InputType, "checkbox", StringComparison.Ordinal))
-                        {
-                            <input type="checkbox"
-                                   checked="@IsDialogCheckboxChecked(field)"
-                                   disabled="@field.IsReadOnly"
-                                   @onchange="e => OnDialogCheckboxChangedAsync(field, e.Value)" />
-                        }
-                        else if (field.IsMultiline)
-                        {
-                            <textarea value="@field.Value"
-                                      placeholder="@field.Placeholder"
-                                      readonly="@field.IsReadOnly"
-                                      @oninput="e => OnDialogFieldInputAsync(field, e.Value?.ToString())"></textarea>
-                        }
-                        else
-                        {
-                            <input type="@field.InputType"
-                                   value="@field.Value"
-                                   placeholder="@field.Placeholder"
-                                   readonly="@field.IsReadOnly"
-                                   @oninput="e => OnDialogFieldInputAsync(field, e.Value?.ToString())" />
-                        }
-                    </label>
-                }
-            </div>
-            <div id="dialogFooter" class="dialog-footer">
-                @foreach (var action in dialog.Actions)
-                {
-                    <button class="action-btn @(action.IsPrimary ? "primary" : string.Empty)"
-                            @onclick="() => ExecuteDialogActionAsync(action.Id)">
-                        @action.Label
-                    </button>
-                }
-            </div>
-        </div>
-    </div>
-}
+<DialogHost Dialog="State.ActiveDialog"
+            CloseRequested="CloseDialogAsync"
+            ExecuteDialogActionRequested="ExecuteDialogActionAsync"
+            FieldInputRequested="OnDialogFieldInputAsync"
+            FieldCheckboxRequested="OnDialogCheckboxChangedAsync" />
 
 @code {
     private CharacterOverviewStateBridge? _bridge;
@@ -454,33 +405,20 @@
         await _bridge.ExecuteDialogActionAsync(actionId, CancellationToken.None);
     }
 
-    private Task OnDialogFieldInputAsync(DesktopDialogField field, string? value)
+    private Task OnDialogFieldInputAsync(DialogFieldInputChange change)
     {
-        if (_bridge is null || field.IsReadOnly)
+        if (_bridge is null)
             return Task.CompletedTask;
 
-        return _bridge.UpdateDialogFieldAsync(field.Id, value, CancellationToken.None);
+        return _bridge.UpdateDialogFieldAsync(change.FieldId, change.Value, CancellationToken.None);
     }
 
-    private Task OnDialogCheckboxChangedAsync(DesktopDialogField field, object? value)
+    private Task OnDialogCheckboxChangedAsync(DialogFieldCheckboxChange change)
     {
-        if (_bridge is null || field.IsReadOnly)
+        if (_bridge is null)
             return Task.CompletedTask;
 
-        bool parsed = value is bool direct
-            ? direct
-            : bool.TryParse(value?.ToString(), out bool parsedBool) && parsedBool;
-        return _bridge.UpdateDialogFieldAsync(field.Id, parsed ? "true" : "false", CancellationToken.None);
-    }
-
-    private static bool IsDialogCheckboxChecked(DesktopDialogField field)
-    {
-        if (bool.TryParse(field.Value, out bool value))
-            return value;
-
-        return string.Equals(field.Value, "1", StringComparison.Ordinal)
-            || string.Equals(field.Value, "on", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(field.Value, "yes", StringComparison.OrdinalIgnoreCase);
+        return _bridge.UpdateDialogFieldAsync(change.FieldId, change.Value ? "true" : "false", CancellationToken.None);
     }
 
     private async Task CloseDialogAsync()

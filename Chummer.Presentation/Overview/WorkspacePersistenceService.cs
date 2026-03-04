@@ -1,0 +1,54 @@
+using Chummer.Contracts.Characters;
+using Chummer.Contracts.Workspaces;
+
+namespace Chummer.Presentation.Overview;
+
+public sealed class WorkspacePersistenceService : IWorkspacePersistenceService
+{
+    public async Task<WorkspaceMetadataUpdateResult> UpdateMetadataAsync(
+        IChummerClient client,
+        CharacterWorkspaceId workspaceId,
+        UpdateWorkspaceMetadata command,
+        DesktopPreferenceState preferences,
+        CancellationToken ct)
+    {
+        string? normalizedNotes = string.IsNullOrWhiteSpace(command.Notes) ? null : command.Notes;
+        CommandResult<CharacterProfileSection> result = await client.UpdateMetadataAsync(workspaceId, command, ct);
+        if (!result.Success || result.Value is null)
+        {
+            return new WorkspaceMetadataUpdateResult(
+                Success: false,
+                Profile: null,
+                Preferences: preferences,
+                Error: result.Error ?? "Metadata update failed.");
+        }
+
+        DesktopPreferenceState updatedPreferences = normalizedNotes is null
+            ? preferences
+            : preferences with { CharacterNotes = normalizedNotes };
+
+        return new WorkspaceMetadataUpdateResult(
+            Success: true,
+            Profile: result.Value,
+            Preferences: updatedPreferences,
+            Error: null);
+    }
+
+    public async Task<WorkspaceSaveResult> SaveAsync(
+        IChummerClient client,
+        CharacterWorkspaceId workspaceId,
+        CancellationToken ct)
+    {
+        CommandResult<WorkspaceSaveReceipt> result = await client.SaveAsync(workspaceId, ct);
+        if (!result.Success || result.Value is null)
+        {
+            return new WorkspaceSaveResult(
+                Success: false,
+                Error: result.Error ?? "Save failed.");
+        }
+
+        return new WorkspaceSaveResult(
+            Success: true,
+            Error: null);
+    }
+}

@@ -96,12 +96,13 @@ Progress: workspace lifecycle rules are centralized in `IWorkspaceSessionPresent
 
 - [ ] `MIG-033` Narrow `CharacterOverviewPresenter` responsibility to overview composition.
 Acceptance criteria: presenter owns overview state composition only; command/dialog/workspace concerns are delegated.
-Progress: command routing (`OverviewCommandDispatcher`), dialog orchestration (`DialogCoordinator`), workspace session ordering (`WorkspaceSessionPresenter`), and overview snapshot loading (`WorkspaceOverviewLoader`) are delegated; section loading/rendering and save orchestration still remain in presenter.
+Progress: command routing (`OverviewCommandDispatcher`), dialog orchestration (`DialogCoordinator`), workspace session ordering (`WorkspaceSessionPresenter`), overview snapshot loading (`WorkspaceOverviewLoader`), section payload rendering (`WorkspaceSectionRenderer`), and metadata/save orchestration (`WorkspacePersistenceService`) are delegated; remaining presenter hotspots are workspace reset/close flow coordination and shell state publication.
 
 ### Phase 4: Finish Blazor shell as thin renderer
 
 - [ ] `MIG-040` Split remaining orchestration in `Home.razor` into shell-region components.
 Acceptance criteria: page-level code only wires components and events; no business/state transition logic remains in the page.
+Progress: dialog region extracted to `Components/Shell/DialogHost.razor`; workspace/metadata/import/results regions still need extraction.
 
 - [ ] `MIG-041` Add Blazor component tests for menu/toolstrip/workspace/tab/section/dialog components.
 Acceptance criteria: component tests validate enable/disable rules and state-driven rendering behaviors.

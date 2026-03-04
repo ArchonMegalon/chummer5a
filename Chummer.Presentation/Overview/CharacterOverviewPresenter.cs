@@ -1,8 +1,5 @@
-using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace Chummer.Presentation.Overview;
 
@@ -14,6 +11,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
     private readonly IOverviewCommandDispatcher _commandDispatcher;
     private readonly IDialogCoordinator _dialogCoordinator;
     private readonly IWorkspaceOverviewLoader _workspaceOverviewLoader;
+    private readonly IWorkspaceSectionRenderer _workspaceSectionRenderer;
+    private readonly IWorkspacePersistenceService _workspacePersistenceService;
     private readonly Dictionary<string, WorkspaceViewState> _workspaceViews = new(StringComparer.Ordinal);
     private CharacterWorkspaceId? _currentWorkspace;
 
@@ -24,7 +23,9 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         IWorkspaceSessionPresenter? workspaceSessionPresenter = null,
         IOverviewCommandDispatcher? commandDispatcher = null,
         IDialogCoordinator? dialogCoordinator = null,
-        IWorkspaceOverviewLoader? workspaceOverviewLoader = null)
+        IWorkspaceOverviewLoader? workspaceOverviewLoader = null,
+        IWorkspaceSectionRenderer? workspaceSectionRenderer = null,
+        IWorkspacePersistenceService? workspacePersistenceService = null)
     {
         _client = client;
         IWorkspaceSessionManager manager = workspaceSessionManager ?? new WorkspaceSessionManager();
@@ -33,6 +34,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         _commandDispatcher = commandDispatcher ?? new OverviewCommandDispatcher();
         _dialogCoordinator = dialogCoordinator ?? new DialogCoordinator();
         _workspaceOverviewLoader = workspaceOverviewLoader ?? new WorkspaceOverviewLoader();
+        _workspaceSectionRenderer = workspaceSectionRenderer ?? new WorkspaceSectionRenderer();
+        _workspacePersistenceService = workspacePersistenceService ?? new WorkspacePersistenceService();
     }
 
     public CharacterOverviewState State { get; private set; } = CharacterOverviewState.Empty;
@@ -370,8 +373,6 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
     public async Task UpdateMetadataAsync(UpdateWorkspaceMetadata command, CancellationToken ct)
     {
-        string? normalizedNotes = string.IsNullOrWhiteSpace(command.Notes) ? null : command.Notes;
-
         if (_currentWorkspace is null)
         {
             Publish(State with
@@ -389,13 +390,18 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         try
         {
-            CommandResult<CharacterProfileSection> result = await _client.UpdateMetadataAsync(_currentWorkspace.Value, command, ct);
-            if (!result.Success || result.Value is null)
+            WorkspaceMetadataUpdateResult result = await _workspacePersistenceService.UpdateMetadataAsync(
+                _client,
+                _currentWorkspace.Value,
+                command,
+                State.Preferences,
+                ct);
+            if (!result.Success || result.Profile is null)
             {
                 Publish(State with
                 {
                     IsBusy = false,
-                    Error = result.Error ?? "Metadata update failed."
+                    Error = result.Error
                 });
                 return;
             }
@@ -405,10 +411,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 IsBusy = false,
                 Error = null,
                 WorkspaceId = _currentWorkspace,
-                Profile = result.Value,
-                Preferences = normalizedNotes is null
-                    ? State.Preferences
-                    : State.Preferences with { CharacterNotes = normalizedNotes }
+                Profile = result.Profile,
+                Preferences = result.Preferences
             });
         }
         catch (Exception ex)
@@ -440,13 +444,13 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         try
         {
-            CommandResult<WorkspaceSaveReceipt> result = await _client.SaveAsync(_currentWorkspace.Value, ct);
-            if (!result.Success || result.Value is null)
+            WorkspaceSaveResult result = await _workspacePersistenceService.SaveAsync(_client, _currentWorkspace.Value, ct);
+            if (!result.Success)
             {
                 Publish(State with
                 {
                     IsBusy = false,
-                    Error = result.Error ?? "Save failed."
+                    Error = result.Error
                 });
                 return;
             }
@@ -492,17 +496,24 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         try
         {
-            var section = await _client.GetSectionAsync(_currentWorkspace.Value, sectionId, ct);
-            string sectionJson = section.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            WorkspaceSectionRenderResult section = await _workspaceSectionRenderer.RenderSectionAsync(
+                _client,
+                _currentWorkspace.Value,
+                sectionId,
+                tabId,
+                actionId,
+                State.ActiveTabId,
+                State.ActiveActionId,
+                ct);
             Publish(State with
             {
                 IsBusy = false,
                 Error = null,
-                ActiveTabId = tabId ?? State.ActiveTabId,
-                ActiveActionId = actionId ?? State.ActiveActionId,
-                ActiveSectionId = sectionId,
-                ActiveSectionJson = sectionJson,
-                ActiveSectionRows = SectionRowProjector.BuildRows(section)
+                ActiveTabId = section.ActiveTabId,
+                ActiveActionId = section.ActiveActionId,
+                ActiveSectionId = section.ActiveSectionId,
+                ActiveSectionJson = section.ActiveSectionJson,
+                ActiveSectionRows = section.ActiveSectionRows
             });
             CaptureWorkspaceView();
         }
@@ -532,17 +543,20 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         try
         {
-            CharacterFileSummary summary = await _client.GetSummaryAsync(_currentWorkspace.Value, ct);
-            JsonNode? summaryNode = JsonSerializer.SerializeToNode(summary);
+            WorkspaceSectionRenderResult summary = await _workspaceSectionRenderer.RenderSummaryAsync(
+                _client,
+                _currentWorkspace.Value,
+                action,
+                ct);
             Publish(State with
             {
                 IsBusy = false,
                 Error = null,
-                ActiveTabId = action.TabId,
-                ActiveActionId = action.Id,
-                ActiveSectionId = "summary",
-                ActiveSectionJson = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }),
-                ActiveSectionRows = SectionRowProjector.BuildRows(summaryNode)
+                ActiveTabId = summary.ActiveTabId,
+                ActiveActionId = summary.ActiveActionId,
+                ActiveSectionId = summary.ActiveSectionId,
+                ActiveSectionJson = summary.ActiveSectionJson,
+                ActiveSectionRows = summary.ActiveSectionRows
             });
             CaptureWorkspaceView();
         }
@@ -572,17 +586,20 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         try
         {
-            CharacterValidationResult validation = await _client.ValidateAsync(_currentWorkspace.Value, ct);
-            JsonNode? validationNode = JsonSerializer.SerializeToNode(validation);
+            WorkspaceSectionRenderResult validation = await _workspaceSectionRenderer.RenderValidationAsync(
+                _client,
+                _currentWorkspace.Value,
+                action,
+                ct);
             Publish(State with
             {
                 IsBusy = false,
                 Error = null,
-                ActiveTabId = action.TabId,
-                ActiveActionId = action.Id,
-                ActiveSectionId = "validate",
-                ActiveSectionJson = JsonSerializer.Serialize(validation, new JsonSerializerOptions { WriteIndented = true }),
-                ActiveSectionRows = SectionRowProjector.BuildRows(validationNode)
+                ActiveTabId = validation.ActiveTabId,
+                ActiveActionId = validation.ActiveActionId,
+                ActiveSectionId = validation.ActiveSectionId,
+                ActiveSectionJson = validation.ActiveSectionJson,
+                ActiveSectionRows = validation.ActiveSectionRows
             });
             CaptureWorkspaceView();
         }
