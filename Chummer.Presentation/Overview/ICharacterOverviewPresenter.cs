@@ -1,4 +1,5 @@
 using Chummer.Contracts.Workspaces;
+using Chummer.Contracts.Presentation;
 
 namespace Chummer.Presentation.Overview;
 
@@ -15,6 +16,14 @@ public interface ICharacterOverviewPresenter
     Task LoadAsync(CharacterWorkspaceId id, CancellationToken ct);
 
     Task ExecuteCommandAsync(string commandId, CancellationToken ct);
+
+    Task HandleUiControlAsync(string controlId, CancellationToken ct);
+
+    Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action, CancellationToken ct);
+
+    Task ExecuteDialogActionAsync(string actionId, CancellationToken ct);
+
+    Task CloseDialogAsync(CancellationToken ct);
 
     Task SelectTabAsync(string tabId, CancellationToken ct);
 

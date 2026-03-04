@@ -9,6 +9,10 @@ public interface IWorkspaceService
 
     object? GetSection(CharacterWorkspaceId id, string sectionId);
 
+    CharacterFileSummary? GetSummary(CharacterWorkspaceId id);
+
+    CharacterValidationResult? Validate(CharacterWorkspaceId id);
+
     CharacterProfileSection? GetProfile(CharacterWorkspaceId id);
 
     CharacterProgressSection? GetProgress(CharacterWorkspaceId id);

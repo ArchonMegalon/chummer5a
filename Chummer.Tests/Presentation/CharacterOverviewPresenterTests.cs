@@ -1,6 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
+using System;
 using System.Text.Json.Nodes;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
@@ -146,6 +148,63 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_global_settings_opens_dialog()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+
+        await presenter.ExecuteCommandAsync("global_settings", CancellationToken.None);
+
+        Assert.AreEqual("global_settings", presenter.State.LastCommandId);
+        Assert.IsNotNull(presenter.State.ActiveDialog);
+        Assert.AreEqual("dialog.global_settings", presenter.State.ActiveDialog?.Id);
+    }
+
+    [TestMethod]
+    public async Task HandleUiControlAsync_create_entry_opens_dialog()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+
+        await presenter.HandleUiControlAsync("create_entry", CancellationToken.None);
+
+        Assert.IsNotNull(presenter.State.ActiveDialog);
+        Assert.AreEqual("dialog.ui.create_entry", presenter.State.ActiveDialog?.Id);
+    }
+
+    [TestMethod]
+    public async Task HandleUiControlAsync_all_catalog_controls_are_non_generic()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+        string[] controlIds = DesktopUiControlCatalog.All
+            .Select(control => control.Id)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        foreach (string controlId in controlIds)
+        {
+            await presenter.HandleUiControlAsync(controlId, CancellationToken.None);
+            Assert.AreNotEqual("dialog.ui.generic", presenter.State.ActiveDialog?.Id, $"Control '{controlId}' fell back to generic dialog.");
+        }
+    }
+
+    [TestMethod]
+    public async Task ExecuteWorkspaceActionAsync_summary_sets_active_summary_payload()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        WorkspaceSurfaceActionDefinition action = WorkspaceSurfaceActionCatalog.All
+            .First(item => string.Equals(item.Id, "tab-info.summary", StringComparison.Ordinal));
+
+        await presenter.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+
+        Assert.AreEqual("summary", presenter.State.ActiveSectionId);
+        Assert.AreEqual("tab-info.summary", presenter.State.ActiveActionId);
+        StringAssert.Contains(presenter.State.ActiveSectionJson ?? string.Empty, "\"Name\": \"Troy Simmons\"");
+    }
+
+    [TestMethod]
     public async Task SelectTabAsync_requires_loaded_workspace()
     {
         var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
@@ -222,6 +281,27 @@ public class CharacterOverviewPresenterTests
             };
 
             return Task.FromResult<JsonNode>(section);
+        }
+
+        public Task<CharacterFileSummary> GetSummaryAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            return Task.FromResult(new CharacterFileSummary(
+                Name: _name,
+                Alias: _alias,
+                Metatype: "Ork",
+                BuildMethod: "SumtoTen",
+                CreatedVersion: "1.0",
+                AppVersion: "1.0",
+                Karma: 12m,
+                Nuyen: 5000m,
+                Created: true));
+        }
+
+        public Task<CharacterValidationResult> ValidateAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            return Task.FromResult(new CharacterValidationResult(
+                IsValid: true,
+                Issues: []));
         }
 
         public Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)

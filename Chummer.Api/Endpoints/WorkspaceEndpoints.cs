@@ -88,6 +88,20 @@ public static class WorkspaceEndpoints
             }
         });
 
+        app.MapGet("/api/workspaces/{id}/summary", (string id, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            CharacterFileSummary? summary = workspaceService.GetSummary(workspaceId);
+            return summary is null ? Results.NotFound() : Results.Ok(summary);
+        });
+
+        app.MapGet("/api/workspaces/{id}/validate", (string id, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            CharacterValidationResult? validation = workspaceService.Validate(workspaceId);
+            return validation is null ? Results.NotFound() : Results.Ok(validation);
+        });
+
         app.MapMethods("/api/workspaces/{id}/metadata", ["PATCH"], (string id, UpdateWorkspaceMetadata command, IWorkspaceService workspaceService) =>
         {
             CharacterWorkspaceId workspaceId = new(id);

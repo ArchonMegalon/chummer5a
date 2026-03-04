@@ -1,4 +1,5 @@
 using Chummer.Contracts.Workspaces;
+using Chummer.Contracts.Presentation;
 using Chummer.Presentation.Overview;
 
 namespace Chummer.Avalonia;
@@ -30,6 +31,26 @@ public sealed class CharacterOverviewViewModelAdapter : IDisposable
     public Task ExecuteCommandAsync(string commandId, CancellationToken ct)
     {
         return _presenter.ExecuteCommandAsync(commandId, ct);
+    }
+
+    public Task HandleUiControlAsync(string controlId, CancellationToken ct)
+    {
+        return _presenter.HandleUiControlAsync(controlId, ct);
+    }
+
+    public Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
+    {
+        return _presenter.ExecuteWorkspaceActionAsync(action, ct);
+    }
+
+    public Task ExecuteDialogActionAsync(string actionId, CancellationToken ct)
+    {
+        return _presenter.ExecuteDialogActionAsync(actionId, ct);
+    }
+
+    public Task CloseDialogAsync(CancellationToken ct)
+    {
+        return _presenter.CloseDialogAsync(ct);
     }
 
     public Task SelectTabAsync(string tabId, CancellationToken ct)

@@ -4,139 +4,318 @@
 @using System.Text
 @using Microsoft.AspNetCore.Components.Forms
 
-<section class="panel">
-    <h2>Import Character File</h2>
-    <div class="grid-fields">
-        <InputFile OnChange="ImportFileAsync"
-                   accept=".chum5,.xml,text/xml,application/xml"
-                   disabled="@State.IsBusy" />
-        <p class="hint">File: @(ImportedFileName ?? "(none)")</p>
-    </div>
-    <p class="hint">Primary flow imports file bytes through shared presenter and workspace API.</p>
-    @if (!string.IsNullOrWhiteSpace(ImportError))
-    {
-        <p class="error">@ImportError</p>
-    }
-</section>
-
-<section class="panel">
-    <h2>Raw Import (Debug)</h2>
-    <textarea @bind="RawImportXml" rows="8"></textarea>
-    <div class="actions">
-        <button @onclick="ImportRawAsync" disabled="@State.IsBusy">Import Raw XML</button>
-    </div>
-</section>
-
-<section class="panel">
-    <h2>Workspace</h2>
-    <div class="inline-fields">
-        <input @bind="LoadWorkspaceId" placeholder="Workspace id" />
-        <button @onclick="LoadWorkspaceAsync" disabled="@State.IsBusy">Load</button>
-    </div>
-    <p>Active: @(State.WorkspaceId?.Value ?? "(none)")</p>
-    <p>Saved: @(State.HasSavedWorkspace ? "Yes" : "No")</p>
-</section>
-
-<section class="panel">
-    <h2>Metadata</h2>
-    <div class="grid-fields">
-        <input @bind="MetadataName" placeholder="Name" />
-        <input @bind="MetadataAlias" placeholder="Alias" />
-        <textarea @bind="MetadataNotes" rows="3" placeholder="Notes"></textarea>
-    </div>
-    <div class="actions">
-        <button @onclick="UpdateMetadataAsync" disabled="@State.IsBusy">Update Metadata</button>
-        <button @onclick="SaveAsync" disabled="@State.IsBusy">Save Workspace</button>
-    </div>
-</section>
-
-<section class="panel">
-    <h2>Overview</h2>
-    <ul>
-        <li>Name: @(State.Profile?.Name ?? "(none)")</li>
-        <li>Alias: @(State.Profile?.Alias ?? "(none)")</li>
-        <li>Metatype: @(State.Profile?.Metatype ?? "(none)")</li>
-        <li>Build: @(State.Build?.BuildMethod ?? "(none)")</li>
-        <li>Karma: @(State.Progress?.Karma ?? 0)</li>
-        <li>Skills: @(State.Skills?.Count ?? 0)</li>
-        <li>Game Edition: @(State.Rules?.GameEdition ?? "(none)")</li>
-        <li>Last Command: @(State.LastCommandId ?? "(none)")</li>
-    </ul>
-    @if (!string.IsNullOrWhiteSpace(State.Error))
-    {
-        <p class="error">Error: @State.Error</p>
-    }
-</section>
-
-<section class="panel">
-    <h2>Commands (@State.Commands.Count)</h2>
-    <ul class="command-list">
-        @foreach (var command in State.Commands)
+<div class="desktop-shell">
+    <div class="menu-bar">
+        @foreach (var menu in MenuRoots)
         {
-            bool enabled = command.EnabledByDefault && (!command.RequiresOpenCharacter || State.WorkspaceId is not null);
-            <li class="@(enabled ? string.Empty : "disabled")">
-                <button
-                    class="command-button @(State.LastCommandId == command.Id ? "selected" : string.Empty)"
+            <button class="menu-btn @(OpenMenuId == menu.Id ? "active" : string.Empty)"
+                    @onclick="() => ToggleMenu(menu.Id)">
+                @menu.Id.Replace('_', ' ')
+            </button>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(OpenMenuId))
+    {
+        <div class="menu-dropdown">
+            @foreach (var command in MenuCommands(OpenMenuId!))
+            {
+                bool enabled = IsCommandEnabled(command);
+                <button class="menu-item"
+                        disabled="@(!enabled || State.IsBusy)"
+                        @onclick="() => ExecuteCommandAsync(command.Id)">
+                    @command.Id.Replace('_', ' ')
+                </button>
+            }
+        </div>
+    }
+
+    <div class="tool-strip">
+        @foreach (var command in ToolStripCommands)
+        {
+            bool enabled = IsCommandEnabled(command);
+            <button class="tool-btn @(State.LastCommandId == command.Id ? "selected" : string.Empty)"
                     disabled="@(!enabled || State.IsBusy)"
                     @onclick="() => ExecuteCommandAsync(command.Id)">
-                    <code>@command.Id</code>
-                </button>
-                <span>@command.Group</span>
-            </li>
+                @command.Id.Replace('_', ' ')
+            </button>
         }
-    </ul>
-</section>
+    </div>
 
-<section class="panel">
-    <h2>Navigation Tabs (@State.NavigationTabs.Count)</h2>
-    <ul class="command-list">
-        @foreach (var tab in State.NavigationTabs)
+    <div class="mdi-strip" id="mdiStrip">
+        @if (State.WorkspaceId is null)
         {
-            bool enabled = tab.EnabledByDefault && (!tab.RequiresOpenCharacter || State.WorkspaceId is not null);
-            <li class="@(enabled ? string.Empty : "disabled")">
-                <button
-                    class="tab-button @(State.ActiveTabId == tab.Id ? "selected" : string.Empty)"
-                    disabled="@(!enabled || State.IsBusy)"
-                    @onclick="() => SelectTabAsync(tab.Id)">
-                    <code>@tab.Id</code>
-                    <span>@tab.Label</span>
-                </button>
-                <span>@tab.Group</span>
-            </li>
+            <span class="mdi-doc">No open character</span>
         }
-    </ul>
-</section>
+        else
+        {
+            <span class="mdi-doc active">@($"{State.Profile?.Name ?? "Character"} ({State.WorkspaceId.Value})")</span>
+        }
+    </div>
 
-<section class="panel section-preview">
-    <h2>Active Section (@(State.ActiveSectionId ?? "none"))</h2>
-    @if (string.IsNullOrWhiteSpace(State.ActiveSectionJson))
-    {
-        <p>Select a navigation tab to load a section payload.</p>
-    }
-    else
-    {
-        <pre>@State.ActiveSectionJson</pre>
-    }
-</section>
+    <div class="workspace-layout">
+        <aside class="left-pane">
+            <section class="panel navigator">
+                <h2>Character Navigator</h2>
+                <ul class="tree-list" id="openCharactersTree">
+                    @if (State.WorkspaceId is null)
+                    {
+                        <li>(empty)</li>
+                    }
+                    else
+                    {
+                        <li>@(State.Profile?.Name ?? "Character")</li>
+                        <li>@(State.Profile?.Alias ?? string.Empty)</li>
+                        <li>@(State.Profile?.Metatype ?? string.Empty)</li>
+                    }
+                </ul>
+            </section>
+
+            <section class="panel tabs">
+                <h2>Workspace Tabs</h2>
+                <div class="tab-grid">
+                    @foreach (var tab in State.NavigationTabs)
+                    {
+                        bool enabled = tab.EnabledByDefault && (!tab.RequiresOpenCharacter || State.WorkspaceId is not null);
+                        <button class="tab-btn @(State.ActiveTabId == tab.Id ? "active" : string.Empty)"
+                                id="@tab.Id"
+                                disabled="@(!enabled || State.IsBusy)"
+                                @onclick="() => SelectTabAsync(tab.Id)">
+                            @tab.Label
+                        </button>
+                    }
+                </div>
+            </section>
+
+            <section class="panel section-actions">
+                <h2>Section Actions</h2>
+                <div class="action-grid">
+                    @foreach (var action in ActiveWorkspaceActions)
+                    {
+                        bool enabled = action.EnabledByDefault && (!action.RequiresOpenCharacter || State.WorkspaceId is not null);
+                        <button class="action-button @(State.ActiveActionId == action.Id ? "selected" : string.Empty)"
+                                disabled="@(!enabled || State.IsBusy)"
+                                @onclick="() => ExecuteWorkspaceActionAsync(action)">
+                            @action.Label
+                        </button>
+                    }
+                </div>
+            </section>
+
+            <section class="panel controls">
+                <h2>Desktop Controls</h2>
+                <div class="mini-grid">
+                    @foreach (var control in ActiveUiControls)
+                    {
+                        <button class="mini-btn"
+                                data-ui-control="@control.Id"
+                                disabled="@State.IsBusy"
+                                @onclick="() => HandleUiControlAsync(control.Id)">
+                            @control.Label
+                        </button>
+                    }
+                </div>
+            </section>
+        </aside>
+
+        <main class="center-pane">
+            <section class="desktop-summary panel">
+                <h2>Desktop Summary Header</h2>
+                <div class="summary-grid">
+                    <label>Name <input id="summaryName" value="@(State.Profile?.Name ?? string.Empty)" readonly /></label>
+                    <label>Alias <input id="summaryAlias" value="@(State.Profile?.Alias ?? string.Empty)" readonly /></label>
+                    <label>Metatype <input id="summaryMetatype" value="@(State.Profile?.Metatype ?? string.Empty)" readonly /></label>
+                    <label>Build <input id="summaryBuildMethod" value="@(State.Build?.BuildMethod ?? string.Empty)" readonly /></label>
+                    <label>Karma <input id="summaryKarma" value="@(State.Progress?.Karma.ToString() ?? "0")" readonly /></label>
+                    <label>Street Cred <input id="summaryStreetCred" value="@(State.Progress?.StreetCred.ToString() ?? "0")" readonly /></label>
+                </div>
+            </section>
+
+            <section class="panel metadata">
+                <h2>Metadata</h2>
+                <div class="summary-grid">
+                    <label>Name <input @bind="MetadataName" /></label>
+                    <label>Alias <input @bind="MetadataAlias" /></label>
+                    <label>Workspace <input value="@(State.WorkspaceId?.Value ?? string.Empty)" readonly /></label>
+                    <label class="wide">Notes <textarea @bind="MetadataNotes" rows="3"></textarea></label>
+                </div>
+                <div class="actions">
+                    <button @onclick="UpdateMetadataAsync" disabled="@State.IsBusy">Update Metadata</button>
+                    <button @onclick="SaveAsync" disabled="@State.IsBusy">Save Workspace</button>
+                    <button @onclick="LoadWorkspaceAsync" disabled="@State.IsBusy || string.IsNullOrWhiteSpace(LoadWorkspaceId)">Load Workspace</button>
+                </div>
+                <div class="inline-fields">
+                    <input @bind="LoadWorkspaceId" placeholder="Workspace id" />
+                </div>
+            </section>
+
+            <section class="panel section-preview">
+                <h2>Section Payload (@(State.ActiveSectionId ?? "none"))</h2>
+                @if (string.IsNullOrWhiteSpace(State.ActiveSectionJson))
+                {
+                    <p class="note">Select a tab to render a workspace section.</p>
+                }
+                else
+                {
+                    <pre>@State.ActiveSectionJson</pre>
+                }
+            </section>
+        </main>
+
+        <aside class="right-pane">
+            <section class="panel import">
+                <h2>Import Character File</h2>
+                <InputFile OnChange="ImportFileAsync"
+                           accept=".chum5,.xml,text/xml,application/xml"
+                           disabled="@State.IsBusy" />
+                <p class="hint">File: @(ImportedFileName ?? "(none)")</p>
+                @if (!string.IsNullOrWhiteSpace(ImportError))
+                {
+                    <p class="error">@ImportError</p>
+                }
+                <details>
+                    <summary>Raw XML Debug Import</summary>
+                    <textarea @bind="RawImportXml" rows="8"></textarea>
+                    <button @onclick="ImportRawAsync" disabled="@State.IsBusy">Import Raw XML</button>
+                </details>
+            </section>
+
+            <section class="panel commands">
+                <h2>Commands</h2>
+                <ul class="command-list">
+                    @foreach (var command in HeadCommands)
+                    {
+                        bool enabled = IsCommandEnabled(command);
+                        <li class="@(enabled ? string.Empty : "disabled")">
+                            <button class="command-button @(State.LastCommandId == command.Id ? "selected" : string.Empty)"
+                                    disabled="@(!enabled || State.IsBusy)"
+                                    @onclick="() => ExecuteCommandAsync(command.Id)">
+                                <code>@command.Id</code>
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </section>
+
+            <section class="panel results">
+                <h2>Result</h2>
+                <p class="note">@(State.Notice ?? "Ready.")</p>
+                @if (!string.IsNullOrWhiteSpace(State.Error))
+                {
+                    <p class="error">Error: @State.Error</p>
+                }
+            </section>
+        </aside>
+    </div>
+
+    <div class="status-strip">
+        <span id="charState">Character: @(State.WorkspaceId is null ? "none" : "loaded")</span>
+        <span id="serviceState">Service: @(string.IsNullOrWhiteSpace(State.Error) ? "online" : "error")</span>
+        <span id="timeState">Time: @_lastUiUtc</span>
+        <span id="complianceState">Compliance: shared presenter path</span>
+    </div>
+</div>
+
+@if (State.ActiveDialog is { } dialog)
+{
+    <div id="dialogBackdrop" class="dialog-backdrop" @onclick="CloseDialogAsync">
+        <div class="desktop-dialog" role="dialog" aria-modal="true" @onclick:stopPropagation="true">
+            <div class="dialog-titlebar">
+                <span id="dialogTitle">@dialog.Title</span>
+                <button id="dialogClose" class="dialog-close" @onclick="CloseDialogAsync">X</button>
+            </div>
+            <div id="dialogBody" class="dialog-body">
+                @if (!string.IsNullOrWhiteSpace(dialog.Message))
+                {
+                    <p class="note">@dialog.Message</p>
+                }
+                @foreach (var field in dialog.Fields)
+                {
+                    <label>
+                        @field.Label
+                        @if (field.IsMultiline)
+                        {
+                            <textarea value="@GetDialogFieldValue(field)" readonly="@field.IsReadOnly" @oninput="e => SetDialogFieldValue(field.Id, e.Value?.ToString())"></textarea>
+                        }
+                        else
+                        {
+                            <input type="@field.InputType" value="@GetDialogFieldValue(field)" placeholder="@field.Placeholder" readonly="@field.IsReadOnly" @oninput="e => SetDialogFieldValue(field.Id, e.Value?.ToString())" />
+                        }
+                    </label>
+                }
+            </div>
+            <div id="dialogFooter" class="dialog-footer">
+                @foreach (var action in dialog.Actions)
+                {
+                    <button class="action-btn @(action.IsPrimary ? "primary" : string.Empty)"
+                            @onclick="() => ExecuteDialogActionAsync(action.Id)">
+                        @action.Label
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private CharacterOverviewStateBridge? _bridge;
     private const long MaxImportBytes = 8 * 1024 * 1024;
+    private static readonly string[] MenuOrder = ["file", "edit", "special", "tools", "windows", "help"];
 
     private string RawImportXml { get; set; } = "<character><name>Demo</name><alias>Sample</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created></character>";
     private string? ImportedFileName { get; set; }
     private string? ImportError { get; set; }
+    private string? OpenMenuId { get; set; }
     private string LoadWorkspaceId { get; set; } = string.Empty;
     private string MetadataName { get; set; } = string.Empty;
     private string MetadataAlias { get; set; } = string.Empty;
     private string MetadataNotes { get; set; } = string.Empty;
+    private string _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
+    private string? _dialogId;
+    private readonly Dictionary<string, string> _dialogValues = new(StringComparer.Ordinal);
 
     private CharacterOverviewState State => _bridge?.Current ?? Presenter.State;
 
+    private IEnumerable<AppCommandDefinition> MenuRoots =>
+        State.Commands.Where(command => string.Equals(command.Group, "menu", StringComparison.Ordinal))
+            .OrderBy(command => Array.IndexOf(MenuOrder, command.Id));
+
+    private IEnumerable<AppCommandDefinition> HeadCommands =>
+        State.Commands.Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
+
+    private IEnumerable<AppCommandDefinition> ToolStripCommands =>
+        HeadCommands.Where(command => command.Group is "file" or "tools").Take(10);
+
+    private IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions =>
+        WorkspaceSurfaceActionCatalog.ForTab(State.ActiveTabId);
+
+    private IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls =>
+        DesktopUiControlCatalog.ForTab(State.ActiveTabId);
+
     protected override async Task OnInitializedAsync()
     {
-        _bridge = new CharacterOverviewStateBridge(Presenter, _ => InvokeAsync(StateHasChanged));
+        _bridge = new CharacterOverviewStateBridge(Presenter, state =>
+        {
+            SyncDialogDraftFromState(state);
+            _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
+            _ = InvokeAsync(StateHasChanged);
+        });
         await _bridge.InitializeAsync(CancellationToken.None);
+    }
+
+    private IEnumerable<AppCommandDefinition> MenuCommands(string menuId)
+    {
+        return HeadCommands.Where(command => string.Equals(command.Group, menuId, StringComparison.Ordinal));
+    }
+
+    private bool IsCommandEnabled(AppCommandDefinition command)
+    {
+        return command.EnabledByDefault && (!command.RequiresOpenCharacter || State.WorkspaceId is not null);
+    }
+
+    private void ToggleMenu(string menuId)
+    {
+        OpenMenuId = string.Equals(OpenMenuId, menuId, StringComparison.Ordinal) ? null : menuId;
     }
 
     private async Task ImportRawAsync()
@@ -198,6 +377,7 @@
         if (_bridge is null)
             return;
 
+        OpenMenuId = null;
         await _bridge.ExecuteCommandAsync(commandId, CancellationToken.None);
     }
 
@@ -209,10 +389,80 @@
         await _bridge.SelectTabAsync(tabId, CancellationToken.None);
     }
 
+    private async Task HandleUiControlAsync(string controlId)
+    {
+        if (_bridge is null)
+            return;
+
+        await _bridge.HandleUiControlAsync(controlId, CancellationToken.None);
+    }
+
+    private async Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action)
+    {
+        if (_bridge is null)
+            return;
+
+        if (action.Kind == WorkspaceSurfaceActionKind.Metadata)
+        {
+            await UpdateMetadataAsync();
+        }
+
+        await _bridge.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+    }
+
+    private async Task ExecuteDialogActionAsync(string actionId)
+    {
+        if (_bridge is null)
+            return;
+
+        await _bridge.ExecuteDialogActionAsync(actionId, CancellationToken.None);
+    }
+
+    private async Task CloseDialogAsync()
+    {
+        if (_bridge is null)
+            return;
+
+        await _bridge.CloseDialogAsync(CancellationToken.None);
+    }
+
     private void SyncMetadataDraftFromState()
     {
         MetadataName = State.Profile?.Name ?? MetadataName;
         MetadataAlias = State.Profile?.Alias ?? MetadataAlias;
+    }
+
+    private void SyncDialogDraftFromState(CharacterOverviewState state)
+    {
+        if (state.ActiveDialog is null)
+        {
+            _dialogId = null;
+            _dialogValues.Clear();
+            return;
+        }
+
+        if (string.Equals(_dialogId, state.ActiveDialog.Id, StringComparison.Ordinal))
+            return;
+
+        _dialogId = state.ActiveDialog.Id;
+        _dialogValues.Clear();
+        foreach (DesktopDialogField field in state.ActiveDialog.Fields)
+        {
+            _dialogValues[field.Id] = field.Value;
+        }
+    }
+
+    private string GetDialogFieldValue(DesktopDialogField field)
+    {
+        if (_dialogValues.TryGetValue(field.Id, out string? value))
+            return value;
+
+        return field.Value;
+    }
+
+    private void SetDialogFieldValue(string id, string? value)
+    {
+        _dialogValues[id] = value ?? string.Empty;
     }
 
     public void Dispose()

@@ -15,6 +15,10 @@ public interface IChummerClient
 
     Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct);
 
+    Task<CharacterFileSummary> GetSummaryAsync(CharacterWorkspaceId id, CancellationToken ct);
+
+    Task<CharacterValidationResult> ValidateAsync(CharacterWorkspaceId id, CancellationToken ct);
+
     Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct);
 
     Task<CharacterProgressSection> GetProgressAsync(CharacterWorkspaceId id, CancellationToken ct);

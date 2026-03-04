@@ -133,6 +133,10 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/sections/{sectionId}");
         StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSection(workspaceId, sectionId)");
+        StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/summary");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSummary(workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/validate");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Validate(workspaceId)");
     }
 
     [TestMethod]
@@ -248,6 +252,63 @@ public class MigrationComplianceTests
             .ToList();
 
         Assert.AreEqual(0, tabsWithoutSection.Count, "Navigation tabs without section bindings: " + string.Join(", ", tabsWithoutSection));
+    }
+
+    [TestMethod]
+    public void Workspace_surface_action_catalog_covers_legacy_shell_actions()
+    {
+        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
+        string indexText = File.ReadAllText(indexPath);
+
+        HashSet<string> legacyActionIds = UiActionRegex.Matches(indexText)
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+
+        HashSet<string> catalogTargets = WorkspaceSurfaceActionCatalog.All
+            .Select(action => action.TargetId)
+            .ToHashSet(StringComparer.Ordinal);
+
+        List<string> missingTargets = legacyActionIds
+            .Where(actionId => !catalogTargets.Contains(actionId))
+            .OrderBy(x => x)
+            .ToList();
+        Assert.AreEqual(0, missingTargets.Count, "Legacy data-action ids missing in WorkspaceSurfaceActionCatalog: " + string.Join(", ", missingTargets));
+
+        List<string> duplicateActionIds = WorkspaceSurfaceActionCatalog.All
+            .GroupBy(action => action.Id, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .OrderBy(id => id)
+            .ToList();
+        Assert.AreEqual(0, duplicateActionIds.Count, "Duplicate workspace surface action ids: " + string.Join(", ", duplicateActionIds));
+    }
+
+    [TestMethod]
+    public void Desktop_ui_control_catalog_covers_legacy_shell_controls()
+    {
+        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
+        string indexText = File.ReadAllText(indexPath);
+        string presenterPath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.cs");
+        string presenterText = File.ReadAllText(presenterPath);
+
+        HashSet<string> legacyControlIds = UiControlRegex.Matches(indexText)
+            .Select(match => match.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+        HashSet<string> catalogControlIds = DesktopUiControlCatalog.All
+            .Select(control => control.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        List<string> missingControls = legacyControlIds
+            .Where(controlId => !catalogControlIds.Contains(controlId))
+            .OrderBy(x => x)
+            .ToList();
+        Assert.AreEqual(0, missingControls.Count, "Legacy ui-control ids missing in DesktopUiControlCatalog: " + string.Join(", ", missingControls));
+
+        List<string> controlsMissingPresenterTemplate = legacyControlIds
+            .Where(controlId => !presenterText.Contains($"\"{controlId}\" =>", StringComparison.Ordinal))
+            .OrderBy(x => x)
+            .ToList();
+        Assert.AreEqual(0, controlsMissingPresenterTemplate.Count, "Controls missing presenter dialog templates: " + string.Join(", ", controlsMissingPresenterTemplate));
     }
 
     [TestMethod]
@@ -417,6 +478,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(testText, "Avalonia_and_Blazor_metadata_save_roundtrip_match");
         StringAssert.Contains(testText, "Avalonia_and_Blazor_tab_selection_loads_same_workspace_section");
         StringAssert.Contains(testText, "Avalonia_and_Blazor_command_dispatch_save_character_matches");
+        StringAssert.Contains(testText, "Avalonia_and_Blazor_workspace_action_summary_matches");
     }
 
     private static string ToSectionName(string pascalName)

@@ -1,12 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Avalonia;
 using Chummer.Blazor;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -162,6 +165,91 @@ public class DualHeadAcceptanceTests
         Assert.IsTrue(blazorState.HasSavedWorkspace);
     }
 
+    [TestMethod]
+    public async Task Avalonia_and_Blazor_command_dialog_dispatch_matches()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+
+        CharacterOverviewState avaloniaState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
+            await adapter.ExecuteCommandAsync("global_settings", CancellationToken.None);
+            avaloniaState = adapter.State;
+        }
+
+        CharacterOverviewState blazorState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
+            await bridge.ExecuteCommandAsync("global_settings", CancellationToken.None);
+            blazorState = callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+        }
+
+        Assert.AreEqual("global_settings", avaloniaState.LastCommandId);
+        Assert.AreEqual("global_settings", blazorState.LastCommandId);
+        Assert.IsNotNull(avaloniaState.ActiveDialog);
+        Assert.IsNotNull(blazorState.ActiveDialog);
+        Assert.AreEqual(avaloniaState.ActiveDialog?.Id, blazorState.ActiveDialog?.Id);
+        Assert.AreEqual("Global Settings", avaloniaState.ActiveDialog?.Title);
+    }
+
+    [TestMethod]
+    public async Task Avalonia_and_Blazor_workspace_action_summary_matches()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+        WorkspaceSurfaceActionDefinition action = WorkspaceSurfaceActionCatalog.All
+            .First(item => string.Equals(item.Id, "tab-info.summary", StringComparison.Ordinal));
+
+        CharacterOverviewState avaloniaState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+            await adapter.InitializeAsync(CancellationToken.None);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
+            await adapter.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+            avaloniaState = adapter.State;
+        }
+
+        CharacterOverviewState blazorState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            await bridge.InitializeAsync(CancellationToken.None);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
+            await bridge.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+            blazorState = callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+        }
+
+        Assert.AreEqual("summary", avaloniaState.ActiveSectionId);
+        Assert.AreEqual("summary", blazorState.ActiveSectionId);
+        Assert.AreEqual("tab-info.summary", avaloniaState.ActiveActionId);
+        Assert.AreEqual("tab-info.summary", blazorState.ActiveActionId);
+
+        using JsonDocument avaloniaJson = JsonDocument.Parse(avaloniaState.ActiveSectionJson ?? "{}");
+        using JsonDocument blazorJson = JsonDocument.Parse(blazorState.ActiveSectionJson ?? "{}");
+
+        JsonElement avaloniaRoot = avaloniaJson.RootElement;
+        JsonElement blazorRoot = blazorJson.RootElement;
+
+        Assert.AreEqual(GetString(avaloniaRoot, "Name"), GetString(blazorRoot, "Name"));
+        Assert.AreEqual(GetString(avaloniaRoot, "Alias"), GetString(blazorRoot, "Alias"));
+        Assert.AreEqual(GetString(avaloniaRoot, "Metatype"), GetString(blazorRoot, "Metatype"));
+        Assert.AreEqual(GetString(avaloniaRoot, "BuildMethod"), GetString(blazorRoot, "BuildMethod"));
+        Assert.AreEqual(GetDecimal(avaloniaRoot, "Karma"), GetDecimal(blazorRoot, "Karma"));
+        Assert.AreEqual(GetDecimal(avaloniaRoot, "Nuyen"), GetDecimal(blazorRoot, "Nuyen"));
+    }
+
     private static HttpClient CreateClient()
     {
         return new HttpClient
@@ -202,5 +290,26 @@ public class DualHeadAcceptanceTests
             throw new FileNotFoundException("Could not locate test file.", fileName);
 
         return match;
+    }
+
+    private static string? GetString(JsonElement element, string propertyName)
+    {
+        return FindProperty(element, propertyName).GetString();
+    }
+
+    private static decimal GetDecimal(JsonElement element, string propertyName)
+    {
+        return FindProperty(element, propertyName).GetDecimal();
+    }
+
+    private static JsonElement FindProperty(JsonElement element, string propertyName)
+    {
+        if (element.TryGetProperty(propertyName, out JsonElement direct))
+            return direct;
+
+        if (element.TryGetProperty(char.ToLowerInvariant(propertyName[0]) + propertyName[1..], out JsonElement camel))
+            return camel;
+
+        throw new KeyNotFoundException($"Missing property '{propertyName}' in JSON payload.");
     }
 }

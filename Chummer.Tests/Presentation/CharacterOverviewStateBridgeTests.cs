@@ -2,6 +2,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
 using Chummer.Blazor;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -53,6 +54,58 @@ public class CharacterOverviewStateBridgeTests
         await bridge.ExecuteCommandAsync("save_character", CancellationToken.None);
 
         Assert.AreEqual("save_character", presenter.ExecutedCommandId);
+    }
+
+    [TestMethod]
+    public async Task HandleUiControlAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var bridge = new CharacterOverviewStateBridge(presenter, _ => { });
+
+        await bridge.HandleUiControlAsync("create_entry", CancellationToken.None);
+
+        Assert.AreEqual("create_entry", presenter.HandledUiControlId);
+    }
+
+    [TestMethod]
+    public async Task ExecuteWorkspaceActionAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var bridge = new CharacterOverviewStateBridge(presenter, _ => { });
+        WorkspaceSurfaceActionDefinition action = new(
+            Id: "tab-info.summary",
+            Label: "Summary",
+            TabId: "tab-info",
+            Kind: WorkspaceSurfaceActionKind.Summary,
+            TargetId: "summary",
+            RequiresOpenCharacter: true,
+            EnabledByDefault: true);
+
+        await bridge.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+
+        Assert.AreEqual("tab-info.summary", presenter.ExecutedWorkspaceActionId);
+    }
+
+    [TestMethod]
+    public async Task ExecuteDialogActionAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var bridge = new CharacterOverviewStateBridge(presenter, _ => { });
+
+        await bridge.ExecuteDialogActionAsync("close", CancellationToken.None);
+
+        Assert.AreEqual("close", presenter.ExecutedDialogActionId);
+    }
+
+    [TestMethod]
+    public async Task CloseDialogAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var bridge = new CharacterOverviewStateBridge(presenter, _ => { });
+
+        await bridge.CloseDialogAsync(CancellationToken.None);
+
+        Assert.AreEqual(1, presenter.CloseDialogCalls);
     }
 
     [TestMethod]

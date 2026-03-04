@@ -1,10 +1,11 @@
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Linq;
-using System.IO;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -17,15 +18,31 @@ public partial class MainWindow : Window
     private readonly CharacterOverviewViewModelAdapter _adapter;
     private readonly TextBox _xmlInputBox;
     private readonly TextBlock _statusText;
+    private readonly TextBlock _noticeText;
+    private readonly TextBlock _workspaceText;
     private readonly TextBlock _nameValue;
     private readonly TextBlock _aliasValue;
     private readonly TextBlock _karmaValue;
     private readonly TextBlock _skillsValue;
+    private readonly TextBlock _charStateText;
+    private readonly TextBlock _serviceStateText;
+    private readonly TextBlock _timeStateText;
+    private readonly TextBlock _complianceStateText;
     private readonly ListBox _commandsList;
     private readonly ListBox _navigationTabsList;
+    private readonly ListBox _sectionActionsList;
+    private readonly ListBox _uiControlsList;
     private readonly TextBox _sectionPreviewBox;
+    private readonly TextBlock _dialogTitleText;
+    private readonly TextBlock _dialogMessageText;
+    private readonly ListBox _dialogFieldsList;
+    private readonly ListBox _dialogActionsList;
     private bool _suppressCommandSelectionEvent;
     private bool _suppressTabSelectionEvent;
+    private bool _suppressSectionActionSelectionEvent;
+    private bool _suppressUiControlSelectionEvent;
+    private bool _suppressDialogActionSelectionEvent;
+    private string? _activeMenuGroup;
 
     public MainWindow()
     {
@@ -43,15 +60,30 @@ public partial class MainWindow : Window
 
         _xmlInputBox = this.FindControl<TextBox>("XmlInputBox")!;
         _statusText = this.FindControl<TextBlock>("StatusText")!;
+        _noticeText = this.FindControl<TextBlock>("NoticeText")!;
+        _workspaceText = this.FindControl<TextBlock>("WorkspaceText")!;
         _nameValue = this.FindControl<TextBlock>("NameValue")!;
         _aliasValue = this.FindControl<TextBlock>("AliasValue")!;
         _karmaValue = this.FindControl<TextBlock>("KarmaValue")!;
         _skillsValue = this.FindControl<TextBlock>("SkillsValue")!;
+        _charStateText = this.FindControl<TextBlock>("CharStateText")!;
+        _serviceStateText = this.FindControl<TextBlock>("ServiceStateText")!;
+        _timeStateText = this.FindControl<TextBlock>("TimeStateText")!;
+        _complianceStateText = this.FindControl<TextBlock>("ComplianceStateText")!;
         _commandsList = this.FindControl<ListBox>("CommandsList")!;
         _commandsList.SelectionChanged += CommandsList_OnSelectionChanged;
         _navigationTabsList = this.FindControl<ListBox>("NavigationTabsList")!;
-        _sectionPreviewBox = this.FindControl<TextBox>("SectionPreviewBox")!;
         _navigationTabsList.SelectionChanged += NavigationTabsList_OnSelectionChanged;
+        _sectionActionsList = this.FindControl<ListBox>("SectionActionsList")!;
+        _sectionActionsList.SelectionChanged += SectionActionsList_OnSelectionChanged;
+        _uiControlsList = this.FindControl<ListBox>("UiControlsList")!;
+        _uiControlsList.SelectionChanged += UiControlsList_OnSelectionChanged;
+        _sectionPreviewBox = this.FindControl<TextBox>("SectionPreviewBox")!;
+        _dialogTitleText = this.FindControl<TextBlock>("DialogTitleText")!;
+        _dialogMessageText = this.FindControl<TextBlock>("DialogMessageText")!;
+        _dialogFieldsList = this.FindControl<ListBox>("DialogFieldsList")!;
+        _dialogActionsList = this.FindControl<ListBox>("DialogActionsList")!;
+        _dialogActionsList.SelectionChanged += DialogActionsList_OnSelectionChanged;
 
         RefreshState();
         Opened += OnOpened;
@@ -123,14 +155,28 @@ public partial class MainWindow : Window
         _statusText.Text = state.Error is null
             ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(state.WorkspaceId?.Value ?? "none")}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}"
             : $"State: error - {state.Error}";
+        _noticeText.Text = $"Notice: {(state.Notice ?? "Ready.")}";
+        _workspaceText.Text = $"Workspace: {(state.WorkspaceId?.Value ?? "none")}";
 
         _nameValue.Text = state.Profile?.Name ?? "-";
         _aliasValue.Text = state.Profile?.Alias ?? "-";
         _karmaValue.Text = state.Progress?.Karma.ToString() ?? "-";
         _skillsValue.Text = state.Skills?.Count.ToString() ?? "-";
 
+        _charStateText.Text = $"Character: {(state.WorkspaceId is null ? "none" : "loaded")}";
+        _serviceStateText.Text = $"Service: {(state.Error is null ? "online" : "error")}";
+        _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
+        _complianceStateText.Text = "Compliance: shared presenter path";
+
         bool hasWorkspace = state.WorkspaceId is not null;
-        CommandListItem[] commands = state.Commands
+        IEnumerable<AppCommandDefinition> visibleCommands = state.Commands
+            .Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
+        if (!string.IsNullOrWhiteSpace(_activeMenuGroup))
+        {
+            visibleCommands = visibleCommands.Where(command => string.Equals(command.Group, _activeMenuGroup, StringComparison.Ordinal));
+        }
+
+        CommandListItem[] commands = visibleCommands
             .Select(command => new CommandListItem(
                 command.Id,
                 command.Group,
@@ -141,6 +187,7 @@ public partial class MainWindow : Window
         _commandsList.ItemsSource = commands;
         _commandsList.SelectedItem = commands.FirstOrDefault(item => string.Equals(item.Id, state.LastCommandId, StringComparison.Ordinal));
         _suppressCommandSelectionEvent = false;
+
         TabListItem[] tabs = state.NavigationTabs
             .Select(tab => new TabListItem(
                 tab.Id,
@@ -155,7 +202,58 @@ public partial class MainWindow : Window
         _navigationTabsList.SelectedItem = tabs.FirstOrDefault(item => string.Equals(item.Id, state.ActiveTabId, StringComparison.Ordinal));
         _suppressTabSelectionEvent = false;
 
+        WorkspaceSurfaceActionDefinition[] actions = WorkspaceSurfaceActionCatalog.ForTab(state.ActiveTabId)
+            .Where(action => action.EnabledByDefault && (!action.RequiresOpenCharacter || hasWorkspace))
+            .ToArray();
+        SectionActionListItem[] sectionActionItems = actions
+            .Select(action => new SectionActionListItem(action))
+            .ToArray();
+        _suppressSectionActionSelectionEvent = true;
+        _sectionActionsList.ItemsSource = sectionActionItems;
+        _sectionActionsList.SelectedItem = sectionActionItems.FirstOrDefault(item => string.Equals(item.Id, state.ActiveActionId, StringComparison.Ordinal));
+        _suppressSectionActionSelectionEvent = false;
+
+        DesktopUiControlDefinition[] uiControls = DesktopUiControlCatalog.ForTab(state.ActiveTabId)
+            .Where(control => control.EnabledByDefault && (!control.RequiresOpenCharacter || hasWorkspace))
+            .ToArray();
+        _suppressUiControlSelectionEvent = true;
+        _uiControlsList.ItemsSource = uiControls.Select(control => new UiControlListItem(control.Id, control.Label)).ToArray();
+        _uiControlsList.SelectedItem = null;
+        _suppressUiControlSelectionEvent = false;
+
         _sectionPreviewBox.Text = state.ActiveSectionJson ?? string.Empty;
+
+        if (state.ActiveDialog is null)
+        {
+            _dialogTitleText.Text = "(none)";
+            _dialogMessageText.Text = "(none)";
+            _dialogFieldsList.ItemsSource = Array.Empty<DialogFieldListItem>();
+            _dialogActionsList.ItemsSource = Array.Empty<DialogActionListItem>();
+        }
+        else
+        {
+            _dialogTitleText.Text = state.ActiveDialog.Title;
+            _dialogMessageText.Text = state.ActiveDialog.Message ?? "(none)";
+            _dialogFieldsList.ItemsSource = state.ActiveDialog.Fields
+                .Select(field => new DialogFieldListItem(field.Id, field.Label, field.Value))
+                .ToArray();
+            _suppressDialogActionSelectionEvent = true;
+            _dialogActionsList.ItemsSource = state.ActiveDialog.Actions
+                .Select(action => new DialogActionListItem(action.Id, action.Label, action.IsPrimary))
+                .ToArray();
+            _dialogActionsList.SelectedItem = null;
+            _suppressDialogActionSelectionEvent = false;
+        }
+    }
+
+    private async void MenuButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.Content is null)
+            return;
+
+        string menuId = button.Content.ToString()!.Trim().ToLowerInvariant();
+        _activeMenuGroup = string.Equals(_activeMenuGroup, menuId, StringComparison.Ordinal) ? null : menuId;
+        RefreshState();
     }
 
     private async void CommandsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -178,6 +276,39 @@ public partial class MainWindow : Window
             return;
 
         await _adapter.SelectTabAsync(tab.Id, CancellationToken.None);
+    }
+
+    private async void SectionActionsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressSectionActionSelectionEvent)
+            return;
+
+        if (_sectionActionsList.SelectedItem is not SectionActionListItem action)
+            return;
+
+        await _adapter.ExecuteWorkspaceActionAsync(action.Action, CancellationToken.None);
+    }
+
+    private async void UiControlsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressUiControlSelectionEvent)
+            return;
+
+        if (_uiControlsList.SelectedItem is not UiControlListItem control)
+            return;
+
+        await _adapter.HandleUiControlAsync(control.Id, CancellationToken.None);
+    }
+
+    private async void DialogActionsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressDialogActionSelectionEvent)
+            return;
+
+        if (_dialogActionsList.SelectedItem is not DialogActionListItem action)
+            return;
+
+        await _adapter.ExecuteDialogActionAsync(action.Id, CancellationToken.None);
     }
 
     private static Uri ResolveApiBaseAddress()
@@ -205,7 +336,7 @@ public partial class MainWindow : Window
     {
         public override string ToString()
         {
-            return $"{Id} -> {SectionId} [{Group}] {(Enabled ? "enabled" : "disabled")}";
+            return $"{Label} ({Id}) -> {SectionId}";
         }
     }
 
@@ -217,6 +348,40 @@ public partial class MainWindow : Window
         public override string ToString()
         {
             return $"{Id} [{Group}] {(Enabled ? "enabled" : "disabled")}";
+        }
+    }
+
+    private sealed record UiControlListItem(string Id, string Label)
+    {
+        public override string ToString()
+        {
+            return $"{Label} ({Id})";
+        }
+    }
+
+    private sealed record SectionActionListItem(WorkspaceSurfaceActionDefinition Action)
+    {
+        public string Id => Action.Id;
+
+        public override string ToString()
+        {
+            return $"{Action.Label} [{Action.Kind}]";
+        }
+    }
+
+    private sealed record DialogFieldListItem(string Id, string Label, string Value)
+    {
+        public override string ToString()
+        {
+            return $"{Label}: {Value}";
+        }
+    }
+
+    private sealed record DialogActionListItem(string Id, string Label, bool IsPrimary)
+    {
+        public override string ToString()
+        {
+            return $"{Label} ({Id}){(IsPrimary ? " *" : string.Empty)}";
         }
     }
 }

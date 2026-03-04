@@ -41,6 +41,24 @@ public sealed class WorkspaceService : IWorkspaceService
         return _characterSectionQueries.ParseSection(sectionId, new CharacterDocument(xml));
     }
 
+    public CharacterFileSummary? GetSummary(CharacterWorkspaceId id)
+    {
+        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+            return null;
+
+        string xml = ToXmlContent(document.Content, document.Format);
+        return _characterFileQueries.ParseSummary(new CharacterDocument(xml));
+    }
+
+    public CharacterValidationResult? Validate(CharacterWorkspaceId id)
+    {
+        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+            return null;
+
+        string xml = ToXmlContent(document.Content, document.Format);
+        return _characterFileQueries.Validate(new CharacterDocument(xml));
+    }
+
     public CharacterProfileSection? GetProfile(CharacterWorkspaceId id)
     {
         return TryParseSection<CharacterProfileSection>(id, "profile");

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 
@@ -21,6 +22,14 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
     public string? ExecutedCommandId { get; private set; }
 
     public string? SelectedTabId { get; private set; }
+
+    public string? HandledUiControlId { get; private set; }
+
+    public string? ExecutedWorkspaceActionId { get; private set; }
+
+    public string? ExecutedDialogActionId { get; private set; }
+
+    public int CloseDialogCalls { get; private set; }
 
     public int SaveCalls { get; private set; }
 
@@ -53,6 +62,30 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
     public Task SelectTabAsync(string tabId, CancellationToken ct)
     {
         SelectedTabId = tabId;
+        return Task.CompletedTask;
+    }
+
+    public Task HandleUiControlAsync(string controlId, CancellationToken ct)
+    {
+        HandledUiControlId = controlId;
+        return Task.CompletedTask;
+    }
+
+    public Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
+    {
+        ExecutedWorkspaceActionId = action.Id;
+        return Task.CompletedTask;
+    }
+
+    public Task ExecuteDialogActionAsync(string actionId, CancellationToken ct)
+    {
+        ExecutedDialogActionId = actionId;
+        return Task.CompletedTask;
+    }
+
+    public Task CloseDialogAsync(CancellationToken ct)
+    {
+        CloseDialogCalls++;
         return Task.CompletedTask;
     }
 

@@ -64,6 +64,16 @@ public sealed class HttpChummerClient : IChummerClient
         return response;
     }
 
+    public async Task<CharacterFileSummary> GetSummaryAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        return await GetRequiredAsync<CharacterFileSummary>($"/api/workspaces/{id.Value}/summary", ct);
+    }
+
+    public async Task<CharacterValidationResult> ValidateAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        return await GetRequiredAsync<CharacterValidationResult>($"/api/workspaces/{id.Value}/validate", ct);
+    }
+
     public async Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)
     {
         return await GetRequiredAsync<CharacterProfileSection>($"/api/workspaces/{id.Value}/profile", ct);

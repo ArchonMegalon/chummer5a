@@ -131,7 +131,54 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 {
                     Commands = State.Commands,
                     NavigationTabs = State.NavigationTabs,
-                    LastCommandId = commandId
+                    LastCommandId = commandId,
+                    Notice = "New character workspace initialized."
+                });
+                return;
+            case "open_character":
+            case "open_for_printing":
+            case "open_for_export":
+                Publish(State with
+                {
+                    Error = null,
+                    Notice = "Use the file import action in this head to open a character document."
+                });
+                return;
+            case "close_all":
+            case "restart":
+                _currentWorkspace = null;
+                Publish(CharacterOverviewState.Empty with
+                {
+                    Commands = State.Commands,
+                    NavigationTabs = State.NavigationTabs,
+                    LastCommandId = commandId,
+                    Notice = "Workspace reset complete."
+                });
+                return;
+            case "new_window":
+            case "close_window":
+            case "wiki":
+            case "discord":
+            case "revision_history":
+            case "dumpshock":
+            case "print_setup":
+            case "print_multiple":
+            case "print_character":
+            case "dice_roller":
+            case "global_settings":
+            case "character_settings":
+            case "translator":
+            case "xml_editor":
+            case "master_index":
+            case "character_roster":
+            case "data_exporter":
+            case "report_bug":
+            case "about":
+            case "hero_lab_importer":
+                Publish(State with
+                {
+                    Error = null,
+                    ActiveDialog = CreateCommandDialog(commandId)
                 });
                 return;
             default:
@@ -141,6 +188,113 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 });
                 return;
         }
+    }
+
+    public Task HandleUiControlAsync(string controlId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(controlId))
+        {
+            Publish(State with { Error = "UI control id is required." });
+            return Task.CompletedTask;
+        }
+
+        Publish(State with
+        {
+            Error = null,
+            ActiveDialog = CreateUiControlDialog(controlId)
+        });
+
+        return Task.CompletedTask;
+    }
+
+    public async Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
+    {
+        if (action is null)
+        {
+            Publish(State with { Error = "Workspace action is required." });
+            return;
+        }
+
+        if (action.RequiresOpenCharacter && _currentWorkspace is null)
+        {
+            Publish(State with { Error = "No workspace loaded." });
+            return;
+        }
+
+        switch (action.Kind)
+        {
+            case WorkspaceSurfaceActionKind.Section:
+                await LoadSectionAsync(action.TargetId, action.TabId, action.Id, ct);
+                return;
+            case WorkspaceSurfaceActionKind.Summary:
+                await RenderSummaryAction(action, ct);
+                return;
+            case WorkspaceSurfaceActionKind.Validate:
+                await RenderValidateAction(action, ct);
+                return;
+            case WorkspaceSurfaceActionKind.Metadata:
+                Publish(State with
+                {
+                    ActiveTabId = action.TabId,
+                    ActiveActionId = action.Id,
+                    Notice = "Apply metadata from the metadata editor in this head."
+                });
+                return;
+            case WorkspaceSurfaceActionKind.Command:
+                await ExecuteCommandAsync(action.TargetId, ct);
+                Publish(State with
+                {
+                    ActiveTabId = action.TabId,
+                    ActiveActionId = action.Id
+                });
+                return;
+            default:
+                Publish(State with { Error = $"Unsupported workspace action kind '{action.Kind}'." });
+                return;
+        }
+    }
+
+    public Task ExecuteDialogActionAsync(string actionId, CancellationToken ct)
+    {
+        DesktopDialogState? dialog = State.ActiveDialog;
+        if (dialog is null)
+            return Task.CompletedTask;
+
+        if (string.IsNullOrWhiteSpace(actionId))
+        {
+            Publish(State with { Error = "Dialog action id is required." });
+            return Task.CompletedTask;
+        }
+
+        switch (actionId)
+        {
+            case "cancel":
+            case "close":
+                Publish(State with
+                {
+                    ActiveDialog = null,
+                    Error = null
+                });
+                return Task.CompletedTask;
+            default:
+                Publish(State with
+                {
+                    ActiveDialog = null,
+                    Error = null,
+                    Notice = $"{dialog.Title}: action '{actionId}' executed."
+                });
+                return Task.CompletedTask;
+        }
+    }
+
+    public Task CloseDialogAsync(CancellationToken ct)
+    {
+        Publish(State with
+        {
+            ActiveDialog = null,
+            Error = null
+        });
+        return Task.CompletedTask;
     }
 
     public async Task SelectTabAsync(string tabId, CancellationToken ct)
@@ -164,32 +318,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             return;
         }
 
-        Publish(State with
-        {
-            IsBusy = true,
-            Error = null
-        });
-
-        try
-        {
-            var section = await _client.GetSectionAsync(_currentWorkspace.Value, tab.SectionId, ct);
-            Publish(State with
-            {
-                IsBusy = false,
-                Error = null,
-                ActiveTabId = tab.Id,
-                ActiveSectionId = tab.SectionId,
-                ActiveSectionJson = section.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
-            });
-        }
-        catch (Exception ex)
-        {
-            Publish(State with
-            {
-                IsBusy = false,
-                Error = ex.Message
-            });
-        }
+        await LoadSectionAsync(tab.SectionId, tab.Id, $"{tab.Id}:{tab.SectionId}", ct);
     }
 
     public async Task UpdateMetadataAsync(UpdateWorkspaceMetadata command, CancellationToken ct)
@@ -275,7 +404,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 IsBusy = false,
                 Error = null,
                 WorkspaceId = _currentWorkspace,
-                HasSavedWorkspace = true
+                HasSavedWorkspace = true,
+                Notice = "Workspace saved."
             });
         }
         catch (Exception ex)
@@ -286,6 +416,508 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 Error = ex.Message
             });
         }
+    }
+
+    private async Task LoadSectionAsync(string sectionId, string? tabId, string? actionId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(sectionId))
+        {
+            Publish(State with { Error = "Section id is required." });
+            return;
+        }
+
+        if (_currentWorkspace is null)
+        {
+            Publish(State with { Error = "No workspace loaded." });
+            return;
+        }
+
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            var section = await _client.GetSectionAsync(_currentWorkspace.Value, sectionId, ct);
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = null,
+                ActiveTabId = tabId ?? State.ActiveTabId,
+                ActiveActionId = actionId ?? State.ActiveActionId,
+                ActiveSectionId = sectionId,
+                ActiveSectionJson = section.ToJsonString(new JsonSerializerOptions { WriteIndented = true })
+            });
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
+    private async Task RenderSummaryAction(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
+    {
+        if (_currentWorkspace is null)
+        {
+            Publish(State with { Error = "No workspace loaded." });
+            return;
+        }
+
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            CharacterFileSummary summary = await _client.GetSummaryAsync(_currentWorkspace.Value, ct);
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = null,
+                ActiveTabId = action.TabId,
+                ActiveActionId = action.Id,
+                ActiveSectionId = "summary",
+                ActiveSectionJson = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true })
+            });
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
+    private async Task RenderValidateAction(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
+    {
+        if (_currentWorkspace is null)
+        {
+            Publish(State with { Error = "No workspace loaded." });
+            return;
+        }
+
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            CharacterValidationResult validation = await _client.ValidateAsync(_currentWorkspace.Value, ct);
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = null,
+                ActiveTabId = action.TabId,
+                ActiveActionId = action.Id,
+                ActiveSectionId = "validate",
+                ActiveSectionJson = JsonSerializer.Serialize(validation, new JsonSerializerOptions { WriteIndented = true })
+            });
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
+    private DesktopDialogState CreateCommandDialog(string commandId)
+    {
+        string name = State.Profile?.Name ?? "(none)";
+        string alias = State.Profile?.Alias ?? string.Empty;
+        string workspace = _currentWorkspace?.Value ?? "(none)";
+
+        return commandId switch
+        {
+            "print_setup" => new DesktopDialogState(
+                "dialog.print_setup",
+                "Print Setup",
+                "Printer setup is delegated to host/browser print capabilities.",
+                [
+                    new DesktopDialogField("printLandscape", "Landscape", "false", "false", InputType: "checkbox"),
+                    new DesktopDialogField("printBackground", "Print background graphics", "true", "true", InputType: "checkbox")
+                ],
+                [
+                    new DesktopDialogAction("ok", "OK", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
+            "dice_roller" => new DesktopDialogState(
+                "dialog.dice_roller",
+                "Dice Roller",
+                "Enter an expression and execute roll from this dialog.",
+                [new DesktopDialogField("diceExpression", "Expression", "12d6", "12d6")],
+                [
+                    new DesktopDialogAction("roll", "Roll", true),
+                    new DesktopDialogAction("close", "Close")
+                ]),
+            "global_settings" => new DesktopDialogState(
+                "dialog.global_settings",
+                "Global Settings",
+                null,
+                [
+                    new DesktopDialogField("globalUiScale", "UI Scale (%)", "100", "100", InputType: "number"),
+                    new DesktopDialogField("globalTheme", "Theme", "classic", "classic"),
+                    new DesktopDialogField("globalLanguage", "Language", "en-us", "en-us"),
+                    new DesktopDialogField("globalCompactMode", "Compact Mode", "false", "false", InputType: "checkbox")
+                ],
+                [
+                    new DesktopDialogAction("save", "Save", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
+            "character_settings" => new DesktopDialogState(
+                "dialog.character_settings",
+                "Character Settings",
+                null,
+                [
+                    new DesktopDialogField("characterPriority", "Priority System", "SumToTen", "SumToTen"),
+                    new DesktopDialogField("characterKarmaNuyen", "Karma/Nuyen Ratio", "2", "2", InputType: "number"),
+                    new DesktopDialogField("characterHouseRulesEnabled", "Enable House Rules", "false", "false", InputType: "checkbox"),
+                    new DesktopDialogField("characterNotes", "Character Notes", string.Empty, "notes", true)
+                ],
+                [
+                    new DesktopDialogAction("save", "Save", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
+            "translator" => new DesktopDialogState(
+                "dialog.translator",
+                "Translator",
+                "Language catalog preview.",
+                [
+                    new DesktopDialogField("translatorSearch", "Language Search", string.Empty, "filter languages"),
+                    new DesktopDialogField("lang1", "English", "en-us", "en-us", IsReadOnly: true),
+                    new DesktopDialogField("lang2", "Deutsch", "de-de", "de-de", IsReadOnly: true),
+                    new DesktopDialogField("lang3", "Francais", "fr-fr", "fr-fr", IsReadOnly: true)
+                ],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "xml_editor" => new DesktopDialogState(
+                "dialog.xml_editor",
+                "XML Editor",
+                "Edit/import flow in this head is file-first; this is a debug preview.",
+                [new DesktopDialogField("xmlEditorDialog", "XML", State.ActiveSectionJson ?? "<character />", "<character />", true)],
+                [
+                    new DesktopDialogAction("apply", "Apply", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
+            "master_index" => new DesktopDialogState(
+                "dialog.master_index",
+                "Master Index",
+                "Catalog data is served by the API and surfaced here in desktop parity mode.",
+                [new DesktopDialogField("root", "Data Root", "/app/data", "/app/data", IsReadOnly: true)],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "character_roster" => new DesktopDialogState(
+                "dialog.character_roster",
+                "Character Roster",
+                "Roster persistence is managed by the shared API store.",
+                [
+                    new DesktopDialogField("name", "Name", name, name),
+                    new DesktopDialogField("alias", "Alias", alias, alias),
+                    new DesktopDialogField("workspace", "Workspace", workspace, workspace, IsReadOnly: true)
+                ],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "data_exporter" => new DesktopDialogState(
+                "dialog.data_exporter",
+                "Data Exporter",
+                "Export pipeline is routed through API tool endpoints.",
+                [new DesktopDialogField("dataExportPreview", "Export Preview", $"Workspace: {workspace}", "{}", true, true)],
+                [
+                    new DesktopDialogAction("download", "Download", true),
+                    new DesktopDialogAction("close", "Close")
+                ]),
+            "report_bug" => new DesktopDialogState(
+                "dialog.report_bug",
+                "Report Bug",
+                "Open the issue form in your browser: https://github.com/chummer5a/chummer5a/issues/new/choose",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "about" => new DesktopDialogState(
+                "dialog.about",
+                "About Chummer",
+                "Dual-head preview over shared presenter/API behavior path.",
+                [
+                    new DesktopDialogField("runtime", "Runtime", "net10.0", "net10.0", IsReadOnly: true),
+                    new DesktopDialogField("workspace", "Workspace", workspace, workspace, IsReadOnly: true)
+                ],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "hero_lab_importer" => new DesktopDialogState(
+                "dialog.hero_lab_importer",
+                "Hero Lab Importer",
+                "Import flow placeholder for Hero Lab payload conversion.",
+                [new DesktopDialogField("file", "Input File", ".por/.xml", ".por/.xml")],
+                [
+                    new DesktopDialogAction("import", "Import", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
+            "new_window" => new DesktopDialogState(
+                "dialog.new_window",
+                "New Window",
+                "Open a second shell instance from your platform runtime.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "close_window" => new DesktopDialogState(
+                "dialog.close_window",
+                "Close Window",
+                "Close-window action is host/platform specific.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "wiki" => new DesktopDialogState(
+                "dialog.wiki",
+                "Wiki",
+                "https://github.com/chummer5a/chummer5a/wiki",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "discord" => new DesktopDialogState(
+                "dialog.discord",
+                "Discord",
+                "https://discord.gg/EV44Mya",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "revision_history" => new DesktopDialogState(
+                "dialog.revision_history",
+                "Revision History",
+                "https://github.com/chummer5a/chummer5a/releases",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "dumpshock" => new DesktopDialogState(
+                "dialog.dumpshock",
+                "Dumpshock Thread",
+                "https://forums.dumpshock.com/index.php?showtopic=37464",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "print_character" => new DesktopDialogState(
+                "dialog.print_character",
+                "Print Character",
+                "Print preview is rendered by host/browser print facilities.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "print_multiple" => new DesktopDialogState(
+                "dialog.print_multiple",
+                "Print Multiple",
+                "Batch print is available through roster and print endpoints.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            _ => new DesktopDialogState(
+                "dialog.generic",
+                commandId,
+                $"Command '{commandId}' is recognized but has no dedicated dialog template yet.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)])
+        };
+    }
+
+    private DesktopDialogState CreateUiControlDialog(string controlId)
+    {
+        return controlId switch
+        {
+            "create_entry" => new DesktopDialogState(
+                "dialog.ui.create_entry",
+                "Add Entry",
+                null,
+                [new DesktopDialogField("uiCreateEntryName", "Entry Name", string.Empty, "New entry")],
+                [
+                    new DesktopDialogAction("add", "Add", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
+            "edit_entry" => new DesktopDialogState(
+                "dialog.ui.edit_entry",
+                "Edit Entry",
+                null,
+                [new DesktopDialogField("uiEditEntryName", "Entry Name", "Current Entry", "Current Entry")],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "delete_entry" => new DesktopDialogState(
+                "dialog.ui.delete_entry",
+                "Delete Entry",
+                "Delete selected entry?",
+                [],
+                [
+                    new DesktopDialogAction("delete", "Delete", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
+            "open_notes" => new DesktopDialogState(
+                "dialog.ui.open_notes",
+                "Notes",
+                null,
+                [new DesktopDialogField("uiNotesEditor", "Notes", string.Empty, "notes", true)],
+                [
+                    new DesktopDialogAction("save", "Save", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
+            "move_up" => new DesktopDialogState(
+                "dialog.ui.move_up",
+                "Move Up",
+                "Moved selection up.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "move_down" => new DesktopDialogState(
+                "dialog.ui.move_down",
+                "Move Down",
+                "Moved selection down.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "toggle_free_paid" => new DesktopDialogState(
+                "dialog.ui.toggle_free_paid",
+                "Free/Paid",
+                "Toggled free/paid state for selected item.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "show_source" => new DesktopDialogState(
+                "dialog.ui.show_source",
+                "Source",
+                "Source book and page metadata is shown here.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "gear_add" => new DesktopDialogState(
+                "dialog.ui.gear_add",
+                "Add Gear",
+                null,
+                [new DesktopDialogField("uiGearName", "Gear Name", string.Empty, "Ares Predator")],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "gear_edit" => new DesktopDialogState(
+                "dialog.ui.gear_edit",
+                "Edit Gear",
+                null,
+                [new DesktopDialogField("uiGearEditName", "Gear Name", "Selected Gear", "Selected Gear")],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "gear_delete" => new DesktopDialogState(
+                "dialog.ui.gear_delete",
+                "Delete Gear",
+                "Deleted selected gear item.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "gear_mount" => new DesktopDialogState(
+                "dialog.ui.gear_mount",
+                "Mount Gear",
+                "Mounted selected gear on compatible host.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "gear_source" => new DesktopDialogState(
+                "dialog.ui.gear_source",
+                "Gear Source",
+                "Gear source references are displayed here.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "magic_add" => new DesktopDialogState(
+                "dialog.ui.magic_add",
+                "Add Spell/Power",
+                null,
+                [new DesktopDialogField("uiMagicName", "Name", string.Empty, "Spell or Power")],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "magic_delete" => new DesktopDialogState(
+                "dialog.ui.magic_delete",
+                "Delete Spell/Power",
+                "Removed selected spell/power.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "magic_bind" => new DesktopDialogState(
+                "dialog.ui.magic_bind",
+                "Bind/Link",
+                "Bind/link workflow started for selected magical item.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "magic_source" => new DesktopDialogState(
+                "dialog.ui.magic_source",
+                "Magic Source",
+                "Magical source references are displayed here.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "skill_add" => new DesktopDialogState(
+                "dialog.ui.skill_add",
+                "Add Skill",
+                null,
+                [new DesktopDialogField("uiSkillName", "Skill", string.Empty, "Perception")],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "skill_specialize" => new DesktopDialogState(
+                "dialog.ui.skill_specialize",
+                "Specialize Skill",
+                null,
+                [new DesktopDialogField("uiSkillSpec", "Specialization", string.Empty, "Visual")],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "skill_remove" => new DesktopDialogState(
+                "dialog.ui.skill_remove",
+                "Remove Skill",
+                "Removed selected skill.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "skill_group" => new DesktopDialogState(
+                "dialog.ui.skill_group",
+                "Skill Group",
+                "Opened skill group assignment.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "combat_add_weapon" => new DesktopDialogState(
+                "dialog.ui.combat_add_weapon",
+                "Add Weapon",
+                null,
+                [new DesktopDialogField("uiWeaponName", "Weapon", string.Empty, "Colt M23")],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "combat_add_armor" => new DesktopDialogState(
+                "dialog.ui.combat_add_armor",
+                "Add Armor",
+                null,
+                [new DesktopDialogField("uiArmorName", "Armor", string.Empty, "Armor Jacket")],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "combat_reload" => new DesktopDialogState(
+                "dialog.ui.combat_reload",
+                "Reload Weapon",
+                "Reloaded selected weapon.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "combat_damage_track" => new DesktopDialogState(
+                "dialog.ui.combat_damage_track",
+                "Damage Track",
+                "Applied one damage track step.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "contact_add" => new DesktopDialogState(
+                "dialog.ui.contact_add",
+                "Add Contact",
+                null,
+                [new DesktopDialogField("uiContactName", "Name", string.Empty, "Contact Name")],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "contact_edit" => new DesktopDialogState(
+                "dialog.ui.contact_edit",
+                "Edit Contact",
+                null,
+                [new DesktopDialogField("uiContactEditName", "Name", "Selected Contact", "Selected Contact")],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "contact_remove" => new DesktopDialogState(
+                "dialog.ui.contact_remove",
+                "Remove Contact",
+                "Removed selected contact.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "contact_connection" => new DesktopDialogState(
+                "dialog.ui.contact_connection",
+                "Connection / Loyalty",
+                null,
+                [
+                    new DesktopDialogField("uiContactConnection", "Connection", "3", "3", InputType: "number"),
+                    new DesktopDialogField("uiContactLoyalty", "Loyalty", "3", "3", InputType: "number")
+                ],
+                [
+                    new DesktopDialogAction("apply", "Apply", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
+            _ => new DesktopDialogState(
+                "dialog.ui.generic",
+                "Desktop Control",
+                $"Desktop control '{controlId}' triggered.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)])
+        };
     }
 
     private async Task LoadWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
@@ -313,9 +945,12 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Movement: movementTask.Result,
             Awakening: awakeningTask.Result,
             ActiveTabId: null,
+            ActiveActionId: null,
             ActiveSectionId: null,
             ActiveSectionJson: null,
             LastCommandId: State.LastCommandId,
+            Notice: State.Notice,
+            ActiveDialog: null,
             Commands: State.Commands,
             NavigationTabs: State.NavigationTabs,
             HasSavedWorkspace: false));

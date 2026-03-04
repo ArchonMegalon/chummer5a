@@ -418,6 +418,14 @@ public class ApiIntegrationTests
         string workspaceId = importResponse["id"]?.GetValue<string>() ?? string.Empty;
         Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceId));
 
+        JsonObject summary = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/summary");
+        Assert.AreEqual("Cerri", summary["name"]?.GetValue<string>());
+        Assert.AreEqual("Apex", summary["alias"]?.GetValue<string>());
+
+        JsonObject validation = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/validate");
+        Assert.AreEqual(true, validation["isValid"]?.GetValue<bool>());
+        Assert.IsTrue(validation["issues"] is JsonArray);
+
         JsonObject profile = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/profile");
         Assert.AreEqual("Cerri", profile["name"]?.GetValue<string>());
         Assert.AreEqual("Apex", profile["alias"]?.GetValue<string>());
