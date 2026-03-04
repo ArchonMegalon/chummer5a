@@ -1,5 +1,6 @@
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using Chummer.Contracts.Presentation;
 using Chummer.Presentation.Shell;
 
@@ -7,6 +8,11 @@ namespace Chummer.Avalonia;
 
 public partial class MainWindow
 {
+    private void ShellPresenter_OnStateChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(RefreshState);
+    }
+
     private void RefreshState()
     {
         CharacterOverviewState state = _adapter.State;
