@@ -701,11 +701,15 @@ public class MigrationComplianceTests
         string generatorText = File.ReadAllText(generatorPath);
         string publisherPath = FindPath("scripts", "publish-download-bundle.sh");
         string publisherText = File.ReadAllText(publisherPath);
+        string amendValidatorPath = FindPath("scripts", "validate-amend-manifests.sh");
+        string amendValidatorText = File.ReadAllText(amendValidatorPath);
 
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-manifest\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync\"");
+        StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"amend-checksums\"");
         StringAssert.Contains(runbookText, "bash scripts/generate-releases-manifest.sh");
         StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle.sh");
+        StringAssert.Contains(runbookText, "bash scripts/validate-amend-manifests.sh");
 
         StringAssert.Contains(generatorText, "Docker/Downloads/releases.json");
         StringAssert.Contains(generatorText, "Chummer.Portal/downloads/releases.json");
@@ -714,6 +718,31 @@ public class MigrationComplianceTests
         StringAssert.Contains(publisherText, "Expected desktop-download-bundle layout");
         StringAssert.Contains(publisherText, "generate-releases-manifest.sh");
         StringAssert.Contains(publisherText, "Published ${#artifacts[@]} desktop artifact(s)");
+
+        StringAssert.Contains(amendValidatorText, "checksums map is required");
+        StringAssert.Contains(amendValidatorText, "missing checksum entry");
+        StringAssert.Contains(amendValidatorText, "data");
+        StringAssert.Contains(amendValidatorText, "lang");
+    }
+
+    [TestMethod]
+    public void Amend_manifest_checksum_policy_is_enforced_in_ci()
+    {
+        string desktopWorkflowPath = FindPath(".github", "workflows", "desktop-downloads-matrix.yml");
+        string desktopWorkflowText = File.ReadAllText(desktopWorkflowPath);
+        string guardrailsWorkflowPath = FindPath(".github", "workflows", "docker-architecture-guardrails.yml");
+        string guardrailsWorkflowText = File.ReadAllText(guardrailsWorkflowPath);
+        string manifestPath = FindPath("Docker", "Amends", "manifest.json");
+        string manifestText = File.ReadAllText(manifestPath);
+
+        StringAssert.Contains(desktopWorkflowText, "scripts/validate-amend-manifests.sh");
+        StringAssert.Contains(desktopWorkflowText, "Validate amend manifests checksums");
+        StringAssert.Contains(guardrailsWorkflowText, "amend-manifest-checksums");
+        StringAssert.Contains(guardrailsWorkflowText, "bash scripts/validate-amend-manifests.sh");
+
+        StringAssert.Contains(manifestText, "\"checksums\"");
+        StringAssert.Contains(manifestText, "\"data/qualities.test-amend.xml\"");
+        StringAssert.Contains(manifestText, "\"lang/en-us.test-amend.xml\"");
     }
 
     [TestMethod]

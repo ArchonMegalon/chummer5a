@@ -80,6 +80,7 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_path "Chummer.Blazor.Desktop/Program.cs"
   require_path "Chummer.Desktop.Runtime/ServiceCollectionDesktopRuntimeExtensions.cs"
   require_path "Chummer.Blazor.Desktop/wwwroot/index.html"
+  require_path "scripts/validate-amend-manifests.sh"
 
   require_match "Chummer.Blazor.Desktop\\\\Chummer.Blazor.Desktop.csproj" "Chummer.sln"
   require_match "Photino.Blazor" "Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj"
@@ -98,12 +99,15 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "Chummer.Portal/\\*\\*" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "scripts/generate-releases-manifest.sh" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "scripts/publish-download-bundle.sh" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "scripts/validate-amend-manifests.sh" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "chummer-\\(\\?P<app>avalonia\\|blazor-desktop\\)-" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "id': f'\\{app\\}-\\{rid\\}'" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "RUNBOOK_MODE\" == \"downloads-manifest\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"downloads-sync\"" "scripts/runbook.sh"
+  require_match "RUNBOOK_MODE\" == \"amend-checksums\"" "scripts/runbook.sh"
   require_match "bash scripts/generate-releases-manifest.sh" "scripts/runbook.sh"
   require_match "bash scripts/publish-download-bundle.sh" "scripts/runbook.sh"
+  require_match "bash scripts/validate-amend-manifests.sh" "scripts/runbook.sh"
   require_match "Docker/Downloads/releases.json" "scripts/generate-releases-manifest.sh"
   require_match "Chummer.Portal/downloads/releases.json" "scripts/generate-releases-manifest.sh"
   require_match "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR" ".github/workflows/desktop-downloads-matrix.yml"
@@ -131,6 +135,19 @@ if [[ "$RUNBOOK_MODE" == "desktop-build" ]]; then
   echo
   echo "== desktop build extract =="
   rg -n "Build succeeded|Build FAILED|error CS|error NU|error :" "$DESKTOP_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "amend-checksums" ]]; then
+  AMEND_TARGET="${AMEND_TARGET:-${RUNBOOK_ARG_FRAMEWORK:-Docker/Amends}}"
+  AMEND_CHECKSUM_LOG_FILE="${AMEND_CHECKSUM_LOG_FILE:-/tmp/chummer-amend-checksums.log}"
+  set +e
+  bash scripts/validate-amend-manifests.sh "$AMEND_TARGET" 2>&1 | tee "$AMEND_CHECKSUM_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== amend checksum validation summary =="
+  rg -n "Validated|ERROR:" "$AMEND_CHECKSUM_LOG_FILE" | tail -n 200 || true
   exit "$status"
 fi
 
