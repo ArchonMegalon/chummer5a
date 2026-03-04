@@ -649,11 +649,15 @@ public class MigrationComplianceTests
         StringAssert.Contains(codeText, "_openWorkspacesList = OpenWorkspacesList;");
         StringAssert.Contains(codeText, "_navigationTabsList = NavigationTabsList;");
         StringAssert.Contains(codeText, "_dialogActionsList = DialogActionsList;");
+        StringAssert.Contains(codeText, "UpdateMenuButtonStates");
+        StringAssert.Contains(codeText, "menuButton.Classes.Set(\"active-menu\", active);");
 
         StringAssert.Contains(xamlText, "x:Name=\"CommandsList\"");
         StringAssert.Contains(xamlText, "x:Name=\"OpenWorkspacesList\"");
         StringAssert.Contains(xamlText, "x:Name=\"NavigationTabsList\"");
         StringAssert.Contains(xamlText, "x:Name=\"DialogActionsList\"");
+        StringAssert.Contains(xamlText, "Classes=\"menu-button\"");
+        StringAssert.Contains(xamlText, "Button.menu-button.active-menu");
     }
 
     [TestMethod]

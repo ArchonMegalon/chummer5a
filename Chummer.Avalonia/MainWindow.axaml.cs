@@ -42,6 +42,7 @@ public partial class MainWindow : Window
     private readonly TextBlock _dialogMessageText;
     private readonly ListBox _dialogFieldsList;
     private readonly ListBox _dialogActionsList;
+    private readonly Button[] _menuButtons;
     private DesktopDialogWindow? _dialogWindow;
     private bool _suppressCommandSelectionEvent;
     private bool _suppressWorkspaceSelectionEvent;
@@ -94,6 +95,15 @@ public partial class MainWindow : Window
         _dialogFieldsList = DialogFieldsList;
         _dialogActionsList = DialogActionsList;
         _dialogActionsList.SelectionChanged += DialogActionsList_OnSelectionChanged;
+        _menuButtons =
+        [
+            MenuFileButton,
+            MenuEditButton,
+            MenuSpecialButton,
+            MenuToolsButton,
+            MenuWindowsButton,
+            MenuHelpButton
+        ];
 
         RefreshState();
         Opened += OnOpened;
@@ -219,6 +229,7 @@ public partial class MainWindow : Window
         _serviceStateText.Text = $"Service: {(state.Error is null ? "online" : "error")}";
         _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
         _complianceStateText.Text = $"Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}";
+        UpdateMenuButtonStates(shellState, state.IsBusy);
 
         IEnumerable<AppCommandDefinition> visibleCommands = shellState.Commands
             .Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
@@ -331,6 +342,23 @@ public partial class MainWindow : Window
     private void ShellPresenter_OnStateChanged(object? sender, EventArgs e)
     {
         Dispatcher.UIThread.Post(RefreshState);
+    }
+
+    private void UpdateMenuButtonStates(ShellState shellState, bool isBusy)
+    {
+        HashSet<string> knownMenus = shellState.MenuRoots
+            .Select(menu => menu.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (Button menuButton in _menuButtons)
+        {
+            string menuId = menuButton.Content?.ToString()?.Trim().ToLowerInvariant() ?? string.Empty;
+            bool known = knownMenus.Contains(menuId);
+            bool active = known && string.Equals(shellState.OpenMenuId, menuId, StringComparison.Ordinal);
+
+            menuButton.IsEnabled = known && !isBusy;
+            menuButton.Classes.Set("active-menu", active);
+        }
     }
 
     private async void CommandsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)

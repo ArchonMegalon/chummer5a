@@ -7,14 +7,20 @@
         MinHeight="680"
         Title="Chummer Avalonia Head"
         KeyDown="Window_OnKeyDown">
+  <Window.Styles>
+    <Style Selector="Button.menu-button.active-menu">
+      <Setter Property="Background" Value="#dbeafe" />
+      <Setter Property="BorderBrush" Value="#2563eb" />
+    </Style>
+  </Window.Styles>
   <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12" RowSpacing="8">
     <StackPanel Grid.Row="0" x:Name="MenuBarPanel" Orientation="Horizontal" Spacing="6">
-      <Button x:Name="MenuFileButton" Content="File" Click="MenuButton_OnClick" />
-      <Button x:Name="MenuEditButton" Content="Edit" Click="MenuButton_OnClick" />
-      <Button x:Name="MenuSpecialButton" Content="Special" Click="MenuButton_OnClick" />
-      <Button x:Name="MenuToolsButton" Content="Tools" Click="MenuButton_OnClick" />
-      <Button x:Name="MenuWindowsButton" Content="Windows" Click="MenuButton_OnClick" />
-      <Button x:Name="MenuHelpButton" Content="Help" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuFileButton" Classes="menu-button" Content="File" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuEditButton" Classes="menu-button" Content="Edit" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuSpecialButton" Classes="menu-button" Content="Special" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuToolsButton" Classes="menu-button" Content="Tools" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuWindowsButton" Classes="menu-button" Content="Windows" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuHelpButton" Classes="menu-button" Content="Help" Click="MenuButton_OnClick" />
     </StackPanel>
 
     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
