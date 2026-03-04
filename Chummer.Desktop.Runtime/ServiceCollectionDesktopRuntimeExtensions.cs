@@ -60,7 +60,8 @@ public static class ServiceCollectionDesktopRuntimeExtensions
         string? configured = Environment.GetEnvironmentVariable(ApiBaseUrlEnvironmentVariable);
         if (string.IsNullOrWhiteSpace(configured))
         {
-            configured = "http://127.0.0.1:8088";
+            throw new InvalidOperationException(
+                $"Set {ApiBaseUrlEnvironmentVariable} when {DesktopClientModeEnvironmentVariable}=http.");
         }
 
         if (!Uri.TryCreate(configured, UriKind.Absolute, out Uri? uri))

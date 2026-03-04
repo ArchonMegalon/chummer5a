@@ -573,6 +573,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeText, "CHUMMER_API_BASE_URL");
         StringAssert.Contains(runtimeText, "CHUMMER_API_KEY");
         StringAssert.Contains(runtimeText, "AddChummerHeadlessCore");
+        StringAssert.Contains(runtimeText, "Set {ApiBaseUrlEnvironmentVariable} when {DesktopClientModeEnvironmentVariable}=http.");
+        Assert.IsFalse(runtimeText.Contains("http://127.0.0.1:8088", StringComparison.Ordinal));
 
         StringAssert.Contains(indexText, "<app>Loading...</app>");
         StringAssert.Contains(indexText, "_content/Chummer.Blazor/app.css");

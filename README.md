@@ -161,7 +161,7 @@ Desktop artifact workflow:
 
 * `.github/workflows/desktop-downloads-matrix.yml` publishes both Avalonia and Blazor desktop artifacts for multiple RIDs and generates `releases.json` with SHA-256 checksums.
 * The workflow uploads a `desktop-download-bundle` artifact in portal layout (`releases.json` + `files/*`) for direct sync into mounted portal downloads storage.
-* Desktop heads default to in-process runtime (`CHUMMER_DESKTOP_CLIENT_MODE=inprocess` by default); set `CHUMMER_DESKTOP_CLIENT_MODE=http` to route desktop calls through `CHUMMER_API_BASE_URL`/`CHUMMER_API_KEY`.
+* Desktop heads default to in-process runtime (`CHUMMER_DESKTOP_CLIENT_MODE=inprocess` by default); set `CHUMMER_DESKTOP_CLIENT_MODE=http` only when intentionally running as a thin API client, and provide `CHUMMER_API_BASE_URL` (required) plus `CHUMMER_API_KEY` (optional).
 * Push trigger coverage includes portal/download publication paths (`Chummer.Portal/**`, `scripts/generate-releases-manifest.sh`, `scripts/publish-download-bundle.sh`) so download-surface changes run the same artifact pipeline.
 * Automatic deployment: set repository variable `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` and Docker-branch pushes will publish the bundle using `scripts/publish-download-bundle.sh`.
 * `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` is resolved on the workflow runner filesystem; automatic deployment requires a runner that can write to the portal downloads storage (for example, self-hosted runner with shared mount/network volume).
