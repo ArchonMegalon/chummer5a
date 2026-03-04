@@ -8,6 +8,7 @@ services:
     environment:
       CHUMMER_STATE_PATH: "/app/state"
       CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
+      CHUMMER_PROTECT_API_DOCS: "${CHUMMER_PROTECT_API_DOCS:-}"
       CHUMMER_AMENDS_PATH: "/app/amends"
     ports:
       - "${CHUMMER_API_PORT:-${CHUMMER_WEB_PORT:-8088}}:8080"

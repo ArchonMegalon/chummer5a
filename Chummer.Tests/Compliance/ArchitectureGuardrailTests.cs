@@ -30,7 +30,8 @@ public class ArchitectureGuardrailTests
     private static readonly string[] UiHeadProjects =
     {
         "Chummer.Blazor",
-        "Chummer.Avalonia"
+        "Chummer.Avalonia",
+        "Chummer.Avalonia.Browser"
     };
 
     private static readonly string[] ForbiddenUiHeadLayerUsings =
@@ -206,7 +207,8 @@ public class ArchitectureGuardrailTests
             ["Chummer.Portal"] = new HashSet<string>(StringComparer.Ordinal),
             ["Chummer.Web"] = new HashSet<string>(StringComparer.Ordinal),
             ["Chummer.Blazor"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation" },
-            ["Chummer.Avalonia"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation" }
+            ["Chummer.Avalonia"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation" },
+            ["Chummer.Avalonia.Browser"] = new HashSet<string>(StringComparer.Ordinal)
         };
 
         foreach ((string project, HashSet<string> allowed) in allowedReferences)

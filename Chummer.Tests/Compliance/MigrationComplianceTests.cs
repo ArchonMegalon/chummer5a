@@ -163,6 +163,7 @@ public class MigrationComplianceTests
             @"Chummer.Presentation\Chummer.Presentation.csproj",
             @"Chummer.Portal\Chummer.Portal.csproj",
             @"Chummer.Avalonia\Chummer.Avalonia.csproj",
+            @"Chummer.Avalonia.Browser\Chummer.Avalonia.Browser.csproj",
             @"Chummer.Blazor\Chummer.Blazor.csproj"
         };
 
@@ -531,6 +532,29 @@ public class MigrationComplianceTests
         StringAssert.Contains(playwrightScriptText, "global_settings");
         StringAssert.Contains(playwrightScriptText, "Save Workspace");
         StringAssert.Contains(playwrightScriptText, "playwright UI flow completed");
+    }
+
+    [TestMethod]
+    public void Portal_playwright_e2e_uses_portal_stack_dependencies()
+    {
+        string portalScriptPath = FindPath("scripts", "e2e-portal.sh");
+        string portalScriptText = File.ReadAllText(portalScriptPath);
+
+        StringAssert.Contains(portalScriptText, "chummer-playwright-portal");
+        StringAssert.Contains(portalScriptText, "docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-avalonia-browser chummer-portal");
+    }
+
+    [TestMethod]
+    public void Portal_docs_route_uses_dedicated_docs_cluster()
+    {
+        string portalProgramPath = FindPath("Chummer.Portal", "Program.cs");
+        string portalProgramText = File.ReadAllText(portalProgramPath);
+
+        StringAssert.Contains(portalProgramText, "CHUMMER_PORTAL_DOCS_URL");
+        StringAssert.Contains(portalProgramText, "RouteId = \"portal-docs\"");
+        StringAssert.Contains(portalProgramText, "ClusterId = \"docs-cluster\"");
+        StringAssert.Contains(portalProgramText, "Path = \"/docs/{**catch-all}\"");
+        StringAssert.Contains(portalProgramText, "BuildRouteTransforms(apiRouteTransforms, \"/docs\")");
     }
 
     [TestMethod]

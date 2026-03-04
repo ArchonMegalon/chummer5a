@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Chummer.Contracts.Api;
+using Chummer.Infrastructure.Files;
 using Chummer.Infrastructure.Xml;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -53,6 +54,38 @@ public class ToolCatalogServiceTests
             Assert.AreEqual(2, response.Languages.Count);
             Assert.IsTrue(response.Languages.Any(language => language.Code == "en-us" && language.Name == "English"));
             Assert.IsTrue(response.Languages.Any(language => language.Code == "fr-fr" && language.Name == "fr-fr"));
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
+    [TestMethod]
+    public void Translator_languages_ignores_fragment_overlay_file_when_canonical_language_exists()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string baseLang = Path.Combine(root, "lang");
+            Directory.CreateDirectory(baseLang);
+            File.WriteAllText(Path.Combine(baseLang, "en-us.xml"), "<chummer><name>English</name></chummer>");
+
+            string amendsRoot = Path.Combine(root, "Amends");
+            string overlayLang = Path.Combine(amendsRoot, "lang");
+            Directory.CreateDirectory(overlayLang);
+            File.WriteAllText(Path.Combine(amendsRoot, "manifest.json"),
+                "{\n  \"id\": \"local-test-amend\",\n  \"name\": \"Local Test Amend\",\n  \"priority\": 100,\n  \"enabled\": true\n}");
+            File.WriteAllText(Path.Combine(overlayLang, "en-us.test-amend.xml"), "<chummer><strings /></chummer>");
+
+            var overlays = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
+            var service = new XmlToolCatalogService(overlays);
+            TranslatorLanguagesResponse response = service.GetTranslatorLanguages();
+
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(1, response.Languages.Count);
+            Assert.AreEqual("en-us", response.Languages[0].Code);
+            Assert.AreEqual("English", response.Languages[0].Name);
         }
         finally
         {

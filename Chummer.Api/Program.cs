@@ -15,19 +15,23 @@ app.UseStaticFiles();
 string? configuredApiKey = builder.Configuration["Chummer:ApiKey"];
 string? environmentApiKey = Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
 string? apiKey = configuredApiKey ?? environmentApiKey;
+bool protectApiDocs = ResolveBoolean(
+    builder.Configuration["Chummer:ProtectApiDocs"],
+    Environment.GetEnvironmentVariable("CHUMMER_PROTECT_API_DOCS"));
 
 if (!string.IsNullOrWhiteSpace(apiKey))
 {
     app.Use(async (context, next) =>
     {
         PathString path = context.Request.Path;
-        if (!path.StartsWithSegments("/api", StringComparison.Ordinal))
+        if (!RequiresApiKey(path, protectApiDocs))
         {
             await next();
             return;
         }
 
-        if (IsPublicApiPath(path) || HttpMethods.IsOptions(context.Request.Method))
+        if (path.StartsWithSegments("/api", StringComparison.Ordinal)
+            && (IsPublicApiPath(path) || HttpMethods.IsOptions(context.Request.Method)))
         {
             await next();
             return;
@@ -75,6 +79,28 @@ static bool IsPublicApiPath(PathString path)
         || path.StartsWithSegments("/api/content/overlays", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/commands", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/navigation-tabs", StringComparison.Ordinal);
+}
+
+static bool RequiresApiKey(PathString path, bool protectApiDocs)
+{
+    if (path.StartsWithSegments("/api", StringComparison.Ordinal))
+    {
+        return true;
+    }
+
+    if (!protectApiDocs)
+    {
+        return false;
+    }
+
+    return path.StartsWithSegments("/openapi", StringComparison.Ordinal)
+        || path.StartsWithSegments("/docs", StringComparison.Ordinal);
+}
+
+static bool ResolveBoolean(string? configuredValue, string? environmentValue)
+{
+    string? raw = configuredValue ?? environmentValue;
+    return bool.TryParse(raw, out bool parsed) && parsed;
 }
 
 static bool ConstantTimeEquals(string left, string right)

@@ -67,6 +67,7 @@ docker compose up -d --build chummer-api chummer-blazor
 ```
 
 When set, `Chummer.Api` enforces `X-Api-Key` for non-public `/api/*` routes and both UI heads automatically forward the key.
+Set `CHUMMER_PROTECT_API_DOCS=true` to apply the same API-key gate to `/openapi/*` and `/docs/*`.
 
 Run migration/compliance test loop (branch helper script):
 
@@ -119,6 +120,7 @@ Portal notes (current milestone):
 * `/api`, `/openapi`, and `/docs` are served via in-process portal proxy routing.
 * `/docs/*` resolves through `CHUMMER_PORTAL_DOCS_URL` (default `http://chummer-api:8080/docs/`) while `/openapi/*` resolves through `CHUMMER_PORTAL_API_URL`.
 * `/docs` is self-hosted (no external CDN dependency) and loads local assets from the API host.
+* `CHUMMER_PROTECT_API_DOCS=true` on the API service protects `/docs` and `/openapi` with the same `X-Api-Key` middleware as protected `/api/*` routes.
 * `/blazor` is served through an in-process portal proxy to an internal `chummer-blazor-portal` instance configured with `CHUMMER_BLAZOR_PATH_BASE=/blazor`.
 * `/avalonia` is served through an in-process portal proxy to an internal `chummer-avalonia-browser` host service configured with `CHUMMER_AVALONIA_BROWSER_PATH_BASE=/avalonia`.
 * Set `CHUMMER_PORTAL_AVALONIA_PROXY_URL` to a different upstream or clear it to fall back to the built-in portal placeholder route.

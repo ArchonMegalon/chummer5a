@@ -171,8 +171,9 @@ public sealed class FileSystemContentOverlayCatalogService : IContentOverlayCata
         }
 
         HashSet<string> seen = new(StringComparer.Ordinal);
+        char[] separators = BuildAmendsPathSeparators();
 
-        foreach (string rawPath in configuredAmendsPath.Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        foreach (string rawPath in configuredAmendsPath.Split(separators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             if (string.IsNullOrWhiteSpace(rawPath))
             {
@@ -213,6 +214,13 @@ public sealed class FileSystemContentOverlayCatalogService : IContentOverlayCata
                 }
             }
         }
+    }
+
+    private static char[] BuildAmendsPathSeparators()
+    {
+        HashSet<char> separators = [';', ','];
+        separators.Add(Path.PathSeparator);
+        return separators.ToArray();
     }
 
     private static ContentOverlayPack BuildOverlayPack(string rootPath)

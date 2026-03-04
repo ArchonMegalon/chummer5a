@@ -60,9 +60,9 @@ public sealed class XmlToolCatalogService : IToolCatalogService
             return new TranslatorLanguagesResponse(0, Array.Empty<TranslatorLanguageEntry>());
 
         List<TranslatorLanguageEntry> languages = new();
-        foreach ((string fileName, string filePath) in filesByName.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        Dictionary<string, string> filesByCode = CollapseLanguageFilesByCode(filesByName);
+        foreach ((string code, string filePath) in filesByCode.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
         {
-            string code = Path.GetFileNameWithoutExtension(fileName);
             string name = code;
             try
             {
@@ -82,6 +82,41 @@ public sealed class XmlToolCatalogService : IToolCatalogService
         return new TranslatorLanguagesResponse(
             Count: languages.Count,
             Languages: languages);
+    }
+
+    private static Dictionary<string, string> CollapseLanguageFilesByCode(IReadOnlyDictionary<string, string> filesByName)
+    {
+        Dictionary<string, string> filesByCode = new(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> canonicalNames = filesByName.Keys
+            .Select(fileName => Path.GetFileNameWithoutExtension(fileName))
+            .Where(stem => !string.IsNullOrWhiteSpace(stem) && !stem.Contains('.', StringComparison.Ordinal))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach ((string fileName, string filePath) in filesByName.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            string stem = Path.GetFileNameWithoutExtension(fileName);
+            if (string.IsNullOrWhiteSpace(stem))
+            {
+                continue;
+            }
+
+            string code = stem.Split('.', 2)[0];
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                continue;
+            }
+
+            bool isFragmentFile = stem.Contains('.', StringComparison.Ordinal);
+            if (isFragmentFile && canonicalNames.Contains(code))
+            {
+                // Keep fragment overlays from showing up as synthetic languages when a canonical language file exists.
+                continue;
+            }
+
+            filesByCode[code] = filePath;
+        }
+
+        return filesByCode;
     }
 
     private static IReadOnlyDictionary<string, string> EnumerateMergedFiles(IReadOnlyList<string> directories)

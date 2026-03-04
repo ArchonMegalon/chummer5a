@@ -77,6 +77,36 @@ public class ContentOverlayCatalogServiceTests
         }
     }
 
+    [TestMethod]
+    public void Multiple_amend_roots_support_platform_path_separator()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string baseData = Path.Combine(root, "data");
+            Directory.CreateDirectory(baseData);
+            File.WriteAllText(Path.Combine(baseData, "lifemodules.xml"), "<chummer><source>base</source></chummer>");
+
+            string packOne = Path.Combine(root, "AmendsOne");
+            string packTwo = Path.Combine(root, "AmendsTwo");
+            CreateRootPack(packOne, "pack-one", priority: 10);
+            CreateRootPack(packTwo, "pack-two", priority: 20);
+
+            string configured = string.Join(Path.PathSeparator, packOne, packTwo);
+            var service = new FileSystemContentOverlayCatalogService(root, root, configured);
+            var catalog = service.GetCatalog();
+
+            Assert.AreEqual(2, catalog.Overlays.Count);
+            CollectionAssert.AreEqual(
+                new[] { "pack-one", "pack-two" },
+                catalog.Overlays.Select(overlay => overlay.Id).ToArray());
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
     private static void CreatePack(string amendsRoot, string id, int priority, bool enabled, string dataFileContent)
     {
         string packRoot = Path.Combine(amendsRoot, id);
@@ -89,6 +119,18 @@ public class ContentOverlayCatalogServiceTests
             "  \"enabled\": " + (enabled ? "true" : "false") + "\n" +
             "}");
         File.WriteAllText(Path.Combine(packRoot, "data", "lifemodules.xml"), dataFileContent);
+    }
+
+    private static void CreateRootPack(string rootPath, string id, int priority)
+    {
+        Directory.CreateDirectory(Path.Combine(rootPath, "data"));
+        File.WriteAllText(Path.Combine(rootPath, "manifest.json"),
+            "{\n" +
+            "  \"id\": \"" + id + "\",\n" +
+            "  \"name\": \"" + id + "\",\n" +
+            "  \"priority\": " + priority + ",\n" +
+            "  \"enabled\": true\n" +
+            "}");
     }
 
     private static string CreateTempDirectory()
