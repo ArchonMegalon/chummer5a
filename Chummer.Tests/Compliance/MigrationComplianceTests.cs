@@ -504,6 +504,27 @@ public class MigrationComplianceTests
         StringAssert.Contains(testText, "DialogHost_renders_dialog_and_emits_events");
     }
 
+    [TestMethod]
+    public void Playwright_ui_e2e_gate_is_present_for_phase4_gate()
+    {
+        string uiE2ePath = FindPath("scripts", "e2e-ui.sh");
+        string uiE2eText = File.ReadAllText(uiE2ePath);
+        string migrationLoopPath = FindPath("scripts", "migration-loop.sh");
+        string migrationLoopText = File.ReadAllText(migrationLoopPath);
+        string playwrightScriptPath = FindPath("scripts", "e2e-ui-playwright.cjs");
+        string playwrightScriptText = File.ReadAllText(playwrightScriptPath);
+
+        StringAssert.Contains(uiE2eText, "CHUMMER_UI_PLAYWRIGHT");
+        StringAssert.Contains(uiE2eText, "docker compose --profile test run --rm -T chummer-playwright");
+        StringAssert.Contains(migrationLoopText, "bash scripts/e2e-ui.sh");
+
+        StringAssert.Contains(playwrightScriptText, "Import Raw XML");
+        StringAssert.Contains(playwrightScriptText, "#tab-skills");
+        StringAssert.Contains(playwrightScriptText, "global_settings");
+        StringAssert.Contains(playwrightScriptText, "Save Workspace");
+        StringAssert.Contains(playwrightScriptText, "playwright UI flow completed");
+    }
+
     private static string ToSectionName(string pascalName)
     {
         return pascalName.ToLowerInvariant();

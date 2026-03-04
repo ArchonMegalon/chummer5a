@@ -108,8 +108,9 @@ Progress: all major regions are now separate shell components (`MenuBar`, `ToolS
 Acceptance criteria: component tests validate enable/disable rules and state-driven rendering behaviors.
 Progress: added `Chummer.Tests/Presentation/BlazorShellComponentTests.cs` with bUnit coverage for `MenuBar`, `ToolStrip`, `WorkspaceLeftPane`, `SectionPane`, and `DialogHost`, including callback wiring and enable/disable state assertions.
 
-- [ ] `MIG-042` Add Playwright UI E2E for import -> open workspace -> tab switch -> metadata update -> command execute -> save.
+- [x] `MIG-042` Add Playwright UI E2E for import -> open workspace -> tab switch -> metadata update -> command execute -> save.
 Acceptance criteria: E2E passes against dockerized `chummer-api` + `chummer-blazor`.
+Progress: added `scripts/e2e-ui-playwright.cjs`, dockerized `chummer-playwright` test service, and `scripts/e2e-ui.sh` gate execution with end-to-end flow coverage through import/workspace/tab/metadata/command/save.
 
 - [ ] `MIG-043` Wire Blazor component + Playwright suites into CI.
 Acceptance criteria: CI publishes failures as blocking checks with reproducible run commands.
