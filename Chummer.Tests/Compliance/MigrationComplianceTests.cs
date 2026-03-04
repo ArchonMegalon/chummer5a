@@ -610,6 +610,17 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Portal_downloads_page_shows_explicit_unpublished_state()
+    {
+        string portalPageBuilderPath = FindPath("Chummer.Portal", "PortalPageBuilder.cs");
+        string portalPageBuilderText = File.ReadAllText(portalPageBuilderPath);
+
+        StringAssert.Contains(portalPageBuilderText, "version === 'unpublished'");
+        StringAssert.Contains(portalPageBuilderText, "No published desktop builds yet");
+        StringAssert.Contains(portalPageBuilderText, "Run desktop-downloads workflow and deploy the generated bundle.");
+    }
+
+    [TestMethod]
     public void Desktop_download_matrix_includes_avalonia_and_blazor_desktop_artifacts()
     {
         string workflowPath = FindPath(".github", "workflows", "desktop-downloads-matrix.yml");

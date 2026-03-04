@@ -62,14 +62,23 @@ internal static class PortalPageBuilder
           }
 
           const manifest = await response.json();
+          const version = typeof manifest.version === 'string' ? manifest.version : 'unknown';
+          const channel = typeof manifest.channel === 'string' ? manifest.channel : 'unknown';
           const published = manifest.publishedAt ? new Date(manifest.publishedAt).toISOString() : 'unknown';
-          meta.textContent = `Version ${manifest.version || 'unknown'} (${manifest.channel || 'unknown'}) published ${published}`;
-
           const downloads = Array.isArray(manifest.downloads) ? manifest.downloads : [];
           if (downloads.length === 0) {
+            const isUnpublished = version === 'unpublished';
+            meta.textContent = isUnpublished
+              ? `No published desktop builds yet (${channel}).`
+              : `Version ${version} (${channel}) has no downloadable artifacts.`;
+            empty.textContent = isUnpublished
+              ? 'No published desktop builds yet. Run desktop-downloads workflow and deploy the generated bundle.'
+              : 'Manifest has no platform artifacts.';
             empty.hidden = false;
             return;
           }
+
+          meta.textContent = `Version ${version} (${channel}) published ${published}`;
 
           for (const item of downloads) {
             const row = document.createElement('li');
