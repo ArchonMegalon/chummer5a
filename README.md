@@ -169,6 +169,7 @@ Desktop artifact workflow:
 * Push trigger coverage includes shared runtime/presentation layers and portal/download publication paths (`Chummer.Application/**`, `Chummer.Core/**`, `Chummer.Contracts/**`, `Chummer.Desktop.Runtime/**`, `Chummer.Infrastructure/**`, `Chummer.Presentation/**`, `Chummer.Portal/**`, `scripts/generate-releases-manifest.sh`, `scripts/publish-download-bundle.sh`, `scripts/validate-amend-manifests.sh`) so desktop and download-surface changes run the same artifact pipeline.
 * Automatic deployment: set repository variable `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` and Docker-branch pushes will publish the bundle using `scripts/publish-download-bundle.sh`.
 * `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` is resolved on the workflow runner filesystem; automatic deployment requires a runner that can write to the portal downloads storage (for example, self-hosted runner with shared mount/network volume).
+* Optional live deployment smoke: set repository variable `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` (portal base URL or direct `.../downloads/releases.json`) to have the deploy job verify the published manifest contains at least one artifact.
 * Manual deployment remains available through workflow dispatch with `deploy_portal_downloads=true`.
 
 ## Legacy WinForms Requirements
