@@ -19,7 +19,14 @@ const checks = [
   },
   {
     url: 'http://chummer-portal:8080/avalonia/',
-    assert: text => text.length > 0
+    assert: text => text.includes('Avalonia Browser Host')
+  },
+  {
+    url: 'http://chummer-portal:8080/avalonia/health',
+    assert: text => {
+      const payload = JSON.parse(text);
+      return payload?.head === 'avalonia-browser' && payload?.pathBase === '/avalonia' && payload?.ok === true;
+    }
   },
   {
     method: 'POST',

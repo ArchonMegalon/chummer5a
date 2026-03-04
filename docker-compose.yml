@@ -37,6 +37,14 @@ services:
       CHUMMER_API_BASE_URL: "http://chummer-api:8080"
       CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
       CHUMMER_BLAZOR_PATH_BASE: "/blazor"
+  chummer-avalonia-browser:
+    image: chummer-avalonia-browser:local
+    build:
+      context: .
+      dockerfile: Chummer.Avalonia.Browser/Dockerfile
+    profiles: ["portal"]
+    environment:
+      CHUMMER_AVALONIA_BROWSER_PATH_BASE: "/avalonia"
   chummer-portal:
     image: chummer-portal:local
     build:
@@ -45,12 +53,13 @@ services:
     depends_on:
       - chummer-api
       - chummer-blazor-portal
+      - chummer-avalonia-browser
     profiles: ["portal"]
     environment:
       CHUMMER_PORTAL_BLAZOR_URL: "${CHUMMER_PORTAL_BLAZOR_URL:-/blazor/}"
       CHUMMER_PORTAL_BLAZOR_PROXY_URL: "${CHUMMER_PORTAL_BLAZOR_PROXY_URL:-http://chummer-blazor-portal:8080/}"
       CHUMMER_PORTAL_AVALONIA_URL: "${CHUMMER_PORTAL_AVALONIA_URL:-/avalonia/}"
-      CHUMMER_PORTAL_AVALONIA_PROXY_URL: "${CHUMMER_PORTAL_AVALONIA_PROXY_URL:-}"
+      CHUMMER_PORTAL_AVALONIA_PROXY_URL: "${CHUMMER_PORTAL_AVALONIA_PROXY_URL:-http://chummer-avalonia-browser:8080/}"
       CHUMMER_PORTAL_API_URL: "${CHUMMER_PORTAL_API_URL:-http://chummer-api:8080/}"
       CHUMMER_PORTAL_DOCS_URL: "${CHUMMER_PORTAL_DOCS_URL:-http://chummer-api:8080/docs/}"
       CHUMMER_PORTAL_DOWNLOADS_URL: "${CHUMMER_PORTAL_DOWNLOADS_URL:-https://github.com/chummer5a/chummer5a/releases/latest}"

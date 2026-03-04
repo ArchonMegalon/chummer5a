@@ -33,6 +33,7 @@ The `Docker` branch is an active migration branch and no longer follows a WinFor
 * `chummer-api` (default service)
 * `chummer-blazor` (default service)
 * `chummer-blazor-portal` (under the `portal` profile; internal `/blazor` path-base host)
+* `chummer-avalonia-browser` (under the `portal` profile; internal `/avalonia` browser-head host)
 * `chummer-portal` (under the `portal` profile; single landing + proxy gateway)
 * `chummer-tests` (under the `test` profile only)
 
@@ -55,7 +56,7 @@ docker compose up -d --build chummer-api chummer-blazor
 Start API + Blazor + Portal landing surface:
 
 ```bash
-docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-portal
+docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-avalonia-browser chummer-portal
 ```
 
 Enable API key protection (recommended for production):
@@ -107,6 +108,7 @@ Default endpoints:
 * Blazor health: `http://127.0.0.1:8089/health`
 * Portal landing (profile `portal`): `http://127.0.0.1:8091/`
 * Portal Avalonia route (profile `portal`): `http://127.0.0.1:8091/avalonia/`
+* Portal Avalonia health (profile `portal`): `http://127.0.0.1:8091/avalonia/health`
 * Portal downloads page (profile `portal`): `http://127.0.0.1:8091/downloads/`
 * Portal release manifest (profile `portal`): `http://127.0.0.1:8091/downloads/releases.json`
 
@@ -114,7 +116,8 @@ Portal notes (current milestone):
 
 * `/api` and `/docs` are served via in-process portal proxy routing.
 * `/blazor` is served through an in-process portal proxy to an internal `chummer-blazor-portal` instance configured with `CHUMMER_BLAZOR_PATH_BASE=/blazor`.
-* `/avalonia` serves a setup placeholder by default and switches to in-process proxy routing when `CHUMMER_PORTAL_AVALONIA_PROXY_URL` is configured.
+* `/avalonia` is served through an in-process portal proxy to an internal `chummer-avalonia-browser` host service configured with `CHUMMER_AVALONIA_BROWSER_PATH_BASE=/avalonia`.
+* Set `CHUMMER_PORTAL_AVALONIA_PROXY_URL` to a different upstream or clear it to fall back to the built-in portal placeholder route.
 * `/downloads/` is a local manifest-backed page, `/downloads/releases.json` can be sourced from `CHUMMER_PORTAL_RELEASES_FILE` (default `downloads/releases.json`), and `/downloads/<artifact>` serves local files from `CHUMMER_PORTAL_RELEASES_DIR` (default `downloads`).
 * Set `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL` to route `/downloads/*` through in-process YARP proxy mode instead of local-file mode.
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
