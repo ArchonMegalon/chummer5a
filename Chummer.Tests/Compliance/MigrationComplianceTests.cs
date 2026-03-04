@@ -657,6 +657,29 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Dual_heads_wire_keyboard_shortcuts_for_core_commands()
+    {
+        string blazorHomePath = FindPath("Chummer.Blazor", "Components", "Pages", "Home.razor");
+        string blazorHomeText = File.ReadAllText(blazorHomePath);
+        string avaloniaXamlPath = FindPath("Chummer.Avalonia", "MainWindow.axaml");
+        string avaloniaXamlText = File.ReadAllText(avaloniaXamlPath);
+        string avaloniaCodePath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
+        string avaloniaCodeText = File.ReadAllText(avaloniaCodePath);
+
+        StringAssert.Contains(blazorHomeText, "@onkeydown=\"OnShellKeyDown\"");
+        StringAssert.Contains(blazorHomeText, "args.CtrlKey");
+        StringAssert.Contains(blazorHomeText, "\"save_character\"");
+        StringAssert.Contains(blazorHomeText, "\"close_window\"");
+        StringAssert.Contains(blazorHomeText, "\"global_settings\"");
+
+        StringAssert.Contains(avaloniaXamlText, "KeyDown=\"Window_OnKeyDown\"");
+        StringAssert.Contains(avaloniaCodeText, "Window_OnKeyDown");
+        StringAssert.Contains(avaloniaCodeText, "Key.S => \"save_character\"");
+        StringAssert.Contains(avaloniaCodeText, "Key.W => \"close_window\"");
+        StringAssert.Contains(avaloniaCodeText, "Key.G => \"global_settings\"");
+    }
+
+    [TestMethod]
     public void Avalonia_headless_smoke_suite_is_present_for_phase5_gate()
     {
         string testPath = FindPath("Chummer.Tests", "Presentation", "AvaloniaHeadlessSmokeTests.cs");

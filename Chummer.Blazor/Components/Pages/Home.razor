@@ -6,9 +6,13 @@
 @using System.Text
 @using System.Linq
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
 @using Chummer.Presentation.Shell
 
-<div class="desktop-shell">
+<div class="desktop-shell"
+     @ref="_shellRoot"
+     tabindex="0"
+     @onkeydown="OnShellKeyDown">
     <MenuBar MenuRoots="ShellState.MenuRoots.ToArray()"
              OpenMenuId="ShellState.OpenMenuId"
              IsBusy="State.IsBusy"
@@ -87,6 +91,7 @@
 @code {
     private CharacterOverviewStateBridge? _bridge;
     private const long MaxImportBytes = 8 * 1024 * 1024;
+    private ElementReference _shellRoot;
 
     private string RawImportXml { get; set; } = "<character><name>Demo</name><alias>Sample</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created></character>";
     private string? ImportedFileName { get; set; }
@@ -131,6 +136,14 @@
             _ = InvokeAsync(StateHasChanged);
         });
         await _bridge.InitializeAsync(CancellationToken.None);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _shellRoot.FocusAsync();
+        }
     }
 
     private IEnumerable<AppCommandDefinition> MenuCommands(string menuId)
@@ -267,6 +280,25 @@
 
         _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
         _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnShellKeyDown(KeyboardEventArgs args)
+    {
+        if (_bridge is null || State.IsBusy || !args.CtrlKey)
+            return;
+
+        string? commandId = args.Key switch
+        {
+            "s" or "S" => "save_character",
+            "w" or "W" => "close_window",
+            "g" or "G" => "global_settings",
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(commandId))
+            return;
+
+        await ExecuteCommandAsync(commandId);
     }
 
     private async Task HandleUiControlAsync(string controlId)

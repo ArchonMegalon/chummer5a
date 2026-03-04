@@ -5,7 +5,8 @@
         Height="860"
         MinWidth="1000"
         MinHeight="680"
-        Title="Chummer Avalonia Head">
+        Title="Chummer Avalonia Head"
+        KeyDown="Window_OnKeyDown">
   <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12" RowSpacing="8">
     <StackPanel Grid.Row="0" x:Name="MenuBarPanel" Orientation="Horizontal" Spacing="6">
       <Button x:Name="MenuFileButton" Content="File" Click="MenuButton_OnClick" />

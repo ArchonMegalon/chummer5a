@@ -2,6 +2,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -431,6 +432,32 @@ public partial class MainWindow : Window
         _suppressDialogActionSelectionEvent = true;
         _dialogActionsList.SelectedItem = null;
         _suppressDialogActionSelectionEvent = false;
+    }
+
+    private async void Window_OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            return;
+
+        string? commandId = e.Key switch
+        {
+            Key.S => "save_character",
+            Key.W => "close_window",
+            Key.G => "global_settings",
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(commandId))
+            return;
+
+        e.Handled = true;
+        await RunUiActionAsync(
+            async () =>
+            {
+                await _shellPresenter.ExecuteCommandAsync(commandId, CancellationToken.None);
+                await _adapter.ExecuteCommandAsync(commandId, CancellationToken.None);
+            },
+            $"execute hotkey command '{commandId}'");
     }
 
     private void SyncDialogWindow(CharacterOverviewState state)
