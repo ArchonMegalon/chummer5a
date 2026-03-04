@@ -213,7 +213,7 @@ Progress: added `Chummer.Portal` (`net10.0`) plus compose `portal` profile servi
 Acceptance criteria: one public origin can route subpaths to internal services without exposing per-service public ports.
 Progress: `Chummer.Portal` now proxies `/api/*`, `/openapi/*`, `/docs/*`, `/blazor/*`, `/avalonia/*`, and supports `/downloads/*` in-process proxy mode via `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL`; default mode serves local download files/manifests with fallback redirect. Optional portal API-key forwarding is available through `CHUMMER_PORTAL_API_KEY` (or `CHUMMER_API_KEY` in portal env).
 
-- [ ] `MIG-102` Move Blazor head to stable `/blazor/` app-base deployment behind the portal.
+- [x] `MIG-102` Move Blazor head to stable `/blazor/` app-base deployment behind the portal.
 Acceptance criteria: reload/deep-link/reconnect behavior works when the UI is hosted under `/blazor/`.
 Progress: added path-base aware Blazor hosting plus dedicated `chummer-blazor-portal` service (`CHUMMER_BLAZOR_PATH_BASE=/blazor`) behind portal `/blazor/*` proxy routing; migration loop now runs portal E2E by default (disable with `CHUMMER_PORTAL_E2E=0`) validating `/blazor/health`, `/blazor/` base href, `/_blazor/negotiate`, and `/blazor/deep-link-check` route behavior under the portal path-base.
 

@@ -26,6 +26,7 @@ on:
       - 'global.json'
       - 'scripts/generate-releases-manifest.sh'
       - 'scripts/publish-download-bundle.sh'
+      - 'scripts/verify-releases-manifest.sh'
       - 'scripts/validate-amend-manifests.sh'
 
 permissions:
