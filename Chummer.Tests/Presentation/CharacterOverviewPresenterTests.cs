@@ -225,6 +225,23 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task Save_character_as_command_prepares_download_without_marking_workspace_saved()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.UpdateMetadataAsync(new UpdateWorkspaceMetadata("Updated", "Alias", "Notes"), CancellationToken.None);
+        await presenter.ExecuteCommandAsync("save_character_as", CancellationToken.None);
+
+        Assert.AreEqual("save_character_as", presenter.State.LastCommandId);
+        Assert.AreEqual(1, client.DownloadCalls);
+        Assert.IsFalse(presenter.State.HasSavedWorkspace);
+        Assert.IsNull(presenter.State.Error);
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Download prepared:");
+    }
+
+    [TestMethod]
     public async Task Save_status_is_tracked_per_workspace_when_switching()
     {
         var client = new FakeChummerClient();
@@ -526,6 +543,7 @@ public class CharacterOverviewPresenterTests
         private string _alias = "BLUE";
         private readonly Dictionary<string, WorkspaceListItem> _workspaces = new(StringComparer.Ordinal);
         private int _clock;
+        public int DownloadCalls { get; private set; }
         public UpdateWorkspaceMetadata? LastUpdateMetadata { get; private set; }
         public WorkspaceImportDocument? LastImportedDocument { get; private set; }
         private static readonly IReadOnlyList<AppCommandDefinition> Commands =
@@ -840,6 +858,21 @@ public class CharacterOverviewPresenterTests
                 Value: new WorkspaceSaveReceipt(
                     Id: id,
                     DocumentLength: 64),
+                Error: null));
+        }
+
+        public Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            DownloadCalls++;
+            SeedWorkspace(id.Value, _name, _alias);
+            return Task.FromResult(new CommandResult<WorkspaceDownloadReceipt>(
+                Success: true,
+                Value: new WorkspaceDownloadReceipt(
+                    Id: id,
+                    Format: WorkspaceDocumentFormat.Chum5Xml,
+                    ContentBase64: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<character><name>Download</name></character>")),
+                    FileName: $"{id.Value}.chum5",
+                    DocumentLength: 41),
                 Error: null));
         }
     }

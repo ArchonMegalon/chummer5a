@@ -168,6 +168,12 @@ public sealed class InProcessChummerClient : IChummerClient
         return Task.FromResult(_workspaceService.Save(id));
     }
 
+    public Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.FromResult(_workspaceService.Download(id));
+    }
+
     private static TPayload RequireWorkspacePayload<TPayload>(
         CharacterWorkspaceId id,
         TPayload? payload,

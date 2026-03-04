@@ -30,3 +30,10 @@ public sealed record WorkspaceMetadataResponse(
 public sealed record WorkspaceSaveResponse(
     string Id,
     int DocumentLength);
+
+public sealed record WorkspaceDownloadResponse(
+    string Id,
+    string Format,
+    string ContentBase64,
+    string FileName,
+    int DocumentLength);

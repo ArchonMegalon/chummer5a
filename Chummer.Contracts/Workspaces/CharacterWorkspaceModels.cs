@@ -34,6 +34,13 @@ public sealed record WorkspaceSaveReceipt(
     CharacterWorkspaceId Id,
     int DocumentLength);
 
+public sealed record WorkspaceDownloadReceipt(
+    CharacterWorkspaceId Id,
+    WorkspaceDocumentFormat Format,
+    string ContentBase64,
+    string FileName,
+    int DocumentLength);
+
 public sealed record WorkspaceListItem(
     CharacterWorkspaceId Id,
     CharacterFileSummary Summary,

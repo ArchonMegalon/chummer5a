@@ -60,8 +60,10 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
         switch (commandId)
         {
             case "save_character":
-            case "save_character_as":
                 await context.SaveAsync(ct);
+                return;
+            case "save_character_as":
+                await context.SaveAsAsync(ct);
                 return;
             case "refresh_character":
                 if (context.CurrentWorkspace is null)

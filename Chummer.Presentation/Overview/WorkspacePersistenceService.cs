@@ -51,4 +51,24 @@ public sealed class WorkspacePersistenceService : IWorkspacePersistenceService
             Success: true,
             Error: null);
     }
+
+    public async Task<WorkspaceDownloadResult> DownloadAsync(
+        IChummerClient client,
+        CharacterWorkspaceId workspaceId,
+        CancellationToken ct)
+    {
+        CommandResult<WorkspaceDownloadReceipt> result = await client.DownloadAsync(workspaceId, ct);
+        if (!result.Success || result.Value is null)
+        {
+            return new WorkspaceDownloadResult(
+                Success: false,
+                Receipt: null,
+                Error: result.Error ?? "Download failed.");
+        }
+
+        return new WorkspaceDownloadResult(
+            Success: true,
+            Receipt: result.Value,
+            Error: null);
+    }
 }

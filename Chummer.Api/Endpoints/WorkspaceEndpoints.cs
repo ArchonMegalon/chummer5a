@@ -155,6 +155,21 @@ public static class WorkspaceEndpoints
                 DocumentLength: result.Value.DocumentLength));
         });
 
+        app.MapPost("/api/workspaces/{id}/download", (string id, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            CommandResult<WorkspaceDownloadReceipt> result = workspaceService.Download(workspaceId);
+            if (!result.Success || result.Value is null)
+                return Results.NotFound(new { error = result.Error ?? "Workspace not found." });
+
+            return Results.Ok(new WorkspaceDownloadResponse(
+                Id: result.Value.Id.Value,
+                Format: result.Value.Format.ToString(),
+                ContentBase64: result.Value.ContentBase64,
+                FileName: result.Value.FileName,
+                DocumentLength: result.Value.DocumentLength));
+        });
+
         return app;
     }
 

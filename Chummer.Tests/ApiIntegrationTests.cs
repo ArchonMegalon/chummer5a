@@ -524,6 +524,14 @@ public class ApiIntegrationTests
         JsonObject saveResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/save", new JsonObject());
         Assert.AreEqual(workspaceId, saveResponse["id"]?.GetValue<string>());
         Assert.IsTrue((saveResponse["documentLength"]?.GetValue<int>() ?? 0) > 0);
+
+        JsonObject downloadResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/download", new JsonObject());
+        Assert.AreEqual(workspaceId, downloadResponse["id"]?.GetValue<string>());
+        Assert.AreEqual("Chum5Xml", downloadResponse["format"]?.GetValue<string>());
+        Assert.IsTrue((downloadResponse["fileName"]?.GetValue<string>() ?? string.Empty).EndsWith(".chum5", StringComparison.Ordinal));
+        string contentBase64 = downloadResponse["contentBase64"]?.GetValue<string>() ?? string.Empty;
+        Assert.IsFalse(string.IsNullOrWhiteSpace(contentBase64));
+        Assert.IsTrue(Convert.FromBase64String(contentBase64).Length > 0);
     }
 
     [TestMethod]

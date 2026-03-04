@@ -721,6 +721,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "bash scripts/generate-releases-manifest.sh");
         StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle.sh");
         StringAssert.Contains(runbookText, "bash scripts/validate-amend-manifests.sh");
+        StringAssert.Contains(runbookText, "DOCKER_TESTS_BUILD");
+        StringAssert.Contains(runbookText, "docker compose run $build_arg --rm chummer-tests");
 
         StringAssert.Contains(generatorText, "Docker/Downloads/releases.json");
         StringAssert.Contains(generatorText, "Chummer.Portal/downloads/releases.json");

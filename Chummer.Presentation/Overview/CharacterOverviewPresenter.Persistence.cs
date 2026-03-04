@@ -113,4 +113,51 @@ public sealed partial class CharacterOverviewPresenter
             });
         }
     }
+
+    public async Task SaveAsAsync(CancellationToken ct)
+    {
+        if (_currentWorkspace is null)
+        {
+            Publish(State with
+            {
+                Error = "No workspace loaded."
+            });
+            return;
+        }
+
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            WorkspaceDownloadResult result = await _workspacePersistenceService.DownloadAsync(_client, _currentWorkspace.Value, ct);
+            if (!result.Success || result.Receipt is null)
+            {
+                Publish(State with
+                {
+                    IsBusy = false,
+                    Error = result.Error
+                });
+                return;
+            }
+
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = null,
+                Notice = $"Download prepared: {result.Receipt.FileName} ({result.Receipt.DocumentLength} bytes)."
+            });
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
 }

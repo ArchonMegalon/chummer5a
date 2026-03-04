@@ -2,6 +2,7 @@ using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
+using System.Text;
 
 namespace Chummer.Infrastructure.Workspaces;
 
@@ -180,6 +181,35 @@ public sealed class WorkspaceService : IWorkspaceService
                     Id: id,
                     DocumentLength: document.Content.Length),
                 Error: null);
+    }
+
+    public CommandResult<WorkspaceDownloadReceipt> Download(CharacterWorkspaceId id)
+    {
+        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+        {
+            return new CommandResult<WorkspaceDownloadReceipt>(
+                Success: false,
+                Value: null,
+                Error: "Workspace not found.");
+        }
+
+        byte[] contentBytes = Encoding.UTF8.GetBytes(document.Content);
+        string contentBase64 = Convert.ToBase64String(contentBytes);
+        string fileExtension = document.Format switch
+        {
+            WorkspaceDocumentFormat.Chum5Xml => ".chum5",
+            _ => ".dat"
+        };
+
+        return new CommandResult<WorkspaceDownloadReceipt>(
+            Success: true,
+            Value: new WorkspaceDownloadReceipt(
+                Id: id,
+                Format: document.Format,
+                ContentBase64: contentBase64,
+                FileName: $"{id.Value}{fileExtension}",
+                DocumentLength: document.Content.Length),
+            Error: null);
     }
 
     private static string ToXmlContent(string content, WorkspaceDocumentFormat format)

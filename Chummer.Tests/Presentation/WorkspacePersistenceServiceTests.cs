@@ -86,6 +86,34 @@ public class WorkspacePersistenceServiceTests
         Assert.IsNull(result.Error);
     }
 
+    [TestMethod]
+    public async Task Download_async_returns_receipt_when_client_succeeds()
+    {
+        WorkspacePersistenceService service = new();
+        PersistenceClientStub client = new()
+        {
+            DownloadResult = new CommandResult<WorkspaceDownloadReceipt>(
+                Success: true,
+                Value: new WorkspaceDownloadReceipt(
+                    Id: new CharacterWorkspaceId("ws-persist"),
+                    Format: WorkspaceDocumentFormat.Chum5Xml,
+                    ContentBase64: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<character />")),
+                    FileName: "ws-persist.chum5",
+                    DocumentLength: 12),
+                Error: null)
+        };
+
+        WorkspaceDownloadResult result = await service.DownloadAsync(
+            client,
+            new CharacterWorkspaceId("ws-persist"),
+            CancellationToken.None);
+
+        Assert.IsTrue(result.Success);
+        Assert.IsNotNull(result.Receipt);
+        Assert.AreEqual("ws-persist.chum5", result.Receipt!.FileName);
+        Assert.IsNull(result.Error);
+    }
+
     private static CharacterProfileSection BuildProfile(string name, string alias)
     {
         return new CharacterProfileSection(
@@ -121,6 +149,15 @@ public class WorkspacePersistenceServiceTests
     {
         public CommandResult<CharacterProfileSection> MetadataResult { get; set; } = new(true, BuildProfile("Default", "DEF"), null);
         public CommandResult<WorkspaceSaveReceipt> SaveResult { get; set; } = new(true, new WorkspaceSaveReceipt(new CharacterWorkspaceId("ws"), 1), null);
+        public CommandResult<WorkspaceDownloadReceipt> DownloadResult { get; set; } = new(
+            true,
+            new WorkspaceDownloadReceipt(
+                new CharacterWorkspaceId("ws"),
+                WorkspaceDocumentFormat.Chum5Xml,
+                Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<character />")),
+                "ws.chum5",
+                12),
+            null);
 
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct) => throw new NotImplementedException();
 
@@ -157,5 +194,8 @@ public class WorkspacePersistenceServiceTests
 
         public Task<CommandResult<WorkspaceSaveReceipt>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct)
             => Task.FromResult(SaveResult);
+
+        public Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct)
+            => Task.FromResult(DownloadResult);
     }
 }

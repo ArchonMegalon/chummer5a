@@ -190,16 +190,21 @@ if [[ "$RUNBOOK_MODE" == "docker-tests" ]]; then
   TEST_FRAMEWORK="${TEST_FRAMEWORK:-${RUNBOOK_ARG_FRAMEWORK:-net10.0}}"
   TEST_FILTER="${TEST_FILTER:-$RUNBOOK_ARG_FILTER}"
   TEST_LOG_FILE="${TEST_LOG_FILE:-/tmp/chummer-docker-tests.log}"
+  DOCKER_TESTS_BUILD="${DOCKER_TESTS_BUILD:-1}"
   framework_arg=""
   filter_arg=""
+  build_arg=""
   if [[ -n "$TEST_FRAMEWORK" ]]; then
     framework_arg="-f $TEST_FRAMEWORK"
   fi
   if [[ -n "$TEST_FILTER" ]]; then
     filter_arg="--filter \"$TEST_FILTER\""
   fi
+  if [[ "$DOCKER_TESTS_BUILD" == "1" || "$DOCKER_TESTS_BUILD" == "true" || "$DOCKER_TESTS_BUILD" == "TRUE" ]]; then
+    build_arg="--build"
+  fi
   set +e
-  docker compose run --rm chummer-tests sh -lc \
+  docker compose run $build_arg --rm chummer-tests sh -lc \
     "cd /src && dotnet test '$TEST_PROJECT' -c Release $framework_arg $filter_arg --logger \"console;verbosity=normal\"" \
     2>&1 | tee "$TEST_LOG_FILE"
   status=${PIPESTATUS[0]}

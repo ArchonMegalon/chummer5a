@@ -43,4 +43,6 @@ public interface IChummerClient
         CancellationToken ct);
 
     Task<CommandResult<WorkspaceSaveReceipt>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct);
+
+    Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct);
 }

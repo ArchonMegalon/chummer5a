@@ -201,6 +201,48 @@ public sealed class HttpChummerClient : IChummerClient
             Error: null);
     }
 
+    public async Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
+            $"/api/workspaces/{id.Value}/download",
+            new { },
+            ct);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return new CommandResult<WorkspaceDownloadReceipt>(
+                Success: false,
+                Value: null,
+                Error: $"HTTP {(int)response.StatusCode}");
+        }
+
+        WorkspaceDownloadResponse? payload = await response.Content.ReadFromJsonAsync<WorkspaceDownloadResponse>(ct);
+        if (payload is null || string.IsNullOrWhiteSpace(payload.Id))
+        {
+            return new CommandResult<WorkspaceDownloadReceipt>(
+                Success: false,
+                Value: null,
+                Error: "Download response did not include workspace id.");
+        }
+
+        WorkspaceDocumentFormat format = WorkspaceDocumentFormat.Chum5Xml;
+        if (!string.IsNullOrWhiteSpace(payload.Format)
+            && Enum.TryParse(payload.Format, ignoreCase: true, out WorkspaceDocumentFormat parsedFormat))
+        {
+            format = parsedFormat;
+        }
+
+        return new CommandResult<WorkspaceDownloadReceipt>(
+            Success: true,
+            Value: new WorkspaceDownloadReceipt(
+                Id: new CharacterWorkspaceId(payload.Id),
+                Format: format,
+                ContentBase64: payload.ContentBase64 ?? string.Empty,
+                FileName: payload.FileName ?? $"{payload.Id}.chum5",
+                DocumentLength: payload.DocumentLength),
+            Error: null);
+    }
+
     private async Task<T> GetRequiredAsync<T>(string path, CancellationToken ct)
     {
         T? data = await _httpClient.GetFromJsonAsync<T>(path, ct);

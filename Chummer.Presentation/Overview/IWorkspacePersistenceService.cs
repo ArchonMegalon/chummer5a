@@ -16,6 +16,11 @@ public interface IWorkspacePersistenceService
         IChummerClient client,
         CharacterWorkspaceId workspaceId,
         CancellationToken ct);
+
+    Task<WorkspaceDownloadResult> DownloadAsync(
+        IChummerClient client,
+        CharacterWorkspaceId workspaceId,
+        CancellationToken ct);
 }
 
 public sealed record WorkspaceMetadataUpdateResult(
@@ -26,4 +31,9 @@ public sealed record WorkspaceMetadataUpdateResult(
 
 public sealed record WorkspaceSaveResult(
     bool Success,
+    string? Error);
+
+public sealed record WorkspaceDownloadResult(
+    bool Success,
+    WorkspaceDownloadReceipt? Receipt,
     string? Error);

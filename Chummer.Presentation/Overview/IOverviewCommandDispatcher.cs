@@ -13,6 +13,7 @@ public sealed record OverviewCommandExecutionContext(
     IDesktopDialogFactory DialogFactory,
     Action<CharacterOverviewState> Publish,
     Func<CancellationToken, Task> SaveAsync,
+    Func<CancellationToken, Task> SaveAsAsync,
     Func<CharacterWorkspaceId, CancellationToken, Task> LoadAsync,
     Func<string, string, CharacterOverviewState> CreateResetState,
     Func<CancellationToken, string, Task> CloseAllAsync,
