@@ -88,12 +88,14 @@ Default endpoints:
 * Blazor UI: `http://127.0.0.1:8089/`
 * Blazor health: `http://127.0.0.1:8089/health`
 * Portal landing (profile `portal`): `http://127.0.0.1:8091/`
+* Portal downloads page (profile `portal`): `http://127.0.0.1:8091/downloads/`
+* Portal release manifest (profile `portal`): `http://127.0.0.1:8091/downloads/releases.json`
 
 Portal notes (current milestone):
 
 * `/api` and `/docs` are served via in-process portal proxy routing.
 * `/blazor` is served through an in-process portal proxy to an internal `chummer-blazor-portal` instance configured with `CHUMMER_BLAZOR_PATH_BASE=/blazor`.
-* `/downloads` remains redirect-based.
+* `/downloads/` is a local manifest-backed page, and `/downloads/releases.json` can be sourced from `CHUMMER_PORTAL_RELEASES_FILE` (default `downloads/releases.json`).
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
 
 ## Legacy WinForms Requirements

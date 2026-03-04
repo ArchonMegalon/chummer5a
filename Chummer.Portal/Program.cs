@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +9,7 @@ string blazorProxyBaseUrl = ResolveSetting("Portal:BlazorProxyBaseUrl", "CHUMMER
 string apiBaseUrl = ResolveSetting("Portal:ApiBaseUrl", "CHUMMER_PORTAL_API_URL", "http://chummer-api:8080/");
 string docsBaseUrl = ResolveSetting("Portal:DocsBaseUrl", "CHUMMER_PORTAL_DOCS_URL", "http://chummer-api:8080/docs/");
 string downloadsBaseUrl = ResolveSetting("Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "https://github.com/chummer5a/chummer5a/releases/latest");
+string releaseManifestPath = ResolveSetting("Portal:ReleaseManifestPath", "CHUMMER_PORTAL_RELEASES_FILE", "downloads/releases.json");
 bool useBlazorProxy = !string.IsNullOrWhiteSpace(blazorProxyBaseUrl);
 
 var proxyRoutes = new List<RouteConfig>
@@ -88,13 +90,13 @@ app.MapGet("/", () => Results.Content(
     BuildLandingHtml(blazorBaseUrl, blazorProxyBaseUrl, useBlazorProxy, apiBaseUrl, docsBaseUrl, downloadsBaseUrl),
     "text/html; charset=utf-8"));
 
-app.MapGet("/downloads/releases.json", () => Results.Json(new
-{
-    version = "nightly",
-    channel = "docker",
-    publishedAt = DateTimeOffset.UtcNow,
-    downloads = Array.Empty<object>()
-}));
+app.MapGet("/downloads/releases.json", () => Results.Json(
+    LoadReleaseManifest(releaseManifestPath, downloadsBaseUrl),
+    new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+
+app.MapGet("/downloads/", () => Results.Content(
+    BuildDownloadsHtml(downloadsBaseUrl),
+    "text/html; charset=utf-8"));
 
 if (!useBlazorProxy)
 {
@@ -148,6 +150,161 @@ static string ComposeRedirect(string baseUrl, string? path, QueryString queryStr
     string normalizedBase = baseUrl.TrimEnd('/');
     string suffix = string.IsNullOrWhiteSpace(path) ? string.Empty : $"/{path.TrimStart('/')}";
     return $"{normalizedBase}{suffix}{queryString}";
+}
+
+static DownloadReleaseManifest LoadReleaseManifest(string configuredPath, string fallbackDownloadsUrl)
+{
+    string manifestPath = ResolveManifestPath(configuredPath);
+    if (!File.Exists(manifestPath))
+    {
+        return BuildFallbackManifest(fallbackDownloadsUrl);
+    }
+
+    try
+    {
+        string json = File.ReadAllText(manifestPath);
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            PropertyNameCaseInsensitive = true
+        };
+        DownloadReleaseManifest? manifest = JsonSerializer.Deserialize<DownloadReleaseManifest>(json, options);
+        if (manifest is null || string.IsNullOrWhiteSpace(manifest.Version))
+        {
+            return BuildFallbackManifest(fallbackDownloadsUrl);
+        }
+
+        return manifest with
+        {
+            Downloads = manifest.Downloads ?? Array.Empty<DownloadArtifact>()
+        };
+    }
+    catch
+    {
+        return BuildFallbackManifest(fallbackDownloadsUrl);
+    }
+}
+
+static string ResolveManifestPath(string configuredPath)
+{
+    if (Path.IsPathRooted(configuredPath))
+    {
+        return configuredPath;
+    }
+
+    return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, configuredPath));
+}
+
+static DownloadReleaseManifest BuildFallbackManifest(string fallbackDownloadsUrl)
+{
+    return new DownloadReleaseManifest(
+        Version: "nightly",
+        Channel: "docker",
+        PublishedAt: DateTimeOffset.UtcNow,
+        Downloads:
+        [
+            new DownloadArtifact(
+                Id: "latest-release",
+                Platform: "Latest release feed",
+                Url: fallbackDownloadsUrl,
+                Sha256: string.Empty)
+        ]);
+}
+
+static string BuildDownloadsHtml(string fallbackDownloadsUrl)
+{
+    string escapedFallbackUrl = HtmlEncode(fallbackDownloadsUrl);
+    string escapedScriptFallbackUrl = JavaScriptStringEncode(fallbackDownloadsUrl);
+    return $$"""
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chummer Downloads</title>
+    <style>
+      :root { --ink: #f0f3f7; --muted: #b5c2d0; --edge: #32495f; --bg: #071420; --card: #132230; --accent: #f58b2a; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; padding: 24px; color: var(--ink); background: linear-gradient(160deg, #081824, #162736); font-family: "Aptos", "Segoe UI Variable", "Segoe UI", sans-serif; }
+      main { width: min(820px, 100%); margin: 0 auto; background: color-mix(in oklab, var(--card) 88%, #000 12%); border: 1px solid var(--edge); border-radius: 14px; box-shadow: 0 18px 40px rgba(0,0,0,0.35); overflow: hidden; }
+      header { padding: 18px 20px 10px; border-bottom: 1px solid var(--edge); }
+      h1 { margin: 0; font-size: clamp(1.3rem, 2.6vw, 1.9rem); }
+      p { margin: 10px 0 0; color: var(--muted); }
+      .content { padding: 14px 20px 18px; display: grid; gap: 12px; }
+      .meta { font-size: 0.92rem; color: var(--muted); }
+      ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+      li { border: 1px solid var(--edge); background: rgba(255,255,255,0.02); border-radius: 10px; padding: 10px; display: grid; gap: 6px; }
+      a { color: #091016; background: var(--accent); text-decoration: none; font-weight: 700; border-radius: 999px; padding: 7px 11px; justify-self: start; }
+      code { font-size: 0.8rem; color: #ffe0c2; }
+      .ghost { color: var(--muted); border: 1px solid var(--edge); border-radius: 10px; padding: 12px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Desktop Downloads</h1>
+        <p>Manifest-backed platform matrix from <code>/downloads/releases.json</code>.</p>
+      </header>
+      <section class="content">
+        <div id="meta" class="meta">Loading release manifest...</div>
+        <ul id="download-list"></ul>
+        <div id="empty" class="ghost" hidden>No platform artifacts published yet. Use the fallback release feed.</div>
+        <a href="{{escapedFallbackUrl}}" id="fallback-link">Open fallback release feed</a>
+      </section>
+    </main>
+    <script>
+      (async function () {
+        const meta = document.getElementById('meta');
+        const list = document.getElementById('download-list');
+        const empty = document.getElementById('empty');
+        const fallbackLink = document.getElementById('fallback-link');
+        fallbackLink.href = '{{escapedScriptFallbackUrl}}';
+
+        try {
+          const response = await fetch('/downloads/releases.json', { cache: 'no-store' });
+          if (!response.ok) {
+            throw new Error('manifest request failed: ' + response.status);
+          }
+
+          const manifest = await response.json();
+          const published = manifest.publishedAt ? new Date(manifest.publishedAt).toISOString() : 'unknown';
+          meta.textContent = `Version ${manifest.version || 'unknown'} (${manifest.channel || 'unknown'}) published ${published}`;
+
+          const downloads = Array.isArray(manifest.downloads) ? manifest.downloads : [];
+          if (downloads.length === 0) {
+            empty.hidden = false;
+            return;
+          }
+
+          for (const item of downloads) {
+            const row = document.createElement('li');
+            const title = document.createElement('strong');
+            title.textContent = `${item.platform || 'Artifact'} (${item.id || 'unknown'})`;
+            row.appendChild(title);
+
+            if (item.sha256) {
+              const hash = document.createElement('code');
+              hash.textContent = `sha256: ${item.sha256}`;
+              row.appendChild(hash);
+            }
+
+            if (item.url) {
+              const anchor = document.createElement('a');
+              anchor.href = item.url;
+              anchor.textContent = 'Download';
+              row.appendChild(anchor);
+            }
+
+            list.appendChild(row);
+          }
+        } catch (error) {
+          meta.textContent = 'Manifest unavailable; showing fallback release feed.';
+          empty.hidden = false;
+        }
+      })();
+    </script>
+  </body>
+</html>
+""";
 }
 
 static string BuildLandingHtml(
@@ -262,7 +419,7 @@ static string BuildLandingHtml(
     html.AppendLine("      </article>");
     html.AppendLine("      <article class=\"card\">");
     html.AppendLine("        <h2>Downloads</h2>");
-    html.AppendLine("        <p>Planned desktop release manifest and platform matrix.</p>");
+    html.AppendLine("        <p>Manifest-backed desktop release matrix with fallback feed.</p>");
     html.AppendLine("        <a href=\"/downloads/\">Open Downloads</a>");
     html.AppendLine("      </article>");
     html.AppendLine("    </section>");
@@ -270,7 +427,7 @@ static string BuildLandingHtml(
     html.AppendLine("      <div><code>/api</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
     html.AppendLine("      <div><code>/docs</code> proxy upstream → " + HtmlEncode(docsBaseUrl) + "</div>");
     html.AppendLine("      <div><code>/blazor</code> " + (useBlazorProxy ? "proxy upstream → " + HtmlEncode(blazorProxyBaseUrl) : "redirect → " + HtmlEncode(blazorBaseUrl)) + "</div>");
-    html.AppendLine("      <div><code>/downloads</code> redirect → " + HtmlEncode(downloadsBaseUrl) + "</div>");
+    html.AppendLine("      <div><code>/downloads</code> local manifest page, fallback feed → " + HtmlEncode(downloadsBaseUrl) + "</div>");
     html.AppendLine("    </footer>");
     html.AppendLine("  </main>");
     html.AppendLine("</body>");
@@ -286,3 +443,25 @@ static string HtmlEncode(string value)
         .Replace(">", "&gt;", StringComparison.Ordinal)
         .Replace("\"", "&quot;", StringComparison.Ordinal);
 }
+
+static string JavaScriptStringEncode(string value)
+{
+    return value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("'", "\\'", StringComparison.Ordinal)
+        .Replace("\"", "\\\"", StringComparison.Ordinal)
+        .Replace("\r", "\\r", StringComparison.Ordinal)
+        .Replace("\n", "\\n", StringComparison.Ordinal);
+}
+
+public sealed record DownloadReleaseManifest(
+    string Version,
+    string Channel,
+    DateTimeOffset PublishedAt,
+    IReadOnlyList<DownloadArtifact> Downloads);
+
+public sealed record DownloadArtifact(
+    string Id,
+    string Platform,
+    string Url,
+    string Sha256);

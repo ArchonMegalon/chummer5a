@@ -52,6 +52,7 @@ services:
       CHUMMER_PORTAL_API_URL: "${CHUMMER_PORTAL_API_URL:-http://chummer-api:8080/}"
       CHUMMER_PORTAL_DOCS_URL: "${CHUMMER_PORTAL_DOCS_URL:-http://chummer-api:8080/docs/}"
       CHUMMER_PORTAL_DOWNLOADS_URL: "${CHUMMER_PORTAL_DOWNLOADS_URL:-https://github.com/chummer5a/chummer5a/releases/latest}"
+      CHUMMER_PORTAL_RELEASES_FILE: "${CHUMMER_PORTAL_RELEASES_FILE:-downloads/releases.json}"
     ports:
       - "${CHUMMER_PORTAL_PORT:-8091}:8080"
   chummer-tests:

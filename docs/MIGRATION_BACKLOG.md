@@ -222,6 +222,7 @@ Progress: added built-in ASP.NET OpenAPI generation to `Chummer.Api` with `/open
 
 - [ ] `MIG-104` Add desktop download manifest + artifacts surface behind portal `/downloads/`.
 Acceptance criteria: platform download matrix is generated from CI artifacts and exposed through a versioned manifest.
+Progress: portal now serves local `/downloads/` and file-backed `/downloads/releases.json` (`CHUMMER_PORTAL_RELEASES_FILE`) with fallback release feed; CI artifact wiring and matrix population remain.
 
 - [ ] `MIG-105` Add browser-hosted Avalonia head entry path (`/avalonia/`) behind the same public origin.
 Acceptance criteria: browser head is reachable from portal and clearly separated from native desktop distribution.
