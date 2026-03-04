@@ -87,6 +87,18 @@ public class CharacterOverviewViewModelAdapterTests
     }
 
     [TestMethod]
+    public async Task UpdateDialogFieldAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+
+        await adapter.UpdateDialogFieldAsync("diceExpression", "8d6", CancellationToken.None);
+
+        Assert.AreEqual("diceExpression", presenter.UpdatedDialogFieldId);
+        Assert.AreEqual("8d6", presenter.UpdatedDialogFieldValue);
+    }
+
+    [TestMethod]
     public async Task ExecuteDialogActionAsync_delegates_to_presenter()
     {
         var presenter = new FakeCharacterOverviewPresenter();

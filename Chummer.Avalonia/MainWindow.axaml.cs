@@ -37,6 +37,7 @@ public partial class MainWindow : Window
     private readonly TextBlock _dialogMessageText;
     private readonly ListBox _dialogFieldsList;
     private readonly ListBox _dialogActionsList;
+    private DesktopDialogWindow? _dialogWindow;
     private bool _suppressCommandSelectionEvent;
     private bool _suppressTabSelectionEvent;
     private bool _suppressSectionActionSelectionEvent;
@@ -91,6 +92,12 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        if (_dialogWindow is not null)
+        {
+            _dialogWindow.CloseFromPresenter();
+            _dialogWindow = null;
+        }
+
         _adapter.Dispose();
         base.OnClosed(e);
     }
@@ -244,6 +251,8 @@ public partial class MainWindow : Window
             _dialogActionsList.SelectedItem = null;
             _suppressDialogActionSelectionEvent = false;
         }
+
+        SyncDialogWindow(state);
     }
 
     private async void MenuButton_OnClick(object? sender, RoutedEventArgs e)
@@ -325,6 +334,40 @@ public partial class MainWindow : Window
         }
 
         return uri;
+    }
+
+    private void SyncDialogWindow(CharacterOverviewState state)
+    {
+        if (state.ActiveDialog is null)
+        {
+            if (_dialogWindow is not null)
+            {
+                _dialogWindow.CloseFromPresenter();
+                _dialogWindow = null;
+            }
+
+            return;
+        }
+
+        if (_dialogWindow is null)
+        {
+            _dialogWindow = new DesktopDialogWindow(_adapter);
+            _dialogWindow.Closed += DialogWindow_OnClosed;
+        }
+
+        _dialogWindow.BindDialog(state.ActiveDialog);
+        if (!_dialogWindow.IsVisible)
+        {
+            _dialogWindow.Show(this);
+        }
+    }
+
+    private void DialogWindow_OnClosed(object? sender, EventArgs e)
+    {
+        if (ReferenceEquals(sender, _dialogWindow))
+        {
+            _dialogWindow = null;
+        }
     }
 
     private sealed record TabListItem(

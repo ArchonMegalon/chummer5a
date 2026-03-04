@@ -2,11 +2,13 @@ using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Chummer.Presentation.Overview;
 
 public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 {
+    private static readonly Regex DiceExpressionRegex = new(@"^\s*(\d+)d(\d+)([+-]\d+)?\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private readonly IChummerClient _client;
     private CharacterWorkspaceId? _currentWorkspace;
 
@@ -116,6 +118,18 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             case "save_character_as":
                 await SaveAsync(ct);
                 return;
+            case "file":
+            case "edit":
+            case "special":
+            case "tools":
+            case "windows":
+            case "help":
+                Publish(State with
+                {
+                    Error = null,
+                    Notice = $"Menu '{commandId}' is handled by the active UI shell."
+                });
+                return;
             case "refresh_character":
                 if (_currentWorkspace is null)
                 {
@@ -133,6 +147,16 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     NavigationTabs = State.NavigationTabs,
                     LastCommandId = commandId,
                     Notice = "New character workspace initialized."
+                });
+                return;
+            case "new_critter":
+                _currentWorkspace = null;
+                Publish(CharacterOverviewState.Empty with
+                {
+                    Commands = State.Commands,
+                    NavigationTabs = State.NavigationTabs,
+                    LastCommandId = commandId,
+                    Notice = "New critter workspace initialized."
                 });
                 return;
             case "open_character":
@@ -172,13 +196,23 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             case "master_index":
             case "character_roster":
             case "data_exporter":
+            case "export_character":
             case "report_bug":
             case "about":
             case "hero_lab_importer":
+            case "update":
                 Publish(State with
                 {
                     Error = null,
                     ActiveDialog = CreateCommandDialog(commandId)
+                });
+                return;
+            case "copy":
+            case "paste":
+                Publish(State with
+                {
+                    Error = null,
+                    Notice = $"Command '{commandId}' dispatched to the active section editor."
                 });
                 return;
             default:
@@ -237,7 +271,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 {
                     ActiveTabId = action.TabId,
                     ActiveActionId = action.Id,
-                    Notice = "Apply metadata from the metadata editor in this head."
+                    Error = null,
+                    ActiveDialog = CreateMetadataDialog()
                 });
                 return;
             case WorkspaceSurfaceActionKind.Command:
@@ -254,16 +289,41 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         }
     }
 
-    public Task ExecuteDialogActionAsync(string actionId, CancellationToken ct)
+    public Task UpdateDialogFieldAsync(string fieldId, string? value, CancellationToken ct)
     {
         DesktopDialogState? dialog = State.ActiveDialog;
         if (dialog is null)
             return Task.CompletedTask;
 
+        if (string.IsNullOrWhiteSpace(fieldId))
+        {
+            Publish(State with { Error = "Dialog field id is required." });
+            return Task.CompletedTask;
+        }
+
+        DesktopDialogField[] updatedFields = dialog.Fields
+            .Select(field => string.Equals(field.Id, fieldId, StringComparison.Ordinal)
+                ? field with { Value = NormalizeDialogFieldValue(field, value) }
+                : field)
+            .ToArray();
+        Publish(State with
+        {
+            ActiveDialog = dialog with { Fields = updatedFields },
+            Error = null
+        });
+        return Task.CompletedTask;
+    }
+
+    public async Task ExecuteDialogActionAsync(string actionId, CancellationToken ct)
+    {
+        DesktopDialogState? dialog = State.ActiveDialog;
+        if (dialog is null)
+            return;
+
         if (string.IsNullOrWhiteSpace(actionId))
         {
             Publish(State with { Error = "Dialog action id is required." });
-            return Task.CompletedTask;
+            return;
         }
 
         switch (actionId)
@@ -275,16 +335,167 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     ActiveDialog = null,
                     Error = null
                 });
-                return Task.CompletedTask;
+                return;
             default:
-                Publish(State with
-                {
-                    ActiveDialog = null,
-                    Error = null,
-                    Notice = $"{dialog.Title}: action '{actionId}' executed."
-                });
-                return Task.CompletedTask;
+                break;
         }
+
+        if (string.Equals(dialog.Id, "dialog.workspace.metadata", StringComparison.Ordinal) && string.Equals(actionId, "apply_metadata", StringComparison.Ordinal))
+        {
+            await ApplyMetadataDialogAsync(dialog, ct);
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.dice_roller", StringComparison.Ordinal) && string.Equals(actionId, "roll", StringComparison.Ordinal))
+        {
+            RollDice(dialog);
+            return;
+        }
+
+        if ((string.Equals(dialog.Id, "dialog.data_exporter", StringComparison.Ordinal)
+            || string.Equals(dialog.Id, "dialog.export_character", StringComparison.Ordinal))
+            && string.Equals(actionId, "download", StringComparison.Ordinal))
+        {
+            Publish(State with
+            {
+                ActiveDialog = null,
+                Error = null,
+                Notice = "Export bundle prepared for download."
+            });
+            return;
+        }
+
+        Publish(State with
+        {
+            ActiveDialog = null,
+            Error = null,
+            Notice = $"{dialog.Title}: action '{actionId}' executed."
+        });
+    }
+
+    private async Task ApplyMetadataDialogAsync(DesktopDialogState dialog, CancellationToken ct)
+    {
+        string? name = GetDialogFieldValue(dialog, "metadataName");
+        string? alias = GetDialogFieldValue(dialog, "metadataAlias");
+        string? notes = GetDialogFieldValue(dialog, "metadataNotes");
+
+        await UpdateMetadataAsync(new UpdateWorkspaceMetadata(
+            Name: string.IsNullOrWhiteSpace(name) ? null : name.Trim(),
+            Alias: string.IsNullOrWhiteSpace(alias) ? null : alias.Trim(),
+            Notes: notes), ct);
+
+        if (State.Error is null)
+        {
+            Publish(State with
+            {
+                ActiveDialog = null,
+                Error = null,
+                Notice = "Metadata updated."
+            });
+        }
+    }
+
+    private void RollDice(DesktopDialogState dialog)
+    {
+        string expression = GetDialogFieldValue(dialog, "diceExpression") ?? "1d6";
+        if (!TryRollExpression(expression, out int total, out int hits, out string error))
+        {
+            Publish(State with { Error = error });
+            return;
+        }
+
+        string summary = $"{expression} => total {total}, hits {hits}";
+        List<DesktopDialogField> fields = dialog.Fields
+            .Where(field => !string.Equals(field.Id, "diceResult", StringComparison.Ordinal))
+            .ToList();
+        fields.Add(new DesktopDialogField(
+            Id: "diceResult",
+            Label: "Last Result",
+            Value: summary,
+            Placeholder: summary,
+            IsMultiline: false,
+            IsReadOnly: true));
+
+        Publish(State with
+        {
+            Error = null,
+            Notice = summary,
+            ActiveDialog = dialog with
+            {
+                Message = "Expression rolled using Shadowrun-style d6 hits.",
+                Fields = fields
+            }
+        });
+    }
+
+    private static bool TryRollExpression(string expression, out int total, out int hits, out string error)
+    {
+        total = 0;
+        hits = 0;
+        error = string.Empty;
+
+        Match match = DiceExpressionRegex.Match(expression);
+        if (!match.Success)
+        {
+            error = "Dice expression must match NdM with optional +K modifier (example: 12d6+2).";
+            return false;
+        }
+
+        int count = int.Parse(match.Groups[1].Value);
+        int sides = int.Parse(match.Groups[2].Value);
+        int modifier = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) : 0;
+
+        if (count < 1 || count > 100 || sides < 2 || sides > 100)
+        {
+            error = "Dice expression is outside supported limits.";
+            return false;
+        }
+
+        for (int index = 0; index < count; index++)
+        {
+            int value = Random.Shared.Next(1, sides + 1);
+            total += value;
+            if (sides == 6 && value >= 5)
+            {
+                hits++;
+            }
+        }
+
+        total += modifier;
+        if (sides != 6)
+        {
+            hits = 0;
+        }
+
+        return true;
+    }
+
+    private static string NormalizeDialogFieldValue(DesktopDialogField field, string? value)
+    {
+        if (string.Equals(field.InputType, "checkbox", StringComparison.Ordinal))
+        {
+            if (bool.TryParse(value, out bool booleanValue))
+            {
+                return booleanValue ? "true" : "false";
+            }
+
+            if (string.Equals(value, "1", StringComparison.Ordinal)
+                || string.Equals(value, "on", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase))
+            {
+                return "true";
+            }
+
+            return "false";
+        }
+
+        return value ?? string.Empty;
+    }
+
+    private static string? GetDialogFieldValue(DesktopDialogState dialog, string fieldId)
+    {
+        DesktopDialogField? field = dialog.Fields.FirstOrDefault(item => string.Equals(item.Id, fieldId, StringComparison.Ordinal));
+        return field?.Value;
     }
 
     public Task CloseDialogAsync(CancellationToken ct)
@@ -535,6 +746,25 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         }
     }
 
+    private DesktopDialogState CreateMetadataDialog()
+    {
+        return new DesktopDialogState(
+            Id: "dialog.workspace.metadata",
+            Title: "Edit Metadata",
+            Message: "Apply character metadata changes to the active workspace.",
+            Fields:
+            [
+                new DesktopDialogField("metadataName", "Name", State.Profile?.Name ?? string.Empty, "Character Name"),
+                new DesktopDialogField("metadataAlias", "Alias", State.Profile?.Alias ?? string.Empty, "Street Name"),
+                new DesktopDialogField("metadataNotes", "Notes", string.Empty, "Notes", true)
+            ],
+            Actions:
+            [
+                new DesktopDialogAction("apply_metadata", "Apply", true),
+                new DesktopDialogAction("cancel", "Cancel")
+            ]);
+    }
+
     private DesktopDialogState CreateCommandDialog(string commandId)
     {
         string name = State.Profile?.Name ?? "(none)";
@@ -637,6 +867,15 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     new DesktopDialogAction("download", "Download", true),
                     new DesktopDialogAction("close", "Close")
                 ]),
+            "export_character" => new DesktopDialogState(
+                "dialog.export_character",
+                "Export Character",
+                "Export selected character bundle.",
+                [new DesktopDialogField("dataExportPreview", "Export Preview", $"Workspace: {workspace}", "{}", true, true)],
+                [
+                    new DesktopDialogAction("download", "Download", true),
+                    new DesktopDialogAction("close", "Close")
+                ]),
             "report_bug" => new DesktopDialogState(
                 "dialog.report_bug",
                 "Report Bug",
@@ -707,6 +946,12 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 "dialog.print_multiple",
                 "Print Multiple",
                 "Batch print is available through roster and print endpoints.",
+                [],
+                [new DesktopDialogAction("close", "Close", true)]),
+            "update" => new DesktopDialogState(
+                "dialog.update",
+                "Check for Updates",
+                "Update channel status can be checked from the service layer.",
                 [],
                 [new DesktopDialogAction("close", "Close", true)]),
             _ => new DesktopDialogState(

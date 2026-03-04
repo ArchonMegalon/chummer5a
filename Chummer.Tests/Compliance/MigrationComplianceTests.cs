@@ -103,6 +103,8 @@ public class MigrationComplianceTests
         string avaloniaProgramText = File.ReadAllText(avaloniaProgramPath);
         string avaloniaAppCodePath = FindPath("Chummer.Avalonia", "App.axaml.cs");
         string avaloniaAppCodeText = File.ReadAllText(avaloniaAppCodePath);
+        string avaloniaMainWindowCodePath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
+        string avaloniaMainWindowCodeText = File.ReadAllText(avaloniaMainWindowCodePath);
 
         StringAssert.Contains(blazorProjectText, @"..\Chummer.Presentation\Chummer.Presentation.csproj");
         StringAssert.Contains(blazorProjectText, @"..\Chummer.Contracts\Chummer.Contracts.csproj");
@@ -118,11 +120,14 @@ public class MigrationComplianceTests
         Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "App.axaml")));
         Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "MainWindow.axaml")));
         Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "MainWindow.axaml.cs")));
+        Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "DesktopDialogWindow.axaml")));
+        Assert.IsTrue(File.Exists(FindPath("Chummer.Avalonia", "DesktopDialogWindow.axaml.cs")));
         StringAssert.Contains(blazorProgramText, "AddRazorComponents()");
         StringAssert.Contains(blazorProgramText, "MapRazorComponents<App>()");
         StringAssert.Contains(avaloniaProgramText, "BuildAvaloniaApp()");
         StringAssert.Contains(avaloniaProgramText, "UsePlatformDetect()");
         StringAssert.Contains(avaloniaAppCodeText, "desktop.MainWindow = new MainWindow()");
+        StringAssert.Contains(avaloniaMainWindowCodeText, "new DesktopDialogWindow(");
     }
 
     [TestMethod]

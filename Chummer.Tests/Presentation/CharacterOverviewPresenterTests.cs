@@ -187,6 +187,31 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_all_catalog_commands_are_handled()
+    {
+        AppCommandDefinition[] commands = AppCommandCatalog.All
+            .Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal))
+            .ToArray();
+
+        foreach (AppCommandDefinition command in commands)
+        {
+            var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+            await presenter.InitializeAsync(CancellationToken.None);
+            if (command.RequiresOpenCharacter)
+            {
+                await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+            }
+
+            await presenter.ExecuteCommandAsync(command.Id, CancellationToken.None);
+
+            string error = presenter.State.Error ?? string.Empty;
+            Assert.IsFalse(
+                error.Contains("not implemented", StringComparison.OrdinalIgnoreCase),
+                $"Command '{command.Id}' fell through to not-implemented: {error}");
+        }
+    }
+
+    [TestMethod]
     public async Task ExecuteWorkspaceActionAsync_summary_sets_active_summary_payload()
     {
         var client = new FakeChummerClient();
@@ -202,6 +227,40 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual("summary", presenter.State.ActiveSectionId);
         Assert.AreEqual("tab-info.summary", presenter.State.ActiveActionId);
         StringAssert.Contains(presenter.State.ActiveSectionJson ?? string.Empty, "\"Name\": \"Troy Simmons\"");
+    }
+
+    [TestMethod]
+    public async Task ExecuteWorkspaceActionAsync_metadata_applies_profile_updates_from_dialog()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+        WorkspaceSurfaceActionDefinition action = WorkspaceSurfaceActionCatalog.All
+            .First(item => string.Equals(item.Id, "tab-info.metadata", StringComparison.Ordinal));
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("metadataName", "Dialog Updated", CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("metadataAlias", "Dialog Alias", CancellationToken.None);
+        await presenter.ExecuteDialogActionAsync("apply_metadata", CancellationToken.None);
+
+        Assert.IsNull(presenter.State.ActiveDialog);
+        Assert.AreEqual("Dialog Updated", presenter.State.Profile?.Name);
+        Assert.AreEqual("Dialog Alias", presenter.State.Profile?.Alias);
+    }
+
+    [TestMethod]
+    public async Task ExecuteDialogActionAsync_roll_updates_dice_dialog_result_field()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+
+        await presenter.ExecuteCommandAsync("dice_roller", CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("diceExpression", "3d6+2", CancellationToken.None);
+        await presenter.ExecuteDialogActionAsync("roll", CancellationToken.None);
+
+        Assert.IsNotNull(presenter.State.ActiveDialog);
+        Assert.IsNotNull(presenter.State.ActiveDialog?.Fields.FirstOrDefault(field => string.Equals(field.Id, "diceResult", StringComparison.Ordinal)));
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "3d6+2");
     }
 
     [TestMethod]

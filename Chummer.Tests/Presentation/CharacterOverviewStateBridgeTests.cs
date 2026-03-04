@@ -87,6 +87,18 @@ public class CharacterOverviewStateBridgeTests
     }
 
     [TestMethod]
+    public async Task UpdateDialogFieldAsync_delegates_to_presenter()
+    {
+        var presenter = new FakeCharacterOverviewPresenter();
+        using var bridge = new CharacterOverviewStateBridge(presenter, _ => { });
+
+        await bridge.UpdateDialogFieldAsync("diceExpression", "10d6", CancellationToken.None);
+
+        Assert.AreEqual("diceExpression", presenter.UpdatedDialogFieldId);
+        Assert.AreEqual("10d6", presenter.UpdatedDialogFieldValue);
+    }
+
+    [TestMethod]
     public async Task ExecuteDialogActionAsync_delegates_to_presenter()
     {
         var presenter = new FakeCharacterOverviewPresenter();

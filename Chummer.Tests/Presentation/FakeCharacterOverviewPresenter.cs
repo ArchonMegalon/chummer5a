@@ -29,6 +29,10 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
 
     public string? ExecutedDialogActionId { get; private set; }
 
+    public string? UpdatedDialogFieldId { get; private set; }
+
+    public string? UpdatedDialogFieldValue { get; private set; }
+
     public int CloseDialogCalls { get; private set; }
 
     public int SaveCalls { get; private set; }
@@ -74,6 +78,13 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
     public Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
     {
         ExecutedWorkspaceActionId = action.Id;
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateDialogFieldAsync(string fieldId, string? value, CancellationToken ct)
+    {
+        UpdatedDialogFieldId = fieldId;
+        UpdatedDialogFieldValue = value;
         return Task.CompletedTask;
     }
 

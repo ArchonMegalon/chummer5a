@@ -43,6 +43,11 @@ public sealed class CharacterOverviewViewModelAdapter : IDisposable
         return _presenter.ExecuteWorkspaceActionAsync(action, ct);
     }
 
+    public Task UpdateDialogFieldAsync(string fieldId, string? value, CancellationToken ct)
+    {
+        return _presenter.UpdateDialogFieldAsync(fieldId, value, ct);
+    }
+
     public Task ExecuteDialogActionAsync(string actionId, CancellationToken ct)
     {
         return _presenter.ExecuteDialogActionAsync(actionId, ct);

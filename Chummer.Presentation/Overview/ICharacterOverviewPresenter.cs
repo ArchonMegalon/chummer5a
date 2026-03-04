@@ -21,6 +21,8 @@ public interface ICharacterOverviewPresenter
 
     Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action, CancellationToken ct);
 
+    Task UpdateDialogFieldAsync(string fieldId, string? value, CancellationToken ct);
+
     Task ExecuteDialogActionAsync(string actionId, CancellationToken ct);
 
     Task CloseDialogAsync(CancellationToken ct);
