@@ -146,7 +146,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     Commands = State.Commands,
                     NavigationTabs = State.NavigationTabs,
                     LastCommandId = commandId,
-                    Notice = "New character workspace initialized."
+                    Notice = "New character workspace initialized.",
+                    Preferences = State.Preferences
                 });
                 return;
             case "new_critter":
@@ -156,7 +157,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     Commands = State.Commands,
                     NavigationTabs = State.NavigationTabs,
                     LastCommandId = commandId,
-                    Notice = "New critter workspace initialized."
+                    Notice = "New critter workspace initialized.",
+                    Preferences = State.Preferences
                 });
                 return;
             case "open_character":
@@ -176,7 +178,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     Commands = State.Commands,
                     NavigationTabs = State.NavigationTabs,
                     LastCommandId = commandId,
-                    Notice = "Workspace reset complete."
+                    Notice = "Workspace reset complete.",
+                    Preferences = State.Preferences
                 });
                 return;
             case "new_window":
@@ -352,6 +355,47 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             return;
         }
 
+        if (string.Equals(dialog.Id, "dialog.global_settings", StringComparison.Ordinal) && string.Equals(actionId, "save", StringComparison.Ordinal))
+        {
+            ApplyGlobalSettings(dialog);
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.character_settings", StringComparison.Ordinal) && string.Equals(actionId, "save", StringComparison.Ordinal))
+        {
+            ApplyCharacterSettings(dialog);
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.open_notes", StringComparison.Ordinal) && string.Equals(actionId, "save", StringComparison.Ordinal))
+        {
+            string notes = GetDialogFieldValue(dialog, "uiNotesEditor") ?? string.Empty;
+            Publish(State with
+            {
+                ActiveDialog = null,
+                Error = null,
+                Preferences = State.Preferences with
+                {
+                    CharacterNotes = notes
+                },
+                Notice = "Notes saved."
+            });
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.ui.contact_connection", StringComparison.Ordinal) && string.Equals(actionId, "apply", StringComparison.Ordinal))
+        {
+            string connection = GetDialogFieldValue(dialog, "uiContactConnection") ?? "0";
+            string loyalty = GetDialogFieldValue(dialog, "uiContactLoyalty") ?? "0";
+            Publish(State with
+            {
+                ActiveDialog = null,
+                Error = null,
+                Notice = $"Contact connection/loyalty applied ({connection}/{loyalty})."
+            });
+            return;
+        }
+
         if ((string.Equals(dialog.Id, "dialog.data_exporter", StringComparison.Ordinal)
             || string.Equals(dialog.Id, "dialog.export_character", StringComparison.Ordinal))
             && string.Equals(actionId, "download", StringComparison.Ordinal))
@@ -370,6 +414,51 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             ActiveDialog = null,
             Error = null,
             Notice = $"{dialog.Title}: action '{actionId}' executed."
+        });
+    }
+
+    private void ApplyGlobalSettings(DesktopDialogState dialog)
+    {
+        int uiScalePercent = ParseDialogInt(dialog, "globalUiScale", State.Preferences.UiScalePercent);
+        string theme = GetDialogFieldValue(dialog, "globalTheme") ?? State.Preferences.Theme;
+        string language = GetDialogFieldValue(dialog, "globalLanguage") ?? State.Preferences.Language;
+        bool compactMode = ParseDialogBool(dialog, "globalCompactMode", State.Preferences.CompactMode);
+
+        Publish(State with
+        {
+            ActiveDialog = null,
+            Error = null,
+            Preferences = State.Preferences with
+            {
+                UiScalePercent = uiScalePercent,
+                Theme = theme,
+                Language = language,
+                CompactMode = compactMode
+            },
+            Notice = "Global settings updated."
+        });
+    }
+
+    private void ApplyCharacterSettings(DesktopDialogState dialog)
+    {
+        string priority = GetDialogFieldValue(dialog, "characterPriority") ?? State.Preferences.CharacterPriority;
+        int karmaNuyenRatio = ParseDialogInt(dialog, "characterKarmaNuyen", State.Preferences.KarmaNuyenRatio);
+        bool houseRules = ParseDialogBool(dialog, "characterHouseRulesEnabled", State.Preferences.HouseRulesEnabled);
+        string notes = GetDialogFieldValue(dialog, "characterNotes") ?? State.Preferences.CharacterNotes;
+
+        Publish(State with
+        {
+            ActiveDialog = null,
+            Error = null,
+            Build = State.Build is null ? null : State.Build with { BuildMethod = priority },
+            Preferences = State.Preferences with
+            {
+                CharacterPriority = priority,
+                KarmaNuyenRatio = karmaNuyenRatio,
+                HouseRulesEnabled = houseRules,
+                CharacterNotes = notes
+            },
+            Notice = "Character settings updated."
         });
     }
 
@@ -496,6 +585,26 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
     {
         DesktopDialogField? field = dialog.Fields.FirstOrDefault(item => string.Equals(item.Id, fieldId, StringComparison.Ordinal));
         return field?.Value;
+    }
+
+    private static int ParseDialogInt(DesktopDialogState dialog, string fieldId, int fallback)
+    {
+        string? raw = GetDialogFieldValue(dialog, fieldId);
+        return int.TryParse(raw, out int value) ? value : fallback;
+    }
+
+    private static bool ParseDialogBool(DesktopDialogState dialog, string fieldId, bool fallback)
+    {
+        string? raw = GetDialogFieldValue(dialog, fieldId);
+        if (raw is null)
+            return fallback;
+
+        if (bool.TryParse(raw, out bool value))
+            return value;
+
+        return string.Equals(raw, "1", StringComparison.Ordinal)
+            || string.Equals(raw, "on", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(raw, "yes", StringComparison.OrdinalIgnoreCase);
     }
 
     public Task CloseDialogAsync(CancellationToken ct)
@@ -799,10 +908,10 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 "Global Settings",
                 null,
                 [
-                    new DesktopDialogField("globalUiScale", "UI Scale (%)", "100", "100", InputType: "number"),
-                    new DesktopDialogField("globalTheme", "Theme", "classic", "classic"),
-                    new DesktopDialogField("globalLanguage", "Language", "en-us", "en-us"),
-                    new DesktopDialogField("globalCompactMode", "Compact Mode", "false", "false", InputType: "checkbox")
+                    new DesktopDialogField("globalUiScale", "UI Scale (%)", State.Preferences.UiScalePercent.ToString(), "100", InputType: "number"),
+                    new DesktopDialogField("globalTheme", "Theme", State.Preferences.Theme, "classic"),
+                    new DesktopDialogField("globalLanguage", "Language", State.Preferences.Language, "en-us"),
+                    new DesktopDialogField("globalCompactMode", "Compact Mode", State.Preferences.CompactMode ? "true" : "false", "false", InputType: "checkbox")
                 ],
                 [
                     new DesktopDialogAction("save", "Save", true),
@@ -813,10 +922,10 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 "Character Settings",
                 null,
                 [
-                    new DesktopDialogField("characterPriority", "Priority System", "SumToTen", "SumToTen"),
-                    new DesktopDialogField("characterKarmaNuyen", "Karma/Nuyen Ratio", "2", "2", InputType: "number"),
-                    new DesktopDialogField("characterHouseRulesEnabled", "Enable House Rules", "false", "false", InputType: "checkbox"),
-                    new DesktopDialogField("characterNotes", "Character Notes", string.Empty, "notes", true)
+                    new DesktopDialogField("characterPriority", "Priority System", State.Preferences.CharacterPriority, "SumToTen"),
+                    new DesktopDialogField("characterKarmaNuyen", "Karma/Nuyen Ratio", State.Preferences.KarmaNuyenRatio.ToString(), "2", InputType: "number"),
+                    new DesktopDialogField("characterHouseRulesEnabled", "Enable House Rules", State.Preferences.HouseRulesEnabled ? "true" : "false", "false", InputType: "checkbox"),
+                    new DesktopDialogField("characterNotes", "Character Notes", State.Preferences.CharacterNotes, "notes", true)
                 ],
                 [
                     new DesktopDialogAction("save", "Save", true),
@@ -995,7 +1104,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 "dialog.ui.open_notes",
                 "Notes",
                 null,
-                [new DesktopDialogField("uiNotesEditor", "Notes", string.Empty, "notes", true)],
+                [new DesktopDialogField("uiNotesEditor", "Notes", State.Preferences.CharacterNotes, "notes", true)],
                 [
                     new DesktopDialogAction("save", "Save", true),
                     new DesktopDialogAction("cancel", "Cancel")
@@ -1196,6 +1305,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             LastCommandId: State.LastCommandId,
             Notice: State.Notice,
             ActiveDialog: null,
+            Preferences: State.Preferences,
             Commands: State.Commands,
             NavigationTabs: State.NavigationTabs,
             HasSavedWorkspace: false));

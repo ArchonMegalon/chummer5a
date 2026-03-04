@@ -173,7 +173,7 @@ public partial class MainWindow : Window
         _charStateText.Text = $"Character: {(state.WorkspaceId is null ? "none" : "loaded")}";
         _serviceStateText.Text = $"Service: {(state.Error is null ? "online" : "error")}";
         _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
-        _complianceStateText.Text = "Compliance: shared presenter path";
+        _complianceStateText.Text = $"Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}";
 
         bool hasWorkspace = state.WorkspaceId is not null;
         IEnumerable<AppCommandDefinition> visibleCommands = state.Commands

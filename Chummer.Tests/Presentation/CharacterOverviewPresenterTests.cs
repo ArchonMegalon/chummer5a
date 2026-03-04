@@ -304,6 +304,25 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteDialogActionAsync_save_global_settings_updates_preferences()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+
+        await presenter.ExecuteCommandAsync("global_settings", CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("globalUiScale", "125", CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("globalTheme", "dark-steel", CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("globalLanguage", "de-de", CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("globalCompactMode", "true", CancellationToken.None);
+        await presenter.ExecuteDialogActionAsync("save", CancellationToken.None);
+
+        Assert.AreEqual(125, presenter.State.Preferences.UiScalePercent);
+        Assert.AreEqual("dark-steel", presenter.State.Preferences.Theme);
+        Assert.AreEqual("de-de", presenter.State.Preferences.Language);
+        Assert.IsTrue(presenter.State.Preferences.CompactMode);
+        Assert.IsNull(presenter.State.ActiveDialog);
+    }
+
+    [TestMethod]
     public async Task SelectTabAsync_requires_loaded_workspace()
     {
         var presenter = new CharacterOverviewPresenter(new FakeChummerClient());

@@ -22,6 +22,7 @@ public sealed record CharacterOverviewState(
     string? LastCommandId,
     string? Notice,
     DesktopDialogState? ActiveDialog,
+    DesktopPreferenceState Preferences,
     IReadOnlyList<AppCommandDefinition> Commands,
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     bool HasSavedWorkspace)
@@ -44,6 +45,7 @@ public sealed record CharacterOverviewState(
         LastCommandId: null,
         Notice: null,
         ActiveDialog: null,
+        Preferences: DesktopPreferenceState.Default,
         Commands: [],
         NavigationTabs: [],
         HasSavedWorkspace: false);

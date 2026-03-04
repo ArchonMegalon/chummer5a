@@ -236,6 +236,47 @@ public class DualHeadAcceptanceTests
     }
 
     [TestMethod]
+    public async Task Avalonia_and_Blazor_global_settings_save_updates_shared_preferences()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+
+        CharacterOverviewState avaloniaState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
+            await adapter.ExecuteCommandAsync("global_settings", CancellationToken.None);
+            await adapter.UpdateDialogFieldAsync("globalUiScale", "120", CancellationToken.None);
+            await adapter.UpdateDialogFieldAsync("globalTheme", "steel", CancellationToken.None);
+            await adapter.ExecuteDialogActionAsync("save", CancellationToken.None);
+            avaloniaState = adapter.State;
+        }
+
+        CharacterOverviewState blazorState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
+            await bridge.ExecuteCommandAsync("global_settings", CancellationToken.None);
+            await bridge.UpdateDialogFieldAsync("globalUiScale", "120", CancellationToken.None);
+            await bridge.UpdateDialogFieldAsync("globalTheme", "steel", CancellationToken.None);
+            await bridge.ExecuteDialogActionAsync("save", CancellationToken.None);
+            blazorState = callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+        }
+
+        Assert.AreEqual(120, avaloniaState.Preferences.UiScalePercent);
+        Assert.AreEqual(120, blazorState.Preferences.UiScalePercent);
+        Assert.AreEqual("steel", avaloniaState.Preferences.Theme);
+        Assert.AreEqual("steel", blazorState.Preferences.Theme);
+        Assert.IsNull(avaloniaState.ActiveDialog);
+        Assert.IsNull(blazorState.ActiveDialog);
+    }
+
+    [TestMethod]
     public async Task Avalonia_and_Blazor_workspace_action_summary_matches()
     {
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
