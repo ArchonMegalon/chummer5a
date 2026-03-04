@@ -14,6 +14,22 @@ const checks = [
     }
   },
   {
+    url: 'http://chummer-portal:8080/blazor/',
+    assert: text => /<base href="[^"]*\/blazor\/"/i.test(text)
+  },
+  {
+    method: 'POST',
+    url: 'http://chummer-portal:8080/blazor/_blazor/negotiate?negotiateVersion=1',
+    headers: {
+      'Content-Type': 'text/plain;charset=UTF-8'
+    },
+    body: '',
+    assert: text => {
+      const payload = JSON.parse(text);
+      return typeof payload?.connectionId === 'string' && payload.connectionId.length > 0;
+    }
+  },
+  {
     url: 'http://chummer-portal:8080/api/health',
     assert: text => {
       const payload = JSON.parse(text);
@@ -39,7 +55,11 @@ const checks = [
 
 (async () => {
   for (const check of checks) {
-    const response = await fetch(check.url);
+    const response = await fetch(check.url, {
+      method: check.method ?? 'GET',
+      headers: check.headers,
+      body: check.body
+    });
     const body = await response.text();
     if (!response.ok) {
       throw new Error(`Portal check failed: ${check.url} -> HTTP ${response.status}`);
