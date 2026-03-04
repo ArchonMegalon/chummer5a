@@ -2,6 +2,12 @@ name: Desktop Downloads Matrix
 
 on:
   workflow_dispatch:
+    inputs:
+      deploy_portal_downloads:
+        description: "Publish desktop-download-bundle into configured portal downloads directory"
+        required: false
+        default: false
+        type: boolean
   push:
     branches:
       - Docker
@@ -133,12 +139,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download desktop artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: desktop-*
           merge-multiple: true
           path: dist
+
+      - name: Stage portal downloads directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/files
+          shopt -s nullglob
+          moved=0
+          for artifact in dist/chummer-*.zip dist/chummer-*.tar.gz; do
+            [[ -f "$artifact" ]] || continue
+            mv "$artifact" dist/files/
+            moved=1
+          done
+          if [[ "$moved" -ne 1 ]]; then
+            echo "No desktop artifacts were staged for manifest generation." >&2
+            exit 1
+          fi
 
       - name: Generate releases.json
         shell: bash
@@ -153,7 +179,9 @@ jobs:
           from pathlib import Path
 
           dist = Path('dist')
+          files_dir = dist / 'files'
           dist.mkdir(parents=True, exist_ok=True)
+          files_dir.mkdir(parents=True, exist_ok=True)
 
           app_labels = {
               'avalonia': 'Avalonia Desktop',
@@ -169,7 +197,7 @@ jobs:
 
           downloads = []
           pattern = re.compile(r'^chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>[^.]+)\.(?P<ext>zip|tar\.gz)$')
-          for artifact in sorted(dist.iterdir()):
+          for artifact in sorted(files_dir.iterdir()):
               if not artifact.is_file():
                   continue
               match = pattern.match(artifact.name)
@@ -183,7 +211,7 @@ jobs:
                   {
                       'id': f'{app}-{rid}',
                       'platform': f"{app_labels.get(app, app)} {platform_names.get(rid, rid)}",
-                      'url': f'/downloads/{artifact.name}',
+                      'url': f'/downloads/files/{artifact.name}',
                       'sha256': sha256,
                   }
               )
@@ -220,5 +248,38 @@ jobs:
             echo "Generated manifest artifact: \`desktop-download-bundle\`"
             echo
             echo "Files:"
-            ls -1 dist | sed 's/^/- `/' | sed 's/$/`/'
+            find dist -maxdepth 2 -type f | sort | sed 's|^|- `|' | sed 's|$|`|'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-downloads:
+    name: Deploy Downloads Bundle
+    needs: generate-manifest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_portal_downloads }}
+    runs-on: ubuntu-latest
+    env:
+      CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR }}
+
+    steps:
+      - name: Validate deployment directory variable
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR}" ]]; then
+            echo "Set repository variable CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR before enabling deploy_portal_downloads." >&2
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download manifest bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: desktop-download-bundle
+          path: dist
+
+      - name: Publish bundle to portal downloads directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/publish-download-bundle.sh dist "$CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR"

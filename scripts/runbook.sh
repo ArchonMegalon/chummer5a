@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 RUNBOOK_MODE="${RUNBOOK_MODE:-${1:-tunnel}}"
 RUNBOOK_ARG_FRAMEWORK="${2:-}"
 RUNBOOK_ARG_FILTER="${3:-}"
@@ -87,9 +90,13 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "chummer-\\(\\?P<app>avalonia\\|blazor-desktop\\)-" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "id': f'\\{app\\}-\\{rid\\}'" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "RUNBOOK_MODE\" == \"downloads-manifest\"" "scripts/runbook.sh"
+  require_match "RUNBOOK_MODE\" == \"downloads-sync\"" "scripts/runbook.sh"
   require_match "bash scripts/generate-releases-manifest.sh" "scripts/runbook.sh"
+  require_match "bash scripts/publish-download-bundle.sh" "scripts/runbook.sh"
   require_match "Docker/Downloads/releases.json" "scripts/generate-releases-manifest.sh"
   require_match "Chummer.Portal/downloads/releases.json" "scripts/generate-releases-manifest.sh"
+  require_match "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "deploy-downloads" ".github/workflows/desktop-downloads-matrix.yml"
 
   if [[ "$status" -ne 0 ]]; then
     echo "desktop-gate checks failed" >&2
@@ -128,6 +135,24 @@ if [[ "$RUNBOOK_MODE" == "downloads-manifest" ]]; then
     cat Docker/Downloads/releases.json
   else
     echo "Docker/Downloads/releases.json not found"
+  fi
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "downloads-sync" ]]; then
+  DOWNLOAD_BUNDLE_DIR="${DOWNLOAD_BUNDLE_DIR:-${RUNBOOK_ARG_FRAMEWORK:-$REPO_ROOT/dist}}"
+  DOWNLOAD_DEPLOY_DIR="${DOWNLOAD_DEPLOY_DIR:-${RUNBOOK_ARG_FILTER:-$REPO_ROOT/Docker/Downloads}}"
+  SYNC_LOG_FILE="${SYNC_LOG_FILE:-/tmp/chummer-downloads-sync.log}"
+  set +e
+  bash scripts/publish-download-bundle.sh "$DOWNLOAD_BUNDLE_DIR" "$DOWNLOAD_DEPLOY_DIR" 2>&1 | tee "$SYNC_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== synced manifest =="
+  if [[ -f "$DOWNLOAD_DEPLOY_DIR/releases.json" ]]; then
+    cat "$DOWNLOAD_DEPLOY_DIR/releases.json"
+  else
+    echo "$DOWNLOAD_DEPLOY_DIR/releases.json not found"
   fi
   exit "$status"
 fi

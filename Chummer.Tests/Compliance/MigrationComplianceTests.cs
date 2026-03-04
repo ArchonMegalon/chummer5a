@@ -592,6 +592,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj");
         StringAssert.Contains(workflowText, "pattern = re.compile(r'^chummer-(?P<app>avalonia|blazor-desktop)-");
         StringAssert.Contains(workflowText, "'id': f'{app}-{rid}'");
+        StringAssert.Contains(workflowText, "'url': f'/downloads/files/{artifact.name}'");
+        StringAssert.Contains(workflowText, "deploy_portal_downloads");
+        StringAssert.Contains(workflowText, "deploy-downloads");
+        StringAssert.Contains(workflowText, "scripts/publish-download-bundle.sh");
     }
 
     [TestMethod]
@@ -601,13 +605,21 @@ public class MigrationComplianceTests
         string runbookText = File.ReadAllText(runbookPath);
         string generatorPath = FindPath("scripts", "generate-releases-manifest.sh");
         string generatorText = File.ReadAllText(generatorPath);
+        string publisherPath = FindPath("scripts", "publish-download-bundle.sh");
+        string publisherText = File.ReadAllText(publisherPath);
 
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-manifest\"");
+        StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync\"");
         StringAssert.Contains(runbookText, "bash scripts/generate-releases-manifest.sh");
+        StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle.sh");
 
         StringAssert.Contains(generatorText, "Docker/Downloads/releases.json");
         StringAssert.Contains(generatorText, "Chummer.Portal/downloads/releases.json");
         StringAssert.Contains(generatorText, "/downloads/files/");
+
+        StringAssert.Contains(publisherText, "Expected desktop-download-bundle layout");
+        StringAssert.Contains(publisherText, "generate-releases-manifest.sh");
+        StringAssert.Contains(publisherText, "Published ${#artifacts[@]} desktop artifact(s)");
     }
 
     [TestMethod]

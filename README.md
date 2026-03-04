@@ -127,7 +127,8 @@ Portal notes (current milestone):
 * `/downloads/` is a local manifest-backed page, `/downloads/releases.json` is sourced from `CHUMMER_PORTAL_RELEASES_FILE` (default `/app/downloads/releases.json`), and `/downloads/<artifact>` serves files from `CHUMMER_PORTAL_RELEASES_DIR` (default `/app/downloads`).
 * `CHUMMER_PORTAL_DOWNLOADS_URL` now defaults to `/downloads/` so the landing page stays local-first.
 * Set `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL` to route `/downloads/*` through in-process YARP proxy mode instead of local-file mode.
-* `docker-compose.yml` mounts `./Docker/Downloads` into `/app/downloads` for the portal service; populate this folder from CI desktop artifacts to make `/downloads` serve real binaries.
+* `docker-compose.yml` mounts `./Docker/Downloads` into `/app/downloads` for the portal service; sync `desktop-download-bundle` into this folder to make `/downloads` serve real binaries.
+* Local sync helper: `bash scripts/runbook.sh downloads-sync <bundleDir> <deployDir>` (defaults: `dist` -> `Docker/Downloads`).
 * Portal can forward `X-Api-Key` to API/docs/openapi upstream routes when `CHUMMER_PORTAL_API_KEY` is set (or when `CHUMMER_API_KEY` is present in the portal service environment).
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
 
@@ -158,7 +159,8 @@ Content overlay notes (`CHUMMER_AMENDS_PATH`):
 Desktop artifact workflow:
 
 * `.github/workflows/desktop-downloads-matrix.yml` publishes both Avalonia and Blazor desktop artifacts for multiple RIDs and generates `releases.json` with SHA-256 checksums.
-* The workflow uploads a `desktop-download-bundle` artifact containing all archives plus manifest; deployment should copy bundle contents into `Docker/Downloads` (or your mounted downloads volume) so portal `/downloads` serves real artifacts.
+* The workflow uploads a `desktop-download-bundle` artifact in portal layout (`releases.json` + `files/*`) for direct sync into mounted portal downloads storage.
+* Optional workflow-dispatch deployment: set repository variable `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` and run the workflow with `deploy_portal_downloads=true` to publish the bundle automatically using `scripts/publish-download-bundle.sh`.
 
 ## Legacy WinForms Requirements
 | Operating System | .NET Framework |

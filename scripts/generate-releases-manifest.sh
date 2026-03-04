@@ -79,5 +79,11 @@ manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
 print(f"wrote {manifest_path} with {len(downloads)} download entry(ies)")
 PY
 
-cp "$MANIFEST_PATH" "$PORTAL_MANIFEST_PATH"
-echo "synced portal manifest -> $PORTAL_MANIFEST_PATH"
+resolved_manifest_path="$(realpath "$MANIFEST_PATH")"
+resolved_portal_manifest_path="$(realpath -m "$PORTAL_MANIFEST_PATH")"
+if [[ "$resolved_manifest_path" == "$resolved_portal_manifest_path" ]]; then
+  echo "portal manifest path matches manifest output; skipped secondary sync"
+else
+  cp "$MANIFEST_PATH" "$PORTAL_MANIFEST_PATH"
+  echo "synced portal manifest -> $PORTAL_MANIFEST_PATH"
+fi
