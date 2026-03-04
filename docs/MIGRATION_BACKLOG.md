@@ -202,6 +202,27 @@ Acceptance criteria: CI produces versioned, reproducible deliverables for all ac
 - [ ] `MIG-095` Add benchmark guardrails for import/section/save paths.
 Acceptance criteria: `Chummer.Benchmarks` includes migration-critical workloads with performance budgets checked in CI.
 
+### Phase 10: Public portal and tunnel gateway
+
+- [x] `MIG-100` Scaffold `Chummer.Portal` as a public landing surface with stable route entry points.
+Acceptance criteria: portal provides a single public home with deterministic links for `/blazor`, `/api`, `/docs`, and `/downloads`.
+Progress: added `Chummer.Portal` (`net10.0`) plus compose `portal` profile service (`chummer-portal`) exposing a landing page and redirect-based route shims for the target entry paths.
+
+- [ ] `MIG-101` Replace portal redirects with in-process reverse proxy routing for `/blazor/*`, `/api/*`, `/docs/*`, `/downloads/*`.
+Acceptance criteria: one public origin can route subpaths to internal services without exposing per-service public ports.
+
+- [ ] `MIG-102` Move Blazor head to stable `/blazor/` app-base deployment behind the portal.
+Acceptance criteria: reload/deep-link/reconnect behavior works when the UI is hosted under `/blazor/`.
+
+- [ ] `MIG-103` Add OpenAPI + interactive docs surface to `Chummer.Api` and wire through portal `/docs/`.
+Acceptance criteria: generated OpenAPI document and interactive docs are reachable and validated in CI.
+
+- [ ] `MIG-104` Add desktop download manifest + artifacts surface behind portal `/downloads/`.
+Acceptance criteria: platform download matrix is generated from CI artifacts and exposed through a versioned manifest.
+
+- [ ] `MIG-105` Add browser-hosted Avalonia head entry path (`/avalonia/`) behind the same public origin.
+Acceptance criteria: browser head is reachable from portal and clearly separated from native desktop distribution.
+
 ## Immediate Sprint Proposal (Next 2 Sprints)
 
 ### Sprint A

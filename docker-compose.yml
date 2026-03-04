@@ -24,6 +24,22 @@ services:
       CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
     ports:
       - "${CHUMMER_BLAZOR_PORT:-8089}:8080"
+  chummer-portal:
+    image: chummer-portal:local
+    build:
+      context: .
+      dockerfile: Chummer.Portal/Dockerfile
+    depends_on:
+      - chummer-api
+      - chummer-blazor
+    profiles: ["portal"]
+    environment:
+      CHUMMER_PORTAL_BLAZOR_URL: "${CHUMMER_PORTAL_BLAZOR_URL:-http://127.0.0.1:8089/}"
+      CHUMMER_PORTAL_API_URL: "${CHUMMER_PORTAL_API_URL:-http://127.0.0.1:8088/}"
+      CHUMMER_PORTAL_DOCS_URL: "${CHUMMER_PORTAL_DOCS_URL:-http://127.0.0.1:8088/docs/}"
+      CHUMMER_PORTAL_DOWNLOADS_URL: "${CHUMMER_PORTAL_DOWNLOADS_URL:-https://github.com/chummer5a/chummer5a/releases/latest}"
+    ports:
+      - "${CHUMMER_PORTAL_PORT:-8091}:8080"
   chummer-tests:
     image: chummer-tests:local
     build:

@@ -32,6 +32,7 @@ The `Docker` branch is an active migration branch and no longer follows a WinFor
 
 * `chummer-api` (default service)
 * `chummer-blazor` (default service)
+* `chummer-portal` (under the `portal` profile; redirect-based gateway scaffold)
 * `chummer-tests` (under the `test` profile only)
 
 ## Running the Docker Branch
@@ -48,6 +49,12 @@ Start API + Blazor UI:
 
 ```bash
 docker compose up -d --build chummer-api chummer-blazor
+```
+
+Start API + Blazor + Portal landing surface:
+
+```bash
+docker compose --profile portal up -d --build chummer-api chummer-blazor chummer-portal
 ```
 
 Enable API key protection (recommended for production):
@@ -77,6 +84,12 @@ Default endpoints:
 * API health: `http://127.0.0.1:8088/api/health`
 * Blazor UI: `http://127.0.0.1:8089/`
 * Blazor health: `http://127.0.0.1:8089/health`
+* Portal landing (profile `portal`): `http://127.0.0.1:8091/`
+
+Portal notes (current milestone):
+
+* `/blazor`, `/api`, `/docs`, and `/downloads` are redirect-based routes.
+* In-process reverse proxy pathing and subpath hosting hardening are tracked in `docs/MIGRATION_BACKLOG.md` Phase 10 tasks.
 
 ## Legacy WinForms Requirements
 | Operating System | .NET Framework |
