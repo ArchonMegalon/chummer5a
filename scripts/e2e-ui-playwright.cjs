@@ -4,6 +4,7 @@
 const { chromium } = require('playwright');
 
 const UI_URL = process.env.CHUMMER_BLAZOR_BASE_URL || 'http://127.0.0.1:8089';
+const SAMPLE_CHARACTER_FILE = process.env.CHUMMER_UI_SAMPLE_FILE || '/work/testdata/BLUE.chum5';
 
 async function run() {
   const browser = await chromium.launch({ headless: true });
@@ -13,14 +14,67 @@ async function run() {
     await page.goto(`${UI_URL}/`, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForSelector('text=Import Character File', { timeout: 15000 });
 
-    const rawImportDetails = page.locator('section.import details').first();
-    const isOpen = await rawImportDetails.evaluate(element => element.hasAttribute('open'));
-    if (!isOpen) {
-      await page.locator('section.import summary').click();
-    }
+    const workspaceButtons = page.locator('#openCharactersTree .command-button');
+    if (await workspaceButtons.count() === 0) {
+      const waitForImportOutcome = async (timeout) => {
+        const handle = await page.waitForFunction(() => {
+          const workspaceButton = document.querySelector('#openCharactersTree .command-button');
+          if (workspaceButton) {
+            return 'workspace-ready';
+          }
 
-    await page.getByRole('button', { name: 'Import Raw XML' }).click();
-    await page.waitForSelector('#openCharactersTree .command-button', { timeout: 15000 });
+          const importError = document.querySelector('section.import .error');
+          if (importError && importError.textContent && importError.textContent.trim().length > 0) {
+            return 'import-error';
+          }
+
+          const resultError = document.querySelector('.results .error');
+          if (resultError && resultError.textContent && resultError.textContent.trim().length > 0) {
+            return 'result-error';
+          }
+
+          const serviceState = document.querySelector('#serviceState');
+          if (serviceState && serviceState.textContent && serviceState.textContent.toLowerCase().includes('error')) {
+            return 'service-error';
+          }
+
+          return '';
+        }, { timeout });
+        return handle.jsonValue();
+      };
+
+      const importInput = page.locator('section.import input[type="file"]').first();
+      await importInput.setInputFiles(SAMPLE_CHARACTER_FILE);
+
+      let importOutcome = '';
+      try {
+        importOutcome = await waitForImportOutcome(45000);
+      } catch (error) {
+        importOutcome = '';
+      }
+
+      if (importOutcome !== 'workspace-ready') {
+        const readOptionalText = async (selector) => {
+          const locator = page.locator(selector).first();
+          if (await locator.count() === 0) {
+            return '';
+          }
+
+          return (await locator.textContent()) || '';
+        };
+
+        const importError = await readOptionalText('section.import .error');
+        const resultError = await readOptionalText('.results .error');
+        const resultNote = await readOptionalText('.results .note');
+        const importPanelHtml = await page.locator('section.import').first().innerHTML();
+        const resultPanelHtml = await page.locator('.results').first().innerHTML();
+        throw new Error(
+          `Import did not produce workspace (${importOutcome || 'timeout'}). ` +
+          `importError='${(importError || '').trim()}' resultError='${(resultError || '').trim()}' note='${(resultNote || '').trim()}'. ` +
+          `importPanel='${importPanelHtml.replace(/\s+/g, ' ').trim()}' ` +
+          `resultPanel='${resultPanelHtml.replace(/\s+/g, ' ').trim()}'`);
+      }
+    }
 
     await page.locator('#openCharactersTree .command-button').first().click();
 

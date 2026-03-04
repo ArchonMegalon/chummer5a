@@ -37,4 +37,5 @@ COPY Chummer/ Chummer/
 COPY scripts/ scripts/
 COPY .github/workflows/ .github/workflows/
 COPY Docker/Dockerfile.tests Docker/
+COPY Docker/Amends/ Docker/Amends/
 RUN dotnet build Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0 --no-restore -p:TargetFramework=net10.0

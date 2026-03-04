@@ -4,77 +4,77 @@
      @ref="_shellRoot"
      tabindex="0"
      @onkeydown="OnShellKeyDown">
-    <MenuBar MenuRoots="ShellState.MenuRoots.ToArray()"
-             OpenMenuId="ShellState.OpenMenuId"
-             IsBusy="State.IsBusy"
-             MenuCommands="MenuCommands"
-             IsCommandEnabled="IsCommandEnabled"
-             ToggleMenuRequested="ToggleMenu"
-             ExecuteCommandRequested="ExecuteCommandAsync" />
+    <MenuBar MenuRoots="@ShellState.MenuRoots.ToArray()"
+             OpenMenuId="@ShellState.OpenMenuId"
+             IsBusy="@State.IsBusy"
+             MenuCommands="@MenuCommands"
+             IsCommandEnabled="@IsCommandEnabled"
+             ToggleMenuRequested="@ToggleMenu"
+             ExecuteCommandRequested="@ExecuteCommandAsync" />
 
-    <ToolStrip Commands="ToolStripCommands.ToArray()"
-               LastCommandId="State.LastCommandId"
-               IsBusy="State.IsBusy"
-               IsCommandEnabled="IsCommandEnabled"
-               ExecuteCommandRequested="ExecuteCommandAsync" />
+    <ToolStrip Commands="@ToolStripCommands.ToArray()"
+               LastCommandId="@State.LastCommandId"
+               IsBusy="@State.IsBusy"
+               IsCommandEnabled="@IsCommandEnabled"
+               ExecuteCommandRequested="@ExecuteCommandAsync" />
 
-    <MdiStrip OpenWorkspaces="State.Session.OpenWorkspaces"
-              ActiveWorkspaceId="State.Session.ActiveWorkspaceId"
-              IsBusy="State.IsBusy"
-              OpenWorkspaceRequested="OpenWorkspaceAsync"
-              CloseWorkspaceRequested="CloseWorkspaceAsync" />
+    <MdiStrip OpenWorkspaces="@State.Session.OpenWorkspaces"
+              ActiveWorkspaceId="@State.Session.ActiveWorkspaceId"
+              IsBusy="@State.IsBusy"
+              OpenWorkspaceRequested="@OpenWorkspaceAsync"
+              CloseWorkspaceRequested="@CloseWorkspaceAsync" />
 
     <div class="workspace-layout">
-        <WorkspaceLeftPane State="State"
-                           NavigationTabs="ShellState.NavigationTabs"
-                           ActiveWorkspaceActions="ActiveWorkspaceActions"
-                           ActiveUiControls="ActiveUiControls"
-                           IsNavigationTabEnabled="IsNavigationTabEnabled"
-                           OpenWorkspaceRequested="OpenWorkspaceAsync"
-                           CloseWorkspaceRequested="CloseWorkspaceAsync"
-                           SelectTabRequested="SelectTabAsync"
-                           ExecuteWorkspaceActionRequested="ExecuteWorkspaceActionAsync"
-                           HandleUiControlRequested="HandleUiControlAsync" />
+        <WorkspaceLeftPane State="@State"
+                           NavigationTabs="@ShellState.NavigationTabs"
+                           ActiveWorkspaceActions="@ActiveWorkspaceActions"
+                           ActiveUiControls="@ActiveUiControls"
+                           IsNavigationTabEnabled="@IsNavigationTabEnabled"
+                           OpenWorkspaceRequested="@OpenWorkspaceAsync"
+                           CloseWorkspaceRequested="@CloseWorkspaceAsync"
+                           SelectTabRequested="@SelectTabAsync"
+                           ExecuteWorkspaceActionRequested="@ExecuteWorkspaceActionAsync"
+                           HandleUiControlRequested="@HandleUiControlAsync" />
 
         <main class="center-pane">
-            <SummaryHeader State="State" />
+            <SummaryHeader State="@State" />
 
-            <MetadataPanel State="State"
+            <MetadataPanel State="@State"
                            @bind-MetadataName="MetadataName"
                            @bind-MetadataAlias="MetadataAlias"
                            @bind-MetadataNotes="MetadataNotes"
                            @bind-LoadWorkspaceId="LoadWorkspaceId"
-                           UpdateMetadataRequested="UpdateMetadataAsync"
-                           SaveRequested="SaveAsync"
-                           LoadWorkspaceRequested="LoadWorkspaceAsync" />
+                           UpdateMetadataRequested="@UpdateMetadataAsync"
+                           SaveRequested="@SaveAsync"
+                           LoadWorkspaceRequested="@LoadWorkspaceAsync" />
 
-            <SectionPane State="State" />
+            <SectionPane State="@State" />
         </main>
 
         <aside class="right-pane">
-            <ImportPanel IsBusy="State.IsBusy"
-                         ImportedFileName="ImportedFileName"
-                         ImportError="ImportError"
+            <ImportPanel IsBusy="@State.IsBusy"
+                         ImportedFileName="@ImportedFileName"
+                         ImportError="@ImportError"
                          @bind-RawImportXml="RawImportXml"
-                         ImportFileRequested="ImportFileAsync"
-                         ImportRawRequested="ImportRawAsync" />
+                         ImportFileRequested="@ImportFileAsync"
+                         ImportRawRequested="@ImportRawAsync" />
 
-            <CommandPanel State="State"
-                          Commands="HeadCommands.ToArray()"
-                          IsCommandEnabled="IsCommandEnabled"
-                          ExecuteCommandRequested="ExecuteCommandAsync" />
+            <CommandPanel State="@State"
+                          Commands="@HeadCommands.ToArray()"
+                          IsCommandEnabled="@IsCommandEnabled"
+                          ExecuteCommandRequested="@ExecuteCommandAsync" />
 
-            <ResultPanel State="State" />
+            <ResultPanel State="@State" />
         </aside>
     </div>
 
-    <StatusStrip WorkspaceId="State.WorkspaceId"
-                 Error="State.Error"
-                 LastUiUtc="_lastUiUtc" />
+    <StatusStrip WorkspaceId="@State.WorkspaceId"
+                 Error="@State.Error"
+                 LastUiUtc="@_lastUiUtc" />
 </div>
 
-<DialogHost Dialog="State.ActiveDialog"
-            CloseRequested="CloseDialogAsync"
-            ExecuteDialogActionRequested="ExecuteDialogActionAsync"
-            FieldInputRequested="OnDialogFieldInputAsync"
-            FieldCheckboxRequested="OnDialogCheckboxChangedAsync" />
+<DialogHost Dialog="@State.ActiveDialog"
+            CloseRequested="@CloseDialogAsync"
+            ExecuteDialogActionRequested="@ExecuteDialogActionAsync"
+            FieldInputRequested="@OnDialogFieldInputAsync"
+            FieldCheckboxRequested="@OnDialogCheckboxChangedAsync" />

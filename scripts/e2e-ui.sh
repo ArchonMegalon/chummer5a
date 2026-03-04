@@ -59,7 +59,7 @@ fi
 
 RUN_PLAYWRIGHT="${CHUMMER_UI_PLAYWRIGHT:-1}"
 if [[ "$RUN_PLAYWRIGHT" == "1" ]]; then
-  CHUMMER_API_KEY="$API_KEY" docker compose --profile test run --rm -T chummer-playwright
+  CHUMMER_API_KEY="$API_KEY" docker compose --profile test run --build --rm -T chummer-playwright
 fi
 
 echo "ui E2E completed"

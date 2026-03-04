@@ -551,10 +551,12 @@ public class MigrationComplianceTests
         string playwrightScriptText = File.ReadAllText(playwrightScriptPath);
 
         StringAssert.Contains(uiE2eText, "CHUMMER_UI_PLAYWRIGHT");
-        StringAssert.Contains(uiE2eText, "docker compose --profile test run --rm -T chummer-playwright");
+        StringAssert.Contains(uiE2eText, "docker compose --profile test run --build --rm -T chummer-playwright");
         StringAssert.Contains(migrationLoopText, "bash scripts/e2e-ui.sh");
 
-        StringAssert.Contains(playwrightScriptText, "Import Raw XML");
+        StringAssert.Contains(playwrightScriptText, "input[type=\"file\"]");
+        StringAssert.Contains(playwrightScriptText, "CHUMMER_UI_SAMPLE_FILE");
+        StringAssert.Contains(playwrightScriptText, "BLUE.chum5");
         StringAssert.Contains(playwrightScriptText, "#tab-skills");
         StringAssert.Contains(playwrightScriptText, "global_settings");
         StringAssert.Contains(playwrightScriptText, "Save Workspace");
@@ -773,6 +775,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj Chummer.Blazor.Desktop/");
         StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/ Chummer.Blazor.Desktop/");
         StringAssert.Contains(dockerfileText, "COPY README.md ./");
+        StringAssert.Contains(dockerfileText, "COPY Docker/Amends/ Docker/Amends/");
     }
 
     [TestMethod]
@@ -787,7 +790,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(componentSuiteText, "FullyQualifiedName~BlazorShellComponentTests");
 
         StringAssert.Contains(uiE2eText, "CHUMMER_UI_PLAYWRIGHT");
-        StringAssert.Contains(uiE2eText, "docker compose --profile test run --rm -T chummer-playwright");
+        StringAssert.Contains(uiE2eText, "docker compose --profile test run --build --rm -T chummer-playwright");
     }
 
     [TestMethod]
