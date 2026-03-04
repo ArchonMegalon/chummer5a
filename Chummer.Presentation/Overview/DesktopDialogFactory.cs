@@ -39,6 +39,18 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
 
         return commandId switch
         {
+            "open_character" => CreateOpenCharacterDialog(
+                "dialog.open_character",
+                "Open Character",
+                "Paste Chummer XML to import into a workspace."),
+            "open_for_printing" => CreateOpenCharacterDialog(
+                "dialog.open_for_printing",
+                "Open for Printing",
+                "Paste Chummer XML to stage print workflows."),
+            "open_for_export" => CreateOpenCharacterDialog(
+                "dialog.open_for_export",
+                "Open for Export",
+                "Paste Chummer XML to stage export workflows."),
             "print_setup" => new DesktopDialogState(
                 "dialog.print_setup",
                 "Print Setup",
@@ -227,6 +239,33 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 [],
                 [new DesktopDialogAction("close", "Close", true)])
         };
+    }
+
+    private static DesktopDialogState CreateOpenCharacterDialog(
+        string id,
+        string title,
+        string message)
+    {
+        const string defaultXml = "<character><name>Imported Runner</name></character>";
+
+        return new DesktopDialogState(
+            Id: id,
+            Title: title,
+            Message: message,
+            Fields:
+            [
+                new DesktopDialogField(
+                    Id: "openCharacterXml",
+                    Label: "Character XML",
+                    Value: defaultXml,
+                    Placeholder: defaultXml,
+                    IsMultiline: true)
+            ],
+            Actions:
+            [
+                new DesktopDialogAction("import", "Import", true),
+                new DesktopDialogAction("cancel", "Cancel")
+            ]);
     }
 
     public DesktopDialogState CreateUiControlDialog(

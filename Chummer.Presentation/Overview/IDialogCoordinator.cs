@@ -10,5 +10,6 @@ public interface IDialogCoordinator
 public sealed record DialogCoordinationContext(
     CharacterOverviewState State,
     Action<CharacterOverviewState> Publish,
+    Func<WorkspaceImportDocument, CancellationToken, Task> ImportAsync,
     Func<UpdateWorkspaceMetadata, CancellationToken, Task> UpdateMetadataAsync,
     Func<CharacterOverviewState> GetState);

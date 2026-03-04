@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
@@ -87,6 +89,23 @@ public class DesktopDialogFactoryTests
 
         Assert.AreEqual("true", normalized);
         Assert.IsTrue(DesktopDialogFieldValueParser.ParseBool(dialog, "globalCompactMode", false));
+    }
+
+    [TestMethod]
+    public void CreateCommandDialog_open_character_uses_import_template()
+    {
+        DesktopDialogFactory factory = new();
+
+        DesktopDialogState dialog = factory.CreateCommandDialog(
+            "open_character",
+            profile: null,
+            DesktopPreferenceState.Default,
+            activeSectionJson: null,
+            currentWorkspace: null);
+
+        Assert.AreEqual("dialog.open_character", dialog.Id);
+        Assert.IsNotNull(dialog.Fields.SingleOrDefault(field => string.Equals(field.Id, "openCharacterXml", StringComparison.Ordinal)));
+        Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "import", StringComparison.Ordinal)));
     }
 
     private static CharacterProfileSection CreateProfile(string name, string alias)

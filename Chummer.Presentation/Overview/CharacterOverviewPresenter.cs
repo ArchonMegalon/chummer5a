@@ -331,6 +331,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         DialogCoordinationContext context = new(
             State: State,
             Publish: Publish,
+            ImportAsync: ImportAsync,
             UpdateMetadataAsync: UpdateMetadataAsync,
             GetState: () => State);
 

@@ -37,6 +37,7 @@ public class DialogCoordinatorTests
         DialogCoordinationContext context = new(
             State: published,
             Publish: state => published = state,
+            ImportAsync: static (_, _) => Task.CompletedTask,
             UpdateMetadataAsync: static (_, _) => Task.CompletedTask,
             GetState: () => published);
 
@@ -75,6 +76,7 @@ public class DialogCoordinatorTests
         DialogCoordinationContext context = new(
             State: published,
             Publish: state => published = state,
+            ImportAsync: static (_, _) => Task.CompletedTask,
             UpdateMetadataAsync: (command, _) =>
             {
                 captured = command;
@@ -116,6 +118,7 @@ public class DialogCoordinatorTests
         DialogCoordinationContext context = new(
             State: published,
             Publish: state => published = state,
+            ImportAsync: static (_, _) => Task.CompletedTask,
             UpdateMetadataAsync: (_, _) =>
             {
                 published = published with { Error = "boom" };
@@ -152,6 +155,7 @@ public class DialogCoordinatorTests
         DialogCoordinationContext context = new(
             State: published,
             Publish: state => published = state,
+            ImportAsync: static (_, _) => Task.CompletedTask,
             UpdateMetadataAsync: static (_, _) => Task.CompletedTask,
             GetState: () => published);
 
@@ -160,5 +164,51 @@ public class DialogCoordinatorTests
         Assert.IsNotNull(published.ActiveDialog);
         Assert.IsNotNull(published.ActiveDialog!.Fields.FirstOrDefault(field => string.Equals(field.Id, "diceResult", StringComparison.Ordinal)));
         StringAssert.Contains(published.Notice ?? string.Empty, "3d6+2");
+    }
+
+    [TestMethod]
+    public async Task CoordinateAsync_import_imports_workspace_and_closes_dialog_on_success()
+    {
+        DialogCoordinator coordinator = new();
+        CharacterOverviewState published = CharacterOverviewState.Empty with
+        {
+            ActiveDialog = new DesktopDialogState(
+                Id: "dialog.open_character",
+                Title: "Open Character",
+                Message: null,
+                Fields:
+                [
+                    new DesktopDialogField("openCharacterXml", "Character XML", "<character><name>Runner</name></character>", "<character />", true)
+                ],
+                Actions:
+                [
+                    new DesktopDialogAction("import", "Import", true)
+                ])
+        };
+
+        WorkspaceImportDocument? imported = null;
+        DialogCoordinationContext context = new(
+            State: published,
+            Publish: state => published = state,
+            ImportAsync: (document, _) =>
+            {
+                imported = document;
+                published = published with
+                {
+                    Error = null,
+                    WorkspaceId = new CharacterWorkspaceId("ws-imported")
+                };
+                return Task.CompletedTask;
+            },
+            UpdateMetadataAsync: static (_, _) => Task.CompletedTask,
+            GetState: () => published);
+
+        await coordinator.CoordinateAsync("import", context, CancellationToken.None);
+
+        Assert.IsNotNull(imported);
+        StringAssert.Contains(imported!.Content, "<character>");
+        Assert.IsNull(published.ActiveDialog);
+        Assert.AreEqual("Character imported.", published.Notice);
+        Assert.AreEqual("ws-imported", published.WorkspaceId?.Value);
     }
 }

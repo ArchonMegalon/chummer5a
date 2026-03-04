@@ -39,6 +39,15 @@ public sealed class DialogCoordinator : IDialogCoordinator
             return;
         }
 
+        if ((string.Equals(dialog.Id, "dialog.open_character", StringComparison.Ordinal)
+            || string.Equals(dialog.Id, "dialog.open_for_printing", StringComparison.Ordinal)
+            || string.Equals(dialog.Id, "dialog.open_for_export", StringComparison.Ordinal))
+            && string.Equals(actionId, "import", StringComparison.Ordinal))
+        {
+            await ImportCharacterDialogAsync(dialog, context, ct);
+            return;
+        }
+
         if (string.Equals(dialog.Id, "dialog.dice_roller", StringComparison.Ordinal) && string.Equals(actionId, "roll", StringComparison.Ordinal))
         {
             RollDice(dialog, context);
@@ -105,6 +114,36 @@ public sealed class DialogCoordinator : IDialogCoordinator
             Error = null,
             Notice = $"{dialog.Title}: action '{actionId}' executed."
         });
+    }
+
+    private static async Task ImportCharacterDialogAsync(
+        DesktopDialogState dialog,
+        DialogCoordinationContext context,
+        CancellationToken ct)
+    {
+        string xml = DesktopDialogFieldValueParser.GetValue(dialog, "openCharacterXml") ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(xml))
+        {
+            context.Publish(context.State with
+            {
+                Error = "Character XML is required.",
+                Notice = null
+            });
+            return;
+        }
+
+        await context.ImportAsync(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml), ct);
+
+        CharacterOverviewState stateAfterImport = context.GetState();
+        if (stateAfterImport.Error is null)
+        {
+            context.Publish(stateAfterImport with
+            {
+                ActiveDialog = null,
+                Error = null,
+                Notice = "Character imported."
+            });
+        }
     }
 
     private static void ApplyGlobalSettings(DesktopDialogState dialog, DialogCoordinationContext context)

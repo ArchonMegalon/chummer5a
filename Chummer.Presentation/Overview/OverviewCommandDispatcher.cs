@@ -21,7 +21,13 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
             context.Publish(context.State with
             {
                 Error = null,
-                Notice = "Use the file import action in this head to open a character document."
+                ActiveDialog = context.DialogFactory.CreateCommandDialog(
+                    commandId,
+                    context.State.Profile,
+                    context.State.Preferences,
+                    context.State.ActiveSectionJson,
+                    context.CurrentWorkspace),
+                Notice = $"Import flow ready for '{commandId}'."
             });
             return;
         }

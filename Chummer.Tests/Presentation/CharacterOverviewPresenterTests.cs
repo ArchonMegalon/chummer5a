@@ -272,6 +272,35 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_open_character_opens_import_dialog()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+
+        await presenter.ExecuteCommandAsync("open_character", CancellationToken.None);
+
+        Assert.AreEqual("open_character", presenter.State.LastCommandId);
+        Assert.IsNotNull(presenter.State.ActiveDialog);
+        Assert.AreEqual("dialog.open_character", presenter.State.ActiveDialog?.Id);
+    }
+
+    [TestMethod]
+    public async Task ExecuteDialogActionAsync_import_imports_workspace_from_open_character_dialog()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.ExecuteCommandAsync("open_character", CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("openCharacterXml", "<character><name>Dialog Import</name></character>", CancellationToken.None);
+        await presenter.ExecuteDialogActionAsync("import", CancellationToken.None);
+
+        Assert.IsNotNull(client.LastImportedDocument);
+        StringAssert.Contains(client.LastImportedDocument!.Content, "Dialog Import");
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
+        Assert.IsNull(presenter.State.ActiveDialog);
+        Assert.AreEqual("Character imported.", presenter.State.Notice);
+    }
+
+    [TestMethod]
     public async Task HandleUiControlAsync_create_entry_opens_dialog()
     {
         var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
@@ -498,6 +527,7 @@ public class CharacterOverviewPresenterTests
         private readonly Dictionary<string, WorkspaceListItem> _workspaces = new(StringComparer.Ordinal);
         private int _clock;
         public UpdateWorkspaceMetadata? LastUpdateMetadata { get; private set; }
+        public WorkspaceImportDocument? LastImportedDocument { get; private set; }
         private static readonly IReadOnlyList<AppCommandDefinition> Commands =
         [
             new("new_character", "command.new_character", "file", false, true),
@@ -527,6 +557,7 @@ public class CharacterOverviewPresenterTests
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
         {
+            LastImportedDocument = document;
             SeedWorkspace("ws-1", "Imported", _alias);
             WorkspaceImportResult result = new(
                 new CharacterWorkspaceId("ws-1"),
