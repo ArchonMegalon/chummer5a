@@ -650,68 +650,6 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         return true;
     }
 
-    private static IReadOnlyList<SectionRowState> BuildSectionRows(JsonNode? node)
-    {
-        if (node is null)
-            return [];
-
-        List<SectionRowState> rows = [];
-        FlattenSectionNode(node, string.Empty, rows);
-        if (rows.Count > 120)
-        {
-            return rows.Take(120).ToArray();
-        }
-
-        return rows;
-    }
-
-    private static void FlattenSectionNode(JsonNode node, string path, List<SectionRowState> rows)
-    {
-        switch (node)
-        {
-            case JsonObject obj:
-                foreach ((string key, JsonNode? child) in obj)
-                {
-                    if (child is null)
-                        continue;
-
-                    string nextPath = string.IsNullOrWhiteSpace(path) ? key : $"{path}.{key}";
-                    FlattenSectionNode(child, nextPath, rows);
-                }
-
-                return;
-            case JsonArray array:
-                if (array.Count == 0)
-                {
-                    rows.Add(new SectionRowState(path, "[]"));
-                    return;
-                }
-
-                bool simpleArray = array.All(item => item is null or JsonValue);
-                if (simpleArray)
-                {
-                    string value = string.Join(", ", array.Select(item => item?.ToJsonString() ?? "null"));
-                    rows.Add(new SectionRowState(path, value));
-                    return;
-                }
-
-                for (int index = 0; index < array.Count; index++)
-                {
-                    JsonNode? child = array[index];
-                    if (child is null)
-                        continue;
-
-                    string nextPath = $"{path}[{index}]";
-                    FlattenSectionNode(child, nextPath, rows);
-                }
-
-                return;
-            case JsonValue value:
-                rows.Add(new SectionRowState(path, value.ToJsonString()));
-                return;
-        }
-    }
-
     public Task CloseDialogAsync(CancellationToken ct)
     {
         Publish(State with
@@ -880,7 +818,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 ActiveActionId = actionId ?? State.ActiveActionId,
                 ActiveSectionId = sectionId,
                 ActiveSectionJson = sectionJson,
-                ActiveSectionRows = BuildSectionRows(section)
+                ActiveSectionRows = SectionRowProjector.BuildRows(section)
             });
         }
         catch (Exception ex)
@@ -919,7 +857,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 ActiveActionId = action.Id,
                 ActiveSectionId = "summary",
                 ActiveSectionJson = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }),
-                ActiveSectionRows = BuildSectionRows(summaryNode)
+                ActiveSectionRows = SectionRowProjector.BuildRows(summaryNode)
             });
         }
         catch (Exception ex)
@@ -958,7 +896,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 ActiveActionId = action.Id,
                 ActiveSectionId = "validate",
                 ActiveSectionJson = JsonSerializer.Serialize(validation, new JsonSerializerOptions { WriteIndented = true }),
-                ActiveSectionRows = BuildSectionRows(validationNode)
+                ActiveSectionRows = SectionRowProjector.BuildRows(validationNode)
             });
         }
         catch (Exception ex)
