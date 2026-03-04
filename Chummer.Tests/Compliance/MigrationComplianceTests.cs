@@ -650,6 +650,26 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Readme_modern_stack_summary_tracks_current_gateway_and_runtime_contract()
+    {
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(readmeText, "Modern migration path (Docker branch)");
+        StringAssert.Contains(readmeText, "multi-head UI stack (`Chummer.Blazor`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`)");
+        StringAssert.Contains(readmeText, "chummer-blazor-portal");
+        StringAssert.Contains(readmeText, "chummer-avalonia-browser");
+        StringAssert.Contains(readmeText, "chummer-portal");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOCS_URL");
+        StringAssert.Contains(readmeText, "CHUMMER_CLIENT_MODE");
+        StringAssert.Contains(readmeText, "CHUMMER_DESKTOP_CLIENT_MODE");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR");
+        Assert.IsFalse(
+            readmeText.Contains("two UI heads (`Chummer.Blazor`, `Chummer.Avalonia`)", StringComparison.Ordinal),
+            "README summary regressed to outdated two-head architecture language.");
+    }
+
+    [TestMethod]
     public void Runbook_supports_download_manifest_generation_mode()
     {
         string runbookPath = FindPath("scripts", "runbook.sh");
@@ -683,6 +703,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(dockerfileText, "COPY Chummer.Desktop.Runtime/ Chummer.Desktop.Runtime/");
         StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj Chummer.Blazor.Desktop/");
         StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/ Chummer.Blazor.Desktop/");
+        StringAssert.Contains(dockerfileText, "COPY README.md ./");
     }
 
     [TestMethod]

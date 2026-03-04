@@ -31,6 +31,7 @@ COPY Chummer.Blazor.Desktop/ Chummer.Blazor.Desktop/
 COPY Chummer.Portal/ Chummer.Portal/
 COPY Chummer.Api/ Chummer.Api/
 COPY Chummer.Tests/ Chummer.Tests/
+COPY README.md ./
 COPY Chummer.Web/ Chummer.Web/
 COPY Chummer/ Chummer/
 COPY scripts/ scripts/
