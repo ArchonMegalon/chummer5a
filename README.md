@@ -160,7 +160,8 @@ Desktop artifact workflow:
 
 * `.github/workflows/desktop-downloads-matrix.yml` publishes both Avalonia and Blazor desktop artifacts for multiple RIDs and generates `releases.json` with SHA-256 checksums.
 * The workflow uploads a `desktop-download-bundle` artifact in portal layout (`releases.json` + `files/*`) for direct sync into mounted portal downloads storage.
-* Optional workflow-dispatch deployment: set repository variable `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` and run the workflow with `deploy_portal_downloads=true` to publish the bundle automatically using `scripts/publish-download-bundle.sh`.
+* Automatic deployment: set repository variable `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` and Docker-branch pushes will publish the bundle using `scripts/publish-download-bundle.sh`.
+* Manual deployment remains available through workflow dispatch with `deploy_portal_downloads=true`.
 
 ## Legacy WinForms Requirements
 | Operating System | .NET Framework |

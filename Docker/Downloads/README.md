@@ -17,3 +17,6 @@ Populate this directory from the `desktop-download-bundle` artifact produced by
 ```bash
 bash scripts/runbook.sh downloads-sync
 ```
+
+If repository variable `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` is configured,
+Docker-branch workflow runs can publish this bundle automatically.
