@@ -1,0 +1,30 @@
+<section class="panel section-preview">
+    <h2>Section Payload (@(State.ActiveSectionId ?? "none"))</h2>
+    @if (string.IsNullOrWhiteSpace(State.ActiveSectionJson))
+    {
+        <p class="note">Select a tab to render a workspace section.</p>
+    }
+    else
+    {
+        <table class="section-table">
+            <thead>
+                <tr><th>Field</th><th>Value</th></tr>
+            </thead>
+            <tbody>
+                @foreach (SectionRowState row in State.ActiveSectionRows)
+                {
+                    <tr>
+                        <td><code>@row.Path</code></td>
+                        <td><code>@row.Value</code></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <pre>@State.ActiveSectionJson</pre>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public CharacterOverviewState State { get; set; } = CharacterOverviewState.Empty;
+}

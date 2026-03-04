@@ -97,49 +97,16 @@
                 </div>
             </section>
 
-            <section class="panel metadata">
-                <h2>Metadata</h2>
-                <div class="summary-grid">
-                    <label>Name <input @bind="MetadataName" /></label>
-                    <label>Alias <input @bind="MetadataAlias" /></label>
-                    <label>Workspace <input value="@(State.WorkspaceId?.Value ?? string.Empty)" readonly /></label>
-                    <label class="wide">Notes <textarea @bind="MetadataNotes" rows="3"></textarea></label>
-                </div>
-                <div class="actions">
-                    <button @onclick="UpdateMetadataAsync" disabled="@(State.IsBusy || State.WorkspaceId is null)">Update Metadata</button>
-                    <button @onclick="SaveAsync" disabled="@(State.IsBusy || State.WorkspaceId is null)">Save Workspace</button>
-                    <button @onclick="LoadWorkspaceAsync" disabled="@State.IsBusy || string.IsNullOrWhiteSpace(LoadWorkspaceId)">Load Workspace</button>
-                </div>
-                <div class="inline-fields">
-                    <input @bind="LoadWorkspaceId" placeholder="Workspace id" />
-                </div>
-            </section>
+            <MetadataPanel State="State"
+                           @bind-MetadataName="MetadataName"
+                           @bind-MetadataAlias="MetadataAlias"
+                           @bind-MetadataNotes="MetadataNotes"
+                           @bind-LoadWorkspaceId="LoadWorkspaceId"
+                           UpdateMetadataRequested="UpdateMetadataAsync"
+                           SaveRequested="SaveAsync"
+                           LoadWorkspaceRequested="LoadWorkspaceAsync" />
 
-            <section class="panel section-preview">
-                <h2>Section Payload (@(State.ActiveSectionId ?? "none"))</h2>
-                @if (string.IsNullOrWhiteSpace(State.ActiveSectionJson))
-                {
-                    <p class="note">Select a tab to render a workspace section.</p>
-                }
-                else
-                {
-                    <table class="section-table">
-                        <thead>
-                            <tr><th>Field</th><th>Value</th></tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var row in State.ActiveSectionRows)
-                            {
-                                <tr>
-                                    <td><code>@row.Path</code></td>
-                                    <td><code>@row.Value</code></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                    <pre>@State.ActiveSectionJson</pre>
-                }
-            </section>
+            <SectionPane State="State" />
         </main>
 
         <aside class="right-pane">
