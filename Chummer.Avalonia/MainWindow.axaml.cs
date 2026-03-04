@@ -1,13 +1,11 @@
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
-using Chummer.Presentation;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 
@@ -15,8 +13,7 @@ namespace Chummer.Avalonia;
 
 public partial class MainWindow : Window
 {
-    private readonly HttpClient _httpClient;
-    private readonly CharacterOverviewPresenter _presenter;
+    private readonly ICharacterOverviewPresenter _presenter;
     private readonly IShellPresenter _shellPresenter;
     private readonly ICommandAvailabilityEvaluator _commandAvailabilityEvaluator;
     private readonly CharacterOverviewViewModelAdapter _adapter;
@@ -52,27 +49,18 @@ public partial class MainWindow : Window
     private bool _suppressDialogActionSelectionEvent;
     private string? _activeMenuGroup;
 
-    public MainWindow()
+    public MainWindow(
+        ICharacterOverviewPresenter presenter,
+        IShellPresenter shellPresenter,
+        ICommandAvailabilityEvaluator commandAvailabilityEvaluator,
+        CharacterOverviewViewModelAdapter adapter)
     {
         InitializeComponent();
 
-        _httpClient = new HttpClient
-        {
-            BaseAddress = ResolveApiBaseAddress(),
-            Timeout = TimeSpan.FromSeconds(20)
-        };
-        string? apiKey = ResolveApiKey();
-        if (!string.IsNullOrWhiteSpace(apiKey))
-        {
-            _httpClient.DefaultRequestHeaders.Remove("X-Api-Key");
-            _httpClient.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
-        }
-
-        var chummerClient = new HttpChummerClient(_httpClient);
-        _presenter = new CharacterOverviewPresenter(chummerClient);
-        _shellPresenter = new ShellPresenter(chummerClient);
-        _commandAvailabilityEvaluator = new DefaultCommandAvailabilityEvaluator();
-        _adapter = new CharacterOverviewViewModelAdapter(_presenter);
+        _presenter = presenter;
+        _shellPresenter = shellPresenter;
+        _commandAvailabilityEvaluator = commandAvailabilityEvaluator;
+        _adapter = adapter;
         _adapter.Updated += (_, _) => RefreshState();
 
         _xmlInputBox = this.FindControl<TextBox>("XmlInputBox")!;
@@ -118,7 +106,6 @@ public partial class MainWindow : Window
         }
 
         _adapter.Dispose();
-        _httpClient.Dispose();
         base.OnClosed(e);
     }
 
@@ -430,27 +417,6 @@ public partial class MainWindow : Window
         _suppressDialogActionSelectionEvent = true;
         _dialogActionsList.SelectedItem = null;
         _suppressDialogActionSelectionEvent = false;
-    }
-
-    private static Uri ResolveApiBaseAddress()
-    {
-        string? configured = Environment.GetEnvironmentVariable("CHUMMER_API_BASE_URL");
-        if (string.IsNullOrWhiteSpace(configured))
-        {
-            configured = "http://127.0.0.1:8088";
-        }
-
-        if (!Uri.TryCreate(configured, UriKind.Absolute, out Uri? uri))
-        {
-            throw new InvalidOperationException($"Invalid CHUMMER_API_BASE_URL: '{configured}'");
-        }
-
-        return uri;
-    }
-
-    private static string? ResolveApiKey()
-    {
-        return Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
     }
 
     private void SyncDialogWindow(CharacterOverviewState state)

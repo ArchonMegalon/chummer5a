@@ -126,7 +126,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(blazorProgramText, "MapRazorComponents<App>()");
         StringAssert.Contains(avaloniaProgramText, "BuildAvaloniaApp()");
         StringAssert.Contains(avaloniaProgramText, "UsePlatformDetect()");
-        StringAssert.Contains(avaloniaAppCodeText, "desktop.MainWindow = new MainWindow()");
+        StringAssert.Contains(avaloniaAppCodeText, "ConfigureServices(");
+        StringAssert.Contains(avaloniaAppCodeText, "GetRequiredService<MainWindow>()");
+        StringAssert.Contains(avaloniaAppCodeText, "IChummerClient");
+        StringAssert.Contains(avaloniaAppCodeText, "ICharacterOverviewPresenter");
+        StringAssert.Contains(avaloniaMainWindowCodeText, "public MainWindow(");
         StringAssert.Contains(avaloniaMainWindowCodeText, "new DesktopDialogWindow(");
     }
 

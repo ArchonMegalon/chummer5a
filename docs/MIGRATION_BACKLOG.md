@@ -118,8 +118,9 @@ Progress: `docker-architecture-guardrails.yml` now includes explicit `blazor-com
 
 ### Phase 5: Rebuild Avalonia head as product shell
 
-- [ ] `MIG-050` Move composition root into `App` startup with DI registration for `HttpClient`, `IChummerClient`, and presenters.
+- [x] `MIG-050` Move composition root into `App` startup with DI registration for `HttpClient`, `IChummerClient`, and presenters.
 Acceptance criteria: `MainWindow` no longer manually constructs networking/presenter objects.
+Progress: `App.axaml.cs` now builds a service provider, registers `HttpClient`/`IChummerClient`/presenters/adapter/window, and resolves `MainWindow` from DI. `MainWindow.axaml.cs` now receives injected dependencies and no longer constructs `HttpClient`, `HttpChummerClient`, or presenters directly.
 
 - [ ] `MIG-051` Replace imperative `FindControl` orchestration in `MainWindow.axaml.cs` with bindings/adapters over shared state.
 Acceptance criteria: code-behind is reduced to view glue; interactions route through shared presenters/adapters.
