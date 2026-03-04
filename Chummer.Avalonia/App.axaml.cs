@@ -44,7 +44,7 @@ public partial class App : global::Avalonia.Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        services.AddChummerDesktopRuntimeClient(AppContext.BaseDirectory, Directory.GetCurrentDirectory());
+        services.AddChummerLocalRuntimeClient(AppContext.BaseDirectory, Directory.GetCurrentDirectory());
         services.AddSingleton<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
         services.AddSingleton<IShellPresenter, ShellPresenter>();
         services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();

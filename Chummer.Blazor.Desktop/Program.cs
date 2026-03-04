@@ -15,7 +15,7 @@ internal static class Program
         var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
 
         appBuilder.Services.AddLogging();
-        appBuilder.Services.AddChummerDesktopRuntimeClient(AppContext.BaseDirectory, Directory.GetCurrentDirectory());
+        appBuilder.Services.AddChummerLocalRuntimeClient(AppContext.BaseDirectory, Directory.GetCurrentDirectory());
         appBuilder.Services.AddSingleton<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
         appBuilder.Services.AddSingleton<IShellPresenter, ShellPresenter>();
         appBuilder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();

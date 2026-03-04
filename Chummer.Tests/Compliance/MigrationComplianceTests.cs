@@ -130,7 +130,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(avaloniaProgramText, "UsePlatformDetect()");
         StringAssert.Contains(avaloniaAppCodeText, "ConfigureServices(");
         StringAssert.Contains(avaloniaAppCodeText, "GetRequiredService<MainWindow>()");
-        StringAssert.Contains(avaloniaAppCodeText, "AddChummerDesktopRuntimeClient");
+        StringAssert.Contains(avaloniaAppCodeText, "AddChummerLocalRuntimeClient");
         StringAssert.Contains(avaloniaAppCodeText, "ICharacterOverviewPresenter");
         StringAssert.Contains(avaloniaMainWindowCodeText, "public MainWindow(");
         StringAssert.Contains(avaloniaDialogsCodeText, "new DesktopDialogWindow(");
@@ -567,13 +567,14 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(programText, "PhotinoBlazorAppBuilder.CreateDefault");
         StringAssert.Contains(programText, "RootComponents.Add<App>(\"app\")");
-        StringAssert.Contains(programText, "AddChummerDesktopRuntimeClient");
+        StringAssert.Contains(programText, "AddChummerLocalRuntimeClient");
 
+        StringAssert.Contains(runtimeText, "CHUMMER_CLIENT_MODE");
         StringAssert.Contains(runtimeText, "CHUMMER_DESKTOP_CLIENT_MODE");
         StringAssert.Contains(runtimeText, "CHUMMER_API_BASE_URL");
         StringAssert.Contains(runtimeText, "CHUMMER_API_KEY");
         StringAssert.Contains(runtimeText, "AddChummerHeadlessCore");
-        StringAssert.Contains(runtimeText, "Set {ApiBaseUrlEnvironmentVariable} when {DesktopClientModeEnvironmentVariable}=http.");
+        StringAssert.Contains(runtimeText, "Set {ApiBaseUrlEnvironmentVariable} when {ClientModeEnvironmentVariable}=http (legacy: {LegacyDesktopClientModeEnvironmentVariable}=http).");
         Assert.IsFalse(runtimeText.Contains("http://127.0.0.1:8088", StringComparison.Ordinal));
 
         StringAssert.Contains(indexText, "<app>Loading...</app>");

@@ -25,7 +25,7 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
                 ApplyEnvironment(mode: null, baseUrl: null, apiKey: null, () =>
                 {
                     var services = new ServiceCollection();
-                    services.AddChummerDesktopRuntimeClient(root, root);
+                    services.AddChummerLocalRuntimeClient(root, root);
 
                     using ServiceProvider provider = services.BuildServiceProvider();
                     IChummerClient client = provider.GetRequiredService<IChummerClient>();
@@ -55,7 +55,7 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
                     InvalidOperationException? ex = null;
                     try
                     {
-                        services.AddChummerDesktopRuntimeClient(root, root);
+                        services.AddChummerLocalRuntimeClient(root, root);
                     }
                     catch (InvalidOperationException captured)
                     {
@@ -84,7 +84,7 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
                 ApplyEnvironment(mode: "http", baseUrl: "https://api.example.invalid/", apiKey: "test-key", () =>
                 {
                     var services = new ServiceCollection();
-                    services.AddChummerDesktopRuntimeClient(root, root);
+                    services.AddChummerLocalRuntimeClient(root, root);
 
                     using ServiceProvider provider = services.BuildServiceProvider();
                     IChummerClient client = provider.GetRequiredService<IChummerClient>();
@@ -106,22 +106,57 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
         }
     }
 
-    private static void ApplyEnvironment(string? mode, string? baseUrl, string? apiKey, Action action)
+    [TestMethod]
+    public void Legacy_desktop_client_mode_environment_variable_remains_supported()
     {
-        string? previousMode = Environment.GetEnvironmentVariable("CHUMMER_DESKTOP_CLIENT_MODE");
+        lock (EnvironmentLock)
+        {
+            string root = CreateTempDirectory();
+            try
+            {
+                ApplyEnvironment(mode: null, legacyMode: "http", baseUrl: "https://legacy.example.invalid/", apiKey: null, () =>
+                {
+                    var services = new ServiceCollection();
+                    services.AddChummerLocalRuntimeClient(root, root);
+
+                    using ServiceProvider provider = services.BuildServiceProvider();
+                    IChummerClient client = provider.GetRequiredService<IChummerClient>();
+                    HttpClient httpClient = provider.GetRequiredService<HttpClient>();
+
+                    Assert.IsInstanceOfType(client, typeof(HttpChummerClient));
+                    Assert.IsNotNull(httpClient.BaseAddress);
+                    Assert.AreEqual("https://legacy.example.invalid/", httpClient.BaseAddress!.ToString());
+                });
+            }
+            finally
+            {
+                DeleteTempDirectory(root);
+            }
+        }
+    }
+
+    private static void ApplyEnvironment(string? mode, string? baseUrl, string? apiKey, Action action)
+        => ApplyEnvironment(mode, legacyMode: mode, baseUrl, apiKey, action);
+
+    private static void ApplyEnvironment(string? mode, string? legacyMode, string? baseUrl, string? apiKey, Action action)
+    {
+        string? previousMode = Environment.GetEnvironmentVariable("CHUMMER_CLIENT_MODE");
+        string? previousLegacyMode = Environment.GetEnvironmentVariable("CHUMMER_DESKTOP_CLIENT_MODE");
         string? previousBaseUrl = Environment.GetEnvironmentVariable("CHUMMER_API_BASE_URL");
         string? previousApiKey = Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
 
         try
         {
-            Environment.SetEnvironmentVariable("CHUMMER_DESKTOP_CLIENT_MODE", mode);
+            Environment.SetEnvironmentVariable("CHUMMER_CLIENT_MODE", mode);
+            Environment.SetEnvironmentVariable("CHUMMER_DESKTOP_CLIENT_MODE", legacyMode);
             Environment.SetEnvironmentVariable("CHUMMER_API_BASE_URL", baseUrl);
             Environment.SetEnvironmentVariable("CHUMMER_API_KEY", apiKey);
             action();
         }
         finally
         {
-            Environment.SetEnvironmentVariable("CHUMMER_DESKTOP_CLIENT_MODE", previousMode);
+            Environment.SetEnvironmentVariable("CHUMMER_CLIENT_MODE", previousMode);
+            Environment.SetEnvironmentVariable("CHUMMER_DESKTOP_CLIENT_MODE", previousLegacyMode);
             Environment.SetEnvironmentVariable("CHUMMER_API_BASE_URL", previousBaseUrl);
             Environment.SetEnvironmentVariable("CHUMMER_API_KEY", previousApiKey);
         }

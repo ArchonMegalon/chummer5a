@@ -7,11 +7,12 @@ namespace Chummer.Desktop.Runtime;
 
 public static class ServiceCollectionDesktopRuntimeExtensions
 {
-    private const string DesktopClientModeEnvironmentVariable = "CHUMMER_DESKTOP_CLIENT_MODE";
+    private const string ClientModeEnvironmentVariable = "CHUMMER_CLIENT_MODE";
+    private const string LegacyDesktopClientModeEnvironmentVariable = "CHUMMER_DESKTOP_CLIENT_MODE";
     private const string ApiBaseUrlEnvironmentVariable = "CHUMMER_API_BASE_URL";
     private const string ApiKeyEnvironmentVariable = "CHUMMER_API_KEY";
 
-    public static IServiceCollection AddChummerDesktopRuntimeClient(
+    public static IServiceCollection AddChummerLocalRuntimeClient(
         this IServiceCollection services,
         string baseDirectory,
         string currentDirectory)
@@ -31,9 +32,21 @@ public static class ServiceCollectionDesktopRuntimeExtensions
         return services;
     }
 
+    [Obsolete("Use AddChummerLocalRuntimeClient instead.")]
+    public static IServiceCollection AddChummerDesktopRuntimeClient(
+        this IServiceCollection services,
+        string baseDirectory,
+        string currentDirectory)
+        => AddChummerLocalRuntimeClient(services, baseDirectory, currentDirectory);
+
     private static bool UseHttpClientMode()
     {
-        string? raw = Environment.GetEnvironmentVariable(DesktopClientModeEnvironmentVariable);
+        string? raw = Environment.GetEnvironmentVariable(ClientModeEnvironmentVariable);
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            raw = Environment.GetEnvironmentVariable(LegacyDesktopClientModeEnvironmentVariable);
+        }
+
         return string.Equals(raw?.Trim(), "http", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -61,7 +74,7 @@ public static class ServiceCollectionDesktopRuntimeExtensions
         if (string.IsNullOrWhiteSpace(configured))
         {
             throw new InvalidOperationException(
-                $"Set {ApiBaseUrlEnvironmentVariable} when {DesktopClientModeEnvironmentVariable}=http.");
+                $"Set {ApiBaseUrlEnvironmentVariable} when {ClientModeEnvironmentVariable}=http (legacy: {LegacyDesktopClientModeEnvironmentVariable}=http).");
         }
 
         if (!Uri.TryCreate(configured, UriKind.Absolute, out Uri? uri))
