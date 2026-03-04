@@ -14,8 +14,8 @@ string downloadsBaseUrl = ResolveSetting("Portal:DownloadsBaseUrl", "CHUMMER_POR
 string downloadsProxyBaseUrl = ResolveSetting("Portal:DownloadsProxyBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_PROXY_URL", string.Empty);
 string releaseManifestPath = ResolveSetting("Portal:ReleaseManifestPath", "CHUMMER_PORTAL_RELEASES_FILE", "downloads/releases.json");
 string releaseFilesPath = ResolveSetting("Portal:ReleaseFilesPath", "CHUMMER_PORTAL_RELEASES_DIR", string.Empty);
-string resolvedManifestPath = ResolveManifestPath(releaseManifestPath);
-string resolvedReleaseFilesPath = ResolveReleaseFilesPath(releaseFilesPath, resolvedManifestPath);
+string resolvedManifestPath = PortalDownloadsService.ResolveManifestPath(releaseManifestPath);
+string resolvedReleaseFilesPath = PortalDownloadsService.ResolveReleaseFilesPath(releaseFilesPath, resolvedManifestPath);
 bool useBlazorProxy = !string.IsNullOrWhiteSpace(blazorProxyBaseUrl);
 bool useAvaloniaProxy = !string.IsNullOrWhiteSpace(avaloniaProxyBaseUrl);
 bool useDownloadsProxy = !string.IsNullOrWhiteSpace(downloadsProxyBaseUrl);
@@ -186,11 +186,11 @@ app.MapGet("/", () => Results.Content(
     "text/html; charset=utf-8"));
 
 app.MapGet("/downloads/releases.json", () => Results.Json(
-    LoadReleaseManifest(resolvedManifestPath, downloadsBaseUrl),
+    PortalDownloadsService.LoadReleaseManifest(resolvedManifestPath, downloadsBaseUrl),
     new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 
 app.MapGet("/downloads/", () => Results.Content(
-    PortalPageBuilder.BuildDownloadsHtml(downloadsBaseUrl, HasConfiguredFallbackSource(downloadsBaseUrl)),
+    PortalPageBuilder.BuildDownloadsHtml(downloadsBaseUrl, PortalDownloadsService.HasConfiguredFallbackSource(downloadsBaseUrl)),
     "text/html; charset=utf-8"));
 
 if (!useBlazorProxy)
@@ -210,7 +210,7 @@ if (!useDownloadsProxy)
 {
     app.MapGet("/downloads/{**path}", (HttpContext context, string? path) =>
     {
-        string? filePath = ResolveDownloadFilePath(resolvedReleaseFilesPath, path);
+        string? filePath = PortalDownloadsService.ResolveDownloadFilePath(resolvedReleaseFilesPath, path);
         if (!string.IsNullOrWhiteSpace(filePath))
         {
             string fileName = Path.GetFileName(filePath);
@@ -303,130 +303,6 @@ static string ComposeRedirect(string baseUrl, string? path, QueryString queryStr
     string normalizedBase = baseUrl.TrimEnd('/');
     string suffix = string.IsNullOrWhiteSpace(path) ? string.Empty : $"/{path.TrimStart('/')}";
     return $"{normalizedBase}{suffix}{queryString}";
-}
-
-static DownloadReleaseManifest LoadReleaseManifest(string manifestPath, string fallbackDownloadsUrl)
-{
-    if (!File.Exists(manifestPath))
-    {
-        return BuildFallbackManifest(fallbackDownloadsUrl);
-    }
-
-    try
-    {
-        string json = File.ReadAllText(manifestPath);
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
-        {
-            PropertyNameCaseInsensitive = true
-        };
-        DownloadReleaseManifest? manifest = JsonSerializer.Deserialize<DownloadReleaseManifest>(json, options);
-        if (manifest is null || string.IsNullOrWhiteSpace(manifest.Version))
-        {
-            return BuildFallbackManifest(fallbackDownloadsUrl);
-        }
-
-        return manifest with
-        {
-            Downloads = manifest.Downloads ?? Array.Empty<DownloadArtifact>()
-        };
-    }
-    catch
-    {
-        return BuildFallbackManifest(fallbackDownloadsUrl);
-    }
-}
-
-static string ResolveManifestPath(string configuredPath)
-{
-    if (Path.IsPathRooted(configuredPath))
-    {
-        return configuredPath;
-    }
-
-    return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, configuredPath));
-}
-
-static string ResolveReleaseFilesPath(string configuredPath, string manifestPath)
-{
-    if (!string.IsNullOrWhiteSpace(configuredPath))
-    {
-        if (Path.IsPathRooted(configuredPath))
-        {
-            return configuredPath;
-        }
-
-        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, configuredPath));
-    }
-
-    string? fromManifest = Path.GetDirectoryName(manifestPath);
-    if (!string.IsNullOrWhiteSpace(fromManifest))
-    {
-        return fromManifest;
-    }
-
-    return AppContext.BaseDirectory;
-}
-
-static string? ResolveDownloadFilePath(string rootDirectory, string? path)
-{
-    if (string.IsNullOrWhiteSpace(path))
-    {
-        return null;
-    }
-
-    string rootPath = Path.GetFullPath(rootDirectory);
-    string cleanedPath = path.TrimStart('/').Replace('\\', '/');
-    if (cleanedPath.Contains("..", StringComparison.Ordinal))
-    {
-        return null;
-    }
-
-    string localPath = cleanedPath.Replace('/', Path.DirectorySeparatorChar);
-    string candidatePath = Path.GetFullPath(Path.Combine(rootPath, localPath));
-    if (!candidatePath.StartsWith(rootPath, StringComparison.Ordinal))
-    {
-        return null;
-    }
-
-    if (!File.Exists(candidatePath))
-    {
-        return null;
-    }
-
-    return candidatePath;
-}
-
-static DownloadReleaseManifest BuildFallbackManifest(string fallbackDownloadsUrl)
-{
-    IReadOnlyList<DownloadArtifact> downloads = Array.Empty<DownloadArtifact>();
-    if (HasConfiguredFallbackSource(fallbackDownloadsUrl))
-    {
-        downloads =
-        [
-            new DownloadArtifact(
-                Id: "configured-fallback-source",
-                Platform: "Configured fallback source",
-                Url: fallbackDownloadsUrl,
-                Sha256: string.Empty)
-        ];
-    }
-
-    return new DownloadReleaseManifest(
-        Version: "nightly",
-        Channel: "docker",
-        PublishedAt: DateTimeOffset.UtcNow,
-        Downloads: downloads);
-}
-
-static bool HasConfiguredFallbackSource(string fallbackDownloadsUrl)
-{
-    if (string.IsNullOrWhiteSpace(fallbackDownloadsUrl))
-    {
-        return false;
-    }
-
-    string normalized = fallbackDownloadsUrl.Trim().TrimEnd('/');
-    return !string.Equals(normalized, "/downloads", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed record DownloadReleaseManifest(
