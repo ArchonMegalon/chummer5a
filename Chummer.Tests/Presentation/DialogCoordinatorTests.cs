@@ -213,6 +213,52 @@ public class DialogCoordinatorTests
     }
 
     [TestMethod]
+    public async Task CoordinateAsync_hero_lab_import_imports_workspace_and_sets_compat_notice()
+    {
+        DialogCoordinator coordinator = new();
+        CharacterOverviewState published = CharacterOverviewState.Empty with
+        {
+            ActiveDialog = new DesktopDialogState(
+                Id: "dialog.hero_lab_importer",
+                Title: "Hero Lab Importer",
+                Message: null,
+                Fields:
+                [
+                    new DesktopDialogField("heroLabXml", "Hero Lab XML", "<character><name>Hero</name></character>", "<character />", true)
+                ],
+                Actions:
+                [
+                    new DesktopDialogAction("import", "Import", true)
+                ])
+        };
+
+        WorkspaceImportDocument? imported = null;
+        DialogCoordinationContext context = new(
+            State: published,
+            Publish: state => published = state,
+            ImportAsync: (document, _) =>
+            {
+                imported = document;
+                published = published with
+                {
+                    Error = null,
+                    WorkspaceId = new CharacterWorkspaceId("ws-hero")
+                };
+                return Task.CompletedTask;
+            },
+            UpdateMetadataAsync: static (_, _) => Task.CompletedTask,
+            GetState: () => published);
+
+        await coordinator.CoordinateAsync("import", context, CancellationToken.None);
+
+        Assert.IsNotNull(imported);
+        StringAssert.Contains(imported!.Content, "<character>");
+        Assert.IsNull(published.ActiveDialog);
+        Assert.AreEqual("Hero Lab XML imported.", published.Notice);
+        Assert.AreEqual("ws-hero", published.WorkspaceId?.Value);
+    }
+
+    [TestMethod]
     public async Task CoordinateAsync_add_gear_adds_item_and_closes_dialog()
     {
         DialogCoordinator coordinator = new();

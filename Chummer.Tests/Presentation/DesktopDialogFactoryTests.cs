@@ -122,6 +122,23 @@ public class DesktopDialogFactoryTests
         Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "import", StringComparison.Ordinal)));
     }
 
+    [TestMethod]
+    public void CreateCommandDialog_hero_lab_importer_uses_xml_compatibility_fields()
+    {
+        DesktopDialogFactory factory = new();
+
+        DesktopDialogState dialog = factory.CreateCommandDialog(
+            "hero_lab_importer",
+            profile: null,
+            DesktopPreferenceState.Default,
+            activeSectionJson: null,
+            currentWorkspace: null);
+
+        Assert.AreEqual("dialog.hero_lab_importer", dialog.Id);
+        Assert.IsNotNull(dialog.Fields.SingleOrDefault(field => string.Equals(field.Id, "heroLabXml", StringComparison.Ordinal)));
+        Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "import", StringComparison.Ordinal)));
+    }
+
     private static CharacterProfileSection CreateProfile(string name, string alias)
     {
         return new CharacterProfileSection(

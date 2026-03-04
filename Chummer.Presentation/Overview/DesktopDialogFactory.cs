@@ -172,8 +172,16 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
             "hero_lab_importer" => new DesktopDialogState(
                 "dialog.hero_lab_importer",
                 "Hero Lab Importer",
-                "Import flow placeholder for Hero Lab payload conversion.",
-                [new DesktopDialogField("file", "Input File", ".por/.xml", ".por/.xml")],
+                "Paste Hero Lab XML payload to import using compatibility mode.",
+                [
+                    new DesktopDialogField("heroLabSource", "Input File", ".por/.xml", ".por/.xml"),
+                    new DesktopDialogField(
+                        "heroLabXml",
+                        "Hero Lab XML",
+                        "<character><name>Hero Lab Import</name></character>",
+                        "<character><name>Hero Lab Import</name></character>",
+                        IsMultiline: true)
+                ],
                 [
                     new DesktopDialogAction("import", "Import", true),
                     new DesktopDialogAction("cancel", "Cancel")

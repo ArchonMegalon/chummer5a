@@ -48,6 +48,19 @@ public sealed class DialogCoordinator : IDialogCoordinator
             return;
         }
 
+        if (string.Equals(dialog.Id, "dialog.hero_lab_importer", StringComparison.Ordinal)
+            && string.Equals(actionId, "import", StringComparison.Ordinal))
+        {
+            await ImportCharacterDialogAsync(
+                dialog,
+                context,
+                ct,
+                fieldId: "heroLabXml",
+                requiredError: "Hero Lab XML is required.",
+                successNotice: "Hero Lab XML imported.");
+            return;
+        }
+
         if (string.Equals(dialog.Id, "dialog.dice_roller", StringComparison.Ordinal) && string.Equals(actionId, "roll", StringComparison.Ordinal))
         {
             RollDice(dialog, context);
@@ -210,14 +223,17 @@ public sealed class DialogCoordinator : IDialogCoordinator
     private static async Task ImportCharacterDialogAsync(
         DesktopDialogState dialog,
         DialogCoordinationContext context,
-        CancellationToken ct)
+        CancellationToken ct,
+        string fieldId = "openCharacterXml",
+        string requiredError = "Character XML is required.",
+        string successNotice = "Character imported.")
     {
-        string xml = DesktopDialogFieldValueParser.GetValue(dialog, "openCharacterXml") ?? string.Empty;
+        string xml = DesktopDialogFieldValueParser.GetValue(dialog, fieldId) ?? string.Empty;
         if (string.IsNullOrWhiteSpace(xml))
         {
             context.Publish(context.State with
             {
-                Error = "Character XML is required.",
+                Error = requiredError,
                 Notice = null
             });
             return;
@@ -232,7 +248,7 @@ public sealed class DialogCoordinator : IDialogCoordinator
             {
                 ActiveDialog = null,
                 Error = null,
-                Notice = "Character imported."
+                Notice = successNotice
             });
         }
     }
