@@ -102,6 +102,7 @@ Default endpoints:
 
 * API root: `http://127.0.0.1:8088/`
 * API health: `http://127.0.0.1:8088/api/health`
+* API content overlays: `http://127.0.0.1:8088/api/content/overlays`
 * API OpenAPI: `http://127.0.0.1:8088/openapi/v1.json`
 * API docs UI: `http://127.0.0.1:8088/docs/`
 * Blazor UI: `http://127.0.0.1:8089/`
@@ -109,18 +110,27 @@ Default endpoints:
 * Portal landing (profile `portal`): `http://127.0.0.1:8091/`
 * Portal Avalonia route (profile `portal`): `http://127.0.0.1:8091/avalonia/`
 * Portal Avalonia health (profile `portal`): `http://127.0.0.1:8091/avalonia/health`
+* Portal OpenAPI (profile `portal`): `http://127.0.0.1:8091/openapi/v1.json`
 * Portal downloads page (profile `portal`): `http://127.0.0.1:8091/downloads/`
 * Portal release manifest (profile `portal`): `http://127.0.0.1:8091/downloads/releases.json`
 
 Portal notes (current milestone):
 
-* `/api` and `/docs` are served via in-process portal proxy routing.
+* `/api`, `/openapi`, and `/docs` are served via in-process portal proxy routing.
+* `/docs` is self-hosted (no external CDN dependency) and loads local assets from the API host.
 * `/blazor` is served through an in-process portal proxy to an internal `chummer-blazor-portal` instance configured with `CHUMMER_BLAZOR_PATH_BASE=/blazor`.
 * `/avalonia` is served through an in-process portal proxy to an internal `chummer-avalonia-browser` host service configured with `CHUMMER_AVALONIA_BROWSER_PATH_BASE=/avalonia`.
 * Set `CHUMMER_PORTAL_AVALONIA_PROXY_URL` to a different upstream or clear it to fall back to the built-in portal placeholder route.
 * `/downloads/` is a local manifest-backed page, `/downloads/releases.json` can be sourced from `CHUMMER_PORTAL_RELEASES_FILE` (default `downloads/releases.json`), and `/downloads/<artifact>` serves local files from `CHUMMER_PORTAL_RELEASES_DIR` (default `downloads`).
 * Set `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL` to route `/downloads/*` through in-process YARP proxy mode instead of local-file mode.
+* Portal can forward `X-Api-Key` to API/docs/openapi upstream routes when `CHUMMER_PORTAL_API_KEY` is set (or when `CHUMMER_API_KEY` is present in the portal service environment).
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
+
+Content overlay notes (`CHUMMER_AMENDS_PATH`):
+
+* `docker-compose.yml` mounts `./Docker/Amends` into `/app/amends` (read-only) and sets `CHUMMER_AMENDS_PATH=/app/amends` for `chummer-api`.
+* Active overlay metadata is exposed via `/api/info` (`content.overlays`) and `/api/content/overlays`.
+* Sample pack is included at `Docker/Amends/manifest.json` with test XML content under `Docker/Amends/data` and `Docker/Amends/lang`.
 
 Desktop artifact workflow:
 

@@ -35,6 +35,8 @@ status=$(request_code "/api/commands")
 assert_status "200" "$status" "/api/commands without key"
 status=$(request_code "/api/navigation-tabs")
 assert_status "200" "$status" "/api/navigation-tabs without key"
+status=$(request_code "/api/content/overlays")
+assert_status "200" "$status" "/api/content/overlays without key"
 
 echo "[auth] verifying protected endpoint blocks missing/invalid key"
 status=$(request_code "/api/tools/master-index")

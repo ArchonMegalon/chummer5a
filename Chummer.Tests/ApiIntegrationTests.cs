@@ -15,6 +15,7 @@ public class ApiIntegrationTests
 {
     private static readonly Uri BaseUri = ResolveBaseUri();
     private static readonly string? ApiKey = ResolveApiKey();
+    private static readonly string? ExpectedAmendId = ResolveExpectedAmendId();
     private static readonly string[] AllSectionIds =
     {
         "attributes",
@@ -72,6 +73,39 @@ public class ApiIntegrationTests
 
         Assert.AreEqual("Chummer", info["service"]?.GetValue<string>());
         Assert.AreEqual("running", info["status"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Info_endpoint_reports_content_overlay_metadata()
+    {
+        using var client = CreateClient();
+
+        JsonObject info = await GetRequiredJsonObject(client, "/api/info");
+
+        Assert.IsInstanceOfType<JsonObject>(info["content"]);
+        JsonObject content = (JsonObject)info["content"]!;
+        Assert.IsTrue(content["baseDataPath"] is not null);
+        Assert.IsTrue(content["baseLanguagePath"] is not null);
+        Assert.IsInstanceOfType<JsonArray>(content["overlays"]);
+    }
+
+    [TestMethod]
+    public async Task Content_overlays_endpoint_reports_catalog_and_expected_overlay_when_configured()
+    {
+        using var client = CreateClient();
+
+        JsonObject overlays = await GetRequiredJsonObject(client, "/api/content/overlays");
+        Assert.IsTrue(overlays["baseDataPath"] is not null);
+        Assert.IsTrue(overlays["baseLanguagePath"] is not null);
+        Assert.IsInstanceOfType<JsonArray>(overlays["overlays"]);
+
+        if (!string.IsNullOrWhiteSpace(ExpectedAmendId))
+        {
+            JsonArray items = (JsonArray)overlays["overlays"]!;
+            bool found = items.OfType<JsonObject>()
+                .Any(item => string.Equals(item["id"]?.GetValue<string>(), ExpectedAmendId, StringComparison.Ordinal));
+            Assert.IsTrue(found, $"Expected overlay id '{ExpectedAmendId}' was not found.");
+        }
     }
 
     [TestMethod]
@@ -660,5 +694,14 @@ public class ApiIntegrationTests
     private static string? ResolveApiKey()
     {
         return Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
+    }
+
+    private static string? ResolveExpectedAmendId()
+    {
+        string? configured = Environment.GetEnvironmentVariable("CHUMMER_AMENDS_EXPECTED_ID");
+        if (string.IsNullOrWhiteSpace(configured))
+            return null;
+
+        return configured;
     }
 }

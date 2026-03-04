@@ -1,0 +1,7 @@
+{
+  "id": "local-test-amend",
+  "name": "Local Test Amend",
+  "priority": 100,
+  "enabled": true,
+  "description": "Sample overlay pack for Docker validation"
+}

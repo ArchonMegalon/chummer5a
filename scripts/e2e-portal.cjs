@@ -18,6 +18,10 @@ const checks = [
     assert: text => /<base href="[^"]*\/blazor\/"/i.test(text)
   },
   {
+    url: 'http://chummer-portal:8080/blazor/deep-link-check',
+    assert: text => /<base href="[^"]*\/blazor\/"/i.test(text)
+  },
+  {
     url: 'http://chummer-portal:8080/avalonia/',
     assert: text => text.includes('Avalonia Browser Host')
   },
@@ -48,8 +52,22 @@ const checks = [
     }
   },
   {
+    url: 'http://chummer-portal:8080/api/tools/master-index',
+    assert: text => !text.includes('missing_or_invalid_api_key')
+  },
+  {
+    url: 'http://chummer-portal:8080/openapi/v1.json',
+    assert: text => {
+      const payload = JSON.parse(text);
+      return typeof payload?.openapi === 'string' && payload.openapi.length > 0;
+    }
+  },
+  {
     url: 'http://chummer-portal:8080/docs/',
-    assert: text => text.toLowerCase().includes('swagger-ui')
+    assert: text =>
+      text.includes('Self-hosted OpenAPI explorer') &&
+      text.includes('/docs/docs.js') &&
+      !text.toLowerCase().includes('jsdelivr')
   },
   {
     url: 'http://chummer-portal:8080/downloads/releases.json',

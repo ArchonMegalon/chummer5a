@@ -45,8 +45,22 @@ async function run() {
         && summaryAlias.value === 'PW';
     }, { timeout: 15000 });
 
-    await page.locator('.commands .command-button:has-text("global_settings")').first().click();
-    await page.waitForSelector('#dialogTitle', { timeout: 10000 });
+    const settingsButton = page.locator('.commands .command-button:has-text("global_settings")').first();
+    await settingsButton.waitFor({ state: 'visible', timeout: 15000 });
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      if (!(await settingsButton.isDisabled())) {
+        break;
+      }
+
+      await page.waitForTimeout(250);
+    }
+
+    if (await settingsButton.isDisabled()) {
+      throw new Error('global_settings command stayed disabled for too long.');
+    }
+
+    await settingsButton.click();
+    await page.waitForSelector('#dialogTitle', { timeout: 20000 });
 
     const dialogTitle = (await page.locator('#dialogTitle').textContent()) || '';
     if (!dialogTitle.toLowerCase().includes('global settings')) {

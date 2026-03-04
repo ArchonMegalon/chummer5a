@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Chummer.Contracts.LifeModules;
+using Chummer.Infrastructure.Files;
 using Chummer.Infrastructure.Xml;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -65,6 +66,40 @@ public class LifeModulesServiceTests
         {
             string resolved = LifeModulesCatalogPathResolver.Resolve(baseDirectory: Path.Combine(root, "bin"), currentDirectory: root);
             Assert.AreEqual(xmlPath, resolved);
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
+    [TestMethod]
+    public void PathResolver_prefers_overlay_file_when_available()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "chummer-tests-" + Guid.NewGuid().ToString("N"));
+        string baseDataDir = Path.Combine(root, "data");
+        Directory.CreateDirectory(baseDataDir);
+        File.WriteAllText(Path.Combine(baseDataDir, "lifemodules.xml"), "<chummer><stages/><modules/></chummer>");
+
+        string amendsRoot = Path.Combine(root, "Docker", "Amends");
+        string overlayDataDir = Path.Combine(amendsRoot, "data");
+        Directory.CreateDirectory(overlayDataDir);
+        string overlayManifestPath = Path.Combine(amendsRoot, "manifest.json");
+        string overlayLifeModulesPath = Path.Combine(overlayDataDir, "lifemodules.xml");
+        File.WriteAllText(overlayManifestPath, """
+{
+  "id": "local-test-amend",
+  "priority": 100,
+  "enabled": true
+}
+""");
+        File.WriteAllText(overlayLifeModulesPath, "<chummer><stages/><modules/><overlay>true</overlay></chummer>");
+
+        try
+        {
+            var overlays = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
+            string resolved = LifeModulesCatalogPathResolver.Resolve(overlays);
+            Assert.AreEqual(overlayLifeModulesPath, resolved);
         }
         finally
         {

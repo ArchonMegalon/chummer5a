@@ -161,6 +161,7 @@ public class MigrationComplianceTests
             @"Chummer.Contracts\Chummer.Contracts.csproj",
             @"Chummer.Infrastructure\Chummer.Infrastructure.csproj",
             @"Chummer.Presentation\Chummer.Presentation.csproj",
+            @"Chummer.Portal\Chummer.Portal.csproj",
             @"Chummer.Avalonia\Chummer.Avalonia.csproj",
             @"Chummer.Blazor\Chummer.Blazor.csproj"
         };
@@ -208,6 +209,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(serviceRegistrationText, "new FileRosterStore(stateDirectory)");
         StringAssert.Contains(serviceRegistrationText, "new FileWorkspaceStore(stateDirectory)");
         StringAssert.Contains(serviceRegistrationText, "CHUMMER_WORKSPACE_STORE_PATH");
+        StringAssert.Contains(serviceRegistrationText, "CHUMMER_AMENDS_PATH");
+        StringAssert.Contains(serviceRegistrationText, "IContentOverlayCatalogService");
         Assert.IsFalse(serviceRegistrationText.Contains("new InMemoryWorkspaceStore()", StringComparison.Ordinal));
     }
 

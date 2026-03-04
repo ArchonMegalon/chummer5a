@@ -1,4 +1,5 @@
 using System.Xml;
+using Chummer.Application.Content;
 
 namespace Chummer.Api.Endpoints;
 
@@ -14,18 +15,23 @@ public static class InfoEndpoints
             {
                 "/api/info",
                 "/api/health",
+                "/api/content/overlays",
                 "/api/workspaces",
                 "/api/workspaces/import"
             }
         }));
 
-        app.MapGet("/api/info", () => Results.Ok(new
+        app.MapGet("/api/info", (IContentOverlayCatalogService overlays) => Results.Ok(new
         {
             service = "Chummer",
             status = "running",
             runtime = "net10.0",
-            platform = "linux-native"
+            platform = "linux-native",
+            content = ToOverlayResponse(overlays.GetCatalog())
         }));
+
+        app.MapGet("/api/content/overlays", (IContentOverlayCatalogService overlays) =>
+            Results.Ok(ToOverlayResponse(overlays.GetCatalog())));
 
         app.MapGet("/api/health", () => Results.Ok(new { ok = true, utc = DateTimeOffset.UtcNow }));
 
@@ -38,5 +44,25 @@ public static class InfoEndpoints
         });
 
         return app;
+    }
+
+    private static object ToOverlayResponse(ContentOverlayCatalog catalog)
+    {
+        return new
+        {
+            baseDataPath = catalog.BaseDataPath,
+            baseLanguagePath = catalog.BaseLanguagePath,
+            overlays = catalog.Overlays.Select(overlay => new
+            {
+                id = overlay.Id,
+                name = overlay.Name,
+                rootPath = overlay.RootPath,
+                dataPath = overlay.DataPath,
+                languagePath = overlay.LanguagePath,
+                priority = overlay.Priority,
+                enabled = overlay.Enabled,
+                description = overlay.Description
+            })
+        };
     }
 }

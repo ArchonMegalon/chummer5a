@@ -1,3 +1,5 @@
+using Chummer.Application.Content;
+
 namespace Chummer.Infrastructure.Xml;
 
 public static class LifeModulesCatalogPathResolver
@@ -19,5 +21,11 @@ public static class LifeModulesCatalogPathResolver
         }
 
         throw new FileNotFoundException("Could not locate lifemodules.xml.");
+    }
+
+    public static string Resolve(IContentOverlayCatalogService overlays)
+    {
+        ArgumentNullException.ThrowIfNull(overlays);
+        return overlays.ResolveDataFile("lifemodules.xml");
     }
 }

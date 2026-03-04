@@ -1,0 +1,280 @@
+using System.Text.Json;
+using Chummer.Application.Content;
+
+namespace Chummer.Infrastructure.Files;
+
+public sealed class FileSystemContentOverlayCatalogService : IContentOverlayCatalogService
+{
+    private readonly ContentOverlayCatalog _catalog;
+    private readonly IReadOnlyList<string> _dataDirectories;
+    private readonly IReadOnlyList<string> _languageDirectories;
+
+    public FileSystemContentOverlayCatalogService(string baseDirectory, string currentDirectory, string? configuredAmendsPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseDirectory);
+        ArgumentException.ThrowIfNullOrWhiteSpace(currentDirectory);
+
+        string baseDataPath = ResolveBaseDirectory(baseDirectory, currentDirectory, "data");
+        string baseLanguagePath = ResolveBaseDirectory(baseDirectory, currentDirectory, "lang");
+
+        List<ContentOverlayPack> overlays = DiscoverOverlayRootDirectories(configuredAmendsPath)
+            .Select(BuildOverlayPack)
+            .OrderBy(pack => pack.Priority)
+            .ThenBy(pack => pack.Id, StringComparer.Ordinal)
+            .ToList();
+
+        _catalog = new ContentOverlayCatalog(
+            BaseDataPath: baseDataPath,
+            BaseLanguagePath: baseLanguagePath,
+            Overlays: overlays);
+
+        _dataDirectories = BuildDirectoryList(
+            _catalog.BaseDataPath,
+            _catalog.Overlays,
+            pack => pack.DataPath);
+
+        _languageDirectories = BuildDirectoryList(
+            _catalog.BaseLanguagePath,
+            _catalog.Overlays,
+            pack => pack.LanguagePath);
+    }
+
+    public ContentOverlayCatalog GetCatalog() => _catalog;
+
+    public IReadOnlyList<string> GetDataDirectories() => _dataDirectories;
+
+    public IReadOnlyList<string> GetLanguageDirectories() => _languageDirectories;
+
+    public string ResolveDataFile(string fileName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+
+        string normalizedName = Path.GetFileName(fileName);
+        if (!string.Equals(normalizedName, fileName, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Data file name must not include directory separators.");
+        }
+
+        foreach (string directory in BuildResolutionOrder(_catalog.BaseDataPath, _catalog.Overlays, pack => pack.DataPath))
+        {
+            string candidate = Path.Combine(directory, normalizedName);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        string prefix = Path.GetFileNameWithoutExtension(normalizedName);
+        if (!string.IsNullOrWhiteSpace(prefix))
+        {
+            foreach (string directory in BuildResolutionOrder(_catalog.BaseDataPath, _catalog.Overlays, pack => pack.DataPath))
+            {
+                if (!Directory.Exists(directory))
+                {
+                    continue;
+                }
+
+                string? matching = Directory.EnumerateFiles(directory, prefix + "*.xml", SearchOption.TopDirectoryOnly)
+                    .OrderBy(path => path, StringComparer.Ordinal)
+                    .FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(matching))
+                {
+                    return matching;
+                }
+            }
+        }
+
+        throw new FileNotFoundException($"Could not locate data file '{normalizedName}'.");
+    }
+
+    private static IReadOnlyList<string> BuildDirectoryList(
+        string baseDirectory,
+        IReadOnlyList<ContentOverlayPack> overlays,
+        Func<ContentOverlayPack, string> selector)
+    {
+        var directories = new List<string>();
+        if (Directory.Exists(baseDirectory))
+        {
+            directories.Add(baseDirectory);
+        }
+
+        foreach (ContentOverlayPack pack in overlays)
+        {
+            if (!pack.Enabled)
+            {
+                continue;
+            }
+
+            string path = selector(pack);
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                continue;
+            }
+
+            directories.Add(path);
+        }
+
+        return directories;
+    }
+
+    private static IEnumerable<string> BuildResolutionOrder(
+        string baseDirectory,
+        IReadOnlyList<ContentOverlayPack> overlays,
+        Func<ContentOverlayPack, string> selector)
+    {
+        foreach (ContentOverlayPack pack in overlays
+                     .Where(pack => pack.Enabled)
+                     .OrderByDescending(pack => pack.Priority)
+                     .ThenByDescending(pack => pack.Id, StringComparer.Ordinal))
+        {
+            string path = selector(pack);
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                continue;
+            }
+
+            yield return path;
+        }
+
+        if (Directory.Exists(baseDirectory))
+        {
+            yield return baseDirectory;
+        }
+    }
+
+    private static string ResolveBaseDirectory(string baseDirectory, string currentDirectory, string segment)
+    {
+        string[] candidates =
+        {
+            Path.Combine(baseDirectory, segment),
+            Path.Combine(baseDirectory, "Chummer", segment),
+            Path.Combine(currentDirectory, segment),
+            Path.Combine(currentDirectory, "Chummer", segment)
+        };
+
+        foreach (string candidate in candidates)
+        {
+            if (Directory.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return candidates[0];
+    }
+
+    private static IEnumerable<string> DiscoverOverlayRootDirectories(string? configuredAmendsPath)
+    {
+        if (string.IsNullOrWhiteSpace(configuredAmendsPath))
+        {
+            yield break;
+        }
+
+        HashSet<string> seen = new(StringComparer.Ordinal);
+
+        foreach (string rawPath in configuredAmendsPath.Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (string.IsNullOrWhiteSpace(rawPath))
+            {
+                continue;
+            }
+
+            string fullPath = Path.GetFullPath(rawPath);
+            if (!Directory.Exists(fullPath))
+            {
+                continue;
+            }
+
+            string manifestPath = Path.Combine(fullPath, "manifest.json");
+            bool hasRootManifest = File.Exists(manifestPath);
+            bool hasRootContent = Directory.Exists(Path.Combine(fullPath, "data")) || Directory.Exists(Path.Combine(fullPath, "lang"));
+
+            if (hasRootManifest || hasRootContent)
+            {
+                if (seen.Add(fullPath))
+                {
+                    yield return fullPath;
+                }
+            }
+
+            foreach (string childDirectory in Directory.EnumerateDirectories(fullPath, "*", SearchOption.TopDirectoryOnly)
+                         .OrderBy(path => path, StringComparer.Ordinal))
+            {
+                string childManifestPath = Path.Combine(childDirectory, "manifest.json");
+                if (!File.Exists(childManifestPath))
+                {
+                    continue;
+                }
+
+                string fullChildPath = Path.GetFullPath(childDirectory);
+                if (seen.Add(fullChildPath))
+                {
+                    yield return fullChildPath;
+                }
+            }
+        }
+    }
+
+    private static ContentOverlayPack BuildOverlayPack(string rootPath)
+    {
+        ContentOverlayManifest manifest = LoadManifest(rootPath);
+
+        string id = string.IsNullOrWhiteSpace(manifest.Id)
+            ? Path.GetFileName(rootPath)
+            : manifest.Id.Trim();
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            id = "overlay";
+        }
+
+        string name = string.IsNullOrWhiteSpace(manifest.Name)
+            ? id
+            : manifest.Name.Trim();
+        string description = manifest.Description?.Trim() ?? string.Empty;
+
+        string dataPath = Path.Combine(rootPath, "data");
+        string languagePath = Path.Combine(rootPath, "lang");
+
+        return new ContentOverlayPack(
+            Id: id,
+            Name: name,
+            RootPath: rootPath,
+            DataPath: Directory.Exists(dataPath) ? dataPath : string.Empty,
+            LanguagePath: Directory.Exists(languagePath) ? languagePath : string.Empty,
+            Priority: manifest.Priority ?? 0,
+            Enabled: manifest.Enabled ?? true,
+            Description: description);
+    }
+
+    private static ContentOverlayManifest LoadManifest(string rootPath)
+    {
+        string manifestPath = Path.Combine(rootPath, "manifest.json");
+        if (!File.Exists(manifestPath))
+        {
+            return new ContentOverlayManifest();
+        }
+
+        try
+        {
+            string json = File.ReadAllText(manifestPath);
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            ContentOverlayManifest? manifest = JsonSerializer.Deserialize<ContentOverlayManifest>(json, options);
+            return manifest ?? new ContentOverlayManifest();
+        }
+        catch
+        {
+            return new ContentOverlayManifest();
+        }
+    }
+
+    private sealed record ContentOverlayManifest(
+        string? Id = null,
+        string? Name = null,
+        int? Priority = null,
+        bool? Enabled = null,
+        string? Description = null);
+}

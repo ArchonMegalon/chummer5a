@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chummer API Docs</title>
+    <link rel="stylesheet" href="/docs/docs.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <h1>Chummer API</h1>
+        <p>Self-hosted OpenAPI explorer. Uses <code>/openapi/v1.json</code> on this origin.</p>
+      </header>
+
+      <section class="toolbar">
+        <label>
+          <span>Optional API key</span>
+          <input id="api-key" type="password" placeholder="X-Api-Key" autocomplete="off" />
+        </label>
+        <div class="actions">
+          <button id="load-spec" type="button">Reload Spec</button>
+          <a href="/openapi/v1.json">Raw OpenAPI</a>
+        </div>
+      </section>
+
+      <section id="status" class="status">Loading spec...</section>
+      <section id="operations" class="operations"></section>
+    </main>
+
+    <script src="/docs/docs.js"></script>
+  </body>
+</html>

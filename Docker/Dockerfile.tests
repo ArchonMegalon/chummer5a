@@ -9,7 +9,9 @@ COPY Chummer.Contracts/Chummer.Contracts.csproj Chummer.Contracts/
 COPY Chummer.Infrastructure/Chummer.Infrastructure.csproj Chummer.Infrastructure/
 COPY Chummer.Presentation/Chummer.Presentation.csproj Chummer.Presentation/
 COPY Chummer.Avalonia/Chummer.Avalonia.csproj Chummer.Avalonia/
+COPY Chummer.Avalonia.Browser/Chummer.Avalonia.Browser.csproj Chummer.Avalonia.Browser/
 COPY Chummer.Blazor/Chummer.Blazor.csproj Chummer.Blazor/
+COPY Chummer.Portal/Chummer.Portal.csproj Chummer.Portal/
 COPY Chummer.Api/Chummer.Api.csproj Chummer.Api/
 COPY Chummer.Tests/Chummer.Tests.csproj Chummer.Tests/
 RUN dotnet restore Chummer.Tests/Chummer.Tests.csproj -p:TargetFramework=net10.0
@@ -20,7 +22,9 @@ COPY Chummer.Contracts/ Chummer.Contracts/
 COPY Chummer.Infrastructure/ Chummer.Infrastructure/
 COPY Chummer.Presentation/ Chummer.Presentation/
 COPY Chummer.Avalonia/ Chummer.Avalonia/
+COPY Chummer.Avalonia.Browser/ Chummer.Avalonia.Browser/
 COPY Chummer.Blazor/ Chummer.Blazor/
+COPY Chummer.Portal/ Chummer.Portal/
 COPY Chummer.Api/ Chummer.Api/
 COPY Chummer.Tests/ Chummer.Tests/
 COPY Chummer.Web/ Chummer.Web/

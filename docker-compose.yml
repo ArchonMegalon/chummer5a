@@ -8,10 +8,12 @@ services:
     environment:
       CHUMMER_STATE_PATH: "/app/state"
       CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
+      CHUMMER_AMENDS_PATH: "/app/amends"
     ports:
       - "${CHUMMER_API_PORT:-${CHUMMER_WEB_PORT:-8088}}:8080"
     volumes:
       - chummer-state:/app/state
+      - ./Docker/Amends:/app/amends:ro
   chummer-blazor:
     image: chummer-blazor:local
     build:
@@ -61,6 +63,8 @@ services:
       CHUMMER_PORTAL_AVALONIA_URL: "${CHUMMER_PORTAL_AVALONIA_URL:-/avalonia/}"
       CHUMMER_PORTAL_AVALONIA_PROXY_URL: "${CHUMMER_PORTAL_AVALONIA_PROXY_URL:-http://chummer-avalonia-browser:8080/}"
       CHUMMER_PORTAL_API_URL: "${CHUMMER_PORTAL_API_URL:-http://chummer-api:8080/}"
+      CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
+      CHUMMER_PORTAL_API_KEY: "${CHUMMER_PORTAL_API_KEY:-}"
       CHUMMER_PORTAL_DOCS_URL: "${CHUMMER_PORTAL_DOCS_URL:-http://chummer-api:8080/docs/}"
       CHUMMER_PORTAL_DOWNLOADS_URL: "${CHUMMER_PORTAL_DOWNLOADS_URL:-https://github.com/chummer5a/chummer5a/releases/latest}"
       CHUMMER_PORTAL_DOWNLOADS_PROXY_URL: "${CHUMMER_PORTAL_DOWNLOADS_PROXY_URL:-}"
@@ -80,6 +84,7 @@ services:
       CHUMMER_API_BASE_URL: "http://chummer-api:8080"
       CHUMMER_WEB_BASE_URL: "http://chummer-api:8080"
       CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
+      CHUMMER_AMENDS_EXPECTED_ID: "${CHUMMER_AMENDS_EXPECTED_ID:-local-test-amend}"
     command: >
       dotnet test Chummer.Tests/Chummer.Tests.csproj
       -c Release
@@ -87,7 +92,9 @@ services:
       -p:TargetFramework=net10.0
       --no-build
       --no-restore
+      --tl:off
       --logger "trx;LogFileName=test-results-linux.trx"
+      --logger "console;verbosity=normal"
   chummer-playwright:
     image: chummer-playwright:local
     build:

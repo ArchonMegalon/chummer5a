@@ -9,6 +9,7 @@ string blazorProxyBaseUrl = ResolveSetting("Portal:BlazorProxyBaseUrl", "CHUMMER
 string avaloniaBrowserBaseUrl = ResolveSetting("Portal:AvaloniaBrowserBaseUrl", "CHUMMER_PORTAL_AVALONIA_URL", "/avalonia/");
 string avaloniaProxyBaseUrl = ResolveSetting("Portal:AvaloniaProxyBaseUrl", "CHUMMER_PORTAL_AVALONIA_PROXY_URL", string.Empty);
 string apiBaseUrl = ResolveSetting("Portal:ApiBaseUrl", "CHUMMER_PORTAL_API_URL", "http://chummer-api:8080/");
+string apiProxyKey = ResolveSetting("Portal:ApiKey", "CHUMMER_PORTAL_API_KEY", Environment.GetEnvironmentVariable("CHUMMER_API_KEY") ?? string.Empty);
 string docsBaseUrl = ResolveSetting("Portal:DocsBaseUrl", "CHUMMER_PORTAL_DOCS_URL", "http://chummer-api:8080/docs/");
 string downloadsBaseUrl = ResolveSetting("Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "https://github.com/chummer5a/chummer5a/releases/latest");
 string downloadsProxyBaseUrl = ResolveSetting("Portal:DownloadsProxyBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_PROXY_URL", string.Empty);
@@ -19,6 +20,8 @@ string resolvedReleaseFilesPath = ResolveReleaseFilesPath(releaseFilesPath, reso
 bool useBlazorProxy = !string.IsNullOrWhiteSpace(blazorProxyBaseUrl);
 bool useAvaloniaProxy = !string.IsNullOrWhiteSpace(avaloniaProxyBaseUrl);
 bool useDownloadsProxy = !string.IsNullOrWhiteSpace(downloadsProxyBaseUrl);
+bool isApiKeyForwardingEnabled = !string.IsNullOrWhiteSpace(apiProxyKey);
+IReadOnlyList<IReadOnlyDictionary<string, string>>? apiRouteTransforms = BuildApiRouteTransforms(apiProxyKey);
 
 var proxyRoutes = new List<RouteConfig>
 {
@@ -29,7 +32,8 @@ var proxyRoutes = new List<RouteConfig>
         Match = new RouteMatch
         {
             Path = "/api/{**catch-all}"
-        }
+        },
+        Transforms = apiRouteTransforms
     },
     new RouteConfig
     {
@@ -38,7 +42,18 @@ var proxyRoutes = new List<RouteConfig>
         Match = new RouteMatch
         {
             Path = "/docs/{**catch-all}"
-        }
+        },
+        Transforms = apiRouteTransforms
+    },
+    new RouteConfig
+    {
+        RouteId = "portal-openapi",
+        ClusterId = "api-cluster",
+        Match = new RouteMatch
+        {
+            Path = "/openapi/{**catch-all}"
+        },
+        Transforms = apiRouteTransforms
     }
 };
 
@@ -153,6 +168,7 @@ app.MapGet("/", () => Results.Content(
         avaloniaProxyBaseUrl,
         useAvaloniaProxy,
         apiBaseUrl,
+        isApiKeyForwardingEnabled,
         docsBaseUrl,
         downloadsBaseUrl,
         downloadsProxyBaseUrl,
@@ -224,6 +240,23 @@ static string NormalizeProxyAddress(string baseUrl)
     }
 
     return baseUrl.EndsWith("/", StringComparison.Ordinal) ? baseUrl : $"{baseUrl}/";
+}
+
+static IReadOnlyList<IReadOnlyDictionary<string, string>>? BuildApiRouteTransforms(string apiKey)
+{
+    if (string.IsNullOrWhiteSpace(apiKey))
+    {
+        return null;
+    }
+
+    return new[]
+    {
+        (IReadOnlyDictionary<string, string>)new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["RequestHeader"] = "X-Api-Key",
+            ["Set"] = apiKey
+        }
+    };
 }
 
 static string ComposeRedirect(string baseUrl, string? path, QueryString queryString)
@@ -490,6 +523,7 @@ static string BuildLandingHtml(
     string avaloniaProxyBaseUrl,
     bool useAvaloniaProxy,
     string apiBaseUrl,
+    bool isApiKeyForwardingEnabled,
     string docsBaseUrl,
     string downloadsBaseUrl,
     string downloadsProxyBaseUrl,
@@ -582,7 +616,7 @@ static string BuildLandingHtml(
     string avaloniaModeText = useAvaloniaProxy
         ? "<code>/avalonia</code> in-process proxy is active."
         : "<code>/avalonia</code> currently serves a setup placeholder.";
-    html.AppendLine("      <p class=\"lead\">Single landing surface for migration heads. Current milestone proxies <code>/api</code> and <code>/docs</code> in-process; " + blazorModeText + " " + avaloniaModeText + "</p>");
+    html.AppendLine("      <p class=\"lead\">Single landing surface for migration heads. Current milestone proxies <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> in-process; " + blazorModeText + " " + avaloniaModeText + "</p>");
     html.AppendLine("    </header>");
     html.AppendLine("    <section class=\"grid\">");
     html.AppendLine("      <article class=\"card\">");
@@ -613,10 +647,12 @@ static string BuildLandingHtml(
     html.AppendLine("    </section>");
     html.AppendLine("    <footer>");
     html.AppendLine("      <div><code>/api</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
+    html.AppendLine("      <div><code>/openapi</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
     html.AppendLine("      <div><code>/docs</code> proxy upstream → " + HtmlEncode(docsBaseUrl) + "</div>");
     html.AppendLine("      <div><code>/blazor</code> " + (useBlazorProxy ? "proxy upstream → " + HtmlEncode(blazorProxyBaseUrl) : "redirect → " + HtmlEncode(blazorBaseUrl)) + "</div>");
     html.AppendLine("      <div><code>/avalonia</code> " + (useAvaloniaProxy ? "proxy upstream → " + HtmlEncode(avaloniaProxyBaseUrl) : "placeholder route at " + HtmlEncode(avaloniaBrowserBaseUrl)) + "</div>");
     html.AppendLine("      <div><code>/downloads</code> " + (useDownloadsProxy ? "proxy upstream → " + HtmlEncode(downloadsProxyBaseUrl) : "local files + manifest with fallback feed → " + HtmlEncode(downloadsBaseUrl)) + "</div>");
+    html.AppendLine("      <div><code>X-Api-Key</code> forwarding → " + (isApiKeyForwardingEnabled ? "enabled for <code>/api</code>, <code>/openapi</code>, and <code>/docs</code>" : "disabled") + "</div>");
     html.AppendLine("    </footer>");
     html.AppendLine("  </main>");
     html.AppendLine("</body>");

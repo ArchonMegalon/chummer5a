@@ -1,4 +1,5 @@
 using Chummer.Application.Characters;
+using Chummer.Application.Content;
 using Chummer.Application.LifeModules;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
@@ -13,6 +14,7 @@ public static class ServiceCollectionExtensions
 {
     private const string StatePathEnvironmentVariable = "CHUMMER_STATE_PATH";
     private const string WorkspaceStorePathEnvironmentVariable = "CHUMMER_WORKSPACE_STORE_PATH";
+    private const string AmendsPathEnvironmentVariable = "CHUMMER_AMENDS_PATH";
 
     public static IServiceCollection AddChummerHeadlessCore(
         this IServiceCollection services,
@@ -21,6 +23,7 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         string stateDirectory = ResolveStateDirectory(baseDirectory);
+        string? amendsDirectory = Environment.GetEnvironmentVariable(AmendsPathEnvironmentVariable);
 
         services.AddSingleton<ICharacterFileService, CharacterFileService>();
         services.AddSingleton<ICharacterSectionService, CharacterSectionService>();
@@ -38,15 +41,19 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<ICharacterInventoryQueries>(),
                 provider.GetRequiredService<ICharacterMagicResonanceQueries>(),
                 provider.GetRequiredService<ICharacterSocialNarrativeQueries>()));
+        services.AddSingleton<IContentOverlayCatalogService>(_ =>
+            new FileSystemContentOverlayCatalogService(baseDirectory, currentDirectory, amendsDirectory));
 
-        services.AddSingleton<ILifeModulesCatalogService>(_ =>
+        services.AddSingleton<ILifeModulesCatalogService>(provider =>
         {
-            string path = LifeModulesCatalogPathResolver.Resolve(baseDirectory, currentDirectory);
+            var overlays = provider.GetRequiredService<IContentOverlayCatalogService>();
+            string path = LifeModulesCatalogPathResolver.Resolve(overlays);
             return new XmlLifeModulesCatalogService(path);
         });
 
         services.AddSingleton<IDataExportService, DataExportService>();
-        services.AddSingleton<IToolCatalogService, XmlToolCatalogService>();
+        services.AddSingleton<IToolCatalogService>(provider =>
+            new XmlToolCatalogService(provider.GetRequiredService<IContentOverlayCatalogService>()));
         services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(stateDirectory));
         services.AddSingleton<IRosterStore>(_ => new FileRosterStore(stateDirectory));
         services.AddSingleton<IWorkspaceStore>(_ =>

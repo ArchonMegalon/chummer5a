@@ -17,6 +17,29 @@ curl_json() {
   fi
 }
 
+check_get() {
+  local path="$1"
+  local response_file status body
+  response_file=$(mktemp)
+
+  if [[ -n "$API_KEY" ]]; then
+    status=$(curl -sSL -o "$response_file" -w "%{http_code}" "$BASE_URL$path" -H "X-Api-Key: $API_KEY")
+  else
+    status=$(curl -sSL -o "$response_file" -w "%{http_code}" "$BASE_URL$path")
+  fi
+
+  body=$(cat "$response_file")
+  rm -f "$response_file"
+
+  if [[ "$status" -lt 200 || "$status" -ge 300 ]]; then
+    echo "GET $path failed with HTTP $status" >&2
+    [[ -n "$body" ]] && echo "$body" >&2
+    exit 1
+  fi
+
+  printf '%s' "$body"
+}
+
 wait_for_service() {
   local deadline=$((SECONDS + READY_TIMEOUT_SECONDS))
   echo "waiting for API readiness at $BASE_URL/api/health (timeout: ${READY_TIMEOUT_SECONDS}s)"
@@ -69,16 +92,21 @@ check_post() {
 }
 
 wait_for_service
-curl_json GET "$BASE_URL/api/info" >/dev/null
-curl_json GET "$BASE_URL/api/health" >/dev/null
-openapi_json="$(curl_json GET "$BASE_URL/openapi/v1.json")"
+check_get "/api/info" >/dev/null
+check_get "/api/health" >/dev/null
+check_get "/api/content/overlays" >/dev/null
+openapi_json="$(check_get "/openapi/v1.json")"
 if ! printf '%s' "$openapi_json" | grep -q '"openapi"'; then
   echo "OpenAPI document is missing expected marker" >&2
   exit 1
 fi
-docs_html="$(curl_json GET "$BASE_URL/docs/")"
-if ! printf '%s' "$docs_html" | grep -qi 'swagger-ui'; then
-  echo "Docs UI did not return expected swagger content" >&2
+docs_html="$(check_get "/docs/")"
+if ! printf '%s' "$docs_html" | grep -qi 'Self-hosted OpenAPI explorer'; then
+  echo "Docs UI did not return expected self-hosted docs content" >&2
+  exit 1
+fi
+if printf '%s' "$docs_html" | grep -qi 'jsdelivr'; then
+  echo "Docs UI unexpectedly references external jsdelivr assets" >&2
   exit 1
 fi
 

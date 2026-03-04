@@ -170,6 +170,7 @@ Acceptance criteria: after process restart, persisted workspaces reopen with det
 
 - [ ] `MIG-074` Make content packaging deterministic (data/lang assets) for docker runtime.
 Acceptance criteria: API container startup validates required content bundle and fails fast when missing.
+Progress: introduced `CHUMMER_AMENDS_PATH` overlay discovery in infrastructure with deterministic priority ordering, docker-mounted sample pack (`Docker/Amends`), and API visibility via `/api/info` + `/api/content/overlays`; next step is strict startup validation and manifest checksum enforcement.
 
 ### Phase 8: Retire static legacy shell
 
@@ -210,15 +211,15 @@ Progress: added `Chummer.Portal` (`net10.0`) plus compose `portal` profile servi
 
 - [x] `MIG-101` Replace portal redirects with in-process reverse proxy routing for `/blazor/*`, `/api/*`, `/docs/*`, `/downloads/*`.
 Acceptance criteria: one public origin can route subpaths to internal services without exposing per-service public ports.
-Progress: `Chummer.Portal` now proxies `/api/*`, `/docs/*`, `/blazor/*`, and supports `/downloads/*` in-process proxy mode via `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL`; default mode serves local download files/manifests with fallback redirect.
+Progress: `Chummer.Portal` now proxies `/api/*`, `/openapi/*`, `/docs/*`, `/blazor/*`, `/avalonia/*`, and supports `/downloads/*` in-process proxy mode via `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL`; default mode serves local download files/manifests with fallback redirect. Optional portal API-key forwarding is available through `CHUMMER_PORTAL_API_KEY` (or `CHUMMER_API_KEY` in portal env).
 
 - [ ] `MIG-102` Move Blazor head to stable `/blazor/` app-base deployment behind the portal.
 Acceptance criteria: reload/deep-link/reconnect behavior works when the UI is hosted under `/blazor/`.
-Progress: added path-base aware Blazor hosting plus dedicated `chummer-blazor-portal` service (`CHUMMER_BLAZOR_PATH_BASE=/blazor`) behind portal `/blazor/*` proxy routing; migration loop now runs portal E2E by default (disable with `CHUMMER_PORTAL_E2E=0`) validating `/blazor/health`, `/blazor/` base href, `/_blazor/negotiate`, and portal route availability; remaining gap is richer deep-link route assertions once additional Blazor pages land.
+Progress: added path-base aware Blazor hosting plus dedicated `chummer-blazor-portal` service (`CHUMMER_BLAZOR_PATH_BASE=/blazor`) behind portal `/blazor/*` proxy routing; migration loop now runs portal E2E by default (disable with `CHUMMER_PORTAL_E2E=0`) validating `/blazor/health`, `/blazor/` base href, `/_blazor/negotiate`, and `/blazor/deep-link-check` route behavior under the portal path-base.
 
 - [x] `MIG-103` Add OpenAPI + interactive docs surface to `Chummer.Api` and wire through portal `/docs/`.
 Acceptance criteria: generated OpenAPI document and interactive docs are reachable and validated in CI.
-Progress: added built-in ASP.NET OpenAPI generation to `Chummer.Api` with `/openapi/v1.json` and interactive `/docs` UI; portal `/docs/*` proxy now has a concrete upstream surface and migration loop validates both endpoints.
+Progress: added built-in ASP.NET OpenAPI generation to `Chummer.Api` with `/openapi/v1.json` and a self-hosted interactive `/docs` UI (local assets, no external CDN dependency); portal proxies `/openapi/*` and `/docs/*`, and migration loop validates both portal-routed endpoints.
 
 - [x] `MIG-104` Add desktop download manifest + artifacts surface behind portal `/downloads/`.
 Acceptance criteria: platform download matrix is generated from CI artifacts and exposed through a versioned manifest.
