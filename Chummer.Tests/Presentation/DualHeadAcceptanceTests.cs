@@ -201,6 +201,41 @@ public class DualHeadAcceptanceTests
     }
 
     [TestMethod]
+    public async Task Avalonia_and_Blazor_dialog_field_updates_match()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+
+        CharacterOverviewState avaloniaState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
+            await adapter.ExecuteCommandAsync("global_settings", CancellationToken.None);
+            await adapter.UpdateDialogFieldAsync("globalUiScale", "125", CancellationToken.None);
+            avaloniaState = adapter.State;
+        }
+
+        CharacterOverviewState blazorState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
+            await bridge.ExecuteCommandAsync("global_settings", CancellationToken.None);
+            await bridge.UpdateDialogFieldAsync("globalUiScale", "125", CancellationToken.None);
+            blazorState = callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+        }
+
+        string? avaloniaUiScale = avaloniaState.ActiveDialog?.Fields.FirstOrDefault(field => string.Equals(field.Id, "globalUiScale", StringComparison.Ordinal)).Value;
+        string? blazorUiScale = blazorState.ActiveDialog?.Fields.FirstOrDefault(field => string.Equals(field.Id, "globalUiScale", StringComparison.Ordinal)).Value;
+        Assert.AreEqual("125", avaloniaUiScale);
+        Assert.AreEqual("125", blazorUiScale);
+    }
+
+    [TestMethod]
     public async Task Avalonia_and_Blazor_workspace_action_summary_matches()
     {
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));

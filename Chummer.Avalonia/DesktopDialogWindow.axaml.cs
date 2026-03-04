@@ -7,16 +7,15 @@ namespace Chummer.Avalonia;
 
 public partial class DesktopDialogWindow : Window
 {
-    private readonly CharacterOverviewViewModelAdapter _adapter;
+    private CharacterOverviewViewModelAdapter? _adapter;
     private readonly TextBlock _dialogTitleText;
     private readonly TextBlock _dialogMessageText;
     private readonly StackPanel _dialogFieldsPanel;
     private readonly StackPanel _dialogActionsPanel;
     private bool _suppressCloseNotification;
 
-    public DesktopDialogWindow(CharacterOverviewViewModelAdapter adapter)
+    public DesktopDialogWindow()
     {
-        _adapter = adapter;
         InitializeComponent();
 
         _dialogTitleText = this.FindControl<TextBlock>("DialogTitleText")!;
@@ -24,6 +23,17 @@ public partial class DesktopDialogWindow : Window
         _dialogFieldsPanel = this.FindControl<StackPanel>("DialogFieldsPanel")!;
         _dialogActionsPanel = this.FindControl<StackPanel>("DialogActionsPanel")!;
         Closing += OnClosing;
+    }
+
+    public DesktopDialogWindow(CharacterOverviewViewModelAdapter adapter)
+        : this()
+    {
+        _adapter = adapter;
+    }
+
+    public void AttachAdapter(CharacterOverviewViewModelAdapter adapter)
+    {
+        _adapter = adapter;
     }
 
     public void BindDialog(DesktopDialogState dialog)
@@ -83,8 +93,7 @@ public partial class DesktopDialogWindow : Window
             };
             if (!field.IsReadOnly)
             {
-                checkBox.Checked += (_, _) => QueueDialogFieldUpdate(field.Id, "true");
-                checkBox.Unchecked += (_, _) => QueueDialogFieldUpdate(field.Id, "false");
+                checkBox.IsCheckedChanged += (_, _) => QueueDialogFieldUpdate(field.Id, checkBox.IsChecked == true ? "true" : "false");
             }
 
             return checkBox;
@@ -122,19 +131,31 @@ public partial class DesktopDialogWindow : Window
                 button.FontWeight = FontWeight.SemiBold;
             }
 
-            button.Click += async (_, _) => await _adapter.ExecuteDialogActionAsync(action.Id, CancellationToken.None);
+            button.Click += async (_, _) =>
+            {
+                if (_adapter is null)
+                    return;
+
+                await _adapter.ExecuteDialogActionAsync(action.Id, CancellationToken.None);
+            };
             _dialogActionsPanel.Children.Add(button);
         }
     }
 
     private void QueueDialogFieldUpdate(string fieldId, string value)
     {
+        if (_adapter is null)
+            return;
+
         _ = _adapter.UpdateDialogFieldAsync(fieldId, value, CancellationToken.None);
     }
 
     private void OnClosing(object? sender, WindowClosingEventArgs e)
     {
         if (_suppressCloseNotification)
+            return;
+
+        if (_adapter is null)
             return;
 
         _ = _adapter.CloseDialogAsync(CancellationToken.None);

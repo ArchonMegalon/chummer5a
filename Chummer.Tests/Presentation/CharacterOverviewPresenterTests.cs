@@ -212,6 +212,46 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_dialog_commands_use_non_generic_dialog_templates()
+    {
+        string[] dialogCommands =
+        [
+            "new_window",
+            "close_window",
+            "wiki",
+            "discord",
+            "revision_history",
+            "dumpshock",
+            "print_setup",
+            "print_multiple",
+            "print_character",
+            "dice_roller",
+            "global_settings",
+            "character_settings",
+            "translator",
+            "xml_editor",
+            "master_index",
+            "character_roster",
+            "data_exporter",
+            "export_character",
+            "report_bug",
+            "about",
+            "hero_lab_importer",
+            "update"
+        ];
+
+        foreach (string commandId in dialogCommands)
+        {
+            var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+            await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+            await presenter.ExecuteCommandAsync(commandId, CancellationToken.None);
+
+            Assert.IsNotNull(presenter.State.ActiveDialog, $"Command '{commandId}' did not open a dialog.");
+            Assert.AreNotEqual("dialog.generic", presenter.State.ActiveDialog?.Id, $"Command '{commandId}' fell back to generic dialog template.");
+        }
+    }
+
+    [TestMethod]
     public async Task ExecuteWorkspaceActionAsync_summary_sets_active_summary_payload()
     {
         var client = new FakeChummerClient();
