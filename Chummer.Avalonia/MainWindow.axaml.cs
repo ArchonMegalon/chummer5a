@@ -279,6 +279,9 @@ public partial class MainWindow : Window
             return;
 
         await _adapter.ExecuteCommandAsync(command.Id, CancellationToken.None);
+        _suppressCommandSelectionEvent = true;
+        _commandsList.SelectedItem = null;
+        _suppressCommandSelectionEvent = false;
     }
 
     private async void NavigationTabsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -301,6 +304,9 @@ public partial class MainWindow : Window
             return;
 
         await _adapter.ExecuteWorkspaceActionAsync(action.Action, CancellationToken.None);
+        _suppressSectionActionSelectionEvent = true;
+        _sectionActionsList.SelectedItem = null;
+        _suppressSectionActionSelectionEvent = false;
     }
 
     private async void UiControlsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -312,6 +318,9 @@ public partial class MainWindow : Window
             return;
 
         await _adapter.HandleUiControlAsync(control.Id, CancellationToken.None);
+        _suppressUiControlSelectionEvent = true;
+        _uiControlsList.SelectedItem = null;
+        _suppressUiControlSelectionEvent = false;
     }
 
     private async void DialogActionsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -323,6 +332,9 @@ public partial class MainWindow : Window
             return;
 
         await _adapter.ExecuteDialogActionAsync(action.Id, CancellationToken.None);
+        _suppressDialogActionSelectionEvent = true;
+        _dialogActionsList.SelectedItem = null;
+        _suppressDialogActionSelectionEvent = false;
     }
 
     private static Uri ResolveApiBaseAddress()
