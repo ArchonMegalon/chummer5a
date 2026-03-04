@@ -23,18 +23,20 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         return workspaceId;
     }
 
-    public IReadOnlyList<CharacterWorkspaceId> ListIds()
+    public IReadOnlyList<WorkspaceStoreEntry> List()
     {
         return Directory.EnumerateFiles(_workspaceDirectory, "*.json", SearchOption.TopDirectoryOnly)
             .Select(path => new
             {
-                Path = path,
-                LastWriteUtc = File.GetLastWriteTimeUtc(path)
+                FileName = Path.GetFileNameWithoutExtension(path),
+                LastUpdatedUtc = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero)
             })
-            .OrderByDescending(item => item.LastWriteUtc)
-            .Select(item => Path.GetFileNameWithoutExtension(item.Path))
-            .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
-            .Select(fileName => new CharacterWorkspaceId(fileName))
+            .Where(item => !string.IsNullOrWhiteSpace(item.FileName))
+            .OrderByDescending(item => item.LastUpdatedUtc)
+            .Select(item => new WorkspaceStoreEntry(
+                Id: new CharacterWorkspaceId(item.FileName),
+                LastUpdatedUtc: item.LastUpdatedUtc))
+            .Where(entry => TryGetPath(entry.Id) is not null)
             .ToArray();
     }
 

@@ -101,7 +101,7 @@ public class WorkspaceServiceTests
             return false;
         }
 
-        public IReadOnlyList<CharacterWorkspaceId> ListIds()
+        public IReadOnlyList<WorkspaceStoreEntry> List()
         {
             return [];
         }

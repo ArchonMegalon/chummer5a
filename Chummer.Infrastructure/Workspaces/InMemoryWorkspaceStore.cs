@@ -15,11 +15,13 @@ public sealed class InMemoryWorkspaceStore : IWorkspaceStore
         return new CharacterWorkspaceId(key);
     }
 
-    public IReadOnlyList<CharacterWorkspaceId> ListIds()
+    public IReadOnlyList<WorkspaceStoreEntry> List()
     {
         return _documents
             .OrderByDescending(pair => pair.Value.LastUpdatedUtc)
-            .Select(pair => new CharacterWorkspaceId(pair.Key))
+            .Select(pair => new WorkspaceStoreEntry(
+                Id: new CharacterWorkspaceId(pair.Key),
+                LastUpdatedUtc: pair.Value.LastUpdatedUtc))
             .ToArray();
     }
 

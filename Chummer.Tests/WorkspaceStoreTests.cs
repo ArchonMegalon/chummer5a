@@ -106,11 +106,11 @@ public class WorkspaceStoreTests
             CharacterWorkspaceId first = store.Create(new WorkspaceDocument("<character><name>First</name></character>"));
             CharacterWorkspaceId second = store.Create(new WorkspaceDocument("<character><name>Second</name></character>"));
 
-            IReadOnlyList<CharacterWorkspaceId> listed = store.ListIds();
+            IReadOnlyList<WorkspaceStoreEntry> listed = store.List();
 
             CollectionAssert.AreEquivalent(
                 new[] { first.Value, second.Value },
-                listed.Select(item => item.Value).ToArray());
+                listed.Select(item => item.Id.Value).ToArray());
         }
         finally
         {

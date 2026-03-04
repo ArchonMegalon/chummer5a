@@ -35,11 +35,10 @@ public sealed class WorkspaceService : IWorkspaceService
     public IReadOnlyList<WorkspaceListItem> List()
     {
         List<WorkspaceListItem> workspaces = [];
-        DateTimeOffset now = DateTimeOffset.UtcNow;
-        int index = 0;
 
-        foreach (CharacterWorkspaceId id in _workspaceStore.ListIds())
+        foreach (WorkspaceStoreEntry entry in _workspaceStore.List())
         {
+            CharacterWorkspaceId id = entry.Id;
             if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
                 continue;
 
@@ -65,7 +64,7 @@ public sealed class WorkspaceService : IWorkspaceService
             workspaces.Add(new WorkspaceListItem(
                 Id: id,
                 Summary: summary,
-                LastUpdatedUtc: now.AddSeconds(-index++)));
+                LastUpdatedUtc: entry.LastUpdatedUtc));
         }
 
         return workspaces;
