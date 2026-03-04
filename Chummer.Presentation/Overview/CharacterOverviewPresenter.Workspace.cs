@@ -136,31 +136,13 @@ public sealed partial class CharacterOverviewPresenter
         session = _workspaceSessionPresenter.SetSavedStatus(id, hasSavedWorkspace);
         _currentWorkspace = id;
 
-        Publish(new CharacterOverviewState(
-            IsBusy: false,
-            Error: null,
-            Session: session,
-            WorkspaceId: id,
-            OpenWorkspaces: session.OpenWorkspaces,
-            Profile: loadedOverview.Profile,
-            Progress: loadedOverview.Progress,
-            Skills: loadedOverview.Skills,
-            Rules: loadedOverview.Rules,
-            Build: loadedOverview.Build,
-            Movement: loadedOverview.Movement,
-            Awakening: loadedOverview.Awakening,
-            ActiveTabId: restoredView?.ActiveTabId,
-            ActiveActionId: restoredView?.ActiveActionId,
-            ActiveSectionId: restoredView?.ActiveSectionId,
-            ActiveSectionJson: restoredView?.ActiveSectionJson,
-            ActiveSectionRows: restoredView?.ActiveSectionRows ?? [],
-            LastCommandId: State.LastCommandId,
-            Notice: State.Notice,
-            ActiveDialog: null,
-            Preferences: State.Preferences,
-            Commands: State.Commands,
-            NavigationTabs: State.NavigationTabs,
-            HasSavedWorkspace: hasSavedWorkspace));
+        Publish(_workspaceOverviewStateFactory.CreateLoadedState(
+            State,
+            id,
+            session,
+            loadedOverview,
+            restoredView,
+            hasSavedWorkspace));
     }
 
     private async Task CloseAllWorkspacesAsync(CancellationToken ct, string notice)
