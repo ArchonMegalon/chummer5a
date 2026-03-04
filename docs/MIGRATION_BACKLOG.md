@@ -226,6 +226,7 @@ Progress: portal now serves local `/downloads/`, file-backed `/downloads/release
 
 - [ ] `MIG-105` Add browser-hosted Avalonia head entry path (`/avalonia/`) behind the same public origin.
 Acceptance criteria: browser head is reachable from portal and clearly separated from native desktop distribution.
+Progress: portal now includes `/avalonia/*` with default setup placeholder and optional in-process proxy mode via `CHUMMER_PORTAL_AVALONIA_PROXY_URL`; full browser-hosted Avalonia app wiring remains.
 
 ## Immediate Sprint Proposal (Next 2 Sprints)
 

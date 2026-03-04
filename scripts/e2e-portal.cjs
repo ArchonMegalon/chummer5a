@@ -18,6 +18,10 @@ const checks = [
     assert: text => /<base href="[^"]*\/blazor\/"/i.test(text)
   },
   {
+    url: 'http://chummer-portal:8080/avalonia/',
+    assert: text => text.length > 0
+  },
+  {
     method: 'POST',
     url: 'http://chummer-portal:8080/blazor/_blazor/negotiate?negotiateVersion=1',
     headers: {

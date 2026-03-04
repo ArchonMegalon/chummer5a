@@ -106,6 +106,7 @@ Default endpoints:
 * Blazor UI: `http://127.0.0.1:8089/`
 * Blazor health: `http://127.0.0.1:8089/health`
 * Portal landing (profile `portal`): `http://127.0.0.1:8091/`
+* Portal Avalonia route (profile `portal`): `http://127.0.0.1:8091/avalonia/`
 * Portal downloads page (profile `portal`): `http://127.0.0.1:8091/downloads/`
 * Portal release manifest (profile `portal`): `http://127.0.0.1:8091/downloads/releases.json`
 
@@ -113,6 +114,7 @@ Portal notes (current milestone):
 
 * `/api` and `/docs` are served via in-process portal proxy routing.
 * `/blazor` is served through an in-process portal proxy to an internal `chummer-blazor-portal` instance configured with `CHUMMER_BLAZOR_PATH_BASE=/blazor`.
+* `/avalonia` serves a setup placeholder by default and switches to in-process proxy routing when `CHUMMER_PORTAL_AVALONIA_PROXY_URL` is configured.
 * `/downloads/` is a local manifest-backed page, `/downloads/releases.json` can be sourced from `CHUMMER_PORTAL_RELEASES_FILE` (default `downloads/releases.json`), and `/downloads/<artifact>` serves local files from `CHUMMER_PORTAL_RELEASES_DIR` (default `downloads`).
 * Set `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL` to route `/downloads/*` through in-process YARP proxy mode instead of local-file mode.
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.

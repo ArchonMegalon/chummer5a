@@ -6,6 +6,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 string blazorBaseUrl = ResolveSetting("Portal:BlazorBaseUrl", "CHUMMER_PORTAL_BLAZOR_URL", "http://127.0.0.1:8089/");
 string blazorProxyBaseUrl = ResolveSetting("Portal:BlazorProxyBaseUrl", "CHUMMER_PORTAL_BLAZOR_PROXY_URL", string.Empty);
+string avaloniaBrowserBaseUrl = ResolveSetting("Portal:AvaloniaBrowserBaseUrl", "CHUMMER_PORTAL_AVALONIA_URL", "/avalonia/");
+string avaloniaProxyBaseUrl = ResolveSetting("Portal:AvaloniaProxyBaseUrl", "CHUMMER_PORTAL_AVALONIA_PROXY_URL", string.Empty);
 string apiBaseUrl = ResolveSetting("Portal:ApiBaseUrl", "CHUMMER_PORTAL_API_URL", "http://chummer-api:8080/");
 string docsBaseUrl = ResolveSetting("Portal:DocsBaseUrl", "CHUMMER_PORTAL_DOCS_URL", "http://chummer-api:8080/docs/");
 string downloadsBaseUrl = ResolveSetting("Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "https://github.com/chummer5a/chummer5a/releases/latest");
@@ -15,6 +17,7 @@ string releaseFilesPath = ResolveSetting("Portal:ReleaseFilesPath", "CHUMMER_POR
 string resolvedManifestPath = ResolveManifestPath(releaseManifestPath);
 string resolvedReleaseFilesPath = ResolveReleaseFilesPath(releaseFilesPath, resolvedManifestPath);
 bool useBlazorProxy = !string.IsNullOrWhiteSpace(blazorProxyBaseUrl);
+bool useAvaloniaProxy = !string.IsNullOrWhiteSpace(avaloniaProxyBaseUrl);
 bool useDownloadsProxy = !string.IsNullOrWhiteSpace(downloadsProxyBaseUrl);
 
 var proxyRoutes = new List<RouteConfig>
@@ -79,6 +82,31 @@ if (useBlazorProxy)
     });
 }
 
+if (useAvaloniaProxy)
+{
+    proxyRoutes.Add(new RouteConfig
+    {
+        RouteId = "portal-avalonia",
+        ClusterId = "avalonia-cluster",
+        Match = new RouteMatch
+        {
+            Path = "/avalonia/{**catch-all}"
+        }
+    });
+
+    proxyClusters.Add(new ClusterConfig
+    {
+        ClusterId = "avalonia-cluster",
+        Destinations = new Dictionary<string, DestinationConfig>(StringComparer.Ordinal)
+        {
+            ["primary"] = new DestinationConfig
+            {
+                Address = NormalizeProxyAddress(avaloniaProxyBaseUrl)
+            }
+        }
+    });
+}
+
 if (useDownloadsProxy)
 {
     proxyRoutes.Add(new RouteConfig
@@ -121,6 +149,9 @@ app.MapGet("/", () => Results.Content(
         blazorBaseUrl,
         blazorProxyBaseUrl,
         useBlazorProxy,
+        avaloniaBrowserBaseUrl,
+        avaloniaProxyBaseUrl,
+        useAvaloniaProxy,
         apiBaseUrl,
         docsBaseUrl,
         downloadsBaseUrl,
@@ -140,6 +171,13 @@ if (!useBlazorProxy)
 {
     app.MapGet("/blazor/{**path}", (HttpContext context, string? path) =>
         Results.Redirect(ComposeRedirect(blazorBaseUrl, path, context.Request.QueryString)));
+}
+
+if (!useAvaloniaProxy)
+{
+    app.MapGet("/avalonia/{**path}", () => Results.Content(
+        BuildAvaloniaPlaceholderHtml(avaloniaBrowserBaseUrl, downloadsBaseUrl),
+        "text/html; charset=utf-8"));
 }
 
 if (!useDownloadsProxy)
@@ -406,10 +444,51 @@ static string BuildDownloadsHtml(string fallbackDownloadsUrl)
 """;
 }
 
+static string BuildAvaloniaPlaceholderHtml(string avaloniaBaseUrl, string downloadsBaseUrl)
+{
+    string escapedAvaloniaBaseUrl = HtmlEncode(avaloniaBaseUrl);
+    string escapedDownloadsBaseUrl = HtmlEncode(downloadsBaseUrl);
+    return $$"""
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Avalonia Browser Entry</title>
+    <style>
+      :root { --ink: #eef4fb; --muted: #b8c5d1; --accent: #f58b2a; --bg: #0d1f2f; --card: #142739; --edge: #33516e; }
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; font-family: "Aptos", "Segoe UI", sans-serif; color: var(--ink); background: linear-gradient(155deg, #0c1d2d, #1b3045); }
+      main { width: min(760px, 100%); border: 1px solid var(--edge); background: rgba(20, 39, 57, 0.95); border-radius: 14px; padding: 22px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35); }
+      h1 { margin: 0 0 8px; font-size: clamp(1.3rem, 2.7vw, 1.9rem); }
+      p { margin: 8px 0; color: var(--muted); line-height: 1.45; }
+      code { color: #ffe0c2; }
+      .actions { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+      a { text-decoration: none; color: #08131d; background: var(--accent); padding: 8px 12px; border-radius: 999px; font-weight: 700; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Avalonia Browser Entry</h1>
+      <p>The browser-hosted Avalonia head is not configured in this environment.</p>
+      <p>Configure <code>CHUMMER_PORTAL_AVALONIA_PROXY_URL</code> to route <code>/avalonia/*</code> to a hosted Avalonia browser build.</p>
+      <p>Current route base: <code>{{escapedAvaloniaBaseUrl}}</code></p>
+      <div class="actions">
+        <a href="/downloads/">Open Desktop Downloads</a>
+        <a href="{{escapedDownloadsBaseUrl}}">Fallback Release Feed</a>
+      </div>
+    </main>
+  </body>
+</html>
+""";
+}
+
 static string BuildLandingHtml(
     string blazorBaseUrl,
     string blazorProxyBaseUrl,
     bool useBlazorProxy,
+    string avaloniaBrowserBaseUrl,
+    string avaloniaProxyBaseUrl,
+    bool useAvaloniaProxy,
     string apiBaseUrl,
     string docsBaseUrl,
     string downloadsBaseUrl,
@@ -500,7 +579,10 @@ static string BuildLandingHtml(
     string blazorModeText = useBlazorProxy
         ? "<code>/blazor</code> in-process proxy is active."
         : "<code>/blazor</code> currently uses redirect mode.";
-    html.AppendLine("      <p class=\"lead\">Single landing surface for migration heads. Current milestone proxies <code>/api</code> and <code>/docs</code> in-process; " + blazorModeText + "</p>");
+    string avaloniaModeText = useAvaloniaProxy
+        ? "<code>/avalonia</code> in-process proxy is active."
+        : "<code>/avalonia</code> currently serves a setup placeholder.";
+    html.AppendLine("      <p class=\"lead\">Single landing surface for migration heads. Current milestone proxies <code>/api</code> and <code>/docs</code> in-process; " + blazorModeText + " " + avaloniaModeText + "</p>");
     html.AppendLine("    </header>");
     html.AppendLine("    <section class=\"grid\">");
     html.AppendLine("      <article class=\"card\">");
@@ -512,6 +594,11 @@ static string BuildLandingHtml(
     html.AppendLine("        <h2>API Surface</h2>");
     html.AppendLine("        <p>Headless API host with workspace and command endpoints.</p>");
     html.AppendLine("        <a href=\"/api/health\">Open API</a>");
+    html.AppendLine("      </article>");
+    html.AppendLine("      <article class=\"card\">");
+    html.AppendLine("        <h2>Avalonia Browser</h2>");
+    html.AppendLine("        <p>Browser-hosted Avalonia entry path for parity and preview flows.</p>");
+    html.AppendLine("        <a href=\"/avalonia/\">Open Avalonia</a>");
     html.AppendLine("      </article>");
     html.AppendLine("      <article class=\"card\">");
     html.AppendLine("        <h2>API Docs</h2>");
@@ -528,6 +615,7 @@ static string BuildLandingHtml(
     html.AppendLine("      <div><code>/api</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
     html.AppendLine("      <div><code>/docs</code> proxy upstream → " + HtmlEncode(docsBaseUrl) + "</div>");
     html.AppendLine("      <div><code>/blazor</code> " + (useBlazorProxy ? "proxy upstream → " + HtmlEncode(blazorProxyBaseUrl) : "redirect → " + HtmlEncode(blazorBaseUrl)) + "</div>");
+    html.AppendLine("      <div><code>/avalonia</code> " + (useAvaloniaProxy ? "proxy upstream → " + HtmlEncode(avaloniaProxyBaseUrl) : "placeholder route at " + HtmlEncode(avaloniaBrowserBaseUrl)) + "</div>");
     html.AppendLine("      <div><code>/downloads</code> " + (useDownloadsProxy ? "proxy upstream → " + HtmlEncode(downloadsProxyBaseUrl) : "local files + manifest with fallback feed → " + HtmlEncode(downloadsBaseUrl)) + "</div>");
     html.AppendLine("    </footer>");
     html.AppendLine("  </main>");
