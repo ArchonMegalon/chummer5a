@@ -13,6 +13,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
     private readonly IDesktopDialogFactory _dialogFactory;
     private readonly IOverviewCommandDispatcher _commandDispatcher;
     private readonly IDialogCoordinator _dialogCoordinator;
+    private readonly IWorkspaceOverviewLoader _workspaceOverviewLoader;
     private readonly Dictionary<string, WorkspaceViewState> _workspaceViews = new(StringComparer.Ordinal);
     private CharacterWorkspaceId? _currentWorkspace;
 
@@ -22,7 +23,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         IDesktopDialogFactory? dialogFactory = null,
         IWorkspaceSessionPresenter? workspaceSessionPresenter = null,
         IOverviewCommandDispatcher? commandDispatcher = null,
-        IDialogCoordinator? dialogCoordinator = null)
+        IDialogCoordinator? dialogCoordinator = null,
+        IWorkspaceOverviewLoader? workspaceOverviewLoader = null)
     {
         _client = client;
         IWorkspaceSessionManager manager = workspaceSessionManager ?? new WorkspaceSessionManager();
@@ -30,6 +32,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         _dialogFactory = dialogFactory ?? new DesktopDialogFactory();
         _commandDispatcher = commandDispatcher ?? new OverviewCommandDispatcher();
         _dialogCoordinator = dialogCoordinator ?? new DialogCoordinator();
+        _workspaceOverviewLoader = workspaceOverviewLoader ?? new WorkspaceOverviewLoader();
     }
 
     public CharacterOverviewState State { get; private set; } = CharacterOverviewState.Empty;
@@ -601,16 +604,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         bool updateSession = true)
     {
         CaptureWorkspaceView();
-
-        Task<CharacterProfileSection> profileTask = _client.GetProfileAsync(id, ct);
-        Task<CharacterProgressSection> progressTask = _client.GetProgressAsync(id, ct);
-        Task<CharacterSkillsSection> skillsTask = _client.GetSkillsAsync(id, ct);
-        Task<CharacterRulesSection> rulesTask = _client.GetRulesAsync(id, ct);
-        Task<CharacterBuildSection> buildTask = _client.GetBuildAsync(id, ct);
-        Task<CharacterMovementSection> movementTask = _client.GetMovementAsync(id, ct);
-        Task<CharacterAwakeningSection> awakeningTask = _client.GetAwakeningAsync(id, ct);
-
-        await Task.WhenAll(profileTask, progressTask, skillsTask, rulesTask, buildTask, movementTask, awakeningTask);
+        WorkspaceOverviewLoadResult loadedOverview = await _workspaceOverviewLoader.LoadAsync(_client, id, ct);
 
         WorkspaceSessionState session;
         if (sessionSeed is not null)
@@ -619,12 +613,12 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             if (session.ActiveWorkspaceId is null
                 || !string.Equals(session.ActiveWorkspaceId.Value.Value, id.Value, StringComparison.Ordinal))
             {
-                session = _workspaceSessionPresenter.Open(id, profileTask.Result);
+                session = _workspaceSessionPresenter.Open(id, loadedOverview.Profile);
             }
         }
         else if (updateSession)
         {
-            session = _workspaceSessionPresenter.Open(id, profileTask.Result);
+            session = _workspaceSessionPresenter.Open(id, loadedOverview.Profile);
         }
         else
         {
@@ -632,7 +626,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             if (session.ActiveWorkspaceId is null
                 || !string.Equals(session.ActiveWorkspaceId.Value.Value, id.Value, StringComparison.Ordinal))
             {
-                session = _workspaceSessionPresenter.Open(id, profileTask.Result);
+                session = _workspaceSessionPresenter.Open(id, loadedOverview.Profile);
             }
         }
 
@@ -645,13 +639,13 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Session: session,
             WorkspaceId: id,
             OpenWorkspaces: session.OpenWorkspaces,
-            Profile: profileTask.Result,
-            Progress: progressTask.Result,
-            Skills: skillsTask.Result,
-            Rules: rulesTask.Result,
-            Build: buildTask.Result,
-            Movement: movementTask.Result,
-            Awakening: awakeningTask.Result,
+            Profile: loadedOverview.Profile,
+            Progress: loadedOverview.Progress,
+            Skills: loadedOverview.Skills,
+            Rules: loadedOverview.Rules,
+            Build: loadedOverview.Build,
+            Movement: loadedOverview.Movement,
+            Awakening: loadedOverview.Awakening,
             ActiveTabId: restoredView?.ActiveTabId,
             ActiveActionId: restoredView?.ActiveActionId,
             ActiveSectionId: restoredView?.ActiveSectionId,
