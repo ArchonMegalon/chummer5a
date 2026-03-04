@@ -85,17 +85,7 @@
         </aside>
 
         <main class="center-pane">
-            <section class="desktop-summary panel">
-                <h2>Desktop Summary Header</h2>
-                <div class="summary-grid">
-                    <label>Name <input id="summaryName" value="@(State.Profile?.Name ?? string.Empty)" readonly /></label>
-                    <label>Alias <input id="summaryAlias" value="@(State.Profile?.Alias ?? string.Empty)" readonly /></label>
-                    <label>Metatype <input id="summaryMetatype" value="@(State.Profile?.Metatype ?? string.Empty)" readonly /></label>
-                    <label>Build <input id="summaryBuildMethod" value="@(State.Build?.BuildMethod ?? string.Empty)" readonly /></label>
-                    <label>Karma <input id="summaryKarma" value="@(State.Progress?.Karma.ToString() ?? "0")" readonly /></label>
-                    <label>Street Cred <input id="summaryStreetCred" value="@(State.Progress?.StreetCred.ToString() ?? "0")" readonly /></label>
-                </div>
-            </section>
+            <SummaryHeader State="State" />
 
             <MetadataPanel State="State"
                            @bind-MetadataName="MetadataName"
