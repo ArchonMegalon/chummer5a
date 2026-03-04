@@ -1,0 +1,37 @@
+@using Chummer.Contracts.Presentation
+
+<section class="panel commands">
+    <h2>Commands</h2>
+    <ul class="command-list">
+        @foreach (AppCommandDefinition command in Commands)
+        {
+            bool enabled = IsCommandEnabled(command);
+            <li class="@(enabled ? string.Empty : "disabled")">
+                <button class="command-button @(string.Equals(State.LastCommandId, command.Id, StringComparison.Ordinal) ? "selected" : string.Empty)"
+                        disabled="@(!enabled || State.IsBusy)"
+                        @onclick="() => ExecuteCommandAsync(command.Id)">
+                    <code>@command.Id</code>
+                </button>
+            </li>
+        }
+    </ul>
+</section>
+
+@code {
+    [Parameter]
+    public CharacterOverviewState State { get; set; } = CharacterOverviewState.Empty;
+
+    [Parameter]
+    public IReadOnlyList<AppCommandDefinition> Commands { get; set; } = [];
+
+    [Parameter]
+    public Func<AppCommandDefinition, bool> IsCommandEnabled { get; set; } = _ => false;
+
+    [Parameter]
+    public EventCallback<string> ExecuteCommandRequested { get; set; }
+
+    private Task ExecuteCommandAsync(string commandId)
+    {
+        return ExecuteCommandRequested.InvokeAsync(commandId);
+    }
+}

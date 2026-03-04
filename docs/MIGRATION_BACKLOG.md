@@ -102,7 +102,7 @@ Progress: command routing (`OverviewCommandDispatcher`), dialog orchestration (`
 
 - [ ] `MIG-040` Split remaining orchestration in `Home.razor` into shell-region components.
 Acceptance criteria: page-level code only wires components and events; no business/state transition logic remains in the page.
-Progress: dialog region extracted to `Components/Shell/DialogHost.razor`; metadata editor and section preview are now extracted to `Components/Shell/MetadataPanel.razor` and `Components/Shell/SectionPane.razor`; workspace/import/command/result regions still need extraction.
+Progress: dialog region extracted to `Components/Shell/DialogHost.razor`; metadata editor and section preview are now extracted to `Components/Shell/MetadataPanel.razor` and `Components/Shell/SectionPane.razor`; command and result regions are now extracted to `Components/Shell/CommandPanel.razor` and `Components/Shell/ResultPanel.razor`; workspace/import regions still need extraction.
 
 - [ ] `MIG-041` Add Blazor component tests for menu/toolstrip/workspace/tab/section/dialog components.
 Acceptance criteria: component tests validate enable/disable rules and state-driven rendering behaviors.

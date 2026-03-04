@@ -127,33 +127,12 @@
                 </details>
             </section>
 
-            <section class="panel commands">
-                <h2>Commands</h2>
-                <ul class="command-list">
-                    @foreach (var command in HeadCommands)
-                    {
-                        bool enabled = IsCommandEnabled(command);
-                        <li class="@(enabled ? string.Empty : "disabled")">
-                            <button class="command-button @(State.LastCommandId == command.Id ? "selected" : string.Empty)"
-                                    disabled="@(!enabled || State.IsBusy)"
-                                    @onclick="() => ExecuteCommandAsync(command.Id)">
-                                <code>@command.Id</code>
-                            </button>
-                        </li>
-                    }
-                </ul>
-            </section>
+            <CommandPanel State="State"
+                          Commands="HeadCommands.ToArray()"
+                          IsCommandEnabled="IsCommandEnabled"
+                          ExecuteCommandRequested="ExecuteCommandAsync" />
 
-            <section class="panel results">
-                <h2>Result</h2>
-                <p class="note">@(State.Notice ?? "Ready.")</p>
-                <p class="hint">UI: @State.Preferences.UiScalePercent% / @State.Preferences.Theme / @State.Preferences.Language</p>
-                <p class="hint">Character: @State.Preferences.CharacterPriority, Ratio @State.Preferences.KarmaNuyenRatio, House Rules @(State.Preferences.HouseRulesEnabled ? "On" : "Off")</p>
-                @if (!string.IsNullOrWhiteSpace(State.Error))
-                {
-                    <p class="error">Error: @State.Error</p>
-                }
-            </section>
+            <ResultPanel State="State" />
         </aside>
     </div>
 
