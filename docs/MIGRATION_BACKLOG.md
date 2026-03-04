@@ -214,7 +214,7 @@ Progress: `Chummer.Portal` now proxies `/api/*`, `/docs/*`, and `/blazor/*` thro
 
 - [ ] `MIG-102` Move Blazor head to stable `/blazor/` app-base deployment behind the portal.
 Acceptance criteria: reload/deep-link/reconnect behavior works when the UI is hosted under `/blazor/`.
-Progress: added path-base aware Blazor hosting plus dedicated `chummer-blazor-portal` service (`CHUMMER_BLAZOR_PATH_BASE=/blazor`) behind portal `/blazor/*` proxy routing; added optional portal E2E gate (`CHUMMER_PORTAL_E2E=1`) validating `/blazor/health` plus portal route availability, with reconnect-specific browser assertions still pending.
+Progress: added path-base aware Blazor hosting plus dedicated `chummer-blazor-portal` service (`CHUMMER_BLAZOR_PATH_BASE=/blazor`) behind portal `/blazor/*` proxy routing; migration loop now runs portal E2E by default (disable with `CHUMMER_PORTAL_E2E=0`) validating `/blazor/health` plus portal route availability, with reconnect-specific browser assertions still pending.
 
 - [x] `MIG-103` Add OpenAPI + interactive docs surface to `Chummer.Api` and wire through portal `/docs/`.
 Acceptance criteria: generated OpenAPI document and interactive docs are reachable and validated in CI.

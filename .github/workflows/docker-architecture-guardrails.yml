@@ -24,6 +24,7 @@ jobs:
       - name: Migration loop (1 iteration)
         env:
           CHUMMER_API_KEY: migration-smoke-key
+          CHUMMER_PORTAL_E2E: "1"
         run: bash scripts/migration-loop.sh 1
 
       - name: Compose cleanup
