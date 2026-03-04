@@ -75,6 +75,44 @@ public class ToolCatalogServiceTests
     }
 
     [TestMethod]
+    public void Master_index_merge_catalog_fragment_replaces_entry_with_matching_id_key()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string dataDir = Path.Combine(root, "data");
+            Directory.CreateDirectory(dataDir);
+            File.WriteAllText(
+                Path.Combine(dataDir, "qualities.xml"),
+                "<chummer><qualities><quality><id>base</id><name>Base</name></quality></qualities></chummer>");
+
+            string amendsRoot = Path.Combine(root, "Amends");
+            string overlayData = Path.Combine(amendsRoot, "data");
+            Directory.CreateDirectory(overlayData);
+            File.WriteAllText(
+                Path.Combine(amendsRoot, "manifest.json"),
+                "{\n  \"id\": \"merge-pack\",\n  \"priority\": 100,\n  \"enabled\": true,\n  \"mode\": \"merge-catalog\"\n}");
+            File.WriteAllText(
+                Path.Combine(overlayData, "qualities.test-amend.xml"),
+                "<chummer><qualities><quality><id>base</id><name>Base Overlay</name></quality><quality><id>addon</id><name>Addon</name></quality></qualities></chummer>");
+
+            var overlays = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
+            var service = new XmlToolCatalogService(overlays);
+            MasterIndexResponse response = service.GetMasterIndex();
+
+            MasterIndexFileEntry qualities = response.Files.Single(file => file.File == "qualities.xml");
+            Assert.AreEqual(1, response.Count);
+            Assert.AreEqual(1, response.Files.Count);
+            Assert.AreEqual("chummer", qualities.Root);
+            Assert.AreEqual(8, qualities.ElementCount, "Merge-catalog should replace the matching id entry instead of appending duplicates.");
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
+    [TestMethod]
     public void Translator_languages_reads_name_when_present_and_falls_back_to_code()
     {
         string root = CreateTempDirectory();
