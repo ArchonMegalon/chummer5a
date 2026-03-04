@@ -96,7 +96,7 @@ Progress: workspace lifecycle rules are centralized in `IWorkspaceSessionPresent
 
 - [ ] `MIG-033` Narrow `CharacterOverviewPresenter` responsibility to overview composition.
 Acceptance criteria: presenter owns overview state composition only; command/dialog/workspace concerns are delegated.
-Progress: command routing (`OverviewCommandDispatcher`), dialog orchestration (`DialogCoordinator`), workspace session ordering (`WorkspaceSessionPresenter`), overview snapshot loading (`WorkspaceOverviewLoader`), section payload rendering (`WorkspaceSectionRenderer`), and metadata/save orchestration (`WorkspacePersistenceService`) are delegated; remaining presenter hotspots are workspace reset/close flow coordination and shell state publication.
+Progress: command routing (`OverviewCommandDispatcher`), dialog orchestration (`DialogCoordinator`), workspace session ordering (`WorkspaceSessionPresenter`), overview snapshot loading (`WorkspaceOverviewLoader`), section payload rendering (`WorkspaceSectionRenderer`), metadata/save orchestration (`WorkspacePersistenceService`), workspace-view persistence (`WorkspaceViewStateStore`), and empty-shell state composition (`WorkspaceShellStateFactory`) are delegated; remaining presenter hotspot is remote close/load orchestration around workspace lifecycle edges.
 
 ### Phase 4: Finish Blazor shell as thin renderer
 

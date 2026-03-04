@@ -148,6 +148,25 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task CloseWorkspaceAsync_handles_remote_close_errors_and_keeps_local_shell_consistent()
+    {
+        var client = new FakeChummerClient
+        {
+            ThrowOnCloseWorkspace = true
+        };
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
+        await presenter.CloseWorkspaceAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
+
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
+        Assert.AreEqual("ws-1", presenter.State.Session.ActiveWorkspaceId?.Value);
+        Assert.AreEqual(1, presenter.State.OpenWorkspaces.Count);
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "already closed");
+    }
+
+    [TestMethod]
     public async Task ExecuteCommandAsync_close_window_switches_to_previous_workspace()
     {
         var client = new FakeChummerClient();
@@ -563,6 +582,7 @@ public class CharacterOverviewPresenterTests
         private string _alias = "BLUE";
         private readonly Dictionary<string, WorkspaceListItem> _workspaces = new(StringComparer.Ordinal);
         private int _clock;
+        public bool ThrowOnCloseWorkspace { get; set; }
         public int DownloadCalls { get; private set; }
         public UpdateWorkspaceMetadata? LastUpdateMetadata { get; private set; }
         public WorkspaceImportDocument? LastImportedDocument { get; private set; }
@@ -623,6 +643,11 @@ public class CharacterOverviewPresenterTests
 
         public Task<bool> CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
         {
+            if (ThrowOnCloseWorkspace)
+            {
+                throw new InvalidOperationException("Simulated close failure.");
+            }
+
             bool removed = _workspaces.Remove(id.Value);
             return Task.FromResult(removed);
         }

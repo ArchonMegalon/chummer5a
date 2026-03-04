@@ -75,15 +75,7 @@ public sealed partial class CharacterOverviewPresenter
             return;
         }
 
-        bool closed;
-        try
-        {
-            closed = await _client.CloseWorkspaceAsync(id, ct);
-        }
-        catch
-        {
-            closed = false;
-        }
+        bool closed = await _workspaceRemoteCloseService.TryCloseAsync(_client, id, ct);
 
         bool closedActiveWorkspace = _currentWorkspace is { } activeWorkspace
             && string.Equals(activeWorkspace.Value, id.Value, StringComparison.Ordinal);
@@ -196,17 +188,7 @@ public sealed partial class CharacterOverviewPresenter
             .Select(group => group.First().Id)
             .ToArray();
 
-        foreach (CharacterWorkspaceId workspaceId in workspaceIdsToClose)
-        {
-            try
-            {
-                await _client.CloseWorkspaceAsync(workspaceId, ct);
-            }
-            catch
-            {
-                // Keep resetting local shell state even if a close request fails remotely.
-            }
-        }
+        await _workspaceRemoteCloseService.CloseManyIgnoringFailuresAsync(_client, workspaceIdsToClose, ct);
 
         WorkspaceSessionState session = _workspaceSessionPresenter.CloseAll();
         _workspaceViewStateStore.Clear();
