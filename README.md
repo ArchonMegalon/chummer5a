@@ -157,6 +157,7 @@ Content overlay notes (`CHUMMER_AMENDS_PATH`):
 * Overlay manifests accept `mode`:
   `replace-file` (default) keeps exact-name file precedence and powers full-file overrides like `lifemodules.xml`.
   `merge-catalog` applies fragment overlays like `qualities.test-amend.xml` and `en-us.test-amend.xml` onto canonical targets (`qualities.xml`, `en-us.xml`) using deterministic priority order.
+* Overlay manifests can also include optional `"checksums"` entries (for example `"data/lifemodules.xml": "sha256:<digest>"`); when present, each listed file is SHA-256 validated during overlay discovery.
 * Sample pack is included at `Docker/Amends/manifest.json` and is configured for `merge-catalog` with test XML content under `Docker/Amends/data` and `Docker/Amends/lang`.
 
 Desktop artifact workflow:

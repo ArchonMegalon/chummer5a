@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Security.Cryptography;
 using Chummer.Application.Content;
 
 namespace Chummer.Infrastructure.Files;
@@ -219,6 +220,7 @@ public sealed class FileSystemContentOverlayCatalogService : IContentOverlayCata
     private static ContentOverlayPack BuildOverlayPack(string rootPath)
     {
         ContentOverlayManifest manifest = LoadManifest(rootPath);
+        ValidateManifestChecksums(rootPath, manifest.Checksums);
 
         string id = string.IsNullOrWhiteSpace(manifest.Id)
             ? Path.GetFileName(rootPath)
@@ -293,5 +295,74 @@ public sealed class FileSystemContentOverlayCatalogService : IContentOverlayCata
         int? Priority = null,
         bool? Enabled = null,
         string? Mode = null,
-        string? Description = null);
+        string? Description = null,
+        IReadOnlyDictionary<string, string>? Checksums = null);
+
+    private static void ValidateManifestChecksums(string rootPath, IReadOnlyDictionary<string, string>? checksums)
+    {
+        if (checksums is null || checksums.Count == 0)
+        {
+            return;
+        }
+
+        string fullRootPath = Path.GetFullPath(rootPath);
+        string rootPrefix = fullRootPath.EndsWith(Path.DirectorySeparatorChar)
+            ? fullRootPath
+            : fullRootPath + Path.DirectorySeparatorChar;
+
+        foreach ((string relativePath, string checksumValue) in checksums.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                throw new InvalidOperationException("Overlay manifest checksum entry must include a non-empty relative path.");
+            }
+
+            string normalizedRelativePath = relativePath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+            string candidatePath = Path.GetFullPath(Path.Combine(fullRootPath, normalizedRelativePath));
+            if (!candidatePath.StartsWith(rootPrefix, StringComparison.Ordinal) &&
+                !string.Equals(candidatePath, fullRootPath, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Overlay manifest checksum path '{relativePath}' escapes pack root '{rootPath}'.");
+            }
+
+            if (!File.Exists(candidatePath))
+            {
+                throw new InvalidOperationException(
+                    $"Overlay manifest checksum path '{relativePath}' does not exist under '{rootPath}'.");
+            }
+
+            string expectedChecksum = NormalizeSha256Checksum(checksumValue);
+            string actualChecksum = ComputeSha256(candidatePath);
+            if (!string.Equals(expectedChecksum, actualChecksum, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Checksum mismatch for '{relativePath}'. Expected '{expectedChecksum}', got '{actualChecksum}'.");
+            }
+        }
+    }
+
+    private static string NormalizeSha256Checksum(string? value)
+    {
+        string normalized = (value ?? string.Empty).Trim();
+        if (normalized.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = normalized["sha256:".Length..];
+        }
+
+        if (normalized.Length != 64 || normalized.Any(character => !Uri.IsHexDigit(character)))
+        {
+            throw new InvalidOperationException(
+                $"Invalid checksum format '{value}'. Use a 64-character SHA-256 hex digest or prefix it with 'sha256:'.");
+        }
+
+        return normalized.ToLowerInvariant();
+    }
+
+    private static string ComputeSha256(string filePath)
+    {
+        using var stream = File.OpenRead(filePath);
+        byte[] hash = SHA256.HashData(stream);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
 }

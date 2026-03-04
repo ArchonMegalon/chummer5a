@@ -234,6 +234,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(serviceRegistrationText, "ValidateContentBundle");
         StringAssert.Contains(serviceRegistrationText, "lifemodules.xml");
         StringAssert.Contains(serviceRegistrationText, "language XML files");
+        string overlayServicePath = FindPath("Chummer.Infrastructure", "Files", "FileSystemContentOverlayCatalogService.cs");
+        string overlayServiceText = File.ReadAllText(overlayServicePath);
+        StringAssert.Contains(overlayServiceText, "ValidateManifestChecksums");
+        StringAssert.Contains(overlayServiceText, "manifest.Checksums");
+        StringAssert.Contains(readmeText, "\"checksums\"");
         StringAssert.Contains(readmeText, "CHUMMER_REQUIRE_CONTENT_BUNDLE");
     }
 

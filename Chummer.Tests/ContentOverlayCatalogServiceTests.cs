@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Chummer.Application.Content;
 using Chummer.Infrastructure.Files;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -168,6 +170,91 @@ public class ContentOverlayCatalogServiceTests
         }
     }
 
+    [TestMethod]
+    public void Root_manifest_checksums_accept_matching_sha256_digest()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string baseData = Path.Combine(root, "data");
+            Directory.CreateDirectory(baseData);
+            File.WriteAllText(Path.Combine(baseData, "lifemodules.xml"), "<chummer><source>base</source></chummer>");
+
+            string amendsRoot = Path.Combine(root, "Amends");
+            string packRoot = Path.Combine(amendsRoot, "pack-checksum");
+            string packDataDirectory = Path.Combine(packRoot, "data");
+            Directory.CreateDirectory(packDataDirectory);
+
+            string overlayFilePath = Path.Combine(packDataDirectory, "lifemodules.xml");
+            string overlayContent = "<chummer><source>overlay</source></chummer>";
+            File.WriteAllText(overlayFilePath, overlayContent);
+            string checksum = ComputeSha256(overlayContent);
+
+            File.WriteAllText(Path.Combine(packRoot, "manifest.json"),
+                "{\n" +
+                "  \"id\": \"pack-checksum\",\n" +
+                "  \"priority\": 100,\n" +
+                "  \"enabled\": true,\n" +
+                "  \"checksums\": {\n" +
+                "    \"data/lifemodules.xml\": \"sha256:" + checksum + "\"\n" +
+                "  }\n" +
+                "}");
+
+            var service = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
+            string resolved = service.ResolveDataFile("lifemodules.xml");
+            Assert.AreEqual(overlayFilePath, resolved);
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
+    [TestMethod]
+    public void Root_manifest_checksums_reject_mismatched_digest()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string baseData = Path.Combine(root, "data");
+            Directory.CreateDirectory(baseData);
+            File.WriteAllText(Path.Combine(baseData, "lifemodules.xml"), "<chummer><source>base</source></chummer>");
+
+            string amendsRoot = Path.Combine(root, "Amends");
+            string packRoot = Path.Combine(amendsRoot, "pack-checksum-invalid");
+            string packDataDirectory = Path.Combine(packRoot, "data");
+            Directory.CreateDirectory(packDataDirectory);
+
+            File.WriteAllText(Path.Combine(packDataDirectory, "lifemodules.xml"), "<chummer><source>overlay</source></chummer>");
+            File.WriteAllText(Path.Combine(packRoot, "manifest.json"),
+                "{\n" +
+                "  \"id\": \"pack-checksum-invalid\",\n" +
+                "  \"priority\": 100,\n" +
+                "  \"enabled\": true,\n" +
+                "  \"checksums\": {\n" +
+                "    \"data/lifemodules.xml\": \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"\n" +
+                "  }\n" +
+                "}");
+
+            InvalidOperationException? ex = null;
+            try
+            {
+                _ = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
+            }
+            catch (InvalidOperationException captured)
+            {
+                ex = captured;
+            }
+
+            Assert.IsNotNull(ex);
+            StringAssert.Contains(ex.Message, "Checksum mismatch");
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
     private static void CreatePack(string amendsRoot, string id, int priority, bool enabled, string dataFileContent)
     {
         string packRoot = Path.Combine(amendsRoot, id);
@@ -214,5 +301,12 @@ public class ContentOverlayCatalogServiceTests
         {
             // Ignore cleanup failures in tests.
         }
+    }
+
+    private static string ComputeSha256(string content)
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes(content);
+        byte[] hash = SHA256.HashData(bytes);
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 }
