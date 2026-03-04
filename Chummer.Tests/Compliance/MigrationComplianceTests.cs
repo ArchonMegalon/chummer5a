@@ -294,7 +294,11 @@ public class MigrationComplianceTests
         string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
         string indexText = File.ReadAllText(indexPath);
         string presenterPath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.cs");
-        string presenterText = File.ReadAllText(presenterPath);
+        string dialogFactoryPath = FindPath("Chummer.Presentation", "Overview", "DesktopDialogFactory.cs");
+        string dialogTemplateText = string.Join(
+            Environment.NewLine,
+            File.ReadAllText(presenterPath),
+            File.ReadAllText(dialogFactoryPath));
 
         HashSet<string> legacyControlIds = UiControlRegex.Matches(indexText)
             .Select(match => match.Groups[1].Value)
@@ -310,10 +314,10 @@ public class MigrationComplianceTests
         Assert.AreEqual(0, missingControls.Count, "Legacy ui-control ids missing in DesktopUiControlCatalog: " + string.Join(", ", missingControls));
 
         List<string> controlsMissingPresenterTemplate = legacyControlIds
-            .Where(controlId => !presenterText.Contains($"\"{controlId}\" =>", StringComparison.Ordinal))
+            .Where(controlId => !dialogTemplateText.Contains($"\"{controlId}\" =>", StringComparison.Ordinal))
             .OrderBy(x => x)
             .ToList();
-        Assert.AreEqual(0, controlsMissingPresenterTemplate.Count, "Controls missing presenter dialog templates: " + string.Join(", ", controlsMissingPresenterTemplate));
+        Assert.AreEqual(0, controlsMissingPresenterTemplate.Count, "Controls missing dialog templates: " + string.Join(", ", controlsMissingPresenterTemplate));
     }
 
     [TestMethod]

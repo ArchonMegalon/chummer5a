@@ -12,12 +12,17 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
     private static readonly Regex DiceExpressionRegex = new(@"^\s*(\d+)d(\d+)([+-]\d+)?\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private readonly IChummerClient _client;
     private readonly IWorkspaceSessionManager _workspaceSessionManager;
+    private readonly IDesktopDialogFactory _dialogFactory;
     private CharacterWorkspaceId? _currentWorkspace;
 
-    public CharacterOverviewPresenter(IChummerClient client, IWorkspaceSessionManager? workspaceSessionManager = null)
+    public CharacterOverviewPresenter(
+        IChummerClient client,
+        IWorkspaceSessionManager? workspaceSessionManager = null,
+        IDesktopDialogFactory? dialogFactory = null)
     {
         _client = client;
         _workspaceSessionManager = workspaceSessionManager ?? new WorkspaceSessionManager();
+        _dialogFactory = dialogFactory ?? new DesktopDialogFactory();
     }
 
     public CharacterOverviewState State { get; private set; } = CharacterOverviewState.Empty;
@@ -303,7 +308,12 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 Publish(State with
                 {
                     Error = null,
-                    ActiveDialog = CreateCommandDialog(commandId)
+                    ActiveDialog = _dialogFactory.CreateCommandDialog(
+                        commandId,
+                        State.Profile,
+                        State.Preferences,
+                        State.ActiveSectionJson,
+                        _currentWorkspace)
                 });
                 return;
             case "copy":
@@ -334,7 +344,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         Publish(State with
         {
             Error = null,
-            ActiveDialog = CreateUiControlDialog(controlId)
+            ActiveDialog = _dialogFactory.CreateUiControlDialog(controlId, State.Preferences)
         });
 
         return Task.CompletedTask;
@@ -371,7 +381,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     ActiveTabId = action.TabId,
                     ActiveActionId = action.Id,
                     Error = null,
-                    ActiveDialog = CreateMetadataDialog()
+                    ActiveDialog = _dialogFactory.CreateMetadataDialog(State.Profile, State.Preferences)
                 });
                 return;
             case WorkspaceSurfaceActionKind.Command:
@@ -402,7 +412,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         DesktopDialogField[] updatedFields = dialog.Fields
             .Select(field => string.Equals(field.Id, fieldId, StringComparison.Ordinal)
-                ? field with { Value = NormalizeDialogFieldValue(field, value) }
+                ? field with { Value = DesktopDialogFieldValueParser.Normalize(field, value) }
                 : field)
             .ToArray();
         Publish(State with
@@ -465,7 +475,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         if (string.Equals(dialog.Id, "dialog.ui.open_notes", StringComparison.Ordinal) && string.Equals(actionId, "save", StringComparison.Ordinal))
         {
-            string notes = GetDialogFieldValue(dialog, "uiNotesEditor") ?? string.Empty;
+            string notes = DesktopDialogFieldValueParser.GetValue(dialog, "uiNotesEditor") ?? string.Empty;
             Publish(State with
             {
                 ActiveDialog = null,
@@ -481,8 +491,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
         if (string.Equals(dialog.Id, "dialog.ui.contact_connection", StringComparison.Ordinal) && string.Equals(actionId, "apply", StringComparison.Ordinal))
         {
-            string connection = GetDialogFieldValue(dialog, "uiContactConnection") ?? "0";
-            string loyalty = GetDialogFieldValue(dialog, "uiContactLoyalty") ?? "0";
+            string connection = DesktopDialogFieldValueParser.GetValue(dialog, "uiContactConnection") ?? "0";
+            string loyalty = DesktopDialogFieldValueParser.GetValue(dialog, "uiContactLoyalty") ?? "0";
             Publish(State with
             {
                 ActiveDialog = null,
@@ -515,10 +525,10 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
     private void ApplyGlobalSettings(DesktopDialogState dialog)
     {
-        int uiScalePercent = ParseDialogInt(dialog, "globalUiScale", State.Preferences.UiScalePercent);
-        string theme = GetDialogFieldValue(dialog, "globalTheme") ?? State.Preferences.Theme;
-        string language = GetDialogFieldValue(dialog, "globalLanguage") ?? State.Preferences.Language;
-        bool compactMode = ParseDialogBool(dialog, "globalCompactMode", State.Preferences.CompactMode);
+        int uiScalePercent = DesktopDialogFieldValueParser.ParseInt(dialog, "globalUiScale", State.Preferences.UiScalePercent);
+        string theme = DesktopDialogFieldValueParser.GetValue(dialog, "globalTheme") ?? State.Preferences.Theme;
+        string language = DesktopDialogFieldValueParser.GetValue(dialog, "globalLanguage") ?? State.Preferences.Language;
+        bool compactMode = DesktopDialogFieldValueParser.ParseBool(dialog, "globalCompactMode", State.Preferences.CompactMode);
 
         Publish(State with
         {
@@ -537,10 +547,10 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
     private void ApplyCharacterSettings(DesktopDialogState dialog)
     {
-        string priority = GetDialogFieldValue(dialog, "characterPriority") ?? State.Preferences.CharacterPriority;
-        int karmaNuyenRatio = ParseDialogInt(dialog, "characterKarmaNuyen", State.Preferences.KarmaNuyenRatio);
-        bool houseRules = ParseDialogBool(dialog, "characterHouseRulesEnabled", State.Preferences.HouseRulesEnabled);
-        string notes = GetDialogFieldValue(dialog, "characterNotes") ?? State.Preferences.CharacterNotes;
+        string priority = DesktopDialogFieldValueParser.GetValue(dialog, "characterPriority") ?? State.Preferences.CharacterPriority;
+        int karmaNuyenRatio = DesktopDialogFieldValueParser.ParseInt(dialog, "characterKarmaNuyen", State.Preferences.KarmaNuyenRatio);
+        bool houseRules = DesktopDialogFieldValueParser.ParseBool(dialog, "characterHouseRulesEnabled", State.Preferences.HouseRulesEnabled);
+        string notes = DesktopDialogFieldValueParser.GetValue(dialog, "characterNotes") ?? State.Preferences.CharacterNotes;
 
         Publish(State with
         {
@@ -560,9 +570,9 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
     private async Task ApplyMetadataDialogAsync(DesktopDialogState dialog, CancellationToken ct)
     {
-        string? name = GetDialogFieldValue(dialog, "metadataName");
-        string? alias = GetDialogFieldValue(dialog, "metadataAlias");
-        string? notes = GetDialogFieldValue(dialog, "metadataNotes");
+        string? name = DesktopDialogFieldValueParser.GetValue(dialog, "metadataName");
+        string? alias = DesktopDialogFieldValueParser.GetValue(dialog, "metadataAlias");
+        string? notes = DesktopDialogFieldValueParser.GetValue(dialog, "metadataNotes");
         string? normalizedNotes = string.IsNullOrWhiteSpace(notes) ? null : notes;
 
         await UpdateMetadataAsync(new UpdateWorkspaceMetadata(
@@ -583,7 +593,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
 
     private void RollDice(DesktopDialogState dialog)
     {
-        string expression = GetDialogFieldValue(dialog, "diceExpression") ?? "1d6";
+        string expression = DesktopDialogFieldValueParser.GetValue(dialog, "diceExpression") ?? "1d6";
         if (!TryRollExpression(expression, out int total, out int hits, out string error))
         {
             Publish(State with { Error = error });
@@ -654,54 +664,6 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         }
 
         return true;
-    }
-
-    private static string NormalizeDialogFieldValue(DesktopDialogField field, string? value)
-    {
-        if (string.Equals(field.InputType, "checkbox", StringComparison.Ordinal))
-        {
-            if (bool.TryParse(value, out bool booleanValue))
-            {
-                return booleanValue ? "true" : "false";
-            }
-
-            if (string.Equals(value, "1", StringComparison.Ordinal)
-                || string.Equals(value, "on", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase))
-            {
-                return "true";
-            }
-
-            return "false";
-        }
-
-        return value ?? string.Empty;
-    }
-
-    private static string? GetDialogFieldValue(DesktopDialogState dialog, string fieldId)
-    {
-        DesktopDialogField? field = dialog.Fields.FirstOrDefault(item => string.Equals(item.Id, fieldId, StringComparison.Ordinal));
-        return field?.Value;
-    }
-
-    private static int ParseDialogInt(DesktopDialogState dialog, string fieldId, int fallback)
-    {
-        string? raw = GetDialogFieldValue(dialog, fieldId);
-        return int.TryParse(raw, out int value) ? value : fallback;
-    }
-
-    private static bool ParseDialogBool(DesktopDialogState dialog, string fieldId, bool fallback)
-    {
-        string? raw = GetDialogFieldValue(dialog, fieldId);
-        if (raw is null)
-            return fallback;
-
-        if (bool.TryParse(raw, out bool value))
-            return value;
-
-        return string.Equals(raw, "1", StringComparison.Ordinal)
-            || string.Equals(raw, "on", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(raw, "yes", StringComparison.OrdinalIgnoreCase);
     }
 
     private static IReadOnlyList<SectionRowState> BuildSectionRows(JsonNode? node)
@@ -1025,424 +987,6 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         }
     }
 
-    private DesktopDialogState CreateMetadataDialog()
-    {
-        return new DesktopDialogState(
-            Id: "dialog.workspace.metadata",
-            Title: "Edit Metadata",
-            Message: "Apply character metadata changes to the active workspace.",
-            Fields:
-            [
-                new DesktopDialogField("metadataName", "Name", State.Profile?.Name ?? string.Empty, "Character Name"),
-                new DesktopDialogField("metadataAlias", "Alias", State.Profile?.Alias ?? string.Empty, "Street Name"),
-                new DesktopDialogField("metadataNotes", "Notes", State.Preferences.CharacterNotes, "Notes", true)
-            ],
-            Actions:
-            [
-                new DesktopDialogAction("apply_metadata", "Apply", true),
-                new DesktopDialogAction("cancel", "Cancel")
-            ]);
-    }
-
-    private DesktopDialogState CreateCommandDialog(string commandId)
-    {
-        string name = State.Profile?.Name ?? "(none)";
-        string alias = State.Profile?.Alias ?? string.Empty;
-        string workspace = _currentWorkspace?.Value ?? "(none)";
-
-        return commandId switch
-        {
-            "print_setup" => new DesktopDialogState(
-                "dialog.print_setup",
-                "Print Setup",
-                "Printer setup is delegated to host/browser print capabilities.",
-                [
-                    new DesktopDialogField("printLandscape", "Landscape", "false", "false", InputType: "checkbox"),
-                    new DesktopDialogField("printBackground", "Print background graphics", "true", "true", InputType: "checkbox")
-                ],
-                [
-                    new DesktopDialogAction("ok", "OK", true),
-                    new DesktopDialogAction("cancel", "Cancel")
-                ]),
-            "dice_roller" => new DesktopDialogState(
-                "dialog.dice_roller",
-                "Dice Roller",
-                "Enter an expression and execute roll from this dialog.",
-                [new DesktopDialogField("diceExpression", "Expression", "12d6", "12d6")],
-                [
-                    new DesktopDialogAction("roll", "Roll", true),
-                    new DesktopDialogAction("close", "Close")
-                ]),
-            "global_settings" => new DesktopDialogState(
-                "dialog.global_settings",
-                "Global Settings",
-                null,
-                [
-                    new DesktopDialogField("globalUiScale", "UI Scale (%)", State.Preferences.UiScalePercent.ToString(), "100", InputType: "number"),
-                    new DesktopDialogField("globalTheme", "Theme", State.Preferences.Theme, "classic"),
-                    new DesktopDialogField("globalLanguage", "Language", State.Preferences.Language, "en-us"),
-                    new DesktopDialogField("globalCompactMode", "Compact Mode", State.Preferences.CompactMode ? "true" : "false", "false", InputType: "checkbox")
-                ],
-                [
-                    new DesktopDialogAction("save", "Save", true),
-                    new DesktopDialogAction("cancel", "Cancel")
-                ]),
-            "character_settings" => new DesktopDialogState(
-                "dialog.character_settings",
-                "Character Settings",
-                null,
-                [
-                    new DesktopDialogField("characterPriority", "Priority System", State.Preferences.CharacterPriority, "SumToTen"),
-                    new DesktopDialogField("characterKarmaNuyen", "Karma/Nuyen Ratio", State.Preferences.KarmaNuyenRatio.ToString(), "2", InputType: "number"),
-                    new DesktopDialogField("characterHouseRulesEnabled", "Enable House Rules", State.Preferences.HouseRulesEnabled ? "true" : "false", "false", InputType: "checkbox"),
-                    new DesktopDialogField("characterNotes", "Character Notes", State.Preferences.CharacterNotes, "notes", true)
-                ],
-                [
-                    new DesktopDialogAction("save", "Save", true),
-                    new DesktopDialogAction("cancel", "Cancel")
-                ]),
-            "translator" => new DesktopDialogState(
-                "dialog.translator",
-                "Translator",
-                "Language catalog preview.",
-                [
-                    new DesktopDialogField("translatorSearch", "Language Search", string.Empty, "filter languages"),
-                    new DesktopDialogField("lang1", "English", "en-us", "en-us", IsReadOnly: true),
-                    new DesktopDialogField("lang2", "Deutsch", "de-de", "de-de", IsReadOnly: true),
-                    new DesktopDialogField("lang3", "Francais", "fr-fr", "fr-fr", IsReadOnly: true)
-                ],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "xml_editor" => new DesktopDialogState(
-                "dialog.xml_editor",
-                "XML Editor",
-                "Edit/import flow in this head is file-first; this is a debug preview.",
-                [new DesktopDialogField("xmlEditorDialog", "XML", State.ActiveSectionJson ?? "<character />", "<character />", true)],
-                [
-                    new DesktopDialogAction("apply", "Apply", true),
-                    new DesktopDialogAction("cancel", "Cancel")
-                ]),
-            "master_index" => new DesktopDialogState(
-                "dialog.master_index",
-                "Master Index",
-                "Catalog data is served by the API and surfaced here in desktop parity mode.",
-                [new DesktopDialogField("root", "Data Root", "/app/data", "/app/data", IsReadOnly: true)],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "character_roster" => new DesktopDialogState(
-                "dialog.character_roster",
-                "Character Roster",
-                "Roster persistence is managed by the shared API store.",
-                [
-                    new DesktopDialogField("name", "Name", name, name),
-                    new DesktopDialogField("alias", "Alias", alias, alias),
-                    new DesktopDialogField("workspace", "Workspace", workspace, workspace, IsReadOnly: true)
-                ],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "data_exporter" => new DesktopDialogState(
-                "dialog.data_exporter",
-                "Data Exporter",
-                "Export pipeline is routed through API tool endpoints.",
-                [new DesktopDialogField("dataExportPreview", "Export Preview", $"Workspace: {workspace}", "{}", true, true)],
-                [
-                    new DesktopDialogAction("download", "Download", true),
-                    new DesktopDialogAction("close", "Close")
-                ]),
-            "export_character" => new DesktopDialogState(
-                "dialog.export_character",
-                "Export Character",
-                "Export selected character bundle.",
-                [new DesktopDialogField("dataExportPreview", "Export Preview", $"Workspace: {workspace}", "{}", true, true)],
-                [
-                    new DesktopDialogAction("download", "Download", true),
-                    new DesktopDialogAction("close", "Close")
-                ]),
-            "report_bug" => new DesktopDialogState(
-                "dialog.report_bug",
-                "Report Bug",
-                "Open the issue form in your browser: https://github.com/chummer5a/chummer5a/issues/new/choose",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "about" => new DesktopDialogState(
-                "dialog.about",
-                "About Chummer",
-                "Dual-head preview over shared presenter/API behavior path.",
-                [
-                    new DesktopDialogField("runtime", "Runtime", "net10.0", "net10.0", IsReadOnly: true),
-                    new DesktopDialogField("workspace", "Workspace", workspace, workspace, IsReadOnly: true)
-                ],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "hero_lab_importer" => new DesktopDialogState(
-                "dialog.hero_lab_importer",
-                "Hero Lab Importer",
-                "Import flow placeholder for Hero Lab payload conversion.",
-                [new DesktopDialogField("file", "Input File", ".por/.xml", ".por/.xml")],
-                [
-                    new DesktopDialogAction("import", "Import", true),
-                    new DesktopDialogAction("cancel", "Cancel")
-                ]),
-            "new_window" => new DesktopDialogState(
-                "dialog.new_window",
-                "New Window",
-                "Open a second shell instance from your platform runtime.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "close_window" => new DesktopDialogState(
-                "dialog.close_window",
-                "Close Window",
-                "Close-window action is host/platform specific.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "wiki" => new DesktopDialogState(
-                "dialog.wiki",
-                "Wiki",
-                "https://github.com/chummer5a/chummer5a/wiki",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "discord" => new DesktopDialogState(
-                "dialog.discord",
-                "Discord",
-                "https://discord.gg/EV44Mya",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "revision_history" => new DesktopDialogState(
-                "dialog.revision_history",
-                "Revision History",
-                "https://github.com/chummer5a/chummer5a/releases",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "dumpshock" => new DesktopDialogState(
-                "dialog.dumpshock",
-                "Dumpshock Thread",
-                "https://forums.dumpshock.com/index.php?showtopic=37464",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "print_character" => new DesktopDialogState(
-                "dialog.print_character",
-                "Print Character",
-                "Print preview is rendered by host/browser print facilities.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "print_multiple" => new DesktopDialogState(
-                "dialog.print_multiple",
-                "Print Multiple",
-                "Batch print is available through roster and print endpoints.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "update" => new DesktopDialogState(
-                "dialog.update",
-                "Check for Updates",
-                "Update channel status can be checked from the service layer.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            _ => new DesktopDialogState(
-                "dialog.generic",
-                commandId,
-                $"Command '{commandId}' is recognized but has no dedicated dialog template yet.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)])
-        };
-    }
-
-    private DesktopDialogState CreateUiControlDialog(string controlId)
-    {
-        return controlId switch
-        {
-            "create_entry" => new DesktopDialogState(
-                "dialog.ui.create_entry",
-                "Add Entry",
-                null,
-                [new DesktopDialogField("uiCreateEntryName", "Entry Name", string.Empty, "New entry")],
-                [
-                    new DesktopDialogAction("add", "Add", true),
-                    new DesktopDialogAction("cancel", "Cancel")
-                ]),
-            "edit_entry" => new DesktopDialogState(
-                "dialog.ui.edit_entry",
-                "Edit Entry",
-                null,
-                [new DesktopDialogField("uiEditEntryName", "Entry Name", "Current Entry", "Current Entry")],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "delete_entry" => new DesktopDialogState(
-                "dialog.ui.delete_entry",
-                "Delete Entry",
-                "Delete selected entry?",
-                [],
-                [
-                    new DesktopDialogAction("delete", "Delete", true),
-                    new DesktopDialogAction("cancel", "Cancel")
-                ]),
-            "open_notes" => new DesktopDialogState(
-                "dialog.ui.open_notes",
-                "Notes",
-                null,
-                [new DesktopDialogField("uiNotesEditor", "Notes", State.Preferences.CharacterNotes, "notes", true)],
-                [
-                    new DesktopDialogAction("save", "Save", true),
-                    new DesktopDialogAction("cancel", "Cancel")
-                ]),
-            "move_up" => new DesktopDialogState(
-                "dialog.ui.move_up",
-                "Move Up",
-                "Moved selection up.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "move_down" => new DesktopDialogState(
-                "dialog.ui.move_down",
-                "Move Down",
-                "Moved selection down.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "toggle_free_paid" => new DesktopDialogState(
-                "dialog.ui.toggle_free_paid",
-                "Free/Paid",
-                "Toggled free/paid state for selected item.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "show_source" => new DesktopDialogState(
-                "dialog.ui.show_source",
-                "Source",
-                "Source book and page metadata is shown here.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "gear_add" => new DesktopDialogState(
-                "dialog.ui.gear_add",
-                "Add Gear",
-                null,
-                [new DesktopDialogField("uiGearName", "Gear Name", string.Empty, "Ares Predator")],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "gear_edit" => new DesktopDialogState(
-                "dialog.ui.gear_edit",
-                "Edit Gear",
-                null,
-                [new DesktopDialogField("uiGearEditName", "Gear Name", "Selected Gear", "Selected Gear")],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "gear_delete" => new DesktopDialogState(
-                "dialog.ui.gear_delete",
-                "Delete Gear",
-                "Deleted selected gear item.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "gear_mount" => new DesktopDialogState(
-                "dialog.ui.gear_mount",
-                "Mount Gear",
-                "Mounted selected gear on compatible host.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "gear_source" => new DesktopDialogState(
-                "dialog.ui.gear_source",
-                "Gear Source",
-                "Gear source references are displayed here.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "magic_add" => new DesktopDialogState(
-                "dialog.ui.magic_add",
-                "Add Spell/Power",
-                null,
-                [new DesktopDialogField("uiMagicName", "Name", string.Empty, "Spell or Power")],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "magic_delete" => new DesktopDialogState(
-                "dialog.ui.magic_delete",
-                "Delete Spell/Power",
-                "Removed selected spell/power.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "magic_bind" => new DesktopDialogState(
-                "dialog.ui.magic_bind",
-                "Bind/Link",
-                "Bind/link workflow started for selected magical item.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "magic_source" => new DesktopDialogState(
-                "dialog.ui.magic_source",
-                "Magic Source",
-                "Magical source references are displayed here.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "skill_add" => new DesktopDialogState(
-                "dialog.ui.skill_add",
-                "Add Skill",
-                null,
-                [new DesktopDialogField("uiSkillName", "Skill", string.Empty, "Perception")],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "skill_specialize" => new DesktopDialogState(
-                "dialog.ui.skill_specialize",
-                "Specialize Skill",
-                null,
-                [new DesktopDialogField("uiSkillSpec", "Specialization", string.Empty, "Visual")],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "skill_remove" => new DesktopDialogState(
-                "dialog.ui.skill_remove",
-                "Remove Skill",
-                "Removed selected skill.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "skill_group" => new DesktopDialogState(
-                "dialog.ui.skill_group",
-                "Skill Group",
-                "Opened skill group assignment.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "combat_add_weapon" => new DesktopDialogState(
-                "dialog.ui.combat_add_weapon",
-                "Add Weapon",
-                null,
-                [new DesktopDialogField("uiWeaponName", "Weapon", string.Empty, "Colt M23")],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "combat_add_armor" => new DesktopDialogState(
-                "dialog.ui.combat_add_armor",
-                "Add Armor",
-                null,
-                [new DesktopDialogField("uiArmorName", "Armor", string.Empty, "Armor Jacket")],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "combat_reload" => new DesktopDialogState(
-                "dialog.ui.combat_reload",
-                "Reload Weapon",
-                "Reloaded selected weapon.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "combat_damage_track" => new DesktopDialogState(
-                "dialog.ui.combat_damage_track",
-                "Damage Track",
-                "Applied one damage track step.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "contact_add" => new DesktopDialogState(
-                "dialog.ui.contact_add",
-                "Add Contact",
-                null,
-                [new DesktopDialogField("uiContactName", "Name", string.Empty, "Contact Name")],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "contact_edit" => new DesktopDialogState(
-                "dialog.ui.contact_edit",
-                "Edit Contact",
-                null,
-                [new DesktopDialogField("uiContactEditName", "Name", "Selected Contact", "Selected Contact")],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "contact_remove" => new DesktopDialogState(
-                "dialog.ui.contact_remove",
-                "Remove Contact",
-                "Removed selected contact.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)]),
-            "contact_connection" => new DesktopDialogState(
-                "dialog.ui.contact_connection",
-                "Connection / Loyalty",
-                null,
-                [
-                    new DesktopDialogField("uiContactConnection", "Connection", "3", "3", InputType: "number"),
-                    new DesktopDialogField("uiContactLoyalty", "Loyalty", "3", "3", InputType: "number")
-                ],
-                [
-                    new DesktopDialogAction("apply", "Apply", true),
-                    new DesktopDialogAction("cancel", "Cancel")
-                ]),
-            _ => new DesktopDialogState(
-                "dialog.ui.generic",
-                "Desktop Control",
-                $"Desktop control '{controlId}' triggered.",
-                [],
-                [new DesktopDialogAction("close", "Close", true)])
-        };
-    }
 
     private async Task LoadWorkspaceAsync(
         CharacterWorkspaceId id,
