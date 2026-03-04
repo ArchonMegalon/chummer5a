@@ -210,11 +210,11 @@ Progress: added `Chummer.Portal` (`net10.0`) plus compose `portal` profile servi
 
 - [ ] `MIG-101` Replace portal redirects with in-process reverse proxy routing for `/blazor/*`, `/api/*`, `/docs/*`, `/downloads/*`.
 Acceptance criteria: one public origin can route subpaths to internal services without exposing per-service public ports.
-Progress: first pass in `Chummer.Portal` now proxies `/api/*` and `/docs/*` through in-process routing; `/blazor/*` and `/downloads/*` remain redirect-based until subpath hosting and artifact serving are finalized.
+Progress: `Chummer.Portal` now proxies `/api/*`, `/docs/*`, and `/blazor/*` through in-process routing; `/downloads/*` remains redirect-based pending artifact/manifest hosting.
 
 - [ ] `MIG-102` Move Blazor head to stable `/blazor/` app-base deployment behind the portal.
 Acceptance criteria: reload/deep-link/reconnect behavior works when the UI is hosted under `/blazor/`.
-Progress: Blazor now supports configurable path base via `CHUMMER_BLAZOR_PATH_BASE` and emits dynamic `<base href>` from `NavigationManager.BaseUri`; remaining work is end-to-end portal-hosted `/blazor/` routing cutover.
+Progress: added path-base aware Blazor hosting plus dedicated `chummer-blazor-portal` service (`CHUMMER_BLAZOR_PATH_BASE=/blazor`) behind portal `/blazor/*` proxy routing; remaining work is explicit deep-link/reconnect acceptance coverage for the portal path.
 
 - [ ] `MIG-103` Add OpenAPI + interactive docs surface to `Chummer.Api` and wire through portal `/docs/`.
 Acceptance criteria: generated OpenAPI document and interactive docs are reachable and validated in CI.

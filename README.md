@@ -32,7 +32,8 @@ The `Docker` branch is an active migration branch and no longer follows a WinFor
 
 * `chummer-api` (default service)
 * `chummer-blazor` (default service)
-* `chummer-portal` (under the `portal` profile; redirect-based gateway scaffold)
+* `chummer-blazor-portal` (under the `portal` profile; internal `/blazor` path-base host)
+* `chummer-portal` (under the `portal` profile; single landing + proxy gateway)
 * `chummer-tests` (under the `test` profile only)
 
 ## Running the Docker Branch
@@ -54,7 +55,7 @@ docker compose up -d --build chummer-api chummer-blazor
 Start API + Blazor + Portal landing surface:
 
 ```bash
-docker compose --profile portal up -d --build chummer-api chummer-blazor chummer-portal
+docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-portal
 ```
 
 Enable API key protection (recommended for production):
@@ -89,9 +90,9 @@ Default endpoints:
 Portal notes (current milestone):
 
 * `/api` and `/docs` are served via in-process portal proxy routing.
-* `/blazor` and `/downloads` are currently redirect-based routes.
-* `CHUMMER_BLAZOR_PATH_BASE` can be set (for example `/blazor`) to prepare Blazor for subpath hosting without changing default local test behavior.
-* Subpath-hosted Blazor hardening remains tracked in `docs/MIGRATION_BACKLOG.md` Phase 10 tasks.
+* `/blazor` is served through an in-process portal proxy to an internal `chummer-blazor-portal` instance configured with `CHUMMER_BLAZOR_PATH_BASE=/blazor`.
+* `/downloads` remains redirect-based.
+* Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
 
 ## Legacy WinForms Requirements
 | Operating System | .NET Framework |

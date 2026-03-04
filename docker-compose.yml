@@ -25,6 +25,18 @@ services:
       CHUMMER_BLAZOR_PATH_BASE: "${CHUMMER_BLAZOR_PATH_BASE:-}"
     ports:
       - "${CHUMMER_BLAZOR_PORT:-8089}:8080"
+  chummer-blazor-portal:
+    image: chummer-blazor:local
+    build:
+      context: .
+      dockerfile: Chummer.Blazor/Dockerfile
+    depends_on:
+      - chummer-api
+    profiles: ["portal"]
+    environment:
+      CHUMMER_API_BASE_URL: "http://chummer-api:8080"
+      CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
+      CHUMMER_BLAZOR_PATH_BASE: "/blazor"
   chummer-portal:
     image: chummer-portal:local
     build:
@@ -32,10 +44,11 @@ services:
       dockerfile: Chummer.Portal/Dockerfile
     depends_on:
       - chummer-api
-      - chummer-blazor
+      - chummer-blazor-portal
     profiles: ["portal"]
     environment:
-      CHUMMER_PORTAL_BLAZOR_URL: "${CHUMMER_PORTAL_BLAZOR_URL:-http://127.0.0.1:8089/}"
+      CHUMMER_PORTAL_BLAZOR_URL: "${CHUMMER_PORTAL_BLAZOR_URL:-/blazor/}"
+      CHUMMER_PORTAL_BLAZOR_PROXY_URL: "${CHUMMER_PORTAL_BLAZOR_PROXY_URL:-http://chummer-blazor-portal:8080/}"
       CHUMMER_PORTAL_API_URL: "${CHUMMER_PORTAL_API_URL:-http://chummer-api:8080/}"
       CHUMMER_PORTAL_DOCS_URL: "${CHUMMER_PORTAL_DOCS_URL:-http://chummer-api:8080/docs/}"
       CHUMMER_PORTAL_DOWNLOADS_URL: "${CHUMMER_PORTAL_DOWNLOADS_URL:-https://github.com/chummer5a/chummer5a/releases/latest}"
