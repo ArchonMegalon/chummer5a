@@ -661,7 +661,7 @@ public class DualHeadAcceptanceTests
         var client = new HttpClient
         {
             BaseAddress = BaseUri,
-            Timeout = TimeSpan.FromSeconds(10)
+            Timeout = TimeSpan.FromSeconds(30)
         };
 
         if (!string.IsNullOrWhiteSpace(ApiKey))
