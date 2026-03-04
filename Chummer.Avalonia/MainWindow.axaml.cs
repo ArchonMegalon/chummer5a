@@ -41,6 +41,7 @@ public partial class MainWindow : Window
     private bool _suppressSectionActionSelectionEvent;
     private bool _suppressUiControlSelectionEvent;
     private bool _suppressDialogActionSelectionEvent;
+    private long _lastDownloadVersionHandled;
 
     public MainWindow(
         ICharacterOverviewPresenter presenter,

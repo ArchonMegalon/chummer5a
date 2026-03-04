@@ -28,7 +28,9 @@ public sealed record CharacterOverviewState(
     DesktopPreferenceState Preferences,
     IReadOnlyList<AppCommandDefinition> Commands,
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
-    bool HasSavedWorkspace)
+    bool HasSavedWorkspace,
+    WorkspaceDownloadReceipt? PendingDownload = null,
+    long PendingDownloadVersion = 0)
 {
     public static CharacterOverviewState Empty { get; } = new(
         IsBusy: false,
@@ -54,5 +56,7 @@ public sealed record CharacterOverviewState(
         Preferences: DesktopPreferenceState.Default,
         Commands: [],
         NavigationTabs: [],
-        HasSavedWorkspace: false);
+        HasSavedWorkspace: false,
+        PendingDownload: null,
+        PendingDownloadVersion: 0);
 }

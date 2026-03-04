@@ -18,7 +18,8 @@ public sealed partial class CharacterOverviewPresenter
         Publish(State with
         {
             IsBusy = true,
-            Error = null
+            Error = null,
+            PendingDownload = null
         });
 
         try
@@ -101,7 +102,8 @@ public sealed partial class CharacterOverviewPresenter
                 OpenWorkspaces = session.OpenWorkspaces,
                 WorkspaceId = _currentWorkspace,
                 HasSavedWorkspace = true,
-                Notice = "Workspace saved."
+                Notice = "Workspace saved.",
+                PendingDownload = null
             });
         }
         catch (Exception ex)
@@ -128,7 +130,8 @@ public sealed partial class CharacterOverviewPresenter
         Publish(State with
         {
             IsBusy = true,
-            Error = null
+            Error = null,
+            PendingDownload = null
         });
 
         try
@@ -139,7 +142,8 @@ public sealed partial class CharacterOverviewPresenter
                 Publish(State with
                 {
                     IsBusy = false,
-                    Error = result.Error
+                    Error = result.Error,
+                    PendingDownload = null
                 });
                 return;
             }
@@ -148,7 +152,9 @@ public sealed partial class CharacterOverviewPresenter
             {
                 IsBusy = false,
                 Error = null,
-                Notice = $"Download prepared: {result.Receipt.FileName} ({result.Receipt.DocumentLength} bytes)."
+                Notice = $"Download prepared: {result.Receipt.FileName} ({result.Receipt.DocumentLength} bytes).",
+                PendingDownload = result.Receipt,
+                PendingDownloadVersion = State.PendingDownloadVersion + 1
             });
         }
         catch (Exception ex)
@@ -156,7 +162,8 @@ public sealed partial class CharacterOverviewPresenter
             Publish(State with
             {
                 IsBusy = false,
-                Error = ex.Message
+                Error = ex.Message,
+                PendingDownload = null
             });
         }
     }

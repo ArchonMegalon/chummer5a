@@ -239,6 +239,26 @@ public class CharacterOverviewPresenterTests
         Assert.IsFalse(presenter.State.HasSavedWorkspace);
         Assert.IsNull(presenter.State.Error);
         StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Download prepared:");
+        Assert.IsNotNull(presenter.State.PendingDownload);
+        Assert.AreEqual(1L, presenter.State.PendingDownloadVersion);
+        Assert.AreEqual("ws-1.chum5", presenter.State.PendingDownload?.FileName);
+    }
+
+    [TestMethod]
+    public async Task SaveAsync_clears_pending_download_after_save_as()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.ExecuteCommandAsync("save_character_as", CancellationToken.None);
+
+        Assert.IsNotNull(presenter.State.PendingDownload);
+
+        await presenter.SaveAsync(CancellationToken.None);
+
+        Assert.IsNull(presenter.State.PendingDownload);
+        Assert.IsNull(presenter.State.Error);
     }
 
     [TestMethod]

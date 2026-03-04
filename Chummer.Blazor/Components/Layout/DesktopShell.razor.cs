@@ -1,7 +1,9 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace Chummer.Blazor.Components.Layout;
 
@@ -20,6 +22,9 @@ public partial class DesktopShell : IDisposable
     [Inject]
     public IShellPresenter ShellPresenter { get; set; } = default!;
 
+    [Inject]
+    public IJSRuntime JsRuntime { get; set; } = default!;
+
     private string RawImportXml { get; set; } = "<character><name>Demo</name><alias>Sample</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created></character>";
     private string? ImportedFileName { get; set; }
     private string? ImportError { get; set; }
@@ -28,6 +33,7 @@ public partial class DesktopShell : IDisposable
     private string MetadataAlias { get; set; } = string.Empty;
     private string MetadataNotes { get; set; } = string.Empty;
     private string _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
+    private long _lastDownloadVersionHandled;
     private bool _isDisposed;
 
     private CharacterOverviewState State => _bridge?.Current ?? Presenter.State;
@@ -71,6 +77,8 @@ public partial class DesktopShell : IDisposable
         {
             await _shellRoot.FocusAsync();
         }
+
+        await DispatchPendingDownloadAsync();
     }
 
     private void OnShellStateChanged(object? sender, EventArgs e)
@@ -87,5 +95,30 @@ public partial class DesktopShell : IDisposable
         _isDisposed = true;
         ShellPresenter.StateChanged -= OnShellStateChanged;
         _bridge?.Dispose();
+    }
+
+    private async Task DispatchPendingDownloadAsync()
+    {
+        WorkspaceDownloadReceipt? pendingDownload = State.PendingDownload;
+        if (pendingDownload is null || State.PendingDownloadVersion <= _lastDownloadVersionHandled)
+            return;
+
+        string mimeType = pendingDownload.Format == WorkspaceDocumentFormat.Chum5Xml
+            ? "application/xml"
+            : "application/octet-stream";
+
+        try
+        {
+            await JsRuntime.InvokeVoidAsync(
+                "chummerDownloads.downloadBase64",
+                pendingDownload.FileName,
+                pendingDownload.ContentBase64,
+                mimeType);
+            _lastDownloadVersionHandled = State.PendingDownloadVersion;
+        }
+        catch (JSException ex)
+        {
+            ImportError = $"Download failed: {ex.Message}";
+        }
     }
 }

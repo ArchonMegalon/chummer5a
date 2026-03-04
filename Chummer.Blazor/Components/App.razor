@@ -12,5 +12,20 @@
 <body>
 <Routes @rendermode="new InteractiveServerRenderMode()" />
 <script src="_framework/blazor.web.js"></script>
+<script>
+    window.chummerDownloads = window.chummerDownloads || {};
+    window.chummerDownloads.downloadBase64 = function(fileName, contentBase64, mimeType) {
+        if (!contentBase64) {
+            return;
+        }
+
+        const anchor = document.createElement('a');
+        anchor.href = `data:${mimeType || 'application/octet-stream'};base64,${contentBase64}`;
+        anchor.download = fileName || 'chummer-download.dat';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+    };
+</script>
 </body>
 </html>
