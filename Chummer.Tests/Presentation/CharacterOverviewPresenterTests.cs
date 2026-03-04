@@ -76,6 +76,38 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task LoadAsync_tracks_open_workspaces_for_multi_document_shell_state()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
+
+        Assert.AreEqual("ws-2", presenter.State.WorkspaceId?.Value);
+        Assert.AreEqual(2, presenter.State.OpenWorkspaces.Count);
+        CollectionAssert.AreEquivalent(
+            new[] { "ws-1", "ws-2" },
+            presenter.State.OpenWorkspaces.Select(workspace => workspace.Id.Value).ToArray());
+    }
+
+    [TestMethod]
+    public async Task ExecuteCommandAsync_close_window_switches_to_previous_workspace()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
+        await presenter.ExecuteCommandAsync("close_window", CancellationToken.None);
+
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
+        Assert.AreEqual(1, presenter.State.OpenWorkspaces.Count);
+        Assert.AreEqual("ws-1", presenter.State.OpenWorkspaces[0].Id.Value);
+        Assert.IsTrue((presenter.State.Notice ?? string.Empty).Contains("Closed active workspace.", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public async Task UpdateMetadataAsync_requires_loaded_workspace()
     {
         var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
@@ -217,7 +249,6 @@ public class CharacterOverviewPresenterTests
         string[] dialogCommands =
         [
             "new_window",
-            "close_window",
             "wiki",
             "discord",
             "revision_history",

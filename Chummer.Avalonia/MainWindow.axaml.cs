@@ -177,12 +177,13 @@ public partial class MainWindow : Window
     private void RefreshState()
     {
         CharacterOverviewState state = _adapter.State;
+        int openWorkspaceCount = state.OpenWorkspaces.Count;
 
         _statusText.Text = state.Error is null
-            ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(state.WorkspaceId?.Value ?? "none")}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}"
+            ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(state.WorkspaceId?.Value ?? "none")}, open={openWorkspaceCount}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}"
             : $"State: error - {state.Error}";
         _noticeText.Text = $"Notice: {(state.Notice ?? "Ready.")}";
-        _workspaceText.Text = $"Workspace: {(state.WorkspaceId?.Value ?? "none")}";
+        _workspaceText.Text = $"Workspace: {(state.WorkspaceId?.Value ?? "none")} (open: {openWorkspaceCount})";
 
         _nameValue.Text = state.Profile?.Name ?? "-";
         _aliasValue.Text = state.Profile?.Alias ?? "-";

@@ -148,7 +148,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     NavigationTabs = State.NavigationTabs,
                     LastCommandId = commandId,
                     Notice = "New character workspace initialized.",
-                    Preferences = State.Preferences
+                    Preferences = State.Preferences,
+                    OpenWorkspaces = State.OpenWorkspaces
                 });
                 return;
             case "new_critter":
@@ -159,7 +160,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     NavigationTabs = State.NavigationTabs,
                     LastCommandId = commandId,
                     Notice = "New critter workspace initialized.",
-                    Preferences = State.Preferences
+                    Preferences = State.Preferences,
+                    OpenWorkspaces = State.OpenWorkspaces
                 });
                 return;
             case "open_character":
@@ -180,11 +182,50 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                     NavigationTabs = State.NavigationTabs,
                     LastCommandId = commandId,
                     Notice = "Workspace reset complete.",
-                    Preferences = State.Preferences
+                    Preferences = State.Preferences,
+                    OpenWorkspaces = []
+                });
+                return;
+            case "close_window":
+                if (_currentWorkspace is null)
+                {
+                    Publish(State with
+                    {
+                        Error = null,
+                        Notice = "No open workspace to close."
+                    });
+                    return;
+                }
+
+                OpenWorkspaceState[] remainingWorkspaces = State.OpenWorkspaces
+                    .Where(workspace => !string.Equals(workspace.Id.Value, _currentWorkspace.Value.Value, StringComparison.Ordinal))
+                    .OrderByDescending(workspace => workspace.LastOpenedUtc)
+                    .ToArray();
+
+                if (remainingWorkspaces.Length == 0)
+                {
+                    _currentWorkspace = null;
+                    Publish(CharacterOverviewState.Empty with
+                    {
+                        Commands = State.Commands,
+                        NavigationTabs = State.NavigationTabs,
+                        LastCommandId = commandId,
+                        Notice = "Closed active workspace.",
+                        Preferences = State.Preferences,
+                        OpenWorkspaces = []
+                    });
+                    return;
+                }
+
+                CharacterWorkspaceId nextWorkspaceId = remainingWorkspaces[0].Id;
+                await LoadWorkspaceAsync(nextWorkspaceId, ct, remainingWorkspaces);
+                Publish(State with
+                {
+                    LastCommandId = commandId,
+                    Notice = $"Closed active workspace. Switched to '{nextWorkspaceId.Value}'."
                 });
                 return;
             case "new_window":
-            case "close_window":
             case "wiki":
             case "discord":
             case "revision_history":
@@ -1349,7 +1390,10 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         };
     }
 
-    private async Task LoadWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
+    private async Task LoadWorkspaceAsync(
+        CharacterWorkspaceId id,
+        CancellationToken ct,
+        IReadOnlyList<OpenWorkspaceState>? openWorkspaceSeed = null)
     {
         Task<CharacterProfileSection> profileTask = _client.GetProfileAsync(id, ct);
         Task<CharacterProgressSection> progressTask = _client.GetProgressAsync(id, ct);
@@ -1362,10 +1406,15 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         await Task.WhenAll(profileTask, progressTask, skillsTask, rulesTask, buildTask, movementTask, awakeningTask);
 
         _currentWorkspace = id;
+        IReadOnlyList<OpenWorkspaceState> openWorkspaces = UpsertOpenWorkspace(
+            openWorkspaceSeed ?? State.OpenWorkspaces,
+            id,
+            profileTask.Result);
         Publish(new CharacterOverviewState(
             IsBusy: false,
             Error: null,
             WorkspaceId: id,
+            OpenWorkspaces: openWorkspaces,
             Profile: profileTask.Result,
             Progress: progressTask.Result,
             Skills: skillsTask.Result,
@@ -1385,6 +1434,29 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Commands: State.Commands,
             NavigationTabs: State.NavigationTabs,
             HasSavedWorkspace: false));
+    }
+
+    private static IReadOnlyList<OpenWorkspaceState> UpsertOpenWorkspace(
+        IReadOnlyList<OpenWorkspaceState> existing,
+        CharacterWorkspaceId id,
+        CharacterProfileSection? profile)
+    {
+        string workspaceName = string.IsNullOrWhiteSpace(profile?.Name) ? "(Unnamed Character)" : profile.Name;
+        string workspaceAlias = profile?.Alias ?? string.Empty;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+
+        OpenWorkspaceState[] retained = existing
+            .Where(workspace => !string.Equals(workspace.Id.Value, id.Value, StringComparison.Ordinal))
+            .ToArray();
+
+        return retained
+            .Append(new OpenWorkspaceState(
+                Id: id,
+                Name: workspaceName,
+                Alias: workspaceAlias,
+                LastOpenedUtc: now))
+            .OrderByDescending(workspace => workspace.LastOpenedUtc)
+            .ToArray();
     }
 
     private void Publish(CharacterOverviewState state)

@@ -43,13 +43,21 @@
     </div>
 
     <div class="mdi-strip" id="mdiStrip">
-        @if (State.WorkspaceId is null)
+        @if (State.OpenWorkspaces.Count == 0)
         {
             <span class="mdi-doc">No open character</span>
         }
         else
         {
-            <span class="mdi-doc active">@($"{State.Profile?.Name ?? "Character"} ({State.WorkspaceId.Value})")</span>
+            @foreach (var workspace in State.OpenWorkspaces)
+            {
+                bool isActive = string.Equals(State.WorkspaceId?.Value, workspace.Id.Value, StringComparison.Ordinal);
+                <button class="mdi-doc @(isActive ? "active" : string.Empty)"
+                        disabled="@State.IsBusy"
+                        @onclick="() => OpenWorkspaceAsync(workspace.Id.Value)">
+                    @(string.IsNullOrWhiteSpace(workspace.Alias) ? workspace.Name : $"{workspace.Name} ({workspace.Alias})")
+                </button>
+            }
         }
     </div>
 
@@ -58,15 +66,23 @@
             <section class="panel navigator">
                 <h2>Character Navigator</h2>
                 <ul class="tree-list" id="openCharactersTree">
-                    @if (State.WorkspaceId is null)
+                    @if (State.OpenWorkspaces.Count == 0)
                     {
                         <li>(empty)</li>
                     }
                     else
                     {
-                        <li>@(State.Profile?.Name ?? "Character")</li>
-                        <li>@(State.Profile?.Alias ?? string.Empty)</li>
-                        <li>@(State.Profile?.Metatype ?? string.Empty)</li>
+                        @foreach (var workspace in State.OpenWorkspaces)
+                        {
+                            bool isActive = string.Equals(State.WorkspaceId?.Value, workspace.Id.Value, StringComparison.Ordinal);
+                            <li>
+                                <button class="command-button @(isActive ? "selected" : string.Empty)"
+                                        disabled="@State.IsBusy"
+                                        @onclick="() => OpenWorkspaceAsync(workspace.Id.Value)">
+                                    <code>@workspace.Id.Value</code> - @workspace.Name
+                                </button>
+                            </li>
+                        }
                     }
                 </ul>
             </section>
@@ -388,6 +404,16 @@
             return;
 
         await _bridge.LoadAsync(new CharacterWorkspaceId(LoadWorkspaceId.Trim()), CancellationToken.None);
+        SyncMetadataDraftFromState();
+    }
+
+    private async Task OpenWorkspaceAsync(string workspaceId)
+    {
+        if (_bridge is null || string.IsNullOrWhiteSpace(workspaceId))
+            return;
+
+        LoadWorkspaceId = workspaceId;
+        await _bridge.LoadAsync(new CharacterWorkspaceId(workspaceId), CancellationToken.None);
         SyncMetadataDraftFromState();
     }
 
