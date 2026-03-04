@@ -11,11 +11,14 @@
         @foreach (OpenWorkspaceState workspace in OpenWorkspaces)
         {
             bool isActive = string.Equals(ActiveWorkspaceId?.Value, workspace.Id.Value, StringComparison.Ordinal);
+            string workspaceLabel = string.IsNullOrWhiteSpace(workspace.Alias) ? workspace.Name : $"{workspace.Name} ({workspace.Alias})";
+            string saveStatus = workspace.HasSavedWorkspace ? "saved" : "unsaved";
             <span class="mdi-doc-wrap">
                 <button class="mdi-doc @(isActive ? "active" : string.Empty)"
+                        title="@($"Workspace {workspace.Id.Value} is {saveStatus}")"
                         disabled="@IsBusy"
                         @onclick="() => OpenWorkspaceAsync(workspace.Id.Value)">
-                    @(string.IsNullOrWhiteSpace(workspace.Alias) ? workspace.Name : $"{workspace.Name} ({workspace.Alias})")
+                    @($"{workspaceLabel}{(workspace.HasSavedWorkspace ? string.Empty : " *")}")
                 </button>
                 <button class="mdi-close"
                         title="Close workspace"

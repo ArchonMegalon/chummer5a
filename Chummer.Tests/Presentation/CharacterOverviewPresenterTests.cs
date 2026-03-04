@@ -225,6 +225,30 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task Save_status_is_tracked_per_workspace_when_switching()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.SaveAsync(CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
+
+        OpenWorkspaceState ws1AfterSecondLoad = presenter.State.OpenWorkspaces
+            .First(workspace => string.Equals(workspace.Id.Value, "ws-1", StringComparison.Ordinal));
+        Assert.IsTrue(ws1AfterSecondLoad.HasSavedWorkspace);
+        Assert.IsFalse(presenter.State.HasSavedWorkspace);
+
+        await presenter.SwitchWorkspaceAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
+        Assert.IsTrue(presenter.State.HasSavedWorkspace);
+        OpenWorkspaceState active = presenter.State.OpenWorkspaces
+            .First(workspace => string.Equals(workspace.Id.Value, "ws-1", StringComparison.Ordinal));
+        Assert.IsTrue(active.HasSavedWorkspace);
+    }
+
+    [TestMethod]
     public async Task ExecuteCommandAsync_unknown_command_sets_error()
     {
         var presenter = new CharacterOverviewPresenter(new FakeChummerClient());

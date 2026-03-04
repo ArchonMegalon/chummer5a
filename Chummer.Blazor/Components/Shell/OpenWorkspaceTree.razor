@@ -13,11 +13,13 @@
             @foreach (OpenWorkspaceState workspace in OpenWorkspaces)
             {
                 bool isActive = string.Equals(ActiveWorkspaceId?.Value, workspace.Id.Value, StringComparison.Ordinal);
+                string saveTag = workspace.HasSavedWorkspace ? "saved" : "dirty";
                 <li>
                     <button class="command-button @(isActive ? "selected" : string.Empty)"
+                            title="@($"Workspace {workspace.Id.Value} is {saveTag}")"
                             disabled="@IsBusy"
                             @onclick="() => OpenWorkspaceAsync(workspace.Id.Value)">
-                        <code>@workspace.Id.Value</code> - @workspace.Name
+                        <code>@workspace.Id.Value</code> - @workspace.Name [@saveTag]
                     </button>
                     <button class="mini-btn"
                             disabled="@IsBusy"

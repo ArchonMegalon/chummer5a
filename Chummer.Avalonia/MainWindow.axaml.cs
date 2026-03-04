@@ -195,12 +195,17 @@ public partial class MainWindow : Window
         ShellState shellState = _shellPresenter.State;
         int openWorkspaceCount = state.Session.OpenWorkspaces.Count;
         CharacterWorkspaceId? activeWorkspaceId = state.Session.ActiveWorkspaceId ?? state.WorkspaceId;
+        OpenWorkspaceState? activeWorkspace = state.Session.OpenWorkspaces
+            .FirstOrDefault(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId?.Value, StringComparison.Ordinal));
+        string activeWorkspaceSaveStatus = activeWorkspace is null
+            ? "n/a"
+            : activeWorkspace.HasSavedWorkspace ? "saved" : "unsaved";
 
         _statusText.Text = state.Error is null
             ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(activeWorkspaceId?.Value ?? "none")}, open={openWorkspaceCount}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}"
             : $"State: error - {state.Error}";
         _noticeText.Text = $"Notice: {(state.Notice ?? "Ready.")}";
-        _workspaceText.Text = $"Workspace: {(activeWorkspaceId?.Value ?? "none")} (open: {openWorkspaceCount})";
+        _workspaceText.Text = $"Workspace: {(activeWorkspaceId?.Value ?? "none")} (open: {openWorkspaceCount}, {activeWorkspaceSaveStatus})";
 
         _nameValue.Text = state.Profile?.Name ?? "-";
         _aliasValue.Text = state.Profile?.Alias ?? "-";
@@ -236,6 +241,7 @@ public partial class MainWindow : Window
                 workspace.Id.Value,
                 workspace.Name,
                 workspace.Alias,
+                workspace.HasSavedWorkspace,
                 Enabled: !state.IsBusy))
             .ToArray();
 
@@ -476,12 +482,14 @@ public partial class MainWindow : Window
         string Id,
         string Name,
         string Alias,
+        bool HasSavedWorkspace,
         bool Enabled)
     {
         public override string ToString()
         {
             string label = string.IsNullOrWhiteSpace(Alias) ? Name : $"{Name} ({Alias})";
-            return $"{label} [{Id}] {(Enabled ? "enabled" : "disabled")}";
+            string saveTag = HasSavedWorkspace ? "saved" : "unsaved";
+            return $"{label} [{Id}] [{saveTag}] {(Enabled ? "enabled" : "disabled")}";
         }
     }
 

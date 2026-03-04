@@ -406,13 +406,17 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 return;
             }
 
+            WorkspaceSessionState session = _workspaceSessionPresenter.SetSavedStatus(_currentWorkspace.Value, hasSavedWorkspace: false);
             Publish(State with
             {
                 IsBusy = false,
                 Error = null,
+                Session = session,
+                OpenWorkspaces = session.OpenWorkspaces,
                 WorkspaceId = _currentWorkspace,
                 Profile = result.Profile,
-                Preferences = result.Preferences
+                Preferences = result.Preferences,
+                HasSavedWorkspace = false
             });
         }
         catch (Exception ex)
@@ -455,10 +459,13 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
                 return;
             }
 
+            WorkspaceSessionState session = _workspaceSessionPresenter.SetSavedStatus(_currentWorkspace.Value, hasSavedWorkspace: true);
             Publish(State with
             {
                 IsBusy = false,
                 Error = null,
+                Session = session,
+                OpenWorkspaces = session.OpenWorkspaces,
                 WorkspaceId = _currentWorkspace,
                 HasSavedWorkspace = true,
                 Notice = "Workspace saved."
@@ -648,6 +655,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         }
 
         WorkspaceViewState? restoredView = RestoreWorkspaceView(id);
+        bool hasSavedWorkspace = restoredView?.HasSavedWorkspace ?? false;
+        session = _workspaceSessionPresenter.SetSavedStatus(id, hasSavedWorkspace);
         _currentWorkspace = id;
 
         Publish(new CharacterOverviewState(
@@ -674,7 +683,7 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             Preferences: State.Preferences,
             Commands: State.Commands,
             NavigationTabs: State.NavigationTabs,
-            HasSavedWorkspace: false));
+            HasSavedWorkspace: hasSavedWorkspace));
     }
 
     private async Task CloseAllWorkspacesAsync(CancellationToken ct, string notice)
@@ -738,7 +747,8 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
             ActiveActionId: State.ActiveActionId,
             ActiveSectionId: State.ActiveSectionId,
             ActiveSectionJson: State.ActiveSectionJson,
-            ActiveSectionRows: State.ActiveSectionRows.ToArray());
+            ActiveSectionRows: State.ActiveSectionRows.ToArray(),
+            HasSavedWorkspace: State.HasSavedWorkspace);
     }
 
     private WorkspaceViewState? RestoreWorkspaceView(CharacterWorkspaceId id)
@@ -759,5 +769,6 @@ public sealed class CharacterOverviewPresenter : ICharacterOverviewPresenter
         string? ActiveActionId,
         string? ActiveSectionId,
         string? ActiveSectionJson,
-        IReadOnlyList<SectionRowState> ActiveSectionRows);
+        IReadOnlyList<SectionRowState> ActiveSectionRows,
+        bool HasSavedWorkspace);
 }

@@ -108,6 +108,26 @@ public sealed class BlazorShellComponentTests
     }
 
     [TestMethod]
+    public void MdiStrip_shows_unsaved_marker_for_workspace_without_save_receipt()
+    {
+        CharacterWorkspaceId ws1 = new("ws-1");
+        CharacterWorkspaceId ws2 = new("ws-2");
+        OpenWorkspaceState dirtyWorkspace = new(ws1, "Ares Runner", "AR", DateTimeOffset.UtcNow, HasSavedWorkspace: false);
+        OpenWorkspaceState savedWorkspace = new(ws2, "Neo Runner", "NR", DateTimeOffset.UtcNow.AddMinutes(-1), HasSavedWorkspace: true);
+
+        using var context = new BunitContext();
+        IRenderedComponent<MdiStrip> cut = context.Render<MdiStrip>(parameters => parameters
+            .Add(component => component.OpenWorkspaces, [dirtyWorkspace, savedWorkspace])
+            .Add(component => component.ActiveWorkspaceId, ws1)
+            .Add(component => component.IsBusy, false));
+
+        IReadOnlyList<AngleSharp.Dom.IElement> docs = cut.FindAll(".mdi-doc");
+        Assert.AreEqual(2, docs.Count);
+        StringAssert.Contains(docs[0].TextContent, "*");
+        Assert.IsFalse(docs[1].TextContent.Contains("*", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void WorkspaceLeftPane_renders_shell_controls_and_invokes_callbacks()
     {
         CharacterWorkspaceId workspaceId = new("ws-1");

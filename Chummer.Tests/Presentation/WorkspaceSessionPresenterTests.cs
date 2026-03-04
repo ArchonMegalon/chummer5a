@@ -107,6 +107,24 @@ public class WorkspaceSessionPresenterTests
             cleared.RecentWorkspaceIds.Select(id => id.Value).ToArray());
     }
 
+    [TestMethod]
+    public void SetSavedStatus_updates_only_target_workspace()
+    {
+        WorkspaceSessionPresenter presenter = new();
+        presenter.Open(new CharacterWorkspaceId("ws-1"), CreateProfile("One", "A"));
+        presenter.Open(new CharacterWorkspaceId("ws-2"), CreateProfile("Two", "B"));
+
+        WorkspaceSessionState updated = presenter.SetSavedStatus(new CharacterWorkspaceId("ws-1"), hasSavedWorkspace: true);
+
+        OpenWorkspaceState ws1 = updated.OpenWorkspaces.First(workspace => string.Equals(workspace.Id.Value, "ws-1", StringComparison.Ordinal));
+        OpenWorkspaceState ws2 = updated.OpenWorkspaces.First(workspace => string.Equals(workspace.Id.Value, "ws-2", StringComparison.Ordinal));
+        Assert.IsTrue(ws1.HasSavedWorkspace);
+        Assert.IsFalse(ws2.HasSavedWorkspace);
+        CollectionAssert.AreEqual(
+            new[] { "ws-2", "ws-1" },
+            updated.RecentWorkspaceIds.Select(id => id.Value).ToArray());
+    }
+
     private static WorkspaceListItem CreateWorkspace(
         string id,
         string name,

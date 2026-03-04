@@ -100,6 +100,21 @@ public sealed class WorkspaceSessionPresenter : IWorkspaceSessionPresenter
         return State;
     }
 
+    public WorkspaceSessionState SetSavedStatus(CharacterWorkspaceId id, bool hasSavedWorkspace)
+    {
+        OpenWorkspaceState[] updated = State.OpenWorkspaces
+            .Select(workspace => WorkspaceIdsEqual(workspace.Id, id)
+                ? workspace with { HasSavedWorkspace = hasSavedWorkspace }
+                : workspace)
+            .ToArray();
+
+        State = State with
+        {
+            OpenWorkspaces = updated
+        };
+        return State;
+    }
+
     public bool Contains(CharacterWorkspaceId id)
     {
         return Contains(State.OpenWorkspaces, id);

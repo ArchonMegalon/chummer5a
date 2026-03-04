@@ -6,4 +6,5 @@ public sealed record OpenWorkspaceState(
     CharacterWorkspaceId Id,
     string Name,
     string Alias,
-    DateTimeOffset LastOpenedUtc);
+    DateTimeOffset LastOpenedUtc,
+    bool HasSavedWorkspace = false);

@@ -19,5 +19,7 @@ public interface IWorkspaceSessionPresenter
 
     WorkspaceSessionState CloseAll();
 
+    WorkspaceSessionState SetSavedStatus(CharacterWorkspaceId id, bool hasSavedWorkspace);
+
     bool Contains(CharacterWorkspaceId id);
 }
