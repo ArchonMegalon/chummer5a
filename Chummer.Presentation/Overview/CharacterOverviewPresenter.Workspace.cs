@@ -1,0 +1,409 @@
+using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Workspaces;
+
+namespace Chummer.Presentation.Overview;
+
+public sealed partial class CharacterOverviewPresenter
+{
+    public async Task ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
+    {
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            WorkspaceImportResult imported = await _client.ImportAsync(document, ct);
+            await LoadWorkspaceAsync(imported.Id, ct);
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
+    public async Task LoadAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            await LoadWorkspaceAsync(id, ct);
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
+    public async Task SwitchWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(id.Value))
+        {
+            Publish(State with { Error = "Workspace id is required." });
+            return;
+        }
+
+        if (!_workspaceSessionPresenter.Contains(id))
+        {
+            await LoadAsync(id, ct);
+            return;
+        }
+
+        await LoadAsync(id, ct);
+    }
+
+    public async Task CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(id.Value))
+        {
+            Publish(State with { Error = "Workspace id is required." });
+            return;
+        }
+
+        bool closed;
+        try
+        {
+            closed = await _client.CloseWorkspaceAsync(id, ct);
+        }
+        catch
+        {
+            closed = false;
+        }
+
+        bool closedActiveWorkspace = _currentWorkspace is { } activeWorkspace
+            && string.Equals(activeWorkspace.Value, id.Value, StringComparison.Ordinal);
+        WorkspaceSessionState session = _workspaceSessionPresenter.Close(id);
+        _workspaceViews.Remove(id.Value);
+
+        if (session.OpenWorkspaces.Count == 0)
+        {
+            _currentWorkspace = null;
+            Publish(CharacterOverviewState.Empty with
+            {
+                Session = session,
+                Commands = State.Commands,
+                NavigationTabs = State.NavigationTabs,
+                LastCommandId = State.LastCommandId,
+                Notice = closed
+                    ? "Closed active workspace."
+                    : "Active workspace was already closed.",
+                Preferences = State.Preferences,
+                OpenWorkspaces = session.OpenWorkspaces
+            });
+            return;
+        }
+
+        if (closedActiveWorkspace && session.ActiveWorkspaceId is { } nextWorkspace)
+        {
+            await LoadWorkspaceAsync(nextWorkspace, ct, session, updateSession: false);
+            Publish(State with
+            {
+                Notice = closed
+                    ? $"Closed active workspace. Switched to '{nextWorkspace.Value}'."
+                    : $"Active workspace was already closed. Switched to '{nextWorkspace.Value}'."
+            });
+            return;
+        }
+
+        Publish(State with
+        {
+            Session = session,
+            OpenWorkspaces = session.OpenWorkspaces,
+            Error = null,
+            Notice = closed
+                ? $"Closed workspace '{id.Value}'."
+                : $"Workspace '{id.Value}' was already closed."
+        });
+    }
+
+    private async Task LoadSectionAsync(string sectionId, string? tabId, string? actionId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(sectionId))
+        {
+            Publish(State with { Error = "Section id is required." });
+            return;
+        }
+
+        if (_currentWorkspace is null)
+        {
+            Publish(State with { Error = "No workspace loaded." });
+            return;
+        }
+
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            WorkspaceSectionRenderResult section = await _workspaceSectionRenderer.RenderSectionAsync(
+                _client,
+                _currentWorkspace.Value,
+                sectionId,
+                tabId,
+                actionId,
+                State.ActiveTabId,
+                State.ActiveActionId,
+                ct);
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = null,
+                ActiveTabId = section.ActiveTabId,
+                ActiveActionId = section.ActiveActionId,
+                ActiveSectionId = section.ActiveSectionId,
+                ActiveSectionJson = section.ActiveSectionJson,
+                ActiveSectionRows = section.ActiveSectionRows
+            });
+            CaptureWorkspaceView();
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
+    private async Task RenderSummaryAction(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
+    {
+        if (_currentWorkspace is null)
+        {
+            Publish(State with { Error = "No workspace loaded." });
+            return;
+        }
+
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            WorkspaceSectionRenderResult summary = await _workspaceSectionRenderer.RenderSummaryAsync(
+                _client,
+                _currentWorkspace.Value,
+                action,
+                ct);
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = null,
+                ActiveTabId = summary.ActiveTabId,
+                ActiveActionId = summary.ActiveActionId,
+                ActiveSectionId = summary.ActiveSectionId,
+                ActiveSectionJson = summary.ActiveSectionJson,
+                ActiveSectionRows = summary.ActiveSectionRows
+            });
+            CaptureWorkspaceView();
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
+    private async Task RenderValidateAction(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
+    {
+        if (_currentWorkspace is null)
+        {
+            Publish(State with { Error = "No workspace loaded." });
+            return;
+        }
+
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null
+        });
+
+        try
+        {
+            WorkspaceSectionRenderResult validation = await _workspaceSectionRenderer.RenderValidationAsync(
+                _client,
+                _currentWorkspace.Value,
+                action,
+                ct);
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = null,
+                ActiveTabId = validation.ActiveTabId,
+                ActiveActionId = validation.ActiveActionId,
+                ActiveSectionId = validation.ActiveSectionId,
+                ActiveSectionJson = validation.ActiveSectionJson,
+                ActiveSectionRows = validation.ActiveSectionRows
+            });
+            CaptureWorkspaceView();
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message
+            });
+        }
+    }
+
+    private async Task LoadWorkspaceAsync(
+        CharacterWorkspaceId id,
+        CancellationToken ct,
+        WorkspaceSessionState? sessionSeed = null,
+        bool updateSession = true)
+    {
+        CaptureWorkspaceView();
+        WorkspaceOverviewLoadResult loadedOverview = await _workspaceOverviewLoader.LoadAsync(_client, id, ct);
+
+        WorkspaceSessionState session;
+        if (sessionSeed is not null)
+        {
+            session = _workspaceSessionPresenter.Switch(id);
+            if (session.ActiveWorkspaceId is null
+                || !string.Equals(session.ActiveWorkspaceId.Value.Value, id.Value, StringComparison.Ordinal))
+            {
+                session = _workspaceSessionPresenter.Open(id, loadedOverview.Profile);
+            }
+        }
+        else if (updateSession)
+        {
+            session = _workspaceSessionPresenter.Open(id, loadedOverview.Profile);
+        }
+        else
+        {
+            session = _workspaceSessionPresenter.Switch(id);
+            if (session.ActiveWorkspaceId is null
+                || !string.Equals(session.ActiveWorkspaceId.Value.Value, id.Value, StringComparison.Ordinal))
+            {
+                session = _workspaceSessionPresenter.Open(id, loadedOverview.Profile);
+            }
+        }
+
+        WorkspaceViewState? restoredView = RestoreWorkspaceView(id);
+        bool hasSavedWorkspace = restoredView?.HasSavedWorkspace ?? false;
+        session = _workspaceSessionPresenter.SetSavedStatus(id, hasSavedWorkspace);
+        _currentWorkspace = id;
+
+        Publish(new CharacterOverviewState(
+            IsBusy: false,
+            Error: null,
+            Session: session,
+            WorkspaceId: id,
+            OpenWorkspaces: session.OpenWorkspaces,
+            Profile: loadedOverview.Profile,
+            Progress: loadedOverview.Progress,
+            Skills: loadedOverview.Skills,
+            Rules: loadedOverview.Rules,
+            Build: loadedOverview.Build,
+            Movement: loadedOverview.Movement,
+            Awakening: loadedOverview.Awakening,
+            ActiveTabId: restoredView?.ActiveTabId,
+            ActiveActionId: restoredView?.ActiveActionId,
+            ActiveSectionId: restoredView?.ActiveSectionId,
+            ActiveSectionJson: restoredView?.ActiveSectionJson,
+            ActiveSectionRows: restoredView?.ActiveSectionRows ?? [],
+            LastCommandId: State.LastCommandId,
+            Notice: State.Notice,
+            ActiveDialog: null,
+            Preferences: State.Preferences,
+            Commands: State.Commands,
+            NavigationTabs: State.NavigationTabs,
+            HasSavedWorkspace: hasSavedWorkspace));
+    }
+
+    private async Task CloseAllWorkspacesAsync(CancellationToken ct, string notice)
+    {
+        CaptureWorkspaceView();
+        CharacterWorkspaceId[] workspaceIdsToClose = _workspaceSessionPresenter.State.OpenWorkspaces
+            .GroupBy(workspace => workspace.Id.Value, StringComparer.Ordinal)
+            .Select(group => group.First().Id)
+            .ToArray();
+
+        foreach (CharacterWorkspaceId workspaceId in workspaceIdsToClose)
+        {
+            try
+            {
+                await _client.CloseWorkspaceAsync(workspaceId, ct);
+            }
+            catch
+            {
+                // Keep resetting local shell state even if a close request fails remotely.
+            }
+        }
+
+        WorkspaceSessionState session = _workspaceSessionPresenter.CloseAll();
+        _currentWorkspace = null;
+        Publish(CharacterOverviewState.Empty with
+        {
+            Session = session,
+            Commands = State.Commands,
+            NavigationTabs = State.NavigationTabs,
+            LastCommandId = State.LastCommandId,
+            Notice = notice,
+            Preferences = State.Preferences,
+            OpenWorkspaces = session.OpenWorkspaces
+        });
+    }
+
+    private CharacterOverviewState CreateWorkspaceResetState(string commandId, string notice)
+    {
+        CaptureWorkspaceView();
+        _currentWorkspace = null;
+        WorkspaceSessionState session = _workspaceSessionPresenter.ClearActive();
+        return CharacterOverviewState.Empty with
+        {
+            Session = session,
+            Commands = State.Commands,
+            NavigationTabs = State.NavigationTabs,
+            LastCommandId = commandId,
+            Notice = notice,
+            Preferences = State.Preferences,
+            OpenWorkspaces = session.OpenWorkspaces
+        };
+    }
+
+    private void CaptureWorkspaceView()
+    {
+        if (_currentWorkspace is null)
+            return;
+
+        _workspaceViews[_currentWorkspace.Value.Value] = new WorkspaceViewState(
+            ActiveTabId: State.ActiveTabId,
+            ActiveActionId: State.ActiveActionId,
+            ActiveSectionId: State.ActiveSectionId,
+            ActiveSectionJson: State.ActiveSectionJson,
+            ActiveSectionRows: State.ActiveSectionRows.ToArray(),
+            HasSavedWorkspace: State.HasSavedWorkspace);
+    }
+
+    private WorkspaceViewState? RestoreWorkspaceView(CharacterWorkspaceId id)
+    {
+        return _workspaceViews.TryGetValue(id.Value, out WorkspaceViewState? view)
+            ? view
+            : null;
+    }
+}
