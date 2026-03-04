@@ -1,6 +1,7 @@
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using System.Text;
 
@@ -27,10 +28,11 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public WorkspaceImportResult Import(WorkspaceImportDocument document)
     {
+        string rulesetId = RulesetDefaults.Normalize(document.RulesetId);
         string xml = ToXmlContent(document.Content, document.Format);
         CharacterFileSummary summary = _characterFileQueries.ParseSummary(new CharacterDocument(xml));
-        CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(xml, document.Format));
-        return new WorkspaceImportResult(id, summary);
+        CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(xml, document.Format, rulesetId));
+        return new WorkspaceImportResult(id, summary, rulesetId);
     }
 
     public IReadOnlyList<WorkspaceListItem> List()
@@ -65,7 +67,8 @@ public sealed class WorkspaceService : IWorkspaceService
             workspaces.Add(new WorkspaceListItem(
                 Id: id,
                 Summary: summary,
-                LastUpdatedUtc: entry.LastUpdatedUtc));
+                LastUpdatedUtc: entry.LastUpdatedUtc,
+                RulesetId: document.RulesetId));
         }
 
         return workspaces;
@@ -155,7 +158,7 @@ public sealed class WorkspaceService : IWorkspaceService
                 Alias: command.Alias,
                 Notes: command.Notes)));
 
-        _workspaceStore.Save(id, new WorkspaceDocument(result.UpdatedDocument.Content, document.Format));
+        _workspaceStore.Save(id, new WorkspaceDocument(result.UpdatedDocument.Content, document.Format, document.RulesetId));
         CharacterProfileSection profile = (CharacterProfileSection)_characterSectionQueries.ParseSection(
             "profile",
             new CharacterDocument(result.UpdatedDocument.Content));
@@ -179,7 +182,8 @@ public sealed class WorkspaceService : IWorkspaceService
                 Success: true,
                 Value: new WorkspaceSaveReceipt(
                     Id: id,
-                    DocumentLength: document.Content.Length),
+                    DocumentLength: document.Content.Length,
+                    RulesetId: document.RulesetId),
                 Error: null);
     }
 
@@ -208,7 +212,8 @@ public sealed class WorkspaceService : IWorkspaceService
                 Format: document.Format,
                 ContentBase64: contentBase64,
                 FileName: $"{id.Value}{fileExtension}",
-                DocumentLength: document.Content.Length),
+                DocumentLength: document.Content.Length,
+                RulesetId: document.RulesetId),
             Error: null);
     }
 

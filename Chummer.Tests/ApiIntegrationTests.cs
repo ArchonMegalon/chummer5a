@@ -483,6 +483,7 @@ public class ApiIntegrationTests
         JsonObject importResponse = await PostRequiredJsonObject(client, "/api/workspaces/import", importBody);
         string workspaceId = importResponse["id"]?.GetValue<string>() ?? string.Empty;
         Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceId));
+        Assert.AreEqual("sr5", (importResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
 
         JsonObject summary = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/summary");
         Assert.AreEqual("Cerri", summary["name"]?.GetValue<string>());
@@ -524,10 +525,12 @@ public class ApiIntegrationTests
         JsonObject saveResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/save", new JsonObject());
         Assert.AreEqual(workspaceId, saveResponse["id"]?.GetValue<string>());
         Assert.IsTrue((saveResponse["documentLength"]?.GetValue<int>() ?? 0) > 0);
+        Assert.AreEqual("sr5", (saveResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
 
         JsonObject downloadResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/download", new JsonObject());
         Assert.AreEqual(workspaceId, downloadResponse["id"]?.GetValue<string>());
         Assert.AreEqual("Chum5Xml", downloadResponse["format"]?.GetValue<string>());
+        Assert.AreEqual("sr5", (downloadResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.IsTrue((downloadResponse["fileName"]?.GetValue<string>() ?? string.Empty).EndsWith(".chum5", StringComparison.Ordinal));
         string contentBase64 = downloadResponse["contentBase64"]?.GetValue<string>() ?? string.Empty;
         Assert.IsFalse(string.IsNullOrWhiteSpace(contentBase64));
@@ -549,10 +552,44 @@ public class ApiIntegrationTests
         JsonObject importResponse = await PostRequiredJsonObject(client, "/api/workspaces/import", importBody);
         string workspaceId = importResponse["id"]?.GetValue<string>() ?? string.Empty;
         Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceId));
+        Assert.AreEqual("sr5", (importResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
 
         JsonObject summary = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/summary");
         Assert.AreEqual("Troy Simmons", summary["name"]?.GetValue<string>());
         Assert.AreEqual("BLUE", summary["alias"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Workspace_endpoints_preserve_ruleset_id_from_import_request()
+    {
+        using var client = CreateClient();
+
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        JsonObject importBody = new()
+        {
+            ["xml"] = xml,
+            ["rulesetId"] = "SR6"
+        };
+
+        JsonObject importResponse = await PostRequiredJsonObject(client, "/api/workspaces/import", importBody);
+        string workspaceId = importResponse["id"]?.GetValue<string>() ?? string.Empty;
+        Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceId));
+        Assert.AreEqual("sr6", (importResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+
+        JsonObject listed = await GetRequiredJsonObject(client, "/api/workspaces");
+        JsonArray listedWorkspaces = listed["workspaces"]?.AsArray() ?? [];
+        JsonObject listedItem = listedWorkspaces
+            .Select(node => node as JsonObject)
+            .FirstOrDefault(node => string.Equals(node?["id"]?.GetValue<string>(), workspaceId, StringComparison.Ordinal))
+            ?? new JsonObject();
+        Assert.IsTrue(listedItem.Count > 0, "Expected workspace list entry for imported workspace.");
+        Assert.AreEqual("sr6", (listedItem["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+
+        JsonObject saveResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/save", new JsonObject());
+        Assert.AreEqual("sr6", (saveResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+
+        JsonObject downloadResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/download", new JsonObject());
+        Assert.AreEqual("sr6", (downloadResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
     }
 
     [TestMethod]

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Infrastructure.Workspaces;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -27,6 +28,7 @@ public class WorkspaceStoreTests
             Assert.IsTrue(found);
             Assert.AreEqual(expected.Content, actual.Content);
             Assert.AreEqual(expected.Format, actual.Format);
+            Assert.AreEqual(RulesetDefaults.Sr5, actual.RulesetId);
         }
         finally
         {
@@ -51,6 +53,31 @@ public class WorkspaceStoreTests
                 bool found = store.TryGet(id, out WorkspaceDocument loaded);
                 Assert.IsTrue(found);
                 StringAssert.Contains(loaded.Content, "BLUE");
+            }
+        }
+        finally
+        {
+            Directory.Delete(stateDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void File_workspace_store_persists_ruleset_id_across_instances()
+    {
+        string stateDirectory = CreateTempStateDirectory();
+        try
+        {
+            CharacterWorkspaceId id;
+            {
+                IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+                id = store.Create(new WorkspaceDocument("<character><name>Ruleset</name></character>", RulesetId: "SR6"));
+            }
+
+            {
+                IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+                bool found = store.TryGet(id, out WorkspaceDocument loaded);
+                Assert.IsTrue(found);
+                Assert.AreEqual("sr6", loaded.RulesetId);
             }
         }
         finally

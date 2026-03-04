@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Linq;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation;
@@ -25,7 +26,8 @@ public sealed class HttpChummerClient : IChummerClient
             new WorkspaceImportRequest(
                 ContentBase64: contentBase64,
                 Format: document.Format.ToString(),
-                Xml: null),
+                Xml: null,
+                RulesetId: document.RulesetId),
             ct);
 
         if (!response.IsSuccessStatusCode)
@@ -35,7 +37,7 @@ public sealed class HttpChummerClient : IChummerClient
         if (payload is null || string.IsNullOrWhiteSpace(payload.Id))
             throw new InvalidOperationException("Import response did not include a workspace id.");
 
-        return new WorkspaceImportResult(new CharacterWorkspaceId(payload.Id), payload.Summary);
+        return new WorkspaceImportResult(new CharacterWorkspaceId(payload.Id), payload.Summary, RulesetDefaults.Normalize(payload.RulesetId));
     }
 
     public async Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct)
@@ -46,7 +48,8 @@ public sealed class HttpChummerClient : IChummerClient
             .Select(workspace => new WorkspaceListItem(
                 Id: new CharacterWorkspaceId(workspace.Id),
                 Summary: workspace.Summary,
-                LastUpdatedUtc: workspace.LastUpdatedUtc))
+                LastUpdatedUtc: workspace.LastUpdatedUtc,
+                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId)))
             .ToArray();
     }
 
@@ -197,7 +200,8 @@ public sealed class HttpChummerClient : IChummerClient
             Success: true,
             Value: new WorkspaceSaveReceipt(
                 Id: new CharacterWorkspaceId(payload.Id),
-                DocumentLength: payload.DocumentLength),
+                DocumentLength: payload.DocumentLength,
+                RulesetId: RulesetDefaults.Normalize(payload.RulesetId)),
             Error: null);
     }
 
@@ -239,7 +243,8 @@ public sealed class HttpChummerClient : IChummerClient
                 Format: format,
                 ContentBase64: payload.ContentBase64 ?? string.Empty,
                 FileName: payload.FileName ?? $"{payload.Id}.chum5",
-                DocumentLength: payload.DocumentLength),
+                DocumentLength: payload.DocumentLength,
+                RulesetId: RulesetDefaults.Normalize(payload.RulesetId)),
             Error: null);
     }
 

@@ -3,6 +3,7 @@ using System.Xml;
 using System.Linq;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Api.Endpoints;
@@ -18,7 +19,8 @@ public static class WorkspaceEndpoints
                 WorkspaceImportResult result = workspaceService.Import(ToImportDocument(request));
                 return Results.Ok(new WorkspaceImportResponse(
                     Id: result.Id.Value,
-                    Summary: result.Summary));
+                    Summary: result.Summary,
+                    RulesetId: result.RulesetId));
             }
             catch (InvalidOperationException ex)
             {
@@ -41,7 +43,8 @@ public static class WorkspaceEndpoints
                 .Select(workspace => new WorkspaceListItemResponse(
                     Id: workspace.Id.Value,
                     Summary: workspace.Summary,
-                    LastUpdatedUtc: workspace.LastUpdatedUtc))
+                    LastUpdatedUtc: workspace.LastUpdatedUtc,
+                    RulesetId: workspace.RulesetId))
                 .ToArray();
 
             return Results.Ok(new WorkspaceListResponse(
@@ -152,7 +155,8 @@ public static class WorkspaceEndpoints
 
             return Results.Ok(new WorkspaceSaveResponse(
                 Id: result.Value.Id.Value,
-                DocumentLength: result.Value.DocumentLength));
+                DocumentLength: result.Value.DocumentLength,
+                RulesetId: result.Value.RulesetId));
         });
 
         app.MapPost("/api/workspaces/{id}/download", (string id, IWorkspaceService workspaceService) =>
@@ -167,7 +171,8 @@ public static class WorkspaceEndpoints
                 Format: result.Value.Format.ToString(),
                 ContentBase64: result.Value.ContentBase64,
                 FileName: result.Value.FileName,
-                DocumentLength: result.Value.DocumentLength));
+                DocumentLength: result.Value.DocumentLength,
+                RulesetId: result.Value.RulesetId));
         });
 
         return app;
@@ -183,7 +188,7 @@ public static class WorkspaceEndpoints
             {
                 byte[] bytes = Convert.FromBase64String(request.ContentBase64);
                 string content = Encoding.UTF8.GetString(bytes);
-                return new WorkspaceImportDocument(content, format);
+                return new WorkspaceImportDocument(content, format, RulesetDefaults.Normalize(request.RulesetId));
             }
             catch (FormatException ex)
             {
@@ -192,7 +197,7 @@ public static class WorkspaceEndpoints
         }
 
         if (!string.IsNullOrWhiteSpace(request.Xml))
-            return new WorkspaceImportDocument(request.Xml, format);
+            return new WorkspaceImportDocument(request.Xml, format, RulesetDefaults.Normalize(request.RulesetId));
 
         throw new InvalidOperationException("Workspace import requires either contentBase64 or xml.");
     }

@@ -41,11 +41,13 @@ public class WorkspaceServiceTests
         ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
         IWorkspaceService workspaceService = new WorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
 
-        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml));
+        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml, RulesetId: "SR6"));
         Assert.IsFalse(string.IsNullOrWhiteSpace(imported.Id.Value));
         Assert.AreEqual("Neo", imported.Summary.Name);
+        Assert.AreEqual("sr6", imported.RulesetId);
         IReadOnlyList<WorkspaceListItem> listed = workspaceService.List();
         Assert.IsTrue(listed.Any(item => string.Equals(item.Id.Value, imported.Id.Value, StringComparison.Ordinal)));
+        Assert.AreEqual("sr6", listed.First(item => string.Equals(item.Id.Value, imported.Id.Value, StringComparison.Ordinal)).RulesetId);
 
         var profile = workspaceService.GetProfile(imported.Id);
         Assert.IsNotNull(profile);
@@ -79,6 +81,11 @@ public class WorkspaceServiceTests
         Assert.IsTrue(save.Success);
         Assert.AreEqual(imported.Id, save.Value?.Id);
         Assert.IsTrue((save.Value?.DocumentLength ?? 0) > 0);
+        Assert.AreEqual("sr6", save.Value?.RulesetId);
+
+        var download = workspaceService.Download(imported.Id);
+        Assert.IsTrue(download.Success);
+        Assert.AreEqual("sr6", download.Value?.RulesetId);
 
         bool closed = workspaceService.Close(imported.Id);
         Assert.IsTrue(closed);

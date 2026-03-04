@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Infrastructure.Workspaces;
@@ -87,7 +88,8 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         }
 
         WorkspaceDocumentFormat format = ParseFormat(record.Format);
-        document = new WorkspaceDocument(content, format);
+        string rulesetId = RulesetDefaults.Normalize(record.RulesetId);
+        document = new WorkspaceDocument(content, format, rulesetId);
         return true;
     }
 
@@ -97,7 +99,7 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         if (path is null)
             throw new InvalidOperationException("Workspace id contains unsupported characters.");
 
-        PersistedWorkspaceRecord record = new(document.Content, document.Format.ToString());
+        PersistedWorkspaceRecord record = new(document.Content, document.Format.ToString(), document.RulesetId);
         string tempPath = $"{path}.tmp";
         File.WriteAllText(tempPath, JsonSerializer.Serialize(record));
         File.Move(tempPath, path, overwrite: true);
@@ -146,7 +148,10 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         return WorkspaceDocumentFormat.Chum5Xml;
     }
 
-    private sealed record PersistedWorkspaceRecord(string Content, string Format)
+    private sealed record PersistedWorkspaceRecord(
+        string Content,
+        string Format,
+        string RulesetId = RulesetDefaults.Sr5)
     {
         // Backward compatibility for legacy persisted payloads.
         public string? Xml { get; init; }
