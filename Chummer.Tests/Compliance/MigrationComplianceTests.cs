@@ -544,6 +544,27 @@ public class MigrationComplianceTests
         StringAssert.Contains(uiE2eText, "docker compose --profile test run --rm -T chummer-playwright");
     }
 
+    [TestMethod]
+    public void Avalonia_mainwindow_uses_named_controls_over_findcontrol_orchestration()
+    {
+        string xamlPath = FindPath("Chummer.Avalonia", "MainWindow.axaml");
+        string xamlText = File.ReadAllText(xamlPath);
+        string codePath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
+        string codeText = File.ReadAllText(codePath);
+
+        Assert.IsFalse(codeText.Contains("FindControl<", StringComparison.Ordinal));
+        StringAssert.Contains(codeText, "public MainWindow(");
+        StringAssert.Contains(codeText, "_commandsList = CommandsList;");
+        StringAssert.Contains(codeText, "_openWorkspacesList = OpenWorkspacesList;");
+        StringAssert.Contains(codeText, "_navigationTabsList = NavigationTabsList;");
+        StringAssert.Contains(codeText, "_dialogActionsList = DialogActionsList;");
+
+        StringAssert.Contains(xamlText, "x:Name=\"CommandsList\"");
+        StringAssert.Contains(xamlText, "x:Name=\"OpenWorkspacesList\"");
+        StringAssert.Contains(xamlText, "x:Name=\"NavigationTabsList\"");
+        StringAssert.Contains(xamlText, "x:Name=\"DialogActionsList\"");
+    }
+
     private static string ToSectionName(string pascalName)
     {
         return pascalName.ToLowerInvariant();

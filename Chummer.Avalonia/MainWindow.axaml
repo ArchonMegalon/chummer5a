@@ -7,13 +7,13 @@
         MinHeight="680"
         Title="Chummer Avalonia Head">
   <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="12" RowSpacing="8">
-    <StackPanel Grid.Row="0" Name="MenuBarPanel" Orientation="Horizontal" Spacing="6">
-      <Button Name="MenuFileButton" Content="File" Click="MenuButton_OnClick" />
-      <Button Name="MenuEditButton" Content="Edit" Click="MenuButton_OnClick" />
-      <Button Name="MenuSpecialButton" Content="Special" Click="MenuButton_OnClick" />
-      <Button Name="MenuToolsButton" Content="Tools" Click="MenuButton_OnClick" />
-      <Button Name="MenuWindowsButton" Content="Windows" Click="MenuButton_OnClick" />
-      <Button Name="MenuHelpButton" Content="Help" Click="MenuButton_OnClick" />
+    <StackPanel Grid.Row="0" x:Name="MenuBarPanel" Orientation="Horizontal" Spacing="6">
+      <Button x:Name="MenuFileButton" Content="File" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuEditButton" Content="Edit" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuSpecialButton" Content="Special" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuToolsButton" Content="Tools" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuWindowsButton" Content="Windows" Click="MenuButton_OnClick" />
+      <Button x:Name="MenuHelpButton" Content="Help" Click="MenuButton_OnClick" />
     </StackPanel>
 
     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
@@ -21,24 +21,24 @@
       <Button Content="Import Raw (Debug)" Width="150" Click="ImportButton_OnClick" />
       <Button Content="Save Workspace" Width="140" Click="SaveButton_OnClick" />
       <Button Content="Close Active Workspace" Width="190" Click="CloseWorkspaceButton_OnClick" />
-      <TextBlock Name="WorkspaceText" VerticalAlignment="Center" Text="Workspace: none" />
+      <TextBlock x:Name="WorkspaceText" VerticalAlignment="Center" Text="Workspace: none" />
     </StackPanel>
 
-    <TextBlock Grid.Row="2" Name="StatusText" TextWrapping="Wrap" Text="State: idle" />
+    <TextBlock Grid.Row="2" x:Name="StatusText" TextWrapping="Wrap" Text="State: idle" />
 
     <Grid Grid.Row="3" ColumnDefinitions="2*,3*" ColumnSpacing="10">
       <Border Grid.Column="0" Padding="8" BorderThickness="1" BorderBrush="#475569">
         <Grid RowDefinitions="Auto,*,Auto,*,Auto,*,Auto,*,Auto,*" RowSpacing="8">
           <TextBlock Grid.Row="0" Text="Commands" FontWeight="Bold" />
-          <ListBox Grid.Row="1" Name="CommandsList" />
+          <ListBox Grid.Row="1" x:Name="CommandsList" />
           <TextBlock Grid.Row="2" Text="Open Workspaces" FontWeight="Bold" />
-          <ListBox Grid.Row="3" Name="OpenWorkspacesList" />
+          <ListBox Grid.Row="3" x:Name="OpenWorkspacesList" />
           <TextBlock Grid.Row="4" Text="Navigation Tabs" FontWeight="Bold" />
-          <ListBox Grid.Row="5" Name="NavigationTabsList" />
+          <ListBox Grid.Row="5" x:Name="NavigationTabsList" />
           <TextBlock Grid.Row="6" Text="Section Actions" FontWeight="Bold" />
-          <ListBox Grid.Row="7" Name="SectionActionsList" />
+          <ListBox Grid.Row="7" x:Name="SectionActionsList" />
           <TextBlock Grid.Row="8" Text="Desktop Controls" FontWeight="Bold" />
-          <ListBox Grid.Row="9" Name="UiControlsList" />
+          <ListBox Grid.Row="9" x:Name="UiControlsList" />
         </Grid>
       </Border>
 
@@ -47,31 +47,31 @@
           <Border Grid.Column="0" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
             <StackPanel>
               <TextBlock Text="Name" FontWeight="Bold" />
-              <TextBlock Name="NameValue" Text="-" />
+              <TextBlock x:Name="NameValue" Text="-" />
             </StackPanel>
           </Border>
           <Border Grid.Column="1" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
             <StackPanel>
               <TextBlock Text="Alias" FontWeight="Bold" />
-              <TextBlock Name="AliasValue" Text="-" />
+              <TextBlock x:Name="AliasValue" Text="-" />
             </StackPanel>
           </Border>
           <Border Grid.Column="2" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
             <StackPanel>
               <TextBlock Text="Karma" FontWeight="Bold" />
-              <TextBlock Name="KarmaValue" Text="-" />
+              <TextBlock x:Name="KarmaValue" Text="-" />
             </StackPanel>
           </Border>
           <Border Grid.Column="3" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
             <StackPanel>
               <TextBlock Text="Skills" FontWeight="Bold" />
-              <TextBlock Name="SkillsValue" Text="-" />
+              <TextBlock x:Name="SkillsValue" Text="-" />
             </StackPanel>
           </Border>
         </Grid>
 
         <TextBox Grid.Row="1"
-                 Name="XmlInputBox"
+                 x:Name="XmlInputBox"
                  AcceptsReturn="True"
                  TextWrapping="Wrap"
                  Height="120"
@@ -81,32 +81,32 @@
           <StackPanel>
             <TextBlock Text="Active Section Preview" FontWeight="Bold" Margin="0,0,0,6" />
             <TextBlock Text="Section Rows" FontWeight="Bold" Margin="0,0,0,4" />
-            <ListBox Name="SectionRowsList" Height="120" />
-            <TextBox Name="SectionPreviewBox"
+            <ListBox x:Name="SectionRowsList" Height="120" />
+            <TextBox x:Name="SectionPreviewBox"
                      MinHeight="170"
                      AcceptsReturn="True"
                      TextWrapping="Wrap"
                      IsReadOnly="True" />
             <TextBlock Text="Dialog Title" FontWeight="Bold" Margin="0,10,0,4" />
-            <TextBlock Name="DialogTitleText" Text="(none)" />
+            <TextBlock x:Name="DialogTitleText" Text="(none)" />
             <TextBlock Text="Dialog Message" FontWeight="Bold" Margin="0,8,0,4" />
-            <TextBlock Name="DialogMessageText" Text="(none)" TextWrapping="Wrap" />
+            <TextBlock x:Name="DialogMessageText" Text="(none)" TextWrapping="Wrap" />
             <TextBlock Text="Dialog Fields" FontWeight="Bold" Margin="0,8,0,4" />
-            <ListBox Name="DialogFieldsList" Height="100" />
+            <ListBox x:Name="DialogFieldsList" Height="100" />
             <TextBlock Text="Dialog Actions" FontWeight="Bold" Margin="0,8,0,4" />
-            <ListBox Name="DialogActionsList" Height="70" />
+            <ListBox x:Name="DialogActionsList" Height="70" />
           </StackPanel>
         </Border>
 
-        <TextBlock Grid.Row="3" Name="NoticeText" Text="Notice: Ready." TextWrapping="Wrap" />
+        <TextBlock Grid.Row="3" x:Name="NoticeText" Text="Notice: Ready." TextWrapping="Wrap" />
       </Grid>
     </Grid>
 
     <Grid Grid.Row="4" ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
-      <TextBlock Grid.Column="0" Name="CharStateText" Text="Character: none" />
-      <TextBlock Grid.Column="1" Name="ServiceStateText" Text="Service: online" />
-      <TextBlock Grid.Column="2" Name="TimeStateText" Text="Time: -" />
-      <TextBlock Grid.Column="3" Name="ComplianceStateText" Text="Compliance: shared presenter path" />
+      <TextBlock Grid.Column="0" x:Name="CharStateText" Text="Character: none" />
+      <TextBlock Grid.Column="1" x:Name="ServiceStateText" Text="Service: online" />
+      <TextBlock Grid.Column="2" x:Name="TimeStateText" Text="Time: -" />
+      <TextBlock Grid.Column="3" x:Name="ComplianceStateText" Text="Compliance: shared presenter path" />
     </Grid>
   </Grid>
 </Window>

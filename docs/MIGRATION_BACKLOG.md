@@ -122,8 +122,9 @@ Progress: `docker-architecture-guardrails.yml` now includes explicit `blazor-com
 Acceptance criteria: `MainWindow` no longer manually constructs networking/presenter objects.
 Progress: `App.axaml.cs` now builds a service provider, registers `HttpClient`/`IChummerClient`/presenters/adapter/window, and resolves `MainWindow` from DI. `MainWindow.axaml.cs` now receives injected dependencies and no longer constructs `HttpClient`, `HttpChummerClient`, or presenters directly.
 
-- [ ] `MIG-051` Replace imperative `FindControl` orchestration in `MainWindow.axaml.cs` with bindings/adapters over shared state.
+- [x] `MIG-051` Replace imperative `FindControl` orchestration in `MainWindow.axaml.cs` with bindings/adapters over shared state.
 Acceptance criteria: code-behind is reduced to view glue; interactions route through shared presenters/adapters.
+Progress: switched `MainWindow.axaml` controls to `x:Name` and removed `FindControl` lookup orchestration from `MainWindow.axaml.cs`; view code-behind now consumes typed named controls while routing behavior through shared presenters/adapters.
 
 - [ ] `MIG-052` Add Avalonia Headless smoke tests for import/switch/edit/save flows.
 Acceptance criteria: tests run in CI without display server dependencies.
