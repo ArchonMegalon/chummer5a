@@ -16,7 +16,8 @@ public class ArchitectureGuardrailTests
         "Chummer.Core",
         "Chummer.Application",
         "Chummer.Infrastructure",
-        "Chummer.Presentation"
+        "Chummer.Presentation",
+        "Chummer.Desktop.Runtime"
     };
 
     private static readonly string[] BannedUiReferences =
@@ -208,8 +209,9 @@ public class ArchitectureGuardrailTests
             ["Chummer.Portal"] = new HashSet<string>(StringComparer.Ordinal),
             ["Chummer.Web"] = new HashSet<string>(StringComparer.Ordinal),
             ["Chummer.Blazor"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation" },
-            ["Chummer.Blazor.Desktop"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Blazor", "Chummer.Contracts", "Chummer.Presentation" },
-            ["Chummer.Avalonia"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation" },
+            ["Chummer.Desktop.Runtime"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure", "Chummer.Presentation" },
+            ["Chummer.Blazor.Desktop"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Blazor", "Chummer.Contracts", "Chummer.Desktop.Runtime", "Chummer.Presentation" },
+            ["Chummer.Avalonia"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Desktop.Runtime", "Chummer.Presentation" },
             ["Chummer.Avalonia.Browser"] = new HashSet<string>(StringComparer.Ordinal)
         };
 

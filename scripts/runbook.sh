@@ -78,12 +78,15 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
 
   require_path "Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj"
   require_path "Chummer.Blazor.Desktop/Program.cs"
+  require_path "Chummer.Desktop.Runtime/ServiceCollectionDesktopRuntimeExtensions.cs"
   require_path "Chummer.Blazor.Desktop/wwwroot/index.html"
 
   require_match "Chummer.Blazor.Desktop\\\\Chummer.Blazor.Desktop.csproj" "Chummer.sln"
   require_match "Photino.Blazor" "Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj"
   require_match "RootComponents.Add<App>\\(\"app\"\\)" "Chummer.Blazor.Desktop/Program.cs"
-  require_match "CHUMMER_API_BASE_URL" "Chummer.Blazor.Desktop/Program.cs"
+  require_match "AddChummerDesktopRuntimeClient" "Chummer.Blazor.Desktop/Program.cs"
+  require_match "CHUMMER_DESKTOP_CLIENT_MODE" "Chummer.Desktop.Runtime/ServiceCollectionDesktopRuntimeExtensions.cs"
+  require_match "CHUMMER_API_BASE_URL" "Chummer.Desktop.Runtime/ServiceCollectionDesktopRuntimeExtensions.cs"
   require_match "Chummer.Blazor.Desktop" "Chummer.Tests/Compliance/ArchitectureGuardrailTests.cs"
   require_match "\\{92C5A638-B7DB-4D42-BC96-C11A063D0EF5\\}\\.Release\\|Any CPU\\.Build\\.0" "Chummer.sln"
   require_match "Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj" ".github/workflows/desktop-downloads-matrix.yml"

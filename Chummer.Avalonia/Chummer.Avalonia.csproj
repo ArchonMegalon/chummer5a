@@ -14,6 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Chummer.Contracts\Chummer.Contracts.csproj" />
+    <ProjectReference Include="..\Chummer.Desktop.Runtime\Chummer.Desktop.Runtime.csproj" />
     <ProjectReference Include="..\Chummer.Presentation\Chummer.Presentation.csproj" />
   </ItemGroup>
 </Project>

@@ -159,6 +159,7 @@ public class MigrationComplianceTests
             @"Chummer.Api\Chummer.Api.csproj",
             @"Chummer.Application\Chummer.Application.csproj",
             @"Chummer.Contracts\Chummer.Contracts.csproj",
+            @"Chummer.Desktop.Runtime\Chummer.Desktop.Runtime.csproj",
             @"Chummer.Infrastructure\Chummer.Infrastructure.csproj",
             @"Chummer.Presentation\Chummer.Presentation.csproj",
             @"Chummer.Portal\Chummer.Portal.csproj",
@@ -552,17 +553,24 @@ public class MigrationComplianceTests
         string projectText = File.ReadAllText(projectPath);
         string programPath = FindPath("Chummer.Blazor.Desktop", "Program.cs");
         string programText = File.ReadAllText(programPath);
+        string runtimePath = FindPath("Chummer.Desktop.Runtime", "ServiceCollectionDesktopRuntimeExtensions.cs");
+        string runtimeText = File.ReadAllText(runtimePath);
         string indexPath = FindPath("Chummer.Blazor.Desktop", "wwwroot", "index.html");
         string indexText = File.ReadAllText(indexPath);
 
         StringAssert.Contains(projectText, "Photino.Blazor");
         StringAssert.Contains(projectText, @"..\Chummer.Blazor\Chummer.Blazor.csproj");
+        StringAssert.Contains(projectText, @"..\Chummer.Desktop.Runtime\Chummer.Desktop.Runtime.csproj");
         StringAssert.Contains(projectText, @"..\Chummer.Presentation\Chummer.Presentation.csproj");
 
         StringAssert.Contains(programText, "PhotinoBlazorAppBuilder.CreateDefault");
         StringAssert.Contains(programText, "RootComponents.Add<App>(\"app\")");
-        StringAssert.Contains(programText, "CHUMMER_API_BASE_URL");
-        StringAssert.Contains(programText, "CHUMMER_API_KEY");
+        StringAssert.Contains(programText, "AddChummerDesktopRuntimeClient");
+
+        StringAssert.Contains(runtimeText, "CHUMMER_DESKTOP_CLIENT_MODE");
+        StringAssert.Contains(runtimeText, "CHUMMER_API_BASE_URL");
+        StringAssert.Contains(runtimeText, "CHUMMER_API_KEY");
+        StringAssert.Contains(runtimeText, "AddChummerHeadlessCore");
 
         StringAssert.Contains(indexText, "<app>Loading...</app>");
         StringAssert.Contains(indexText, "_content/Chummer.Blazor/app.css");
@@ -628,6 +636,8 @@ public class MigrationComplianceTests
         string dockerfilePath = FindPath("Docker", "Dockerfile.tests");
         string dockerfileText = File.ReadAllText(dockerfilePath);
 
+        StringAssert.Contains(dockerfileText, "COPY Chummer.Desktop.Runtime/Chummer.Desktop.Runtime.csproj Chummer.Desktop.Runtime/");
+        StringAssert.Contains(dockerfileText, "COPY Chummer.Desktop.Runtime/ Chummer.Desktop.Runtime/");
         StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj Chummer.Blazor.Desktop/");
         StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/ Chummer.Blazor.Desktop/");
     }

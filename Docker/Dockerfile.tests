@@ -6,6 +6,7 @@ COPY Chummer.sln ./
 COPY Chummer.Core/Chummer.Core.csproj Chummer.Core/
 COPY Chummer.Application/Chummer.Application.csproj Chummer.Application/
 COPY Chummer.Contracts/Chummer.Contracts.csproj Chummer.Contracts/
+COPY Chummer.Desktop.Runtime/Chummer.Desktop.Runtime.csproj Chummer.Desktop.Runtime/
 COPY Chummer.Infrastructure/Chummer.Infrastructure.csproj Chummer.Infrastructure/
 COPY Chummer.Presentation/Chummer.Presentation.csproj Chummer.Presentation/
 COPY Chummer.Avalonia/Chummer.Avalonia.csproj Chummer.Avalonia/
@@ -20,6 +21,7 @@ RUN dotnet restore Chummer.Tests/Chummer.Tests.csproj -p:TargetFramework=net10.0
 COPY Chummer.Core/ Chummer.Core/
 COPY Chummer.Application/ Chummer.Application/
 COPY Chummer.Contracts/ Chummer.Contracts/
+COPY Chummer.Desktop.Runtime/ Chummer.Desktop.Runtime/
 COPY Chummer.Infrastructure/ Chummer.Infrastructure/
 COPY Chummer.Presentation/ Chummer.Presentation/
 COPY Chummer.Avalonia/ Chummer.Avalonia/
