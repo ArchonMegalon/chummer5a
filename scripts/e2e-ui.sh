@@ -8,6 +8,20 @@ API_KEY="${CHUMMER_API_KEY:-}"
 MAX_CURL_ATTEMPTS="${CHUMMER_E2E_CURL_ATTEMPTS:-5}"
 MAX_CURL_SECONDS="${CHUMMER_E2E_CURL_MAX_SECONDS:-30}"
 CURL_ARGS=(--connect-timeout 5 --max-time "$MAX_CURL_SECONDS")
+if [[ -n "${CHUMMER_UI_PLAYWRIGHT:-}" ]]; then
+  RUN_PLAYWRIGHT="$CHUMMER_UI_PLAYWRIGHT"
+elif [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  RUN_PLAYWRIGHT="1"
+else
+  RUN_PLAYWRIGHT="0"
+fi
+if [[ -n "${CHUMMER_E2E_DOCKER_FALLBACK:-}" ]]; then
+  USE_DOCKER_FALLBACK="$CHUMMER_E2E_DOCKER_FALLBACK"
+elif [[ "$RUN_PLAYWRIGHT" == "1" ]]; then
+  USE_DOCKER_FALLBACK="1"
+else
+  USE_DOCKER_FALLBACK="0"
+fi
 
 curl_with_retries() {
   local max_attempts="${1:-$MAX_CURL_ATTEMPTS}"
@@ -26,19 +40,41 @@ curl_with_retries() {
   return 1
 }
 
+docker_fetch_with_key() {
+  local url="$1"
+  local key="${2:-}"
+  docker compose --profile test run --rm -T chummer-playwright node -e \
+    "const url=process.argv[1];const key=process.argv[2]||'';const headers=key?{'X-Api-Key':key}:{};fetch(url,{headers}).then(async r=>{const t=await r.text();if(!r.ok){console.error('HTTP '+r.status);process.exit(1);}process.stdout.write(t);}).catch(e=>{console.error(e.message);process.exit(1);});" \
+    "$url" "$key"
+}
+
 curl_with_key() {
   local url="$1"
   local context="${2:-$url}"
   local response
   if [[ -n "$API_KEY" ]]; then
     if ! response=$(curl_with_retries "$MAX_CURL_ATTEMPTS" -fsS "${CURL_ARGS[@]}" -H "X-Api-Key: $API_KEY" "$url"); then
-      echo "request failed for $context after ${MAX_CURL_ATTEMPTS} attempts: $url" >&2
-      return 1
+      if [[ "$USE_DOCKER_FALLBACK" == "1" ]]; then
+        if ! response=$(docker_fetch_with_key "$url" "$API_KEY"); then
+          echo "request failed for $context after ${MAX_CURL_ATTEMPTS} attempts: $url" >&2
+          return 1
+        fi
+      else
+        echo "request failed for $context after ${MAX_CURL_ATTEMPTS} attempts: $url" >&2
+        return 1
+      fi
     fi
   else
     if ! response=$(curl_with_retries "$MAX_CURL_ATTEMPTS" -fsS "${CURL_ARGS[@]}" "$url"); then
-      echo "request failed for $context after ${MAX_CURL_ATTEMPTS} attempts: $url" >&2
-      return 1
+      if [[ "$USE_DOCKER_FALLBACK" == "1" ]]; then
+        if ! response=$(docker_fetch_with_key "$url"); then
+          echo "request failed for $context after ${MAX_CURL_ATTEMPTS} attempts: $url" >&2
+          return 1
+        fi
+      else
+        echo "request failed for $context after ${MAX_CURL_ATTEMPTS} attempts: $url" >&2
+        return 1
+      fi
     fi
   fi
 
@@ -49,13 +85,30 @@ wait_for_url() {
   local url="$1"
   local max_attempts="${2:-45}"
   local sleep_seconds="${3:-1}"
+  local attempt
+  local host_attempts="$max_attempts"
+  local docker_attempts="$max_attempts"
 
-  for ((attempt = 1; attempt <= max_attempts; attempt++)); do
+  if [[ "$USE_DOCKER_FALLBACK" == "1" ]]; then
+    host_attempts="${CHUMMER_E2E_HOST_PROBE_ATTEMPTS:-6}"
+    docker_attempts="${CHUMMER_E2E_DOCKER_PROBE_ATTEMPTS:-20}"
+  fi
+
+  for ((attempt = 1; attempt <= host_attempts; attempt++)); do
     if curl_with_retries 1 -fsS "${CURL_ARGS[@]}" "$url" >/dev/null 2>&1; then
       return 0
     fi
     sleep "$sleep_seconds"
   done
+
+  if [[ "$USE_DOCKER_FALLBACK" == "1" ]]; then
+    for ((attempt = 1; attempt <= docker_attempts; attempt++)); do
+      if docker_fetch_with_key "$url" "$API_KEY" >/dev/null 2>&1; then
+        return 0
+      fi
+      sleep "$sleep_seconds"
+    done
+  fi
 
   echo "Timed out waiting for $url" >&2
   return 1
@@ -88,13 +141,6 @@ if ! grep -q "_framework/blazor.web.js" <<<"$ui_html"; then
   exit 1
 fi
 
-if [[ -n "${CHUMMER_UI_PLAYWRIGHT:-}" ]]; then
-  RUN_PLAYWRIGHT="$CHUMMER_UI_PLAYWRIGHT"
-elif [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
-  RUN_PLAYWRIGHT="1"
-else
-  RUN_PLAYWRIGHT="0"
-fi
 PLAYWRIGHT_TIMEOUT_SECONDS="${CHUMMER_UI_PLAYWRIGHT_TIMEOUT_SECONDS:-240}"
 if [[ "$RUN_PLAYWRIGHT" == "1" ]]; then
   echo "running playwright ui e2e against ${PLAYWRIGHT_UI_URL} (timeout: ${PLAYWRIGHT_TIMEOUT_SECONDS}s)"

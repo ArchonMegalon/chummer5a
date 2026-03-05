@@ -562,6 +562,10 @@ public class MigrationComplianceTests
         string playwrightScriptText = File.ReadAllText(playwrightScriptPath);
 
         StringAssert.Contains(uiE2eText, "CHUMMER_UI_PLAYWRIGHT");
+        StringAssert.Contains(uiE2eText, "CHUMMER_E2E_DOCKER_FALLBACK");
+        StringAssert.Contains(uiE2eText, "CHUMMER_E2E_HOST_PROBE_ATTEMPTS");
+        StringAssert.Contains(uiE2eText, "CHUMMER_E2E_DOCKER_PROBE_ATTEMPTS");
+        StringAssert.Contains(uiE2eText, "docker_fetch_with_key");
         StringAssert.Contains(uiE2eText, "docker compose --profile test run --build --rm -T chummer-playwright");
         StringAssert.Contains(migrationLoopText, "bash scripts/e2e-ui.sh");
 
