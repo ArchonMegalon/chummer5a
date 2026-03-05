@@ -161,9 +161,13 @@ public class WorkspacePersistenceServiceTests
                 12),
             null);
 
-        public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct) => throw new NotImplementedException();
+        public Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct) => throw new NotImplementedException();
 
-        public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct) => throw new NotImplementedException();
+        public Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct) => throw new NotImplementedException();
+
+        public Task<ShellSessionState> GetShellSessionAsync(CancellationToken ct) => throw new NotImplementedException();
+
+        public Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct) => throw new NotImplementedException();
 
         public Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct) => throw new NotImplementedException();
 

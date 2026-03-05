@@ -16,18 +16,30 @@ public static class ShellEndpoints
             return Results.Ok(shellPreferencesService.Load());
         });
 
-        app.MapPost("/api/shell/preferences", (ShellUserPreferences? preferences, IShellPreferencesService shellPreferencesService) =>
+        app.MapPost("/api/shell/preferences", (ShellPreferences? preferences, IShellPreferencesService shellPreferencesService) =>
         {
-            shellPreferencesService.Save(preferences ?? ShellUserPreferences.Default);
+            shellPreferencesService.Save(preferences ?? ShellPreferences.Default);
             return Results.Ok(shellPreferencesService.Load());
         });
 
-        app.MapGet("/api/shell/bootstrap", (string? ruleset, IWorkspaceService workspaceService, IRulesetShellCatalogResolver shellCatalogResolver, IShellPreferencesService shellPreferencesService) =>
+        app.MapGet("/api/shell/session", (IShellSessionService shellSessionService) =>
+        {
+            return Results.Ok(shellSessionService.Load());
+        });
+
+        app.MapPost("/api/shell/session", (ShellSessionState? session, IShellSessionService shellSessionService) =>
+        {
+            shellSessionService.Save(session ?? ShellSessionState.Default);
+            return Results.Ok(shellSessionService.Load());
+        });
+
+        app.MapGet("/api/shell/bootstrap", (string? ruleset, IWorkspaceService workspaceService, IRulesetShellCatalogResolver shellCatalogResolver, IShellPreferencesService shellPreferencesService, IShellSessionService shellSessionService) =>
         {
             IReadOnlyList<WorkspaceListItem> workspaceList = workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
-            ShellUserPreferences preferences = shellPreferencesService.Load();
+            ShellPreferences preferences = shellPreferencesService.Load();
+            ShellSessionState session = shellSessionService.Load();
             string preferredRulesetId = RulesetDefaults.Normalize(preferences.PreferredRulesetId);
-            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaceList, preferences.ActiveWorkspaceId);
+            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaceList, session.ActiveWorkspaceId);
             string activeRulesetId = ResolveRulesetForWorkspace(activeWorkspaceId, workspaceList, preferredRulesetId);
             string requestedRulesetId = string.IsNullOrWhiteSpace(ruleset)
                 ? activeRulesetId

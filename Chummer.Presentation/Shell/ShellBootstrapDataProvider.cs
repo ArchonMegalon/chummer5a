@@ -39,12 +39,14 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
             }
 
             Task<IReadOnlyList<WorkspaceListItem>> workspacesTask = _client.ListWorkspacesAsync(ct);
-            Task<ShellUserPreferences> preferencesTask = _client.GetShellPreferencesAsync(ct);
-            await Task.WhenAll(workspacesTask, preferencesTask);
+            Task<ShellPreferences> preferencesTask = _client.GetShellPreferencesAsync(ct);
+            Task<ShellSessionState> sessionTask = _client.GetShellSessionAsync(ct);
+            await Task.WhenAll(workspacesTask, preferencesTask, sessionTask);
             IReadOnlyList<WorkspaceListItem> workspaces = workspacesTask.Result;
-            ShellUserPreferences preferences = preferencesTask.Result;
+            ShellPreferences preferences = preferencesTask.Result;
+            ShellSessionState session = sessionTask.Result;
             string preferredRulesetId = RulesetDefaults.Normalize(preferences.PreferredRulesetId);
-            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, preferences.ActiveWorkspaceId);
+            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, session.ActiveWorkspaceId);
             _cachedWorkspaces = new CachedWorkspaceData(
                 Workspaces: workspaces,
                 PreferredRulesetId: preferredRulesetId,

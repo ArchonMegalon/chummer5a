@@ -548,6 +548,25 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Shell_session_endpoint_roundtrips_active_workspace_selection()
+    {
+        using var client = CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(180);
+
+        await PostRequiredJsonObject(client, "/api/shell/session", new JsonObject
+        {
+            ["activeWorkspaceId"] = "ws-test"
+        });
+
+        JsonObject response = await GetRequiredJsonObject(client, "/api/shell/session");
+        Assert.AreEqual("ws-test", response["activeWorkspaceId"]?.GetValue<string>());
+
+        await PostRequiredJsonObject(client, "/api/shell/session", new JsonObject());
+        JsonObject cleared = await GetRequiredJsonObject(client, "/api/shell/session");
+        Assert.IsNull(cleared["activeWorkspaceId"]);
+    }
+
+    [TestMethod]
     public async Task Shell_bootstrap_endpoint_uses_saved_preferred_ruleset_when_no_workspace_is_open()
     {
         using var client = CreateClient();
@@ -589,7 +608,10 @@ public class ApiIntegrationTests
 
         await PostRequiredJsonObject(client, "/api/shell/preferences", new JsonObject
         {
-            ["preferredRulesetId"] = "sr6",
+            ["preferredRulesetId"] = "sr6"
+        });
+        await PostRequiredJsonObject(client, "/api/shell/session", new JsonObject
+        {
             ["activeWorkspaceId"] = sr5WorkspaceId
         });
 

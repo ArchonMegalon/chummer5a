@@ -4,7 +4,7 @@ namespace Chummer.Application.Tools;
 
 public interface IShellPreferencesService
 {
-    ShellUserPreferences Load();
+    ShellPreferences Load();
 
-    void Save(ShellUserPreferences preferences);
+    void Save(ShellPreferences preferences);
 }

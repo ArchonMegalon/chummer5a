@@ -7,9 +7,13 @@ namespace Chummer.Presentation;
 
 public interface IChummerClient
 {
-    Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct);
+    Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct);
 
-    Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct);
+    Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct);
+
+    Task<ShellSessionState> GetShellSessionAsync(CancellationToken ct);
+
+    Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct);
 
     Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct);
 

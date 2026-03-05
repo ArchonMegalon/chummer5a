@@ -56,9 +56,8 @@ public class ShellPresenterTests
                 CreateWorkspace("ws-older", "Older Character", "OLD", now.AddMinutes(-25)),
                 CreateWorkspace("ws-newer", "Newer Character", "NEW", now.AddMinutes(-5))
             ],
-            Preferences = new ShellUserPreferences(
-                PreferredRulesetId: RulesetDefaults.Sr5,
-                ActiveWorkspaceId: "ws-older")
+            Preferences = new ShellPreferences(RulesetDefaults.Sr5),
+            Session = new ShellSessionState("ws-older")
         };
         var presenter = new ShellPresenter(client);
 
@@ -247,7 +246,7 @@ public class ShellPresenterTests
         var client = new ShellClientStub
         {
             Workspaces = Array.Empty<WorkspaceListItem>(),
-            Preferences = new ShellUserPreferences("sr6")
+            Preferences = new ShellPreferences("sr6")
         };
         var presenter = new ShellPresenter(client);
 
@@ -306,9 +305,13 @@ public class ShellPresenterTests
 
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
 
-        public ShellUserPreferences Preferences { get; set; } = ShellUserPreferences.Default;
+        public ShellPreferences Preferences { get; set; } = ShellPreferences.Default;
 
-        public List<ShellUserPreferences> SavedPreferences { get; } = new();
+        public ShellSessionState Session { get; set; } = ShellSessionState.Default;
+
+        public List<ShellPreferences> SavedPreferences { get; } = new();
+
+        public List<ShellSessionState> SavedSessions { get; } = new();
 
         public List<string?> RequestedCommandRulesets { get; } = new();
 
@@ -330,22 +333,32 @@ public class ShellPresenterTests
 
         public Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct) => Task.FromResult(Workspaces);
 
-        public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+        public Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct)
             => Task.FromResult(Preferences);
 
-        public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+        public Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct)
         {
-            Preferences = new ShellUserPreferences(
-                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId),
-                ActiveWorkspaceId: NormalizeWorkspaceId(preferences.ActiveWorkspaceId));
+            Preferences = new ShellPreferences(
+                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId));
             SavedPreferences.Add(Preferences);
+            return Task.CompletedTask;
+        }
+
+        public Task<ShellSessionState> GetShellSessionAsync(CancellationToken ct)
+            => Task.FromResult(Session);
+
+        public Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
+        {
+            Session = new ShellSessionState(
+                ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId));
+            SavedSessions.Add(Session);
             return Task.CompletedTask;
         }
 
         public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
         {
             IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
-            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, Preferences.ActiveWorkspaceId);
+            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, Session.ActiveWorkspaceId);
             string preferredRulesetId = RulesetDefaults.Normalize(Preferences.PreferredRulesetId);
             string activeRulesetId = activeWorkspaceId is null
                 ? preferredRulesetId

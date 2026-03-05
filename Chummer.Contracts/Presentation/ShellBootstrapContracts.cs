@@ -8,11 +8,16 @@ public static class ShellBootstrapDefaults
     public const int MaxWorkspaces = 25;
 }
 
-public sealed record ShellUserPreferences(
-    string PreferredRulesetId,
+public sealed record ShellPreferences(
+    string PreferredRulesetId)
+{
+    public static ShellPreferences Default { get; } = new(RulesetDefaults.Sr5);
+}
+
+public sealed record ShellSessionState(
     string? ActiveWorkspaceId = null)
 {
-    public static ShellUserPreferences Default { get; } = new(RulesetDefaults.Sr5);
+    public static ShellSessionState Default { get; } = new();
 }
 
 public sealed record ShellBootstrapResponse(

@@ -53,7 +53,7 @@ public class ShellBootstrapDataProviderTests
     {
         var client = new BootstrapClientStub
         {
-            Preferences = new ShellUserPreferences("sr6")
+            Preferences = new ShellPreferences("sr6")
         };
         var provider = new ShellBootstrapDataProvider(client);
 
@@ -61,6 +61,7 @@ public class ShellBootstrapDataProviderTests
         ShellBootstrapData bootstrap = await provider.GetAsync("sr6", CancellationToken.None);
 
         Assert.AreEqual(1, client.GetShellPreferencesCalls);
+        Assert.AreEqual(1, client.GetShellSessionCalls);
         Assert.AreEqual("sr6", bootstrap.PreferredRulesetId);
     }
 
@@ -75,9 +76,8 @@ public class ShellBootstrapDataProviderTests
                 CreateWorkspace("ws-old", now.AddMinutes(-25), RulesetDefaults.Sr5),
                 CreateWorkspace("ws-new", now.AddMinutes(-5), "sr6")
             ],
-            Preferences = new ShellUserPreferences(
-                PreferredRulesetId: RulesetDefaults.Sr5,
-                ActiveWorkspaceId: "ws-old")
+            Preferences = new ShellPreferences(RulesetDefaults.Sr5),
+            Session = new ShellSessionState("ws-old")
         };
         var provider = new ShellBootstrapDataProvider(client);
 
@@ -132,21 +132,35 @@ public class ShellBootstrapDataProviderTests
         public int GetNavigationTabsCalls { get; private set; }
         public int ListWorkspacesCalls { get; private set; }
         public int GetShellPreferencesCalls { get; private set; }
+        public int GetShellSessionCalls { get; private set; }
         public List<string> CommandRulesets { get; } = new();
-        public ShellUserPreferences Preferences { get; set; } = ShellUserPreferences.Default;
+        public ShellPreferences Preferences { get; set; } = ShellPreferences.Default;
+        public ShellSessionState Session { get; set; } = ShellSessionState.Default;
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
 
-        public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+        public Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct)
         {
             GetShellPreferencesCalls++;
             return Task.FromResult(Preferences);
         }
 
-        public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+        public Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct)
         {
-            Preferences = new ShellUserPreferences(
-                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId),
-                ActiveWorkspaceId: NormalizeWorkspaceId(preferences.ActiveWorkspaceId));
+            Preferences = new ShellPreferences(
+                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+            return Task.CompletedTask;
+        }
+
+        public Task<ShellSessionState> GetShellSessionAsync(CancellationToken ct)
+        {
+            GetShellSessionCalls++;
+            return Task.FromResult(Session);
+        }
+
+        public Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
+        {
+            Session = new ShellSessionState(
+                ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId));
             return Task.CompletedTask;
         }
 
@@ -172,7 +186,7 @@ public class ShellBootstrapDataProviderTests
         public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
         {
             IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
-            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, Preferences.ActiveWorkspaceId);
+            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, Session.ActiveWorkspaceId);
             string preferredRulesetId = RulesetDefaults.Normalize(Preferences.PreferredRulesetId);
             string activeRulesetId = activeWorkspaceId is null
                 ? preferredRulesetId

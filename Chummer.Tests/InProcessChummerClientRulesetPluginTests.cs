@@ -78,7 +78,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
     public async Task GetShellBootstrap_uses_saved_preferred_ruleset_when_no_workspaces_are_open()
     {
         var preferencesStore = new InMemoryShellPreferencesStore();
-        preferencesStore.Save(new ShellUserPreferences("sr6"));
+        preferencesStore.Save(new ShellPreferences("sr6"));
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
             new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
@@ -98,10 +98,25 @@ public sealed class InProcessChummerClientRulesetPluginTests
             new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
             new ShellPreferencesService(preferencesStore));
 
-        await client.SaveShellPreferencesAsync(new ShellUserPreferences("sr6"), CancellationToken.None);
-        ShellUserPreferences restored = await client.GetShellPreferencesAsync(CancellationToken.None);
+        await client.SaveShellPreferencesAsync(new ShellPreferences("sr6"), CancellationToken.None);
+        ShellPreferences restored = await client.GetShellPreferencesAsync(CancellationToken.None);
 
         Assert.AreEqual("sr6", restored.PreferredRulesetId);
+    }
+
+    [TestMethod]
+    public async Task SaveShellSession_persists_active_workspace()
+    {
+        var sessionStore = new InMemoryShellSessionStore();
+        var client = new InProcessChummerClient(
+            new NoOpWorkspaceService(),
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            shellSessionService: new ShellSessionService(sessionStore));
+
+        await client.SaveShellSessionAsync(new ShellSessionState("ws-sr6"), CancellationToken.None);
+        ShellSessionState restored = await client.GetShellSessionAsync(CancellationToken.None);
+
+        Assert.AreEqual("ws-sr6", restored.ActiveWorkspaceId);
     }
 
     [TestMethod]
@@ -116,13 +131,14 @@ public sealed class InProcessChummerClientRulesetPluginTests
             ]
         };
         var preferencesStore = new InMemoryShellPreferencesStore();
-        preferencesStore.Save(new ShellUserPreferences(
-            PreferredRulesetId: RulesetDefaults.Sr5,
-            ActiveWorkspaceId: "ws-sr5"));
+        preferencesStore.Save(new ShellPreferences(RulesetDefaults.Sr5));
+        var sessionStore = new InMemoryShellSessionStore();
+        sessionStore.Save(new ShellSessionState("ws-sr5"));
         var client = new InProcessChummerClient(
             workspaceService,
             new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
-            new ShellPreferencesService(preferencesStore));
+            new ShellPreferencesService(preferencesStore),
+            new ShellSessionService(sessionStore));
 
         ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
 
@@ -234,16 +250,31 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
     private sealed class InMemoryShellPreferencesStore : IShellPreferencesStore
     {
-        private ShellUserPreferences _preferences = ShellUserPreferences.Default;
+        private ShellPreferences _preferences = ShellPreferences.Default;
 
-        public ShellUserPreferences Load()
+        public ShellPreferences Load()
         {
             return _preferences;
         }
 
-        public void Save(ShellUserPreferences preferences)
+        public void Save(ShellPreferences preferences)
         {
             _preferences = preferences;
+        }
+    }
+
+    private sealed class InMemoryShellSessionStore : IShellSessionStore
+    {
+        private ShellSessionState _session = ShellSessionState.Default;
+
+        public ShellSessionState Load()
+        {
+            return _session;
+        }
+
+        public void Save(ShellSessionState session)
+        {
+            _session = session;
         }
     }
 

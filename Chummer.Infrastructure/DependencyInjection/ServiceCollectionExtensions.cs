@@ -68,6 +68,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(stateDirectory));
         services.AddSingleton<IShellPreferencesStore, SettingsShellPreferencesStore>();
         services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
+        services.AddSingleton<IShellSessionStore, SettingsShellSessionStore>();
+        services.AddSingleton<IShellSessionService, ShellSessionService>();
         services.AddSingleton<IRosterStore>(_ => new FileRosterStore(stateDirectory));
         services.AddSingleton<IWorkspaceStore>(_ =>
         {

@@ -12,26 +12,17 @@ public sealed class ShellPreferencesService : IShellPreferencesService
         _store = store;
     }
 
-    public ShellUserPreferences Load()
+    public ShellPreferences Load()
     {
-        ShellUserPreferences stored = _store.Load();
-        return new ShellUserPreferences(
-            PreferredRulesetId: RulesetDefaults.Normalize(stored.PreferredRulesetId),
-            ActiveWorkspaceId: NormalizeWorkspaceId(stored.ActiveWorkspaceId));
+        ShellPreferences stored = _store.Load();
+        return new ShellPreferences(
+            PreferredRulesetId: RulesetDefaults.Normalize(stored.PreferredRulesetId));
     }
 
-    public void Save(ShellUserPreferences preferences)
+    public void Save(ShellPreferences preferences)
     {
-        ShellUserPreferences normalized = new(
-            PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId),
-            ActiveWorkspaceId: NormalizeWorkspaceId(preferences.ActiveWorkspaceId));
+        ShellPreferences normalized = new(
+            PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId));
         _store.Save(normalized);
-    }
-
-    private static string? NormalizeWorkspaceId(string? workspaceId)
-    {
-        return string.IsNullOrWhiteSpace(workspaceId)
-            ? null
-            : workspaceId.Trim();
     }
 }

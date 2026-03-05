@@ -30,7 +30,8 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-017 | done | P1 | UI e2e script resilience hardening for non-host-reachable runtimes. | agent | Completed 2026-03-05: added bounded Docker fallback probe controls to `scripts/e2e-ui.sh` and guardrail assertions in compliance tests; host-local validation in this sandbox is limited to script syntax due Docker/`dotnet` constraints. |
 | WL-018 | done | P2 | Improve runbook e2e blocker visibility. | agent | Completed 2026-03-05: runbook summary extraction for `ui-e2e` and `portal-e2e` now surfaces Docker daemon permission-denied errors explicitly. |
 | WL-019 | done | P1 | Non-CI e2e soft-fail for Docker daemon permission blockers. | agent | Completed 2026-03-05: UI/portal e2e scripts now downgrade daemon-permission-denied failures to explicit skip outside CI, keep CI strict, and surface skip reasons in runbook summaries. |
-| WL-020 | in_progress | P1 | Split shell preferences from shell session model. | agent | Separate preference persistence (`PreferredRulesetId`) from session persistence (`ActiveWorkspaceId`, active tab state) across contracts/endpoints/clients/presenter/bootstrap. |
+| WL-020 | done | P1 | Split shell preferences from shell session model. | agent | Completed 2026-03-05: shell preferences/session now persist through separate contracts (`ShellPreferences`, `ShellSessionState`), separate API endpoints (`/api/shell/preferences`, `/api/shell/session`), and separate presenter/client save paths. |
+| WL-021 | in_progress | P1 | Move workspace behavior onto ruleset codec seam. | agent | Introduce codec dispatch in `WorkspaceService` for summary/section/validation/metadata/download so internal logic is ruleset-driven instead of SR5/XML hardwired. |
 
 ## Intake Template
 Add new items at the bottom:

@@ -219,9 +219,8 @@ public sealed class ShellPresenter : IShellPresenter
         }
 
         await _runtimeClient.SaveShellPreferencesAsync(
-            new ShellUserPreferences(
-                PreferredRulesetId: preferredRulesetId,
-                ActiveWorkspaceId: State.ActiveWorkspaceId?.Value),
+            new ShellPreferences(
+                PreferredRulesetId: preferredRulesetId),
             ct);
 
         Publish(State with
@@ -259,9 +258,8 @@ public sealed class ShellPresenter : IShellPresenter
 
         if (activeWorkspaceChanged)
         {
-            await _runtimeClient.SaveShellPreferencesAsync(
-                new ShellUserPreferences(
-                    PreferredRulesetId: preferredRulesetId,
+            await _runtimeClient.SaveShellSessionAsync(
+                new ShellSessionState(
                     ActiveWorkspaceId: resolvedActiveWorkspace?.Value),
                 ct);
         }

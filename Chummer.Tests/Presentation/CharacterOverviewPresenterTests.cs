@@ -707,7 +707,8 @@ public class CharacterOverviewPresenterTests
         private string _alias = "BLUE";
         private readonly Dictionary<string, WorkspaceListItem> _workspaces = new(StringComparer.Ordinal);
         private int _clock;
-        private ShellUserPreferences _preferences = ShellUserPreferences.Default;
+        private ShellPreferences _preferences = ShellPreferences.Default;
+        private ShellSessionState _session = ShellSessionState.Default;
         public bool ThrowOnCloseWorkspace { get; set; }
         public int DownloadCalls { get; private set; }
         public int GetCommandsCalls { get; private set; }
@@ -727,23 +728,34 @@ public class CharacterOverviewPresenterTests
             new("tab-gear", "Gear", "gear", "character", true, true)
         ];
 
-        public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+        public Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct)
         {
             return Task.FromResult(_preferences);
         }
 
-        public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+        public Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct)
         {
-            _preferences = new ShellUserPreferences(
-                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId),
-                ActiveWorkspaceId: NormalizeWorkspaceId(preferences.ActiveWorkspaceId));
+            _preferences = new ShellPreferences(
+                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+            return Task.CompletedTask;
+        }
+
+        public Task<ShellSessionState> GetShellSessionAsync(CancellationToken ct)
+        {
+            return Task.FromResult(_session);
+        }
+
+        public Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
+        {
+            _session = new ShellSessionState(
+                ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId));
             return Task.CompletedTask;
         }
 
         public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
         {
             IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
-            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, _preferences.ActiveWorkspaceId);
+            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, _session.ActiveWorkspaceId);
             string preferredRulesetId = RulesetDefaults.Normalize(_preferences.PreferredRulesetId);
             string activeRulesetId = activeWorkspaceId is null
                 ? preferredRulesetId

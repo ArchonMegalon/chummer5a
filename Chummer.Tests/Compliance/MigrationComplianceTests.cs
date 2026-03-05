@@ -802,6 +802,44 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Shell_preferences_and_session_are_persisted_through_separate_contracts()
+    {
+        string shellContractsPath = FindPath("Chummer.Contracts", "Presentation", "ShellBootstrapContracts.cs");
+        string shellContractsText = File.ReadAllText(shellContractsPath);
+        string clientContractPath = FindPath("Chummer.Presentation", "IChummerClient.cs");
+        string clientContractText = File.ReadAllText(clientContractPath);
+        string shellEndpointsPath = FindPath("Chummer.Api", "Endpoints", "ShellEndpoints.cs");
+        string shellEndpointsText = File.ReadAllText(shellEndpointsPath);
+        string shellPresenterPath = FindPath("Chummer.Presentation", "Shell", "ShellPresenter.cs");
+        string shellPresenterText = File.ReadAllText(shellPresenterPath);
+        string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string infrastructureDiText = File.ReadAllText(infrastructureDiPath);
+
+        StringAssert.Contains(shellContractsText, "public sealed record ShellPreferences");
+        StringAssert.Contains(shellContractsText, "public sealed record ShellSessionState");
+        Assert.IsFalse(shellContractsText.Contains("ShellUserPreferences", StringComparison.Ordinal));
+
+        StringAssert.Contains(clientContractText, "GetShellPreferencesAsync");
+        StringAssert.Contains(clientContractText, "SaveShellPreferencesAsync");
+        StringAssert.Contains(clientContractText, "GetShellSessionAsync");
+        StringAssert.Contains(clientContractText, "SaveShellSessionAsync");
+
+        StringAssert.Contains(shellEndpointsText, "/api/shell/preferences");
+        StringAssert.Contains(shellEndpointsText, "/api/shell/session");
+        StringAssert.Contains(shellEndpointsText, "IShellSessionService shellSessionService");
+        StringAssert.Contains(shellEndpointsText, "shellSessionService.Load()");
+
+        StringAssert.Contains(shellPresenterText, "SaveShellPreferencesAsync");
+        StringAssert.Contains(shellPresenterText, "SaveShellSessionAsync");
+        Assert.IsFalse(shellPresenterText.Contains("new ShellUserPreferences", StringComparison.Ordinal));
+
+        StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellPreferencesStore, SettingsShellPreferencesStore>();");
+        StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellSessionStore, SettingsShellSessionStore>();");
+        StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellPreferencesService, ShellPreferencesService>();");
+        StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellSessionService, ShellSessionService>();");
+    }
+
+    [TestMethod]
     public void Dual_head_shell_actions_and_controls_are_scoped_by_active_ruleset()
     {
         string blazorShellCodePath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor.cs");

@@ -19,24 +19,22 @@ public sealed class HttpChummerClient : IChummerClient
         _httpClient = httpClient;
     }
 
-    public async Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+    public async Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct)
     {
-        ShellUserPreferences? response = await _httpClient.GetFromJsonAsync<ShellUserPreferences>(
+        ShellPreferences? response = await _httpClient.GetFromJsonAsync<ShellPreferences>(
             "/api/shell/preferences",
             ct);
         if (response is null)
             throw new InvalidOperationException("Shell preferences response was empty.");
 
-        return new ShellUserPreferences(
-            PreferredRulesetId: RulesetDefaults.Normalize(response.PreferredRulesetId),
-            ActiveWorkspaceId: NormalizeWorkspaceId(response.ActiveWorkspaceId));
+        return new ShellPreferences(
+            PreferredRulesetId: RulesetDefaults.Normalize(response.PreferredRulesetId));
     }
 
-    public async Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+    public async Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct)
     {
-        ShellUserPreferences payload = new(
-            PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId),
-            ActiveWorkspaceId: NormalizeWorkspaceId(preferences.ActiveWorkspaceId));
+        ShellPreferences payload = new(
+            PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId));
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             "/api/shell/preferences",
             payload,
@@ -44,6 +42,32 @@ public sealed class HttpChummerClient : IChummerClient
         if (!response.IsSuccessStatusCode)
         {
             throw new InvalidOperationException($"Saving shell preferences failed with HTTP {(int)response.StatusCode}.");
+        }
+    }
+
+    public async Task<ShellSessionState> GetShellSessionAsync(CancellationToken ct)
+    {
+        ShellSessionState? response = await _httpClient.GetFromJsonAsync<ShellSessionState>(
+            "/api/shell/session",
+            ct);
+        if (response is null)
+            throw new InvalidOperationException("Shell session response was empty.");
+
+        return new ShellSessionState(
+            ActiveWorkspaceId: NormalizeWorkspaceId(response.ActiveWorkspaceId));
+    }
+
+    public async Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
+    {
+        ShellSessionState payload = new(
+            ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId));
+        using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
+            "/api/shell/session",
+            payload,
+            ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"Saving shell session failed with HTTP {(int)response.StatusCode}.");
         }
     }
 

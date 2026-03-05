@@ -16,15 +16,18 @@ public sealed class InProcessChummerClient : IChummerClient
     private readonly IWorkspaceService _workspaceService;
     private readonly IRulesetShellCatalogResolver _shellCatalogResolver;
     private readonly IShellPreferencesService _shellPreferencesService;
+    private readonly IShellSessionService _shellSessionService;
 
     public InProcessChummerClient(
         IWorkspaceService workspaceService,
         IRulesetShellCatalogResolver shellCatalogResolver,
-        IShellPreferencesService? shellPreferencesService = null)
+        IShellPreferencesService? shellPreferencesService = null,
+        IShellSessionService? shellSessionService = null)
     {
         _workspaceService = workspaceService;
         _shellCatalogResolver = shellCatalogResolver;
         _shellPreferencesService = shellPreferencesService ?? new ShellPreferencesService(new InMemoryShellPreferencesStore());
+        _shellSessionService = shellSessionService ?? new ShellSessionService(new InMemoryShellSessionStore());
     }
 
     public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
@@ -57,16 +60,29 @@ public sealed class InProcessChummerClient : IChummerClient
         return Task.FromResult(_shellCatalogResolver.ResolveNavigationTabs(rulesetId));
     }
 
-    public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+    public Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         return Task.FromResult(_shellPreferencesService.Load());
     }
 
-    public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+    public Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         _shellPreferencesService.Save(preferences);
+        return Task.CompletedTask;
+    }
+
+    public Task<ShellSessionState> GetShellSessionAsync(CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.FromResult(_shellSessionService.Load());
+    }
+
+    public Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        _shellSessionService.Save(session);
         return Task.CompletedTask;
     }
 
@@ -75,9 +91,10 @@ public sealed class InProcessChummerClient : IChummerClient
         ct.ThrowIfCancellationRequested();
 
         IReadOnlyList<WorkspaceListItem> workspaces = _workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
-        ShellUserPreferences preferences = _shellPreferencesService.Load();
+        ShellPreferences preferences = _shellPreferencesService.Load();
+        ShellSessionState session = _shellSessionService.Load();
         string preferredRulesetId = RulesetDefaults.Normalize(preferences.PreferredRulesetId);
-        CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, preferences.ActiveWorkspaceId);
+        CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, session.ActiveWorkspaceId);
         string activeRulesetId = ResolveRulesetForWorkspace(activeWorkspaceId, workspaces, preferredRulesetId);
         string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
             ? activeRulesetId
@@ -265,16 +282,31 @@ public sealed class InProcessChummerClient : IChummerClient
 
     private sealed class InMemoryShellPreferencesStore : IShellPreferencesStore
     {
-        private ShellUserPreferences _preferences = ShellUserPreferences.Default;
+        private ShellPreferences _preferences = ShellPreferences.Default;
 
-        public ShellUserPreferences Load()
+        public ShellPreferences Load()
         {
             return _preferences;
         }
 
-        public void Save(ShellUserPreferences preferences)
+        public void Save(ShellPreferences preferences)
         {
             _preferences = preferences;
+        }
+    }
+
+    private sealed class InMemoryShellSessionStore : IShellSessionStore
+    {
+        private ShellSessionState _session = ShellSessionState.Default;
+
+        public ShellSessionState Load()
+        {
+            return _session;
+        }
+
+        public void Save(ShellSessionState session)
+        {
+            _session = session;
         }
     }
 }
