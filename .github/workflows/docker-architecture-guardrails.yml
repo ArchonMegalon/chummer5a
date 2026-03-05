@@ -44,6 +44,18 @@ jobs:
       - name: Verify portal program formatting
         run: dotnet format style Chummer.Portal/Chummer.Portal.csproj --verify-no-changes --no-restore --include Chummer.Portal/Program.cs
 
+  parity-checklist-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Regenerate parity checklist
+        run: RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh
+
+      - name: Verify parity checklist is up to date
+        run: git diff --exit-code -- docs/PARITY_CHECKLIST.md
+
   linux-migration-loop:
     runs-on: ubuntu-latest
     timeout-minutes: 60
