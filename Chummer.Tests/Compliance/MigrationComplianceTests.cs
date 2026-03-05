@@ -1435,6 +1435,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(guardrailsWorkflowText, "dotnet format style Chummer.Portal/Chummer.Portal.csproj --verify-no-changes --no-restore --include Chummer.Portal/Program.cs");
         StringAssert.Contains(guardrailsWorkflowText, "parity-checklist-sync");
         StringAssert.Contains(guardrailsWorkflowText, "RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh");
+        StringAssert.Contains(guardrailsWorkflowText, "downloads-smoke-runbook");
+        StringAssert.Contains(guardrailsWorkflowText, "RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh");
         StringAssert.Contains(guardrailsWorkflowText, "git diff --exit-code -- docs/PARITY_CHECKLIST.md");
     }
 

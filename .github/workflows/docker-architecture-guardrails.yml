@@ -56,6 +56,15 @@ jobs:
       - name: Verify parity checklist is up to date
         run: git diff --exit-code -- docs/PARITY_CHECKLIST.md
 
+  downloads-smoke-runbook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run repo-local downloads smoke
+        run: RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh
+
   linux-migration-loop:
     runs-on: ubuntu-latest
     timeout-minutes: 60
