@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Application.Tools;
@@ -78,12 +77,12 @@ public sealed class InProcessChummerClientRulesetPluginTests
     [TestMethod]
     public async Task GetShellBootstrap_uses_saved_preferred_ruleset_when_no_workspaces_are_open()
     {
-        var settingsStore = new InMemorySettingsStore();
-        settingsStore.Save("global", new JsonObject { ["preferredRulesetId"] = "sr6" });
+        var preferencesStore = new InMemoryShellPreferencesStore();
+        preferencesStore.Save(new ShellUserPreferences("sr6"));
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
             new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
-            settingsStore);
+            new ShellPreferencesService(preferencesStore));
 
         ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
 
@@ -91,13 +90,13 @@ public sealed class InProcessChummerClientRulesetPluginTests
     }
 
     [TestMethod]
-    public async Task SaveShellPreferences_persists_preferred_ruleset_in_global_settings()
+    public async Task SaveShellPreferences_persists_preferred_ruleset()
     {
-        var settingsStore = new InMemorySettingsStore();
+        var preferencesStore = new InMemoryShellPreferencesStore();
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
             new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
-            settingsStore);
+            new ShellPreferencesService(preferencesStore));
 
         await client.SaveShellPreferencesAsync(new ShellUserPreferences("sr6"), CancellationToken.None);
         ShellUserPreferences restored = await client.GetShellPreferencesAsync(CancellationToken.None);
@@ -206,23 +205,18 @@ public sealed class InProcessChummerClientRulesetPluginTests
         }
     }
 
-    private sealed class InMemorySettingsStore : ISettingsStore
+    private sealed class InMemoryShellPreferencesStore : IShellPreferencesStore
     {
-        private readonly Dictionary<string, JsonObject> _settingsByScope = new(StringComparer.Ordinal);
+        private ShellUserPreferences _preferences = ShellUserPreferences.Default;
 
-        public JsonObject Load(string scope)
+        public ShellUserPreferences Load()
         {
-            if (_settingsByScope.TryGetValue(scope, out JsonObject? settings))
-            {
-                return (JsonObject)settings.DeepClone();
-            }
-
-            return new JsonObject();
+            return _preferences;
         }
 
-        public void Save(string scope, JsonObject settings)
+        public void Save(ShellUserPreferences preferences)
         {
-            _settingsByScope[scope] = (JsonObject)settings.DeepClone();
+            _preferences = preferences;
         }
     }
 

@@ -19,7 +19,8 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-006 | done | P1 | Fix UI Playwright flow to avoid clicking disabled `#tab-skills` and re-run `ui-e2e`. | agent | Completed on 2026-03-05; `ui-e2e` now reports `playwright UI flow completed`. |
 | WL-007 | done | P2 | Investigate and resolve residual Avalonia compile warning `AVLN3001` in `MainWindow.axaml`. | agent | Completed 2026-03-05 via runtime-loader-compatible `MainWindow` constructor path; docker build stage now reports `0 Warning(s)`. |
 | WL-008 | done | P1 | Milestone 1: enforce strict `IChummerClient` shell/bootstrap contract semantics. | agent | Completed 2026-03-05: interface defaults removed; all client stubs now explicitly define shell semantics; full docker gate passed (`390/390`). |
-| WL-009 | in_progress | P1 | Milestone 2 and 3 platform cleanup: dedicated shell preferences service + richer bootstrap session snapshot. | agent | Implement explicit shell-preference boundary and include active workspace session state in bootstrap contracts. |
+| WL-009 | in_progress | P1 | Milestone 3 platform cleanup: richer bootstrap session snapshot. | agent | Milestone 2 shell-preferences boundary completed; next is adding active workspace session state into bootstrap contracts and presenter restore flow. |
+| WL-010 | queued | P1 | Milestone 6: eliminate bootstrap workspace-cache preferred-ruleset drift. | agent | Remove SR5 fallback hardcode from workspace cache path and add regression test for non-SR5 preference persistence. |
 
 ## Intake Template
 Add new items at the bottom:

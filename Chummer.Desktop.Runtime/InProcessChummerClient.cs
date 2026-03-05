@@ -13,20 +13,18 @@ namespace Chummer.Desktop.Runtime;
 public sealed class InProcessChummerClient : IChummerClient
 {
     private static readonly JsonSerializerOptions SectionJsonOptions = new(JsonSerializerDefaults.Web);
-    private const string GlobalSettingsScope = "global";
-    private const string PreferredRulesetKey = "preferredRulesetId";
     private readonly IWorkspaceService _workspaceService;
     private readonly IRulesetShellCatalogResolver _shellCatalogResolver;
-    private readonly ISettingsStore _settingsStore;
+    private readonly IShellPreferencesService _shellPreferencesService;
 
     public InProcessChummerClient(
         IWorkspaceService workspaceService,
         IRulesetShellCatalogResolver shellCatalogResolver,
-        ISettingsStore? settingsStore = null)
+        IShellPreferencesService? shellPreferencesService = null)
     {
         _workspaceService = workspaceService;
         _shellCatalogResolver = shellCatalogResolver;
-        _settingsStore = settingsStore ?? new InMemorySettingsStore();
+        _shellPreferencesService = shellPreferencesService ?? new ShellPreferencesService(new InMemoryShellPreferencesStore());
     }
 
     public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
@@ -62,17 +60,13 @@ public sealed class InProcessChummerClient : IChummerClient
     public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        JsonObject settings = _settingsStore.Load(GlobalSettingsScope);
-        string preferredRulesetId = RulesetDefaults.Normalize(settings[PreferredRulesetKey]?.GetValue<string>());
-        return Task.FromResult(new ShellUserPreferences(preferredRulesetId));
+        return Task.FromResult(_shellPreferencesService.Load());
     }
 
     public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        JsonObject settings = _settingsStore.Load(GlobalSettingsScope);
-        settings[PreferredRulesetKey] = RulesetDefaults.Normalize(preferences.PreferredRulesetId);
-        _settingsStore.Save(GlobalSettingsScope, settings);
+        _shellPreferencesService.Save(preferences);
         return Task.CompletedTask;
     }
 
@@ -81,7 +75,7 @@ public sealed class InProcessChummerClient : IChummerClient
         ct.ThrowIfCancellationRequested();
 
         IReadOnlyList<WorkspaceListItem> workspaces = _workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
-        string preferredRulesetId = RulesetDefaults.Normalize(_settingsStore.Load(GlobalSettingsScope)[PreferredRulesetKey]?.GetValue<string>());
+        string preferredRulesetId = RulesetDefaults.Normalize(_shellPreferencesService.Load().PreferredRulesetId);
         string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
             ? RulesetDefaults.Normalize(workspaces.FirstOrDefault()?.RulesetId ?? preferredRulesetId)
             : RulesetDefaults.Normalize(rulesetId);
@@ -231,23 +225,18 @@ public sealed class InProcessChummerClient : IChummerClient
             ?? throw new InvalidOperationException($"{payloadName} was not found for workspace '{id.Value}'.");
     }
 
-    private sealed class InMemorySettingsStore : ISettingsStore
+    private sealed class InMemoryShellPreferencesStore : IShellPreferencesStore
     {
-        private readonly Dictionary<string, JsonObject> _settingsByScope = new(StringComparer.Ordinal);
+        private ShellUserPreferences _preferences = ShellUserPreferences.Default;
 
-        public JsonObject Load(string scope)
+        public ShellUserPreferences Load()
         {
-            if (_settingsByScope.TryGetValue(scope, out JsonObject? existing))
-            {
-                return (JsonObject)existing.DeepClone();
-            }
-
-            return new JsonObject();
+            return _preferences;
         }
 
-        public void Save(string scope, JsonObject settings)
+        public void Save(ShellUserPreferences preferences)
         {
-            _settingsByScope[scope] = (JsonObject)settings.DeepClone();
+            _preferences = preferences;
         }
     }
 }

@@ -1,5 +1,4 @@
 using System.Linq;
-using System.Text.Json.Nodes;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Presentation;
@@ -12,10 +11,21 @@ public static class ShellEndpoints
 {
     public static IEndpointRouteBuilder MapShellEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/shell/bootstrap", (string? ruleset, IWorkspaceService workspaceService, IRulesetShellCatalogResolver shellCatalogResolver, ISettingsStore settingsStore) =>
+        app.MapGet("/api/shell/preferences", (IShellPreferencesService shellPreferencesService) =>
+        {
+            return Results.Ok(shellPreferencesService.Load());
+        });
+
+        app.MapPost("/api/shell/preferences", (ShellUserPreferences? preferences, IShellPreferencesService shellPreferencesService) =>
+        {
+            shellPreferencesService.Save(preferences ?? ShellUserPreferences.Default);
+            return Results.Ok(shellPreferencesService.Load());
+        });
+
+        app.MapGet("/api/shell/bootstrap", (string? ruleset, IWorkspaceService workspaceService, IRulesetShellCatalogResolver shellCatalogResolver, IShellPreferencesService shellPreferencesService) =>
         {
             IReadOnlyList<WorkspaceListItem> workspaceList = workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
-            string preferredRulesetId = ResolvePreferredRulesetId(settingsStore);
+            string preferredRulesetId = RulesetDefaults.Normalize(shellPreferencesService.Load().PreferredRulesetId);
             string activeRulesetId = RulesetDefaults.Normalize(workspaceList.FirstOrDefault()?.RulesetId ?? preferredRulesetId);
             string requestedRulesetId = string.IsNullOrWhiteSpace(ruleset)
                 ? RulesetDefaults.Normalize(workspaceList.FirstOrDefault()?.RulesetId ?? preferredRulesetId)
@@ -39,11 +49,5 @@ public static class ShellEndpoints
         });
 
         return app;
-    }
-
-    private static string ResolvePreferredRulesetId(ISettingsStore settingsStore)
-    {
-        JsonObject globalSettings = settingsStore.Load("global");
-        return RulesetDefaults.Normalize(globalSettings["preferredRulesetId"]?.GetValue<string>());
     }
 }

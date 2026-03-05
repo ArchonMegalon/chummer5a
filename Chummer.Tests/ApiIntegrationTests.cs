@@ -504,7 +504,7 @@ public class ApiIntegrationTests
         using var client = CreateClient();
         client.Timeout = TimeSpan.FromSeconds(180);
         await ClearAllWorkspacesAsync(client);
-        await PostRequiredJsonObject(client, "/api/tools/settings/global", new JsonObject
+        await PostRequiredJsonObject(client, "/api/shell/preferences", new JsonObject
         {
             ["preferredRulesetId"] = "sr5"
         });
@@ -525,7 +525,7 @@ public class ApiIntegrationTests
         using var client = CreateClient();
         client.Timeout = TimeSpan.FromSeconds(180);
         await ClearAllWorkspacesAsync(client);
-        await PostRequiredJsonObject(client, "/api/tools/settings/global", new JsonObject
+        await PostRequiredJsonObject(client, "/api/shell/preferences", new JsonObject
         {
             ["preferredRulesetId"] = "sr5"
         });
@@ -552,7 +552,7 @@ public class ApiIntegrationTests
         client.Timeout = TimeSpan.FromSeconds(180);
 
         await ClearAllWorkspacesAsync(client);
-        await PostRequiredJsonObject(client, "/api/tools/settings/global", new JsonObject
+        await PostRequiredJsonObject(client, "/api/shell/preferences", new JsonObject
         {
             ["preferredRulesetId"] = "sr6"
         });

@@ -64,6 +64,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IToolCatalogService>(provider =>
             new XmlToolCatalogService(provider.GetRequiredService<IContentOverlayCatalogService>()));
         services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(stateDirectory));
+        services.AddSingleton<IShellPreferencesStore, SettingsShellPreferencesStore>();
+        services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
         services.AddSingleton<IRosterStore>(_ => new FileRosterStore(stateDirectory));
         services.AddSingleton<IWorkspaceStore>(_ =>
         {

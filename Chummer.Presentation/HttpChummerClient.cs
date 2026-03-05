@@ -21,21 +21,21 @@ public sealed class HttpChummerClient : IChummerClient
 
     public async Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
     {
-        SettingsScopeResponse response = await GetRequiredAsync<SettingsScopeResponse>("/api/tools/settings/global", ct);
-        string preferredRulesetId = RulesetDefaults.Normalize(
-            response.Settings?["preferredRulesetId"]?.GetValue<string>());
-        return new ShellUserPreferences(preferredRulesetId);
+        ShellUserPreferences? response = await _httpClient.GetFromJsonAsync<ShellUserPreferences>(
+            "/api/shell/preferences",
+            ct);
+        if (response is null)
+            throw new InvalidOperationException("Shell preferences response was empty.");
+
+        return new ShellUserPreferences(RulesetDefaults.Normalize(response.PreferredRulesetId));
     }
 
     public async Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
     {
-        JsonObject settings = new()
-        {
-            ["preferredRulesetId"] = RulesetDefaults.Normalize(preferences.PreferredRulesetId)
-        };
+        ShellUserPreferences payload = new(RulesetDefaults.Normalize(preferences.PreferredRulesetId));
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
-            "/api/tools/settings/global",
-            settings,
+            "/api/shell/preferences",
+            payload,
             ct);
         if (!response.IsSuccessStatusCode)
         {
@@ -332,8 +332,4 @@ public sealed class HttpChummerClient : IChummerClient
 
         return data;
     }
-
-    private sealed record SettingsScopeResponse(
-        string Scope,
-        JsonObject Settings);
 }
