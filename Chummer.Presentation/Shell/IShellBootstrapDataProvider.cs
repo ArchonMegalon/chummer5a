@@ -11,7 +11,8 @@ public sealed record ShellBootstrapData(
     IReadOnlyList<WorkspaceListItem> Workspaces,
     string PreferredRulesetId = RulesetDefaults.Sr5,
     string ActiveRulesetId = RulesetDefaults.Sr5,
-    CharacterWorkspaceId? ActiveWorkspaceId = null);
+    CharacterWorkspaceId? ActiveWorkspaceId = null,
+    string? ActiveTabId = null);
 
 public interface IShellBootstrapDataProvider
 {

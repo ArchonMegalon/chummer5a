@@ -817,6 +817,7 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(shellContractsText, "public sealed record ShellPreferences");
         StringAssert.Contains(shellContractsText, "public sealed record ShellSessionState");
+        StringAssert.Contains(shellContractsText, "string? ActiveTabId");
         Assert.IsFalse(shellContractsText.Contains("ShellUserPreferences", StringComparison.Ordinal));
 
         StringAssert.Contains(clientContractText, "GetShellPreferencesAsync");
@@ -828,9 +829,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(shellEndpointsText, "/api/shell/session");
         StringAssert.Contains(shellEndpointsText, "IShellSessionService shellSessionService");
         StringAssert.Contains(shellEndpointsText, "shellSessionService.Load()");
+        StringAssert.Contains(shellEndpointsText, "ActiveTabId: session.ActiveTabId");
 
         StringAssert.Contains(shellPresenterText, "SaveShellPreferencesAsync");
         StringAssert.Contains(shellPresenterText, "SaveShellSessionAsync");
+        StringAssert.Contains(shellPresenterText, "ActiveTabId = resolvedActiveTabId");
         Assert.IsFalse(shellPresenterText.Contains("new ShellUserPreferences", StringComparison.Ordinal));
 
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellPreferencesStore, SettingsShellPreferencesStore>();");

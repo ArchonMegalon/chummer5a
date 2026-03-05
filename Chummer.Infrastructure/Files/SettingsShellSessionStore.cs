@@ -7,6 +7,7 @@ public sealed class SettingsShellSessionStore : IShellSessionStore
 {
     private const string GlobalSettingsScope = "global";
     private const string ActiveWorkspaceIdKey = "activeWorkspaceId";
+    private const string ActiveTabIdKey = "activeTabId";
     private readonly ISettingsStore _settingsStore;
 
     public SettingsShellSessionStore(ISettingsStore settingsStore)
@@ -18,7 +19,8 @@ public sealed class SettingsShellSessionStore : IShellSessionStore
     {
         var settings = _settingsStore.Load(GlobalSettingsScope);
         string? activeWorkspaceId = settings[ActiveWorkspaceIdKey]?.GetValue<string>();
-        return new ShellSessionState(activeWorkspaceId);
+        string? activeTabId = settings[ActiveTabIdKey]?.GetValue<string>();
+        return new ShellSessionState(activeWorkspaceId, activeTabId);
     }
 
     public void Save(ShellSessionState session)
@@ -31,6 +33,15 @@ public sealed class SettingsShellSessionStore : IShellSessionStore
         else
         {
             settings[ActiveWorkspaceIdKey] = session.ActiveWorkspaceId;
+        }
+
+        if (string.IsNullOrWhiteSpace(session.ActiveTabId))
+        {
+            settings.Remove(ActiveTabIdKey);
+        }
+        else
+        {
+            settings[ActiveTabIdKey] = session.ActiveTabId;
         }
         _settingsStore.Save(GlobalSettingsScope, settings);
     }

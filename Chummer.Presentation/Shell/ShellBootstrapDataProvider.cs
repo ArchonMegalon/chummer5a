@@ -52,6 +52,7 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 PreferredRulesetId: preferredRulesetId,
                 ActiveRulesetId: ResolveRulesetForWorkspace(activeWorkspaceId, workspaces, preferredRulesetId),
                 ActiveWorkspaceId: activeWorkspaceId,
+                ActiveTabId: NormalizeTabId(session.ActiveTabId),
                 CachedAtUtc: DateTimeOffset.UtcNow);
             return workspaces;
         }
@@ -97,6 +98,7 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 PreferredRulesetId: RulesetDefaults.Normalize(snapshot.PreferredRulesetId),
                 ActiveRulesetId: activeRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId,
+                ActiveTabId: NormalizeTabId(snapshot.ActiveTabId),
                 CachedAtUtc: cachedAtUtc);
             var cachedCatalog = new CachedCatalogData(snapshot.Commands, snapshot.NavigationTabs, cachedAtUtc);
             _cachedCatalogsByRuleset[resolvedRulesetId] = cachedCatalog;
@@ -113,7 +115,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 Workspaces: snapshot.Workspaces,
                 PreferredRulesetId: RulesetDefaults.Normalize(snapshot.PreferredRulesetId),
                 ActiveRulesetId: activeRulesetId,
-                ActiveWorkspaceId: activeWorkspaceId);
+                ActiveWorkspaceId: activeWorkspaceId,
+                ActiveTabId: NormalizeTabId(snapshot.ActiveTabId));
         }
         finally
         {
@@ -139,7 +142,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 Workspaces: cachedWorkspaces.Workspaces,
                 PreferredRulesetId: cachedWorkspaces.PreferredRulesetId,
                 ActiveRulesetId: cachedWorkspaces.ActiveRulesetId,
-                ActiveWorkspaceId: cachedWorkspaces.ActiveWorkspaceId);
+                ActiveWorkspaceId: cachedWorkspaces.ActiveWorkspaceId,
+                ActiveTabId: cachedWorkspaces.ActiveTabId);
             return true;
         }
 
@@ -159,7 +163,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 Workspaces: cachedWorkspaces.Workspaces,
                 PreferredRulesetId: cachedWorkspaces.PreferredRulesetId,
                 ActiveRulesetId: cachedWorkspaces.ActiveRulesetId,
-                ActiveWorkspaceId: cachedWorkspaces.ActiveWorkspaceId);
+                ActiveWorkspaceId: cachedWorkspaces.ActiveWorkspaceId,
+                ActiveTabId: cachedWorkspaces.ActiveTabId);
             return true;
         }
 
@@ -226,6 +231,13 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
             : RulesetDefaults.Normalize(matchingWorkspace.RulesetId);
     }
 
+    private static string? NormalizeTabId(string? tabId)
+    {
+        return string.IsNullOrWhiteSpace(tabId)
+            ? null
+            : tabId.Trim();
+    }
+
     private sealed record CachedCatalogData(
         IReadOnlyList<AppCommandDefinition> Commands,
         IReadOnlyList<NavigationTabDefinition> NavigationTabs,
@@ -236,5 +248,6 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
         string PreferredRulesetId,
         string ActiveRulesetId,
         CharacterWorkspaceId? ActiveWorkspaceId,
+        string? ActiveTabId,
         DateTimeOffset CachedAtUtc);
 }

@@ -147,6 +147,24 @@ public sealed class InProcessChummerClientRulesetPluginTests
         Assert.AreEqual(RulesetDefaults.Sr5, snapshot.RulesetId);
     }
 
+    [TestMethod]
+    public async Task GetShellBootstrap_restores_saved_active_tab()
+    {
+        var preferencesStore = new InMemoryShellPreferencesStore();
+        preferencesStore.Save(new ShellPreferences(RulesetDefaults.Sr5));
+        var sessionStore = new InMemoryShellSessionStore();
+        sessionStore.Save(new ShellSessionState(ActiveTabId: "tab-rules"));
+        var client = new InProcessChummerClient(
+            new NoOpWorkspaceService(),
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            new ShellPreferencesService(preferencesStore),
+            new ShellSessionService(sessionStore));
+
+        ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
+
+        Assert.AreEqual("tab-rules", snapshot.ActiveTabId);
+    }
+
     private sealed class StubRulesetPlugin : IRulesetPlugin
     {
         public StubRulesetPlugin(

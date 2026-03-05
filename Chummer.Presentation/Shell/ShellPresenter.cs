@@ -56,6 +56,10 @@ public sealed class ShellPresenter : IShellPresenter
 
             IReadOnlyList<AppCommandDefinition> commands = bootstrap.Commands;
             IReadOnlyList<NavigationTabDefinition> tabs = bootstrap.NavigationTabs;
+            string? resolvedActiveTabId = ResolveActiveTabId(
+                tabs,
+                requestedActiveTabId: bootstrap.ActiveTabId,
+                currentActiveTabId: State.ActiveTabId);
 
             AppCommandDefinition[] menuRoots = BuildMenuRoots(commands);
 
@@ -71,7 +75,7 @@ public sealed class ShellPresenter : IShellPresenter
                 Commands = commands,
                 MenuRoots = menuRoots,
                 NavigationTabs = tabs,
-                ActiveTabId = ResolveActiveTabId(tabs, currentActiveTabId: State.ActiveTabId),
+                ActiveTabId = resolvedActiveTabId,
                 OpenMenuId = null
             });
         }
@@ -135,12 +139,12 @@ public sealed class ShellPresenter : IShellPresenter
         return Task.CompletedTask;
     }
 
-    public Task SelectTabAsync(string tabId, CancellationToken ct)
+    public async Task SelectTabAsync(string tabId, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(tabId))
         {
             Publish(State with { Error = "Tab id is required." });
-            return Task.CompletedTask;
+            return;
         }
 
         NavigationTabDefinition? tab = State.NavigationTabs
@@ -148,14 +152,20 @@ public sealed class ShellPresenter : IShellPresenter
         if (tab is null)
         {
             Publish(State with { Error = $"Unknown tab '{tabId}'." });
-            return Task.CompletedTask;
+            return;
         }
 
         if (!tab.EnabledByDefault)
         {
             Publish(State with { Error = $"Tab '{tabId}' is disabled." });
-            return Task.CompletedTask;
+            return;
         }
+
+        await _runtimeClient.SaveShellSessionAsync(
+            new ShellSessionState(
+                ActiveWorkspaceId: State.ActiveWorkspaceId?.Value,
+                ActiveTabId: tab.Id),
+            ct);
 
         Publish(State with
         {
@@ -165,7 +175,6 @@ public sealed class ShellPresenter : IShellPresenter
             Notice = $"Selected tab '{tab.Id}'."
         });
 
-        return Task.CompletedTask;
     }
 
     public Task ToggleMenuAsync(string menuId, CancellationToken ct)
@@ -223,6 +232,20 @@ public sealed class ShellPresenter : IShellPresenter
                 PreferredRulesetId: preferredRulesetId),
             ct);
 
+        string? resolvedActiveTabId = ResolveActiveTabId(
+            tabs,
+            requestedActiveTabId: State.ActiveTabId,
+            currentActiveTabId: State.ActiveTabId);
+        bool activeTabChanged = !string.Equals(State.ActiveTabId, resolvedActiveTabId, StringComparison.Ordinal);
+        if (activeTabChanged)
+        {
+            await _runtimeClient.SaveShellSessionAsync(
+                new ShellSessionState(
+                    ActiveWorkspaceId: State.ActiveWorkspaceId?.Value,
+                    ActiveTabId: resolvedActiveTabId),
+                ct);
+        }
+
         Publish(State with
         {
             Error = null,
@@ -231,7 +254,7 @@ public sealed class ShellPresenter : IShellPresenter
             Commands = commands,
             MenuRoots = BuildMenuRoots(commands),
             NavigationTabs = tabs,
-            ActiveTabId = ResolveActiveTabId(tabs, State.ActiveTabId),
+            ActiveTabId = resolvedActiveTabId,
             OpenMenuId = null,
             Notice = $"Preferred ruleset set to '{preferredRulesetId}'."
         });
@@ -256,11 +279,18 @@ public sealed class ShellPresenter : IShellPresenter
             tabs = bootstrap.NavigationTabs;
         }
 
-        if (activeWorkspaceChanged)
+        string? resolvedActiveTabId = ResolveActiveTabId(
+            tabs,
+            requestedActiveTabId: State.ActiveTabId,
+            currentActiveTabId: State.ActiveTabId);
+        bool activeTabChanged = !string.Equals(State.ActiveTabId, resolvedActiveTabId, StringComparison.Ordinal);
+
+        if (activeWorkspaceChanged || activeTabChanged)
         {
             await _runtimeClient.SaveShellSessionAsync(
                 new ShellSessionState(
-                    ActiveWorkspaceId: resolvedActiveWorkspace?.Value),
+                    ActiveWorkspaceId: resolvedActiveWorkspace?.Value,
+                    ActiveTabId: resolvedActiveTabId),
                 ct);
         }
 
@@ -273,7 +303,7 @@ public sealed class ShellPresenter : IShellPresenter
             Commands = commands,
             MenuRoots = BuildMenuRoots(commands),
             NavigationTabs = tabs,
-            ActiveTabId = ResolveActiveTabId(tabs, State.ActiveTabId)
+            ActiveTabId = resolvedActiveTabId
         });
     }
 
@@ -332,8 +362,17 @@ public sealed class ShellPresenter : IShellPresenter
             : RulesetDefaults.Normalize(workspace.RulesetId);
     }
 
-    private static string? ResolveActiveTabId(IReadOnlyList<NavigationTabDefinition> tabs, string? currentActiveTabId)
+    private static string? ResolveActiveTabId(
+        IReadOnlyList<NavigationTabDefinition> tabs,
+        string? requestedActiveTabId,
+        string? currentActiveTabId)
     {
+        if (!string.IsNullOrWhiteSpace(requestedActiveTabId)
+            && tabs.Any(tab => tab.EnabledByDefault && string.Equals(tab.Id, requestedActiveTabId, StringComparison.Ordinal)))
+        {
+            return requestedActiveTabId;
+        }
+
         if (!string.IsNullOrWhiteSpace(currentActiveTabId)
             && tabs.Any(tab => tab.EnabledByDefault && string.Equals(tab.Id, currentActiveTabId, StringComparison.Ordinal)))
         {

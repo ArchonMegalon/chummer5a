@@ -748,7 +748,8 @@ public class CharacterOverviewPresenterTests
         public Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
         {
             _session = new ShellSessionState(
-                ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId));
+                ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
+                ActiveTabId: NormalizeTabId(session.ActiveTabId));
             return Task.CompletedTask;
         }
 
@@ -773,7 +774,8 @@ public class CharacterOverviewPresenterTests
                 Workspaces: workspaces,
                 PreferredRulesetId: preferredRulesetId,
                 ActiveRulesetId: activeRulesetId,
-                ActiveWorkspaceId: activeWorkspaceId);
+                ActiveWorkspaceId: activeWorkspaceId,
+                ActiveTabId: NormalizeTabId(_session.ActiveTabId));
         }
 
         public void SeedWorkspace(
@@ -1122,6 +1124,13 @@ public class CharacterOverviewPresenterTests
             return string.IsNullOrWhiteSpace(workspaceId)
                 ? null
                 : workspaceId.Trim();
+        }
+
+        private static string? NormalizeTabId(string? tabId)
+        {
+            return string.IsNullOrWhiteSpace(tabId)
+                ? null
+                : tabId.Trim();
         }
 
         private static CharacterWorkspaceId? ResolveActiveWorkspaceId(

@@ -32,7 +32,8 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-019 | done | P1 | Non-CI e2e soft-fail for Docker daemon permission blockers. | agent | Completed 2026-03-05: UI/portal e2e scripts now downgrade daemon-permission-denied failures to explicit skip outside CI, keep CI strict, and surface skip reasons in runbook summaries. |
 | WL-020 | done | P1 | Split shell preferences from shell session model. | agent | Completed 2026-03-05: shell preferences/session now persist through separate contracts (`ShellPreferences`, `ShellSessionState`), separate API endpoints (`/api/shell/preferences`, `/api/shell/session`), and separate presenter/client save paths. |
 | WL-021 | done | P1 | Move workspace behavior onto ruleset codec seam. | agent | Completed 2026-03-05: introduced ruleset workspace codec contracts/resolver, added SR5 codec implementation, and updated `WorkspaceService` to dispatch import/summary/section/validation/metadata through codec resolution. |
-| WL-022 | in_progress | P1 | Persist active tab state in shell session snapshot. | agent | Extend shell session contracts + bootstrap and presenter wiring so startup restores active tab context explicitly rather than relying on implicit default-tab selection. |
+| WL-022 | done | P1 | Persist active tab state in shell session snapshot. | agent | Completed 2026-03-05: active tab now persists via shell session contracts/store/endpoints and is restored through bootstrap + shell presenter initialization. |
+| WL-023 | in_progress | P2 | Persist last active tab per workspace. | agent | Add optional per-workspace tab map in shell session persistence so workspace switches restore contextual tabs without cross-workspace tab bleed. |
 
 ## Intake Template
 Add new items at the bottom:

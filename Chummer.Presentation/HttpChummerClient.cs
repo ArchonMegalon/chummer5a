@@ -54,13 +54,15 @@ public sealed class HttpChummerClient : IChummerClient
             throw new InvalidOperationException("Shell session response was empty.");
 
         return new ShellSessionState(
-            ActiveWorkspaceId: NormalizeWorkspaceId(response.ActiveWorkspaceId));
+            ActiveWorkspaceId: NormalizeWorkspaceId(response.ActiveWorkspaceId),
+            ActiveTabId: NormalizeTabId(response.ActiveTabId));
     }
 
     public async Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
     {
         ShellSessionState payload = new(
-            ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId));
+            ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
+            ActiveTabId: NormalizeTabId(session.ActiveTabId));
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             "/api/shell/session",
             payload,
@@ -185,7 +187,8 @@ public sealed class HttpChummerClient : IChummerClient
             Workspaces: workspaces,
             PreferredRulesetId: RulesetDefaults.Normalize(response.PreferredRulesetId),
             ActiveRulesetId: RulesetDefaults.Normalize(response.ActiveRulesetId),
-            ActiveWorkspaceId: ParseWorkspaceId(response.ActiveWorkspaceId));
+            ActiveWorkspaceId: ParseWorkspaceId(response.ActiveWorkspaceId),
+            ActiveTabId: NormalizeTabId(response.ActiveTabId));
     }
 
     public async Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
@@ -358,6 +361,13 @@ public sealed class HttpChummerClient : IChummerClient
         return string.IsNullOrWhiteSpace(workspaceId)
             ? null
             : workspaceId.Trim();
+    }
+
+    private static string? NormalizeTabId(string? tabId)
+    {
+        return string.IsNullOrWhiteSpace(tabId)
+            ? null
+            : tabId.Trim();
     }
 
     private static CharacterWorkspaceId? ParseWorkspaceId(string? workspaceId)

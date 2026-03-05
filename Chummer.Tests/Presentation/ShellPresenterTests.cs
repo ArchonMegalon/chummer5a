@@ -259,6 +259,26 @@ public class ShellPresenterTests
     }
 
     [TestMethod]
+    public async Task InitializeAsync_restores_active_tab_from_bootstrap_session()
+    {
+        var client = new ShellClientStub
+        {
+            Workspaces = Array.Empty<WorkspaceListItem>(),
+            NavigationTabs =
+            [
+                new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true),
+                new NavigationTabDefinition("tab-rules", "Rules", "rules", "character", true, true)
+            ],
+            Session = new ShellSessionState(ActiveTabId: "tab-rules")
+        };
+        var presenter = new ShellPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        Assert.AreEqual("tab-rules", presenter.State.ActiveTabId);
+    }
+
+    [TestMethod]
     public async Task SetPreferredRulesetAsync_persists_preference_via_runtime_client()
     {
         var client = new ShellClientStub
@@ -272,6 +292,19 @@ public class ShellPresenterTests
 
         Assert.HasCount(1, client.SavedPreferences);
         Assert.AreEqual("sr6", client.SavedPreferences[0].PreferredRulesetId);
+    }
+
+    [TestMethod]
+    public async Task SelectTabAsync_persists_active_tab_in_shell_session()
+    {
+        var client = new ShellClientStub();
+        var presenter = new ShellPresenter(client);
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        await presenter.SelectTabAsync("tab-info", CancellationToken.None);
+
+        Assert.IsTrue(client.SavedSessions.Count > 0);
+        Assert.AreEqual("tab-info", client.SavedSessions[^1].ActiveTabId);
     }
 
     private static WorkspaceListItem CreateWorkspace(
@@ -350,7 +383,8 @@ public class ShellPresenterTests
         public Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
         {
             Session = new ShellSessionState(
-                ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId));
+                ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
+                ActiveTabId: NormalizeTabId(session.ActiveTabId));
             SavedSessions.Add(Session);
             return Task.CompletedTask;
         }
@@ -377,7 +411,8 @@ public class ShellPresenterTests
                 Workspaces: workspaces,
                 PreferredRulesetId: preferredRulesetId,
                 ActiveRulesetId: activeRulesetId,
-                ActiveWorkspaceId: activeWorkspaceId);
+                ActiveWorkspaceId: activeWorkspaceId,
+                ActiveTabId: NormalizeTabId(Session.ActiveTabId));
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();
@@ -415,6 +450,13 @@ public class ShellPresenterTests
             return string.IsNullOrWhiteSpace(workspaceId)
                 ? null
                 : workspaceId.Trim();
+        }
+
+        private static string? NormalizeTabId(string? tabId)
+        {
+            return string.IsNullOrWhiteSpace(tabId)
+                ? null
+                : tabId.Trim();
         }
 
         private static CharacterWorkspaceId? ResolveActiveWorkspaceId(

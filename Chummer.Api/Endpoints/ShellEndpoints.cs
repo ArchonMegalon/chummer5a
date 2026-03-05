@@ -60,7 +60,8 @@ public static class ShellEndpoints
                 Workspaces: workspaces,
                 PreferredRulesetId: preferredRulesetId,
                 ActiveRulesetId: activeRulesetId,
-                ActiveWorkspaceId: activeWorkspaceId?.Value));
+                ActiveWorkspaceId: activeWorkspaceId?.Value,
+                ActiveTabId: session.ActiveTabId));
         });
 
         return app;

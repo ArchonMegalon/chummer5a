@@ -15,7 +15,8 @@ public sealed record ShellPreferences(
 }
 
 public sealed record ShellSessionState(
-    string? ActiveWorkspaceId = null)
+    string? ActiveWorkspaceId = null,
+    string? ActiveTabId = null)
 {
     public static ShellSessionState Default { get; } = new();
 }
@@ -27,7 +28,8 @@ public sealed record ShellBootstrapResponse(
     IReadOnlyList<WorkspaceListItemResponse> Workspaces,
     string PreferredRulesetId = RulesetDefaults.Sr5,
     string ActiveRulesetId = RulesetDefaults.Sr5,
-    string? ActiveWorkspaceId = null);
+    string? ActiveWorkspaceId = null,
+    string? ActiveTabId = null);
 
 public sealed record ShellBootstrapSnapshot(
     string RulesetId,
@@ -36,4 +38,5 @@ public sealed record ShellBootstrapSnapshot(
     IReadOnlyList<WorkspaceListItem> Workspaces,
     string PreferredRulesetId = RulesetDefaults.Sr5,
     string ActiveRulesetId = RulesetDefaults.Sr5,
-    CharacterWorkspaceId? ActiveWorkspaceId = null);
+    CharacterWorkspaceId? ActiveWorkspaceId = null,
+    string? ActiveTabId = null);

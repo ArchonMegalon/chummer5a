@@ -144,7 +144,8 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
             Workspaces: workspaces,
             PreferredRulesetId: shellState.PreferredRulesetId,
             ActiveRulesetId: shellState.ActiveRulesetId,
-            ActiveWorkspaceId: shellState.ActiveWorkspaceId);
+            ActiveWorkspaceId: shellState.ActiveWorkspaceId,
+            ActiveTabId: shellState.ActiveTabId);
         return true;
     }
 }

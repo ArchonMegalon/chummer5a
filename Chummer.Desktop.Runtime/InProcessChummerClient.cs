@@ -107,7 +107,8 @@ public sealed class InProcessChummerClient : IChummerClient
             Workspaces: workspaces,
             PreferredRulesetId: preferredRulesetId,
             ActiveRulesetId: activeRulesetId,
-            ActiveWorkspaceId: activeWorkspaceId));
+            ActiveWorkspaceId: activeWorkspaceId,
+            ActiveTabId: session.ActiveTabId));
     }
 
     public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)

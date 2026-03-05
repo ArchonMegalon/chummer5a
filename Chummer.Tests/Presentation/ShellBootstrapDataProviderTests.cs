@@ -88,6 +88,20 @@ public class ShellBootstrapDataProviderTests
     }
 
     [TestMethod]
+    public async Task GetAsync_includes_active_tab_from_bootstrap_snapshot()
+    {
+        var client = new BootstrapClientStub
+        {
+            Session = new ShellSessionState(ActiveTabId: "tab-rules")
+        };
+        var provider = new ShellBootstrapDataProvider(client);
+
+        ShellBootstrapData bootstrap = await provider.GetAsync(CancellationToken.None);
+
+        Assert.AreEqual("tab-rules", bootstrap.ActiveTabId);
+    }
+
+    [TestMethod]
     public async Task Shared_provider_avoids_duplicate_startup_fetches_between_shell_and_overview()
     {
         var client = new BootstrapClientStub();
@@ -160,7 +174,8 @@ public class ShellBootstrapDataProviderTests
         public Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
         {
             Session = new ShellSessionState(
-                ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId));
+                ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
+                ActiveTabId: NormalizeTabId(session.ActiveTabId));
             return Task.CompletedTask;
         }
 
@@ -204,7 +219,8 @@ public class ShellBootstrapDataProviderTests
                 workspaces,
                 PreferredRulesetId: preferredRulesetId,
                 ActiveRulesetId: activeRulesetId,
-                ActiveWorkspaceId: activeWorkspaceId);
+                ActiveWorkspaceId: activeWorkspaceId,
+                ActiveTabId: NormalizeTabId(Session.ActiveTabId));
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();
@@ -228,6 +244,13 @@ public class ShellBootstrapDataProviderTests
             return string.IsNullOrWhiteSpace(workspaceId)
                 ? null
                 : workspaceId.Trim();
+        }
+
+        private static string? NormalizeTabId(string? tabId)
+        {
+            return string.IsNullOrWhiteSpace(tabId)
+                ? null
+                : tabId.Trim();
         }
 
         private static CharacterWorkspaceId? ResolveActiveWorkspaceId(
