@@ -167,6 +167,8 @@ public sealed class BlazorShellComponentTests
         using var context = new BunitContext();
         IRenderedComponent<WorkspaceLeftPane> cut = context.Render<WorkspaceLeftPane>(parameters => parameters
             .Add(component => component.State, state)
+            .Add(component => component.OpenWorkspaces, [openWorkspace])
+            .Add(component => component.ActiveWorkspaceId, workspaceId)
             .Add(component => component.NavigationTabs,
             [
                 new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true),

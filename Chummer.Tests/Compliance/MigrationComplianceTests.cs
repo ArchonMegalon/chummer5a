@@ -774,16 +774,15 @@ public class MigrationComplianceTests
         StringAssert.Contains(providerContractText, "ShellBootstrapData");
         StringAssert.Contains(providerImplementationText, "public sealed class ShellBootstrapDataProvider");
         StringAssert.Contains(providerImplementationText, "BootstrapCacheWindow");
-        StringAssert.Contains(providerImplementationText, "Task.WhenAll");
         StringAssert.Contains(providerImplementationText, "GetWorkspacesAsync");
         StringAssert.Contains(providerImplementationText, "_client.GetShellBootstrapAsync");
-        StringAssert.Contains(providerImplementationText, "_client.GetCommandsAsync");
-        StringAssert.Contains(providerImplementationText, "_client.GetNavigationTabsAsync");
         StringAssert.Contains(providerImplementationText, "_client.ListWorkspacesAsync");
 
         StringAssert.Contains(shellPresenterText, "_bootstrapDataProvider.GetAsync");
         StringAssert.Contains(overviewPresenterText, "_bootstrapDataProvider.GetAsync");
         Assert.IsFalse(shellPresenterText.Contains("_client.GetCommandsAsync", StringComparison.Ordinal));
+        Assert.IsFalse(shellPresenterText.Contains("_runtimeClient.GetCommandsAsync", StringComparison.Ordinal));
+        Assert.IsFalse(shellPresenterText.Contains("_runtimeClient.GetNavigationTabsAsync", StringComparison.Ordinal));
         Assert.IsFalse(overviewPresenterText.Contains("_client.GetCommandsAsync", StringComparison.Ordinal));
 
         StringAssert.Contains(blazorProgramText, "AddScoped<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();");
@@ -804,8 +803,14 @@ public class MigrationComplianceTests
         StringAssert.Contains(blazorShellCodeText, "public IShellSurfaceResolver ShellSurfaceResolver { get; set; } = default!;");
         StringAssert.Contains(blazorShellCodeText, "RefreshShellSurfaceState()");
         StringAssert.Contains(blazorShellCodeText, "ShellSurfaceResolver.Resolve(State, ShellState)");
+        StringAssert.Contains(blazorShellCodeText, "_shellSurfaceState.Commands");
+        StringAssert.Contains(blazorShellCodeText, "_shellSurfaceState.MenuRoots");
+        StringAssert.Contains(blazorShellCodeText, "_shellSurfaceState.NavigationTabs");
 
-        StringAssert.Contains(avaloniaStateText, "_shellSurfaceResolver.Resolve(state, shellState)");
+        StringAssert.Contains(avaloniaStateText, "_shellSurfaceResolver.Resolve(state, _shellPresenter.State)");
+        StringAssert.Contains(avaloniaStateText, "shellSurface.Commands");
+        StringAssert.Contains(avaloniaStateText, "shellSurface.MenuRoots");
+        StringAssert.Contains(avaloniaStateText, "shellSurface.NavigationTabs");
         StringAssert.Contains(avaloniaStateText, "shellSurface.WorkspaceActions");
         StringAssert.Contains(avaloniaStateText, "shellSurface.DesktopUiControls");
 
@@ -820,6 +825,10 @@ public class MigrationComplianceTests
     {
         string rulesetServicesPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetShellServices.cs");
         string rulesetServicesText = File.ReadAllText(rulesetServicesPath);
+        string rulesetDiExtensionsPath = FindPath("Chummer.Rulesets.Sr5", "ServiceCollectionRulesetExtensions.cs");
+        string rulesetDiExtensionsText = File.ReadAllText(rulesetDiExtensionsPath);
+        string sr5RulesetPluginPath = FindPath("Chummer.Rulesets.Sr5", "Sr5RulesetPlugin.cs");
+        string sr5RulesetPluginText = File.ReadAllText(sr5RulesetPluginPath);
         string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
         string infrastructureDiText = File.ReadAllText(infrastructureDiPath);
         string desktopRuntimeDiPath = FindPath("Chummer.Desktop.Runtime", "ServiceCollectionDesktopRuntimeExtensions.cs");
@@ -844,13 +853,16 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetPluginRegistry");
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetShellCatalogResolver");
         StringAssert.Contains(rulesetServicesText, "public sealed class RulesetShellCatalogResolverService");
+        Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Rulesets", "Sr5RulesetPlugin.cs"));
 
-        StringAssert.Contains(infrastructureDiText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
-        StringAssert.Contains(infrastructureDiText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
-        StringAssert.Contains(desktopRuntimeDiText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
-        StringAssert.Contains(desktopRuntimeDiText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
-        StringAssert.Contains(blazorProgramText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
-        StringAssert.Contains(blazorProgramText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
+        StringAssert.Contains(rulesetDiExtensionsText, "AddChummerRulesets(this IServiceCollection services)");
+        StringAssert.Contains(rulesetDiExtensionsText, "Chummer.Rulesets.Sr5.Sr5RulesetPlugin");
+        StringAssert.Contains(sr5RulesetPluginText, "public class Sr5RulesetPlugin");
+        StringAssert.Contains(rulesetDiExtensionsText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
+        StringAssert.Contains(rulesetDiExtensionsText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
+        StringAssert.Contains(infrastructureDiText, "services.AddChummerRulesets();");
+        StringAssert.Contains(desktopRuntimeDiText, "services.AddChummerRulesets();");
+        StringAssert.Contains(blazorProgramText, "builder.Services.AddChummerRulesets();");
         StringAssert.Contains(blazorProgramText, "AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();");
 
         StringAssert.Contains(commandEndpointsText, "IRulesetShellCatalogResolver shellCatalogResolver");
@@ -891,6 +903,8 @@ public class MigrationComplianceTests
         string actionCatalogText = File.ReadAllText(actionCatalogPath);
         string controlCatalogPath = FindPath("Chummer.Contracts", "Presentation", "DesktopUiControlCatalog.cs");
         string controlCatalogText = File.ReadAllText(controlCatalogPath);
+        string fileWorkspaceStorePath = FindPath("Chummer.Infrastructure", "Workspaces", "FileWorkspaceStore.cs");
+        string fileWorkspaceStoreText = File.ReadAllText(fileWorkspaceStorePath);
 
         StringAssert.Contains(rulesetContractsText, "public static class RulesetDefaults");
         StringAssert.Contains(rulesetContractsText, "public readonly record struct RulesetId");
@@ -920,6 +934,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(actionCatalogText, "ForTab(string? tabId, string? rulesetId)");
         StringAssert.Contains(controlCatalogText, "ForRuleset(string? rulesetId)");
         StringAssert.Contains(controlCatalogText, "ForTab(string? tabId, string? rulesetId)");
+        StringAssert.Contains(fileWorkspaceStoreText, "WorkspacePayloadEnvelope");
+        StringAssert.Contains(fileWorkspaceStoreText, "PayloadKind");
+        StringAssert.Contains(fileWorkspaceStoreText, "Envelope");
     }
 
     [TestMethod]
@@ -1034,6 +1051,8 @@ public class MigrationComplianceTests
     {
         string xamlPath = FindPath("Chummer.Avalonia", "MainWindow.axaml");
         string xamlText = File.ReadAllText(xamlPath);
+        string menuControlPath = FindPath("Chummer.Avalonia", "Controls", "ShellMenuBarControl.axaml");
+        string menuControlText = File.ReadAllText(menuControlPath);
         string codePath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
         string codeText = File.ReadAllText(codePath);
         string statePath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
@@ -1041,18 +1060,53 @@ public class MigrationComplianceTests
 
         Assert.IsFalse(codeText.Contains("FindControl<", StringComparison.Ordinal));
         StringAssert.Contains(codeText, "public MainWindow(");
-        StringAssert.Contains(codeText, "_commandsList = CommandsList;");
-        StringAssert.Contains(codeText, "_openWorkspacesList = OpenWorkspacesList;");
-        StringAssert.Contains(codeText, "_navigationTabsList = NavigationTabsList;");
-        StringAssert.Contains(codeText, "_dialogActionsList = DialogActionsList;");
+        StringAssert.Contains(codeText, "_toolStrip = ToolStripControl;");
+        StringAssert.Contains(codeText, "_workspaceStrip = WorkspaceStripControl;");
+        StringAssert.Contains(codeText, "_menuBar = ShellMenuBarControl;");
+        StringAssert.Contains(codeText, "_toolStrip.ImportFileRequested +=");
+        StringAssert.Contains(codeText, "_toolStrip.ImportRawRequested +=");
+        StringAssert.Contains(codeText, "_toolStrip.SaveRequested +=");
+        StringAssert.Contains(codeText, "_toolStrip.CloseWorkspaceRequested +=");
+        StringAssert.Contains(codeText, "_menuBar.MenuSelected +=");
+        StringAssert.Contains(codeText, "_navigatorPane = NavigatorPaneControl;");
+        StringAssert.Contains(codeText, "_sectionHost = SectionHostControl;");
+        StringAssert.Contains(codeText, "_commandDialogPane = CommandDialogPaneControl;");
+        StringAssert.Contains(codeText, "_summaryHeader = SummaryHeaderControl;");
+        StringAssert.Contains(codeText, "_statusStrip = StatusStripControl;");
+        StringAssert.Contains(codeText, "_navigatorPane.WorkspaceSelected +=");
+        StringAssert.Contains(codeText, "_commandDialogPane.CommandSelected +=");
         StringAssert.Contains(stateText, "UpdateMenuButtonStates");
-        StringAssert.Contains(stateText, "menuButton.Classes.Set(\"active-menu\", active);");
+        StringAssert.Contains(stateText, "_menuBar.SetMenuState(");
+        StringAssert.Contains(stateText, "_navigatorPane.SetOpenWorkspaces(");
+        StringAssert.Contains(stateText, "_navigatorPane.SetNavigationTabs(");
+        StringAssert.Contains(stateText, "_navigatorPane.SetSectionActions(");
+        StringAssert.Contains(stateText, "_navigatorPane.SetUiControls(");
+        StringAssert.Contains(stateText, "_commandDialogPane.SetCommands(");
+        StringAssert.Contains(stateText, "_commandDialogPane.SetDialog(");
+        StringAssert.Contains(stateText, "_sectionHost.SetNotice(");
+        StringAssert.Contains(stateText, "_sectionHost.SetSectionPreview(");
+        StringAssert.Contains(stateText, "_toolStrip.SetStatusText(");
+        StringAssert.Contains(stateText, "_workspaceStrip.SetWorkspaceText(");
+        StringAssert.Contains(stateText, "_summaryHeader.SetValues(");
+        StringAssert.Contains(stateText, "_statusStrip.SetValues(");
 
-        StringAssert.Contains(xamlText, "x:Name=\"CommandsList\"");
-        StringAssert.Contains(xamlText, "x:Name=\"OpenWorkspacesList\"");
-        StringAssert.Contains(xamlText, "x:Name=\"NavigationTabsList\"");
-        StringAssert.Contains(xamlText, "x:Name=\"DialogActionsList\"");
-        StringAssert.Contains(xamlText, "Classes=\"menu-button\"");
+        StringAssert.Contains(xamlText, "x:Name=\"ToolStripControl\"");
+        StringAssert.Contains(xamlText, "x:Name=\"WorkspaceStripControl\"");
+        StringAssert.Contains(xamlText, "x:Name=\"ShellMenuBarControl\"");
+        StringAssert.Contains(xamlText, "x:Name=\"NavigatorPaneControl\"");
+        StringAssert.Contains(xamlText, "x:Name=\"SectionHostControl\"");
+        StringAssert.Contains(xamlText, "x:Name=\"CommandDialogPaneControl\"");
+        StringAssert.Contains(xamlText, "x:Name=\"SummaryHeaderControl\"");
+        StringAssert.Contains(xamlText, "x:Name=\"StatusStripControl\"");
+        StringAssert.Contains(xamlText, "<controls:ToolStripControl");
+        StringAssert.Contains(xamlText, "<controls:WorkspaceStripControl");
+        StringAssert.Contains(xamlText, "<controls:ShellMenuBarControl");
+        StringAssert.Contains(xamlText, "<controls:NavigatorPaneControl");
+        StringAssert.Contains(xamlText, "<controls:SectionHostControl");
+        StringAssert.Contains(xamlText, "<controls:CommandDialogPaneControl");
+        StringAssert.Contains(xamlText, "<controls:SummaryHeaderControl");
+        StringAssert.Contains(xamlText, "<controls:StatusStripControl");
+        StringAssert.Contains(menuControlText, "Classes=\"menu-button\"");
         StringAssert.Contains(xamlText, "Button.menu-button.active-menu");
     }
 
@@ -1061,6 +1115,10 @@ public class MigrationComplianceTests
     {
         string xamlPath = FindPath("Chummer.Avalonia", "MainWindow.axaml");
         string xamlText = File.ReadAllText(xamlPath);
+        string navigatorControlPath = FindPath("Chummer.Avalonia", "Controls", "NavigatorPaneControl.axaml");
+        string navigatorControlText = File.ReadAllText(navigatorControlPath);
+        string commandPaneControlPath = FindPath("Chummer.Avalonia", "Controls", "CommandDialogPaneControl.axaml");
+        string commandPaneControlText = File.ReadAllText(commandPaneControlPath);
 
         StringAssert.Contains(xamlText, "x:Name=\"MenuBarRegion\"");
         StringAssert.Contains(xamlText, "x:Name=\"ToolStripRegion\"");
@@ -1071,10 +1129,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(xamlText, "x:Name=\"RightShellRegion\"");
         StringAssert.Contains(xamlText, "x:Name=\"StatusStripRegion\"");
 
-        StringAssert.Contains(xamlText, "Open Characters");
-        StringAssert.Contains(xamlText, "Navigation Tabs");
-        StringAssert.Contains(xamlText, "Section Actions");
-        StringAssert.Contains(xamlText, "Command Palette");
+        StringAssert.Contains(navigatorControlText, "Open Characters");
+        StringAssert.Contains(navigatorControlText, "Navigation Tabs");
+        StringAssert.Contains(navigatorControlText, "Section Actions");
+        StringAssert.Contains(commandPaneControlText, "Command Palette");
     }
 
     [TestMethod]
@@ -1151,6 +1209,36 @@ public class MigrationComplianceTests
         }
 
         throw new FileNotFoundException("Could not locate file.", Path.Combine(parts));
+    }
+
+    private static bool PathExistsInCandidateRoots(params string[] parts)
+    {
+        foreach (string? root in CandidateRoots())
+        {
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                continue;
+            }
+
+            DirectoryInfo current = new(root);
+            while (true)
+            {
+                string candidate = Path.Combine(new[] { current.FullName }.Concat(parts).ToArray());
+                if (File.Exists(candidate))
+                {
+                    return true;
+                }
+
+                if (current.Parent is null)
+                {
+                    break;
+                }
+
+                current = current.Parent;
+            }
+        }
+
+        return false;
     }
 
     private static string FindDirectory(params string[] parts)
