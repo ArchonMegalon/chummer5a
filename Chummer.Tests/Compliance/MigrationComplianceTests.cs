@@ -1147,6 +1147,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(strictHostGatesText, "RUNBOOK_MODE=docker-tests");
         StringAssert.Contains(strictHostGatesText, "TEST_NUGET_SOFT_FAIL=0");
         StringAssert.Contains(strictHostGatesText, "DOCKER_TESTS_SOFT_FAIL=0");
+        StringAssert.Contains(strictHostGatesText, "check-host-gate-prereqs.sh");
+        StringAssert.Contains(strictHostGatesText, "strict host prerequisite gate");
         StringAssert.Contains(strictHostGatesText, "Strict host gates completed successfully.");
         StringAssert.Contains(hostPrereqText, "strict host gate prerequisites");
         StringAssert.Contains(hostPrereqText, "resolve_log_file");

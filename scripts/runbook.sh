@@ -252,6 +252,8 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "TEST_NUGET_SOFT_FAIL=0" "scripts/runbook-strict-host-gates.sh"
   require_match "RUNBOOK_MODE=docker-tests" "scripts/runbook-strict-host-gates.sh"
   require_match "RUNBOOK_MODE=local-tests" "scripts/runbook-strict-host-gates.sh"
+  require_match "check-host-gate-prereqs.sh" "scripts/runbook-strict-host-gates.sh"
+  require_match "strict host prerequisite gate" "scripts/runbook-strict-host-gates.sh"
   require_match "Strict host gates are" "scripts/check-host-gate-prereqs.sh"
   require_match "\\[PASS\\]" "scripts/check-host-gate-prereqs.sh"
   require_match "\\[FAIL\\]" "scripts/check-host-gate-prereqs.sh"

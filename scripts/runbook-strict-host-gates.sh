@@ -42,6 +42,11 @@ run_docker_tests() {
   bash "$REPO_ROOT/scripts/runbook.sh"
 }
 
+echo "== strict host prerequisite gate =="
+CHECK_DOCKER="${CHECK_DOCKER:-1}" \
+CHECK_NUGET="${CHECK_NUGET:-1}" \
+bash "$REPO_ROOT/scripts/check-host-gate-prereqs.sh"
+
 run_local_tests
 run_docker_tests
 
