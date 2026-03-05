@@ -136,14 +136,16 @@ public class WorkspaceServiceTests
     }
 
     [TestMethod]
-    public void GetSummary_uses_codec_defaults_when_document_envelope_is_missing()
+    public void GetSummary_uses_codec_defaults_when_document_envelope_metadata_is_incomplete()
     {
         InMemoryWorkspaceStore store = new();
         CharacterWorkspaceId id = store.Create(new WorkspaceDocument(
-            Content: "<codec-payload/>",
-            Format: WorkspaceDocumentFormat.Chum5Xml,
-            RulesetId: "sr6",
-            PayloadEnvelope: null));
+            PayloadEnvelope: new WorkspacePayloadEnvelope(
+                RulesetId: "sr6",
+                SchemaVersion: 0,
+                PayloadKind: string.Empty,
+                Payload: "<codec-payload/>"),
+            Format: WorkspaceDocumentFormat.Chum5Xml));
         RecordingWorkspaceCodec codec = new();
         WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
 
@@ -162,10 +164,12 @@ public class WorkspaceServiceTests
     {
         InMemoryWorkspaceStore store = new();
         CharacterWorkspaceId id = store.Create(new WorkspaceDocument(
-            Content: "<codec-download/>",
-            Format: WorkspaceDocumentFormat.Chum5Xml,
-            RulesetId: "sr6",
-            PayloadEnvelope: null));
+            PayloadEnvelope: new WorkspacePayloadEnvelope(
+                RulesetId: "sr6",
+                SchemaVersion: 0,
+                PayloadKind: string.Empty,
+                Payload: "<codec-download/>"),
+            Format: WorkspaceDocumentFormat.Chum5Xml));
         RecordingWorkspaceCodec codec = new();
         WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
 
@@ -186,10 +190,12 @@ public class WorkspaceServiceTests
     {
         InMemoryWorkspaceStore store = new();
         CharacterWorkspaceId id = store.Create(new WorkspaceDocument(
-            Content: "<codec-export/>",
-            Format: WorkspaceDocumentFormat.Chum5Xml,
-            RulesetId: "sr6",
-            PayloadEnvelope: null));
+            PayloadEnvelope: new WorkspacePayloadEnvelope(
+                RulesetId: "sr6",
+                SchemaVersion: 0,
+                PayloadKind: string.Empty,
+                Payload: "<codec-export/>"),
+            Format: WorkspaceDocumentFormat.Chum5Xml));
         RecordingWorkspaceCodec codec = new();
         WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
 

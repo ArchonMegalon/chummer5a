@@ -102,6 +102,8 @@ public class WorkspaceStoreTests
             using JsonDocument json = JsonDocument.Parse(File.ReadAllText(persistedPath));
             JsonElement root = json.RootElement;
             Assert.IsTrue(root.TryGetProperty("Envelope", out JsonElement envelope));
+            Assert.IsFalse(root.TryGetProperty("Content", out _));
+            Assert.IsFalse(root.TryGetProperty("RulesetId", out _));
             Assert.AreEqual("sr6", envelope.GetProperty("RulesetId").GetString());
             Assert.AreEqual(1, envelope.GetProperty("SchemaVersion").GetInt32());
             Assert.AreEqual("workspace", envelope.GetProperty("PayloadKind").GetString());

@@ -47,10 +47,8 @@ public sealed class WorkspaceService : IWorkspaceService
         CharacterFileSummary summary = codec.ParseSummary(envelope);
 
         CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(
-            Content: envelope.Payload,
-            Format: document.Format,
-            RulesetId: envelope.RulesetId,
-            PayloadEnvelope: envelope));
+            PayloadEnvelope: envelope,
+            Format: document.Format));
         return new WorkspaceImportResult(id, summary, envelope.RulesetId);
     }
 
@@ -311,30 +309,27 @@ public sealed class WorkspaceService : IWorkspaceService
 
     private WorkspacePayloadEnvelope ResolveEnvelope(WorkspaceDocument document)
     {
-        WorkspacePayloadEnvelope? existing = document.PayloadEnvelope;
+        WorkspacePayloadEnvelope existing = document.PayloadEnvelope;
         string normalizedRulesetId = RulesetDefaults.Normalize(
-            existing?.RulesetId ?? document.RulesetId);
+            existing.RulesetId);
         IRulesetWorkspaceCodec codec = _workspaceCodecResolver.Resolve(normalizedRulesetId);
-        int schemaVersion = existing?.SchemaVersion is > 0
+        int schemaVersion = existing.SchemaVersion > 0
             ? existing.SchemaVersion
             : codec.SchemaVersion;
-        string payloadKind = string.IsNullOrWhiteSpace(existing?.PayloadKind)
+        string payloadKind = string.IsNullOrWhiteSpace(existing.PayloadKind)
             ? codec.PayloadKind
             : existing.PayloadKind;
-        string payload = existing?.Payload ?? document.Content;
         return new WorkspacePayloadEnvelope(
             RulesetId: normalizedRulesetId,
             SchemaVersion: schemaVersion,
             PayloadKind: payloadKind,
-            Payload: payload);
+            Payload: existing.Payload);
     }
 
     private static WorkspaceDocument CreateUpdatedDocument(WorkspaceDocument current, WorkspacePayloadEnvelope updatedEnvelope)
     {
         return new WorkspaceDocument(
-            Content: updatedEnvelope.Payload,
-            Format: current.Format,
-            RulesetId: updatedEnvelope.RulesetId,
-            PayloadEnvelope: updatedEnvelope);
+            PayloadEnvelope: updatedEnvelope,
+            Format: current.Format);
     }
 }

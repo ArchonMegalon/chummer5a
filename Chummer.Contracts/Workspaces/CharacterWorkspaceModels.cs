@@ -16,10 +16,27 @@ public enum WorkspaceDocumentFormat
 }
 
 public sealed record WorkspaceDocument(
-    string Content,
-    WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.Chum5Xml,
-    string RulesetId = RulesetDefaults.Sr5,
-    WorkspacePayloadEnvelope? PayloadEnvelope = null);
+    WorkspacePayloadEnvelope PayloadEnvelope,
+    WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.Chum5Xml)
+{
+    public WorkspaceDocument(
+        string Content,
+        WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.Chum5Xml,
+        string RulesetId = RulesetDefaults.Sr5)
+        : this(
+            new WorkspacePayloadEnvelope(
+                RulesetId: RulesetDefaults.Normalize(RulesetId),
+                SchemaVersion: 1,
+                PayloadKind: "workspace",
+                Payload: Content),
+            Format)
+    {
+    }
+
+    public string Content => PayloadEnvelope.Payload;
+
+    public string RulesetId => PayloadEnvelope.RulesetId;
+}
 
 public sealed record WorkspaceImportDocument(
     string Content,
