@@ -728,6 +728,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "deploy-downloads");
         StringAssert.Contains(workflowText, "deploy-downloads-object-storage");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
@@ -747,6 +748,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(manifestScriptText, "\"id\": f\"{app}-{rid}\"");
         StringAssert.Contains(manifestScriptText, "\"url\": f\"/downloads/files/{artifact.name}\"");
         StringAssert.Contains(verifyScriptText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
+        StringAssert.Contains(verifyScriptText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS");
+        StringAssert.Contains(verifyScriptText, "failed artifact verification");
+        StringAssert.Contains(verifyScriptText, "Verified artifact links/files");
         StringAssert.Contains(verifyScriptText, "version.lower() == \"unpublished\"");
     }
 
@@ -770,10 +774,12 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID");
+        StringAssert.Contains(readmeText, "DOWNLOADS_VERIFY_LINKS=1");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(readmeText, "scripts/publish-download-bundle-s3.sh");
         StringAssert.Contains(readmeText, "docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md");
+        StringAssert.Contains(readmeText, "scripts/runbook-strict-host-gates.sh");
         StringAssert.Contains(readmeText, "Live deployment verification is required");
         StringAssert.Contains(portalSettingsText, "\"DownloadsBaseUrl\": \"/downloads/\"");
         Assert.IsFalse(
@@ -1093,6 +1099,8 @@ public class MigrationComplianceTests
         string publisherText = File.ReadAllText(publisherPath);
         string s3PublisherPath = FindPath("scripts", "publish-download-bundle-s3.sh");
         string s3PublisherText = File.ReadAllText(s3PublisherPath);
+        string strictHostGatesPath = FindPath("scripts", "runbook-strict-host-gates.sh");
+        string strictHostGatesText = File.ReadAllText(strictHostGatesPath);
         string amendValidatorPath = FindPath("scripts", "validate-amend-manifests.sh");
         string amendValidatorText = File.ReadAllText(amendValidatorPath);
 
@@ -1109,6 +1117,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "bash scripts/validate-amend-manifests.sh");
         StringAssert.Contains(runbookText, "permission denied while trying to connect to the Docker daemon socket");
         StringAssert.Contains(runbookText, "DOWNLOADS_SYNC_DEPLOY_MODE");
+        StringAssert.Contains(runbookText, "DOWNLOADS_SYNC_VERIFY_LINKS");
+        StringAssert.Contains(runbookText, "DOWNLOADS_SYNC_S3_VERIFY_LINKS");
+        StringAssert.Contains(runbookText, "DOWNLOADS_VERIFY_LINKS");
         StringAssert.Contains(runbookText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED=true");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_BUILD");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_SOFT_FAIL");
@@ -1127,6 +1138,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "TEST_NUGET_ENDPOINT");
         StringAssert.Contains(runbookText, "skipping local-tests due NuGet preflight failure");
         StringAssert.Contains(runbookText, "NuGet preflight failed");
+        StringAssert.Contains(strictHostGatesText, "RUNBOOK_MODE=local-tests");
+        StringAssert.Contains(strictHostGatesText, "RUNBOOK_MODE=docker-tests");
+        StringAssert.Contains(strictHostGatesText, "TEST_NUGET_SOFT_FAIL=0");
+        StringAssert.Contains(strictHostGatesText, "DOCKER_TESTS_SOFT_FAIL=0");
+        StringAssert.Contains(strictHostGatesText, "Strict host gates completed successfully.");
 
         StringAssert.Contains(generatorText, "Docker/Downloads/releases.json");
         StringAssert.Contains(generatorText, "Chummer.Portal/downloads/releases.json");
@@ -1140,9 +1156,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(publisherText, "PORTAL_DOWNLOADS_DIR");
         StringAssert.Contains(publisherText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(publisherText, "Deployment mode requires CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(publisherText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS");
         StringAssert.Contains(publisherText, "Published ${#artifacts[@]} desktop artifact(s)");
         StringAssert.Contains(s3PublisherText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
         StringAssert.Contains(s3PublisherText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(s3PublisherText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS");
         StringAssert.Contains(s3PublisherText, "aws s3 cp");
         StringAssert.Contains(s3PublisherText, "verify-releases-manifest.sh");
         StringAssert.Contains(s3PublisherText, "Published ${artifact_count} desktop artifact(s) to object storage target");
@@ -1150,7 +1168,10 @@ public class MigrationComplianceTests
         string verifierPath = FindPath("scripts", "verify-releases-manifest.sh");
         string verifierText = File.ReadAllText(verifierPath);
         StringAssert.Contains(verifierText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(verifierText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS");
         StringAssert.Contains(verifierText, "/downloads/releases.json");
+        StringAssert.Contains(verifierText, "failed artifact verification");
+        StringAssert.Contains(verifierText, "Verified artifact links/files");
         StringAssert.Contains(verifierText, "has no downloads");
 
         StringAssert.Contains(amendValidatorText, "checksums map is required");

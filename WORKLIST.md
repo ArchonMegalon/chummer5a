@@ -46,6 +46,9 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-033 | done | P2 | Harden `runbook local-tests` for NuGet-preflight soft skip outside CI. | agent | Completed 2026-03-05: local-tests now soft-skip blocked NuGet preflight outside CI (`TEST_NUGET_SOFT_FAIL`) while still allowing strict enforcement when requested. |
 | WL-034 | done | P1 | Add operator runbook for self-hosted downloads and strict gate execution. | agent | Completed 2026-03-05: added `docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md` and linked it from README/runbook guardrails with concrete self-hosted publish/verify and strict host-side test commands. |
 | WL-035 | done | P3 | Revalidate UI/portal e2e soft-skip behavior in restricted environment. | agent | Completed 2026-03-05: `runbook` UI/portal e2e modes now confirm skip-with-reason behavior and return success for unattended progression when Docker daemon permissions are unavailable. |
+| WL-036 | done | P1 | Add optional per-artifact verification to downloads manifest checks. | agent | Completed 2026-03-05: manifest verifier now supports opt-in artifact URL/file checks and deployment/runbook/docs/guardrails were updated to enforce and expose the stricter validation path. |
+| WL-037 | done | P2 | Add strict host gate wrapper script. | agent | Completed 2026-03-05: added `scripts/runbook-strict-host-gates.sh` with strict local+docker sequencing and wired documentation/guardrails for operator usage. |
+| WL-038 | in_progress | P2 | Commit verification hardening and strict-gate wrapper batch. | agent | Finalize the current runbook/workflow/docs verification batch into a single commit and continue queue progression. |
 
 ## Intake Template
 Add new items at the bottom:

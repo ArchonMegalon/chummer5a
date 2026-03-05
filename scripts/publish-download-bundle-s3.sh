@@ -27,6 +27,8 @@ if [[ -z "$VERIFY_URL" ]]; then
   exit 1
 fi
 
+export CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS="${CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS:-true}"
+
 if ! command -v aws >/dev/null 2>&1; then
   echo "aws CLI is required for object-storage publish mode." >&2
   exit 1

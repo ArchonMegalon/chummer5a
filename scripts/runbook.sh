@@ -155,6 +155,7 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_path "Chummer.Desktop.Runtime/ServiceCollectionDesktopRuntimeExtensions.cs"
   require_path "Chummer.Blazor.Desktop/wwwroot/index.html"
   require_path "scripts/validate-amend-manifests.sh"
+  require_path "scripts/runbook-strict-host-gates.sh"
   require_path "docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md"
 
   require_match "Chummer.Blazor.Desktop\\\\Chummer.Blazor.Desktop.csproj" "Chummer.sln"
@@ -182,6 +183,7 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "deploy-downloads-object-storage" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "CHUMMER_PORTAL_DOWNLOADS_S3_URI" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "chummer-\\(\\?P<app>avalonia\\|blazor-desktop\\)-" "scripts/generate-releases-manifest.sh"
   require_match "\"osx-x64\": \"macOS x64\"" "scripts/generate-releases-manifest.sh"
   require_match "\"id\": f\"\\{app\\}-\\{rid\\}\"" "scripts/generate-releases-manifest.sh"
@@ -195,6 +197,10 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "bash scripts/generate-releases-manifest.sh" "scripts/runbook.sh"
   require_match "bash scripts/publish-download-bundle.sh" "scripts/runbook.sh"
   require_match "bash scripts/publish-download-bundle-s3.sh" "scripts/runbook.sh"
+  require_match "DOCKER_TESTS_SOFT_FAIL=0" "scripts/runbook-strict-host-gates.sh"
+  require_match "TEST_NUGET_SOFT_FAIL=0" "scripts/runbook-strict-host-gates.sh"
+  require_match "RUNBOOK_MODE=docker-tests" "scripts/runbook-strict-host-gates.sh"
+  require_match "RUNBOOK_MODE=local-tests" "scripts/runbook-strict-host-gates.sh"
   require_match "bash scripts/validate-amend-manifests.sh" "scripts/runbook.sh"
   require_match "Docker/Downloads/releases.json" "scripts/generate-releases-manifest.sh"
   require_match "Chummer.Portal/downloads/releases.json" "scripts/generate-releases-manifest.sh"
@@ -259,8 +265,16 @@ if [[ "$RUNBOOK_MODE" == "downloads-sync" ]]; then
   DOWNLOAD_BUNDLE_DIR="${DOWNLOAD_BUNDLE_DIR:-${RUNBOOK_ARG_FRAMEWORK:-$REPO_ROOT/dist}}"
   DOWNLOAD_DEPLOY_DIR="${DOWNLOAD_DEPLOY_DIR:-${RUNBOOK_ARG_FILTER:-$REPO_ROOT/Docker/Downloads}}"
   DOWNLOADS_SYNC_DEPLOY_MODE="${DOWNLOADS_SYNC_DEPLOY_MODE:-0}"
+  DOWNLOADS_SYNC_VERIFY_LINKS="${DOWNLOADS_SYNC_VERIFY_LINKS:-}"
   DOWNLOADS_SYNC_VERIFY_TARGET="${DOWNLOADS_SYNC_VERIFY_TARGET:-${CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL:-}}"
   SYNC_LOG_FILE="${SYNC_LOG_FILE:-/tmp/chummer-downloads-sync.log}"
+  if [[ -z "$DOWNLOADS_SYNC_VERIFY_LINKS" ]]; then
+    if [[ "$DOWNLOADS_SYNC_DEPLOY_MODE" == "1" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "true" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "TRUE" ]]; then
+      DOWNLOADS_SYNC_VERIFY_LINKS=true
+    else
+      DOWNLOADS_SYNC_VERIFY_LINKS=false
+    fi
+  fi
   if [[ "$DOWNLOADS_SYNC_DEPLOY_MODE" == "1" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "true" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "TRUE" ]]; then
     if [[ -z "$DOWNLOADS_SYNC_VERIFY_TARGET" ]]; then
       echo "downloads-sync deploy mode requires DOWNLOADS_SYNC_VERIFY_TARGET or CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL." >&2
@@ -269,6 +283,11 @@ if [[ "$RUNBOOK_MODE" == "downloads-sync" ]]; then
     export CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED=true
     export CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION=true
     export CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL="$DOWNLOADS_SYNC_VERIFY_TARGET"
+  fi
+  if [[ "$DOWNLOADS_SYNC_VERIFY_LINKS" == "1" || "$DOWNLOADS_SYNC_VERIFY_LINKS" == "true" || "$DOWNLOADS_SYNC_VERIFY_LINKS" == "TRUE" ]]; then
+    export CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS=true
+  else
+    unset CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS || true
   fi
   set +e
   bash scripts/publish-download-bundle.sh "$DOWNLOAD_BUNDLE_DIR" "$DOWNLOAD_DEPLOY_DIR" 2>&1 | tee "$SYNC_LOG_FILE"
@@ -284,30 +303,42 @@ if [[ "$RUNBOOK_MODE" == "downloads-sync" ]]; then
   if [[ "$DOWNLOADS_SYNC_DEPLOY_MODE" == "1" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "true" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "TRUE" ]]; then
     echo
     echo "== deployment-mode verification summary =="
-    rg -n "Verified manifest at" "$SYNC_LOG_FILE" | tail -n 20 || true
+    rg -n "Verified manifest at|Verified artifact links/files|failed artifact verification" "$SYNC_LOG_FILE" | tail -n 40 || true
   fi
   exit "$status"
 fi
 
 if [[ "$RUNBOOK_MODE" == "downloads-sync-s3" ]]; then
   DOWNLOAD_BUNDLE_DIR="${DOWNLOAD_BUNDLE_DIR:-${RUNBOOK_ARG_FRAMEWORK:-$REPO_ROOT/dist}}"
+  DOWNLOADS_SYNC_S3_VERIFY_LINKS="${DOWNLOADS_SYNC_S3_VERIFY_LINKS:-true}"
   SYNC_S3_LOG_FILE="${SYNC_S3_LOG_FILE:-/tmp/chummer-downloads-sync-s3.log}"
+  if [[ "$DOWNLOADS_SYNC_S3_VERIFY_LINKS" == "1" || "$DOWNLOADS_SYNC_S3_VERIFY_LINKS" == "true" || "$DOWNLOADS_SYNC_S3_VERIFY_LINKS" == "TRUE" ]]; then
+    export CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS=true
+  else
+    unset CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS || true
+  fi
   set +e
   bash scripts/publish-download-bundle-s3.sh "$DOWNLOAD_BUNDLE_DIR" 2>&1 | tee "$SYNC_S3_LOG_FILE"
   status=${PIPESTATUS[0]}
   set -e
   echo
   echo "== object storage sync summary =="
-  rg -n "Published|Verified manifest|Set CHUMMER|Expected desktop-download-bundle|aws CLI" "$SYNC_S3_LOG_FILE" | tail -n 200 || true
+  rg -n "Published|Verified manifest|Verified artifact links/files|failed artifact verification|Set CHUMMER|Expected desktop-download-bundle|aws CLI" "$SYNC_S3_LOG_FILE" | tail -n 200 || true
   exit "$status"
 fi
 
 if [[ "$RUNBOOK_MODE" == "downloads-verify" ]]; then
   DOWNLOADS_VERIFY_TARGET="${DOWNLOADS_VERIFY_TARGET:-${RUNBOOK_ARG_FRAMEWORK:-${CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL:-}}}"
+  DOWNLOADS_VERIFY_LINKS="${DOWNLOADS_VERIFY_LINKS:-0}"
   VERIFY_LOG_FILE="${VERIFY_LOG_FILE:-/tmp/chummer-downloads-verify.log}"
   if [[ -z "$DOWNLOADS_VERIFY_TARGET" ]]; then
     echo "Set DOWNLOADS_VERIFY_TARGET, CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL, or pass a URL/path as arg #2." >&2
     exit 1
+  fi
+  if [[ "$DOWNLOADS_VERIFY_LINKS" == "1" || "$DOWNLOADS_VERIFY_LINKS" == "true" || "$DOWNLOADS_VERIFY_LINKS" == "TRUE" ]]; then
+    export CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS=true
+  else
+    unset CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS || true
   fi
   set +e
   bash scripts/verify-releases-manifest.sh "$DOWNLOADS_VERIFY_TARGET" 2>&1 | tee "$VERIFY_LOG_FILE"
@@ -315,7 +346,7 @@ if [[ "$RUNBOOK_MODE" == "downloads-verify" ]]; then
   set -e
   echo
   echo "== manifest verification summary =="
-  rg -n "Verified manifest|has no downloads|not found|empty" "$VERIFY_LOG_FILE" | tail -n 200 || true
+  rg -n "Verified manifest|Verified artifact links/files|has no downloads|failed artifact verification|not found|empty" "$VERIFY_LOG_FILE" | tail -n 200 || true
   exit "$status"
 fi
 

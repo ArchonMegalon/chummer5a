@@ -49,6 +49,9 @@ Purpose: keep a live, ordered queue of actionable work and execute items continu
 | WQ-036 | done | P2 | Harden `runbook local-tests` preflight for unattended restricted environments. | agent | Completed 2026-03-05: added non-CI soft-skip default (`TEST_NUGET_SOFT_FAIL`) for NuGet preflight failures so restore-blocked environments skip quickly and continue unattended. |
 | WQ-037 | done | P1 | Add operator runbook for self-hosted downloads + strict test unblock steps. | agent | Completed 2026-03-05: added `docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md` with filesystem + object-storage publish flows and strict local/docker gate commands; wired README and runbook guardrails to keep the operator path discoverable. |
 | WQ-038 | done | P3 | Revalidate UI/portal e2e soft-skip behavior in restricted sandbox. | agent | Completed 2026-03-05: `RUNBOOK_MODE=ui-e2e` and `RUNBOOK_MODE=portal-e2e` both exit cleanly with explicit Docker permission skip reasons, preserving unattended queue progression. |
+| WQ-039 | done | P1 | Add optional per-artifact link/file verification to downloads manifest validation. | agent | Completed 2026-03-05: `verify-releases-manifest.sh` now supports opt-in per-artifact checks (`CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS`), wired through workflow/runbook/deploy scripts and validated with local synthetic bundle checks. |
+| WQ-040 | done | P2 | Add strict host gate wrapper script for unattended manual execution. | agent | Completed 2026-03-05: added `scripts/runbook-strict-host-gates.sh` to run strict local+docker gates (`TEST_NUGET_SOFT_FAIL=0`, `DOCKER_TESTS_SOFT_FAIL=0`) in one command and wired docs/guardrails. |
+| WQ-041 | in_progress | P2 | Land verification hardening + strict-gate wrapper batch commit. | agent | Run final guardrail checks, commit all pending runbook/workflow/docs changes, then continue with next unblockable item. |
 
 ## Intake Template
 Append new items at bottom:

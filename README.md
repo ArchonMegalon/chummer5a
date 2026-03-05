@@ -181,8 +181,11 @@ Desktop artifact workflow:
 * Live deployment verification is required: set repository variable `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` (portal base URL or direct `.../downloads/releases.json`) so deployment can verify the live portal endpoint after local deploy verification passes.
 * Deploy job hard-gate: deployment fails when `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` is missing or when the live portal manifest has no published artifacts.
 * Deploy verification enforces published manifests (`CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION=true`) so `version: "unpublished"` cannot pass deployment gates.
+* Deployment jobs now enable per-artifact verification (`CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS=true`) so manifest URLs/files are validated, not just manifest shape.
 * Canonical topology: self-hosted runner publishes bundle into mounted portal downloads storage (`CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR`), then verifies both local manifest file and live `/downloads/releases.json` endpoint before success.
 * Local verification helper: `bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
+* Optional local strict artifact check: `DOWNLOADS_VERIFY_LINKS=1 bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
+* Strict host-side gate wrapper (no soft-skips): `bash scripts/runbook-strict-host-gates.sh [optionalTestFilter] [optionalFramework]`.
 * Manual deployment remains available through workflow dispatch with `deploy_portal_downloads=true`.
 * Operator checklist for self-hosted publish/verify and strict host-side test gates: `docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md`.
 

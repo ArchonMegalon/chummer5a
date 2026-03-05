@@ -102,6 +102,7 @@ bash "$SCRIPT_DIR/generate-releases-manifest.sh"
 
 if to_bool "$DEPLOY_MODE"; then
   export CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION="${CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION:-true}"
+  export CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS="${CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS:-true}"
   if [[ -z "$LIVE_VERIFY_TARGET" ]]; then
     echo "Deployment mode requires CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL for live manifest verification." >&2
     exit 1

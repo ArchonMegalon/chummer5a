@@ -22,7 +22,7 @@ Workflow path:
 
 Manual path:
 1. `RUNBOOK_MODE=downloads-sync DOWNLOAD_BUNDLE_DIR=<bundleDir> DOWNLOAD_DEPLOY_DIR=<deployDir> DOWNLOADS_SYNC_DEPLOY_MODE=1 DOWNLOADS_SYNC_VERIFY_TARGET=<portalBaseOrManifestUrl> bash scripts/runbook.sh`
-2. `RUNBOOK_MODE=downloads-verify DOWNLOADS_VERIFY_TARGET=<portalBaseOrManifestUrl> bash scripts/runbook.sh`
+2. `RUNBOOK_MODE=downloads-verify DOWNLOADS_VERIFY_LINKS=1 DOWNLOADS_VERIFY_TARGET=<portalBaseOrManifestUrl> bash scripts/runbook.sh`
 
 ## Mode B: Object Storage Deploy (S3/R2 compatible)
 
@@ -45,11 +45,14 @@ Workflow path:
 
 Manual path:
 1. `RUNBOOK_MODE=downloads-sync-s3 DOWNLOAD_BUNDLE_DIR=<bundleDir> CHUMMER_PORTAL_DOWNLOADS_S3_URI=<s3://bucket/path> CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL=<portalBaseOrManifestUrl> [CHUMMER_PORTAL_DOWNLOADS_S3_ENDPOINT_URL=<endpoint>] bash scripts/runbook.sh`
-2. `RUNBOOK_MODE=downloads-verify DOWNLOADS_VERIFY_TARGET=<portalBaseOrManifestUrl> bash scripts/runbook.sh`
+2. `RUNBOOK_MODE=downloads-verify DOWNLOADS_VERIFY_LINKS=1 DOWNLOADS_VERIFY_TARGET=<portalBaseOrManifestUrl> bash scripts/runbook.sh`
 
 ## Strict Test Gate Commands (host-side)
 
 Use these when you want hard failures instead of soft-skips.
+
+Single wrapper command:
+1. `bash scripts/runbook-strict-host-gates.sh [optionalTestFilter] [optionalFramework]`
 
 Local tests:
 1. `RUNBOOK_MODE=local-tests TEST_NUGET_SOFT_FAIL=0 TEST_DISABLE_BUILD_SERVERS=1 TEST_MAX_CPU=1 bash scripts/runbook.sh`
@@ -62,4 +65,5 @@ Docker tests:
 
 1. `/downloads/releases.json` has `downloads` with at least one artifact.
 2. `version` is not `"unpublished"` in deployment mode.
-3. Portal `/downloads/` renders artifact links that return HTTP 200.
+3. When `CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS=true` (or `DOWNLOADS_VERIFY_LINKS=1`), each artifact URL/file in manifest verification is reachable.
+4. Portal `/downloads/` renders artifact links that return HTTP 200.
