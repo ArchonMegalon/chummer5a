@@ -9,6 +9,11 @@ public partial class SummaryHeaderControl : UserControl
         InitializeComponent();
     }
 
+    public void SetState(SummaryHeaderState state)
+    {
+        SetValues(state.Name, state.Alias, state.Karma, state.Skills);
+    }
+
     public void SetValues(string? name, string? alias, string? karma, string? skills)
     {
         NameValueText.Text = string.IsNullOrWhiteSpace(name) ? "-" : name;
@@ -17,3 +22,9 @@ public partial class SummaryHeaderControl : UserControl
         SkillsValueText.Text = string.IsNullOrWhiteSpace(skills) ? "-" : skills;
     }
 }
+
+public sealed record SummaryHeaderState(
+    string? Name,
+    string? Alias,
+    string? Karma,
+    string? Skills);

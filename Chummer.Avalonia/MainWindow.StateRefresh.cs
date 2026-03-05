@@ -34,19 +34,7 @@ public partial class MainWindow
 
         _toolStrip.SetStatusText(shellFrame.ToolStripStatusText);
         _sectionHost.SetNotice(shellFrame.NoticeText);
-        _workspaceStrip.SetWorkspaceText(shellFrame.WorkspaceStripText);
-
-        _summaryHeader.SetValues(
-            name: shellFrame.SummaryName,
-            alias: shellFrame.SummaryAlias,
-            karma: shellFrame.SummaryKarma,
-            skills: shellFrame.SummarySkills);
-
-        _statusStrip.SetValues(
-            characterState: shellFrame.CharacterStatusText,
-            serviceState: shellFrame.ServiceStatusText,
-            timeState: shellFrame.TimeStatusText,
-            complianceState: shellFrame.ComplianceStatusText);
+        ApplyChromeState(shellFrame.ChromeState);
 
         _menuBar.SetMenuState(
             openMenuId: shellFrame.OpenMenuId,
@@ -56,6 +44,13 @@ public partial class MainWindow
         _commandDialogPane.SetState(commandDialogState);
         _navigatorPane.SetState(shellFrame.NavigatorPaneState);
         _sectionHost.SetSectionPreview(shellFrame.SectionPreviewJson, shellFrame.SectionRows);
+    }
+
+    private void ApplyChromeState(MainWindowChromeState chromeState)
+    {
+        _workspaceStrip.SetState(chromeState.WorkspaceStrip);
+        _summaryHeader.SetState(chromeState.SummaryHeader);
+        _statusStrip.SetState(chromeState.StatusStrip);
     }
 
     private static CommandDialogPaneState BuildCommandDialogState(

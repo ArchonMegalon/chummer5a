@@ -9,8 +9,15 @@ public partial class WorkspaceStripControl : UserControl
         InitializeComponent();
     }
 
+    public void SetState(WorkspaceStripState state)
+    {
+        SetWorkspaceText(state.WorkspaceText);
+    }
+
     public void SetWorkspaceText(string text)
     {
         WorkspaceText.Text = text;
     }
 }
+
+public sealed record WorkspaceStripState(string WorkspaceText);

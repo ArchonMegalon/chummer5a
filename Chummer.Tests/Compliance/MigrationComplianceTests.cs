@@ -1520,6 +1520,12 @@ public class MigrationComplianceTests
         string navigatorCodeText = File.ReadAllText(navigatorCodePath);
         string commandPaneCodePath = FindPath("Chummer.Avalonia", "Controls", "CommandDialogPaneControl.axaml.cs");
         string commandPaneCodeText = File.ReadAllText(commandPaneCodePath);
+        string workspaceStripCodePath = FindPath("Chummer.Avalonia", "Controls", "WorkspaceStripControl.axaml.cs");
+        string workspaceStripCodeText = File.ReadAllText(workspaceStripCodePath);
+        string summaryHeaderCodePath = FindPath("Chummer.Avalonia", "Controls", "SummaryHeaderControl.axaml.cs");
+        string summaryHeaderCodeText = File.ReadAllText(summaryHeaderCodePath);
+        string statusStripCodePath = FindPath("Chummer.Avalonia", "Controls", "StatusStripControl.axaml.cs");
+        string statusStripCodeText = File.ReadAllText(statusStripCodePath);
 
         Assert.IsFalse(codeText.Contains("FindControl<", StringComparison.Ordinal));
         StringAssert.Contains(codeText, "public MainWindow(");
@@ -1547,10 +1553,12 @@ public class MigrationComplianceTests
         StringAssert.Contains(stateText, "_sectionHost.SetNotice(");
         StringAssert.Contains(stateText, "_sectionHost.SetSectionPreview(");
         StringAssert.Contains(stateText, "_toolStrip.SetStatusText(");
-        StringAssert.Contains(stateText, "_workspaceStrip.SetWorkspaceText(");
-        StringAssert.Contains(stateText, "_summaryHeader.SetValues(");
-        StringAssert.Contains(stateText, "_statusStrip.SetValues(");
+        StringAssert.Contains(stateText, "ApplyChromeState(shellFrame.ChromeState);");
+        StringAssert.Contains(stateText, "_workspaceStrip.SetState(chromeState.WorkspaceStrip);");
+        StringAssert.Contains(stateText, "_summaryHeader.SetState(chromeState.SummaryHeader);");
+        StringAssert.Contains(stateText, "_statusStrip.SetState(chromeState.StatusStrip);");
         StringAssert.Contains(stateText, "private static CommandDialogPaneState BuildCommandDialogState(");
+        StringAssert.Contains(stateText, "private void ApplyChromeState(MainWindowChromeState chromeState)");
         StringAssert.Contains(navigatorCodeText, "public void SetState(NavigatorPaneState state)");
         StringAssert.Contains(navigatorCodeText, "SetOpenWorkspaces(state.OpenWorkspaces, state.SelectedWorkspaceId);");
         StringAssert.Contains(navigatorCodeText, "SetNavigationTabs(state.NavigationTabs, state.ActiveTabId);");
@@ -1559,8 +1567,18 @@ public class MigrationComplianceTests
         StringAssert.Contains(commandPaneCodeText, "public void SetState(CommandDialogPaneState state)");
         StringAssert.Contains(commandPaneCodeText, "SetCommands(state.Commands, state.SelectedCommandId);");
         StringAssert.Contains(commandPaneCodeText, "SetDialog(");
+        StringAssert.Contains(workspaceStripCodeText, "public void SetState(WorkspaceStripState state)");
+        StringAssert.Contains(workspaceStripCodeText, "SetWorkspaceText(state.WorkspaceText);");
+        StringAssert.Contains(summaryHeaderCodeText, "public void SetState(SummaryHeaderState state)");
+        StringAssert.Contains(summaryHeaderCodeText, "SetValues(state.Name, state.Alias, state.Karma, state.Skills);");
+        StringAssert.Contains(statusStripCodeText, "public void SetState(StatusStripState state)");
+        StringAssert.Contains(statusStripCodeText, "SetValues(");
         StringAssert.Contains(projectorText, "BuildWorkspaceActionLookup");
         StringAssert.Contains(projectorText, "WorkspaceActionsById");
+        StringAssert.Contains(projectorText, "ChromeState: new MainWindowChromeState(");
+        StringAssert.Contains(projectorText, "WorkspaceStrip: new WorkspaceStripState(");
+        StringAssert.Contains(projectorText, "SummaryHeader: new SummaryHeaderState(");
+        StringAssert.Contains(projectorText, "StatusStrip: new StatusStripState(");
         StringAssert.Contains(projectorText, "NavigatorPaneState: new NavigatorPaneState(");
         StringAssert.Contains(projectorText, "shellSurface.Commands");
         StringAssert.Contains(projectorText, "shellSurface.NavigationTabs");

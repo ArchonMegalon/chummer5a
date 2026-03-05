@@ -9,6 +9,15 @@ public partial class StatusStripControl : UserControl
         InitializeComponent();
     }
 
+    public void SetState(StatusStripState state)
+    {
+        SetValues(
+            characterState: state.CharacterState,
+            serviceState: state.ServiceState,
+            timeState: state.TimeState,
+            complianceState: state.ComplianceState);
+    }
+
     public void SetValues(
         string characterState,
         string serviceState,
@@ -27,3 +36,9 @@ public partial class StatusStripControl : UserControl
         TimeStateText.Text = timeState;
     }
 }
+
+public sealed record StatusStripState(
+    string CharacterState,
+    string ServiceState,
+    string TimeState,
+    string ComplianceState);

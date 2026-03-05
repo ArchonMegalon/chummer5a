@@ -19,15 +19,19 @@ internal static class MainWindowShellFrameProjector
         return new MainWindowShellFrame(
             ToolStripStatusText: BuildToolStripStatusText(state, shellSurface, workspaceContext),
             NoticeText: $"Notice: {(shellSurface.Notice ?? "Ready.")}",
-            WorkspaceStripText: $"Workspace: {(workspaceContext.ActiveWorkspaceId?.Value ?? "none")} (open: {workspaceContext.OpenWorkspaceCount}, {workspaceContext.ActiveWorkspaceSaveStatus})",
-            SummaryName: state.Profile?.Name,
-            SummaryAlias: state.Profile?.Alias,
-            SummaryKarma: state.Progress?.Karma.ToString(),
-            SummarySkills: state.Skills?.Count.ToString(),
-            CharacterStatusText: $"Character: {(workspaceContext.ActiveWorkspaceId is null ? "none" : "loaded")}",
-            ServiceStatusText: $"Service: {(shellSurface.Error is null ? "online" : "error")}",
-            TimeStatusText: $"Time: {DateTimeOffset.UtcNow:u}",
-            ComplianceStatusText: $"Ruleset: {shellSurface.ActiveRulesetId} | Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}",
+            ChromeState: new MainWindowChromeState(
+                WorkspaceStrip: new WorkspaceStripState(
+                    $"Workspace: {(workspaceContext.ActiveWorkspaceId?.Value ?? "none")} (open: {workspaceContext.OpenWorkspaceCount}, {workspaceContext.ActiveWorkspaceSaveStatus})"),
+                SummaryHeader: new SummaryHeaderState(
+                    Name: state.Profile?.Name,
+                    Alias: state.Profile?.Alias,
+                    Karma: state.Progress?.Karma.ToString(),
+                    Skills: state.Skills?.Count.ToString()),
+                StatusStrip: new StatusStripState(
+                    CharacterState: $"Character: {(workspaceContext.ActiveWorkspaceId is null ? "none" : "loaded")}",
+                    ServiceState: $"Service: {(shellSurface.Error is null ? "online" : "error")}",
+                    TimeState: $"Time: {DateTimeOffset.UtcNow:u}",
+                    ComplianceState: $"Ruleset: {shellSurface.ActiveRulesetId} | Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}")),
             KnownMenuIds: shellSurface.MenuRoots.Select(menu => menu.Id).ToArray(),
             OpenMenuId: shellSurface.OpenMenuId,
             IsBusy: state.IsBusy,
@@ -158,15 +162,7 @@ internal static class MainWindowShellFrameProjector
 internal sealed record MainWindowShellFrame(
     string ToolStripStatusText,
     string NoticeText,
-    string WorkspaceStripText,
-    string? SummaryName,
-    string? SummaryAlias,
-    string? SummaryKarma,
-    string? SummarySkills,
-    string CharacterStatusText,
-    string ServiceStatusText,
-    string TimeStatusText,
-    string ComplianceStatusText,
+    MainWindowChromeState ChromeState,
     IReadOnlyList<string> KnownMenuIds,
     string? OpenMenuId,
     bool IsBusy,
@@ -176,3 +172,8 @@ internal sealed record MainWindowShellFrame(
     string SectionPreviewJson,
     SectionRowDisplayItem[] SectionRows,
     IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> WorkspaceActionsById);
+
+internal sealed record MainWindowChromeState(
+    WorkspaceStripState WorkspaceStrip,
+    SummaryHeaderState SummaryHeader,
+    StatusStripState StatusStrip);
