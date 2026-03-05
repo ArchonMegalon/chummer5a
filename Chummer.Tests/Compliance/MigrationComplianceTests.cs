@@ -1227,6 +1227,19 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Docker_architecture_guardrails_workflow_validates_compose_and_portal_formatting()
+    {
+        string guardrailsWorkflowPath = FindPath(".github", "workflows", "docker-architecture-guardrails.yml");
+        string guardrailsWorkflowText = File.ReadAllText(guardrailsWorkflowPath);
+
+        StringAssert.Contains(guardrailsWorkflowText, "compose-config-validation");
+        StringAssert.Contains(guardrailsWorkflowText, "docker compose config > /tmp/chummer-compose-config.out");
+        StringAssert.Contains(guardrailsWorkflowText, "portal-format-guardrail");
+        StringAssert.Contains(guardrailsWorkflowText, "dotnet restore Chummer.Portal/Chummer.Portal.csproj");
+        StringAssert.Contains(guardrailsWorkflowText, "dotnet format style Chummer.Portal/Chummer.Portal.csproj --verify-no-changes --no-restore --include Chummer.Portal/Program.cs");
+    }
+
+    [TestMethod]
     public void Dockerfile_tests_includes_blazor_desktop_project_for_container_build_checks()
     {
         string dockerfilePath = FindPath("Docker", "Dockerfile.tests");

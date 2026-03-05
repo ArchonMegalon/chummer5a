@@ -18,6 +18,32 @@ jobs:
       - name: Validate amend manifests checksums
         run: bash scripts/validate-amend-manifests.sh
 
+  compose-config-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate docker compose configuration
+        run: docker compose config > /tmp/chummer-compose-config.out
+
+  portal-format-guardrail:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore portal project
+        run: dotnet restore Chummer.Portal/Chummer.Portal.csproj
+
+      - name: Verify portal program formatting
+        run: dotnet format style Chummer.Portal/Chummer.Portal.csproj --verify-no-changes --no-restore --include Chummer.Portal/Program.cs
+
   linux-migration-loop:
     runs-on: ubuntu-latest
     timeout-minutes: 60

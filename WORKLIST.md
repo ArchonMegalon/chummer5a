@@ -60,6 +60,7 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-047 | done | P1 | Split portal downloads fallback from self-hosted downloads base URL and lock guardrails. | agent | Completed 2026-03-05: introduced `DownloadsFallbackUrl` config/env, updated portal fallback redirect behavior to avoid self-loop defaults, and revalidated via compliance-focused local tests + strict host gates. |
 | WL-048 | done | P2 | Reduce strict-gate restore noise from known legacy package compatibility warnings. | agent | Completed 2026-03-05: added targeted `NU1701` suppressions in migration test/runtime csproj files; strict local+docker gates remain green (`349/349`, `408/408`). |
 | WL-049 | done | P2 | Enforce portal landing launcher link contract in portal Playwright script + compliance guardrail. | agent | Completed 2026-03-05: `scripts/e2e-portal.cjs` now requires `/blazor/`, `/avalonia/`, `/downloads/`, `/docs/`, and `/api/health` links on the landing page, and `MigrationComplianceTests` now asserts this contract. Targeted runbook compliance tests passed (`43/43`). |
+| WL-050 | done | P2 | Add CI guardrails for compose config validity and portal program formatting checks. | agent | Completed 2026-03-05: added `compose-config-validation` and `portal-format-guardrail` jobs to `.github/workflows/docker-architecture-guardrails.yml`, then added compliance coverage in `MigrationComplianceTests`. Targeted compliance suite passed (`44/44`). |
 
 ## Intake Template
 Add new items at the bottom:
