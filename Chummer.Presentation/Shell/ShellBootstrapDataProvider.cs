@@ -38,11 +38,15 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 return cached.Workspaces;
             }
 
-            IReadOnlyList<WorkspaceListItem> workspaces = await _client.ListWorkspacesAsync(ct);
+            Task<IReadOnlyList<WorkspaceListItem>> workspacesTask = _client.ListWorkspacesAsync(ct);
+            Task<ShellUserPreferences> preferencesTask = _client.GetShellPreferencesAsync(ct);
+            await Task.WhenAll(workspacesTask, preferencesTask);
+            IReadOnlyList<WorkspaceListItem> workspaces = workspacesTask.Result;
+            string preferredRulesetId = RulesetDefaults.Normalize(preferencesTask.Result.PreferredRulesetId);
             _cachedWorkspaces = new CachedWorkspaceData(
                 Workspaces: workspaces,
-                PreferredRulesetId: RulesetDefaults.Sr5,
-                ActiveRulesetId: RulesetDefaults.Normalize(workspaces.FirstOrDefault()?.RulesetId),
+                PreferredRulesetId: preferredRulesetId,
+                ActiveRulesetId: RulesetDefaults.Normalize(workspaces.FirstOrDefault()?.RulesetId ?? preferredRulesetId),
                 CachedAtUtc: DateTimeOffset.UtcNow);
             return workspaces;
         }
