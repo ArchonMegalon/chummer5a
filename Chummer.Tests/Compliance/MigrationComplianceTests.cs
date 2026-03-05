@@ -773,6 +773,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(readmeText, "scripts/publish-download-bundle-s3.sh");
+        StringAssert.Contains(readmeText, "docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md");
         StringAssert.Contains(readmeText, "Live deployment verification is required");
         StringAssert.Contains(portalSettingsText, "\"DownloadsBaseUrl\": \"/downloads/\"");
         Assert.IsFalse(
@@ -1100,6 +1101,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync-s3\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-verify\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"amend-checksums\"");
+        StringAssert.Contains(runbookText, "docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md");
         StringAssert.Contains(runbookText, "bash scripts/generate-releases-manifest.sh");
         StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle.sh");
         StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle-s3.sh");
@@ -1109,14 +1111,21 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "DOWNLOADS_SYNC_DEPLOY_MODE");
         StringAssert.Contains(runbookText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED=true");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_BUILD");
+        StringAssert.Contains(runbookText, "DOCKER_TESTS_SOFT_FAIL");
+        StringAssert.Contains(runbookText, "DOCKER_TESTS_PREFLIGHT_LOG");
+        StringAssert.Contains(runbookText, "docker ps >\"$DOCKER_TESTS_PREFLIGHT_LOG\" 2>&1");
+        StringAssert.Contains(runbookText, "permission denied while trying to connect to the docker API");
+        StringAssert.Contains(runbookText, "skipping docker-tests due docker daemon permissions");
         StringAssert.Contains(runbookText, "docker compose run $build_arg --rm chummer-tests");
         StringAssert.Contains(runbookText, "TEST_DISABLE_BUILD_SERVERS");
         StringAssert.Contains(runbookText, "TEST_NO_RESTORE");
+        StringAssert.Contains(runbookText, "TEST_NUGET_SOFT_FAIL");
         StringAssert.Contains(runbookText, "DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER");
         StringAssert.Contains(runbookText, "--disable-build-servers");
         StringAssert.Contains(runbookText, "MSBUILDDISABLENODEREUSE");
         StringAssert.Contains(runbookText, "TEST_NUGET_PREFLIGHT");
         StringAssert.Contains(runbookText, "TEST_NUGET_ENDPOINT");
+        StringAssert.Contains(runbookText, "skipping local-tests due NuGet preflight failure");
         StringAssert.Contains(runbookText, "NuGet preflight failed");
 
         StringAssert.Contains(generatorText, "Docker/Downloads/releases.json");

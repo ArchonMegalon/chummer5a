@@ -184,6 +184,7 @@ Desktop artifact workflow:
 * Canonical topology: self-hosted runner publishes bundle into mounted portal downloads storage (`CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR`), then verifies both local manifest file and live `/downloads/releases.json` endpoint before success.
 * Local verification helper: `bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
 * Manual deployment remains available through workflow dispatch with `deploy_portal_downloads=true`.
+* Operator checklist for self-hosted publish/verify and strict host-side test gates: `docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md`.
 
 ## Legacy WinForms Requirements
 | Operating System | .NET Framework |

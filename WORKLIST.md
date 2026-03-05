@@ -42,6 +42,9 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-029 | done | P3 | Strengthen `osx-x64` matrix guardrail to per-app enforcement. | agent | Completed 2026-03-05: compliance checks now assert explicit per-app macOS Intel rows for both desktop heads. |
 | WL-030 | blocked | P1 | Run targeted/full local test gates via preapproved runbook path. | agent | Blocked in this sandbox by outbound NuGet restriction (`api.nuget.org:443` denied) during restore; runbook now preflights and fails fast instead of retry loops. |
 | WL-031 | done | P1 | Make portal downloads default to self-hosted URLs. | agent | Completed 2026-03-05: portal appsettings default now points at `/downloads/`, with runbook/compliance checks preventing fallback-default regression to GitHub releases URL. |
+| WL-032 | done | P2 | Harden `runbook docker-tests` for daemon permission blockers. | agent | Completed 2026-03-05: docker-tests now preflights daemon access and soft-skips permission-denied environments by default outside CI (`DOCKER_TESTS_SOFT_FAIL`). |
+| WL-033 | done | P2 | Harden `runbook local-tests` for NuGet-preflight soft skip outside CI. | agent | Completed 2026-03-05: local-tests now soft-skip blocked NuGet preflight outside CI (`TEST_NUGET_SOFT_FAIL`) while still allowing strict enforcement when requested. |
+| WL-034 | done | P1 | Add operator runbook for self-hosted downloads and strict gate execution. | agent | Completed 2026-03-05: added `docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md` and linked it from README/runbook guardrails with concrete self-hosted publish/verify and strict host-side test commands. |
 
 ## Intake Template
 Add new items at the bottom:
