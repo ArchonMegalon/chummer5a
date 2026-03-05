@@ -1,36 +1,43 @@
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 internal static class PortalDownloadsService
 {
-    public static DownloadReleaseManifest LoadReleaseManifest(string manifestPath, string fallbackDownloadsUrl)
+    private static readonly Regex LocalArtifactPattern = new(
+        @"^chummer-(?<app>avalonia|blazor-desktop)-(?<rid>[^.]+)\.(?<ext>zip|tar\.gz)$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
+    public static DownloadReleaseManifest LoadReleaseManifest(string manifestPath, string releaseFilesPath, string fallbackDownloadsUrl)
     {
-        if (!File.Exists(manifestPath))
+        DownloadReleaseManifest? parsedManifest = TryParseManifest(manifestPath);
+        if (parsedManifest is not null && parsedManifest.Downloads.Count > 0)
         {
-            return BuildFallbackManifest(fallbackDownloadsUrl);
+            return parsedManifest;
         }
 
-        try
+        IReadOnlyList<DownloadArtifact> discoveredDownloads = DiscoverLocalArtifacts(releaseFilesPath);
+        if (discoveredDownloads.Count > 0)
         {
-            string json = File.ReadAllText(manifestPath);
-            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            string version = parsedManifest?.Version ?? "local-files";
+            if (string.IsNullOrWhiteSpace(version) || string.Equals(version, "unpublished", StringComparison.OrdinalIgnoreCase))
             {
-                PropertyNameCaseInsensitive = true
-            };
-            DownloadReleaseManifest? manifest = JsonSerializer.Deserialize<DownloadReleaseManifest>(json, options);
-            if (manifest is null || string.IsNullOrWhiteSpace(manifest.Version))
-            {
-                return BuildFallbackManifest(fallbackDownloadsUrl);
+                version = "local-files";
             }
 
-            return manifest with
-            {
-                Downloads = manifest.Downloads ?? Array.Empty<DownloadArtifact>()
-            };
+            return new DownloadReleaseManifest(
+                Version: version,
+                Channel: parsedManifest?.Channel ?? "docker",
+                PublishedAt: parsedManifest?.PublishedAt ?? DateTimeOffset.UtcNow,
+                Downloads: discoveredDownloads);
         }
-        catch
+
+        if (parsedManifest is not null)
         {
-            return BuildFallbackManifest(fallbackDownloadsUrl);
+            return parsedManifest;
         }
+
+        return BuildFallbackManifest(fallbackDownloadsUrl);
     }
 
     public static string ResolveManifestPath(string configuredPath)
@@ -124,5 +131,117 @@ internal static class PortalDownloadsService
             Channel: "docker",
             PublishedAt: DateTimeOffset.UtcNow,
             Downloads: downloads);
+    }
+
+    private static DownloadReleaseManifest? TryParseManifest(string manifestPath)
+    {
+        if (!File.Exists(manifestPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            string json = File.ReadAllText(manifestPath);
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            DownloadReleaseManifest? manifest = JsonSerializer.Deserialize<DownloadReleaseManifest>(json, options);
+            if (manifest is null || string.IsNullOrWhiteSpace(manifest.Version))
+            {
+                return null;
+            }
+
+            return manifest with
+            {
+                Downloads = manifest.Downloads ?? Array.Empty<DownloadArtifact>()
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static IReadOnlyList<DownloadArtifact> DiscoverLocalArtifacts(string releaseFilesPath)
+    {
+        if (string.IsNullOrWhiteSpace(releaseFilesPath))
+        {
+            return Array.Empty<DownloadArtifact>();
+        }
+
+        string root = Path.GetFullPath(releaseFilesPath);
+        string filesSubdirectory = Path.Combine(root, "files");
+        string[] candidateDirectories =
+        [
+            root,
+            filesSubdirectory
+        ];
+
+        var artifacts = new List<DownloadArtifact>();
+        foreach (string directory in candidateDirectories.Distinct(StringComparer.Ordinal))
+        {
+            if (!Directory.Exists(directory))
+            {
+                continue;
+            }
+
+            foreach (string filePath in Directory.EnumerateFiles(directory, "chummer-*", SearchOption.TopDirectoryOnly))
+            {
+                string fileName = Path.GetFileName(filePath);
+                Match match = LocalArtifactPattern.Match(fileName);
+                if (!match.Success)
+                {
+                    continue;
+                }
+
+                string relativePath = Path.GetRelativePath(root, filePath).Replace('\\', '/');
+                if (relativePath.StartsWith("..", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                artifacts.Add(new DownloadArtifact(
+                    Id: $"{match.Groups["app"].Value}-{match.Groups["rid"].Value}",
+                    Platform: BuildPlatformLabel(match.Groups["app"].Value, match.Groups["rid"].Value),
+                    Url: $"/downloads/{relativePath}",
+                    Sha256: ComputeSha256(filePath)));
+            }
+        }
+
+        return artifacts
+            .OrderBy(artifact => artifact.Id, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    private static string BuildPlatformLabel(string app, string rid)
+    {
+        string appLabel = app.ToLowerInvariant() switch
+        {
+            "avalonia" => "Avalonia Desktop",
+            "blazor-desktop" => "Blazor Desktop",
+            _ => app
+        };
+
+        string ridLabel = rid.ToLowerInvariant() switch
+        {
+            "win-x64" => "Windows x64",
+            "win-arm64" => "Windows ARM64",
+            "linux-x64" => "Linux x64",
+            "linux-arm64" => "Linux ARM64",
+            "osx-arm64" => "macOS ARM64",
+            _ => rid
+        };
+
+        return $"{appLabel} {ridLabel}";
+    }
+
+    private static string ComputeSha256(string filePath)
+    {
+        using var stream = File.OpenRead(filePath);
+        byte[] hash = SHA256.HashData(stream);
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 }

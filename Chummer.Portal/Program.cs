@@ -173,7 +173,7 @@ app.MapGet("/", () => Results.Content(
     "text/html; charset=utf-8"));
 
 app.MapGet("/downloads/releases.json", () => Results.Json(
-    PortalDownloadsService.LoadReleaseManifest(resolvedManifestPath, downloadsBaseUrl),
+    PortalDownloadsService.LoadReleaseManifest(resolvedManifestPath, resolvedReleaseFilesPath, downloadsBaseUrl),
     new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 
 app.MapGet("/downloads/", () => Results.Content(

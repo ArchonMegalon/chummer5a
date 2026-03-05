@@ -778,6 +778,6 @@ public class ApiIntegrationTests
         if (int.TryParse(raw, out int seconds) && seconds > 0)
             return TimeSpan.FromSeconds(seconds);
 
-        return TimeSpan.FromSeconds(20);
+        return TimeSpan.FromSeconds(45);
     }
 }

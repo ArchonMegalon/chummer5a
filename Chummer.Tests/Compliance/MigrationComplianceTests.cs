@@ -662,6 +662,23 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Portal_download_manifest_discovers_local_artifacts_when_manifest_is_empty()
+    {
+        string portalProgramPath = FindPath("Chummer.Portal", "Program.cs");
+        string portalProgramText = File.ReadAllText(portalProgramPath);
+        string portalDownloadsServicePath = FindPath("Chummer.Portal", "PortalDownloadsService.cs");
+        string portalDownloadsServiceText = File.ReadAllText(portalDownloadsServicePath);
+
+        StringAssert.Contains(portalProgramText, "LoadReleaseManifest(resolvedManifestPath, resolvedReleaseFilesPath, downloadsBaseUrl)");
+        StringAssert.Contains(portalDownloadsServiceText, "DiscoverLocalArtifacts");
+        StringAssert.Contains(portalDownloadsServiceText, "LocalArtifactPattern");
+        StringAssert.Contains(portalDownloadsServiceText, "chummer-(?<app>avalonia|blazor-desktop)-(?<rid>[^.]+)\\.(?<ext>zip|tar\\.gz)");
+        StringAssert.Contains(portalDownloadsServiceText, "if (parsedManifest is not null && parsedManifest.Downloads.Count > 0)");
+        StringAssert.Contains(portalDownloadsServiceText, "return new DownloadReleaseManifest(");
+        StringAssert.Contains(portalDownloadsServiceText, "Url: $\"/downloads/{relativePath}\"");
+    }
+
+    [TestMethod]
     public void Desktop_download_matrix_includes_avalonia_and_blazor_desktop_artifacts()
     {
         string workflowPath = FindPath(".github", "workflows", "desktop-downloads-matrix.yml");

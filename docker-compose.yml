@@ -106,8 +106,9 @@ services:
       - chummer-api
       - chummer-blazor
     profiles: ["test"]
+    network_mode: host
     environment:
-      CHUMMER_BLAZOR_BASE_URL: "http://chummer-blazor:8080"
+      CHUMMER_BLAZOR_BASE_URL: "${CHUMMER_UI_PLAYWRIGHT_BASE_URL:-http://127.0.0.1:${CHUMMER_BLAZOR_PORT:-8089}}"
       CHUMMER_API_BASE_URL: "http://chummer-api:8080"
       CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
     command: >

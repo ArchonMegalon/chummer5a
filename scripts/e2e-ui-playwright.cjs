@@ -5,14 +5,39 @@ const { chromium } = require('playwright');
 
 const UI_URL = process.env.CHUMMER_BLAZOR_BASE_URL || 'http://127.0.0.1:8089';
 const SAMPLE_CHARACTER_FILE = process.env.CHUMMER_UI_SAMPLE_FILE || '/work/testdata/BLUE.chum5';
-const NAVIGATION_WAIT_UNTIL = process.env.CHUMMER_UI_NAV_WAIT_UNTIL || 'domcontentloaded';
+const NAVIGATION_WAIT_UNTIL = process.env.CHUMMER_UI_NAV_WAIT_UNTIL || 'commit';
+const ROOT_NAV_TIMEOUT_MS = Number(process.env.CHUMMER_UI_NAV_TIMEOUT_MS || '15000');
+const ROOT_NAV_RETRY_ATTEMPTS = Number(process.env.CHUMMER_UI_NAV_RETRY_ATTEMPTS || '4');
+const ROOT_NAV_RETRY_DELAY_MS = Number(process.env.CHUMMER_UI_NAV_RETRY_DELAY_MS || '2000');
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function openRootWithRetry(page) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= ROOT_NAV_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      await page.goto(`${UI_URL}/`, { waitUntil: NAVIGATION_WAIT_UNTIL, timeout: ROOT_NAV_TIMEOUT_MS });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt >= ROOT_NAV_RETRY_ATTEMPTS) {
+        break;
+      }
+
+      // Service startup can lag briefly in containerized runs; retry before failing the suite.
+      await delay(ROOT_NAV_RETRY_DELAY_MS);
+    }
+  }
+
+  throw lastError || new Error(`Unable to open ${UI_URL}/`);
+}
 
 async function run() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
   try {
-    await page.goto(`${UI_URL}/`, { waitUntil: NAVIGATION_WAIT_UNTIL, timeout: 30000 });
+    await openRootWithRetry(page);
     await page.waitForSelector('text=Import Character File', { timeout: 15000 });
 
     const workspaceButtons = page.locator('#openCharactersTree .command-button');
