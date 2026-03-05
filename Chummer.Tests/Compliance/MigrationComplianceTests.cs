@@ -742,6 +742,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "Treat object storage as the alternate topology");
         StringAssert.Contains(runbookText, "docs/examples/self-hosted-downloads.env.example");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh");
+        StringAssert.Contains(runbookText, "RUNBOOK_LOG_DIR");
+        StringAssert.Contains(runbookText, "RUNBOOK_STATE_DIR");
 
         StringAssert.Contains(envExampleText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED=true");
         StringAssert.Contains(envExampleText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR=/srv/chummer/portal-downloads");
@@ -842,6 +844,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "Treat object storage as the alternate topology, not the default");
         StringAssert.Contains(readmeText, "docs/examples/self-hosted-downloads.env.example");
         StringAssert.Contains(readmeText, "RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh");
+        StringAssert.Contains(readmeText, "RUNBOOK_LOG_DIR");
+        StringAssert.Contains(readmeText, "RUNBOOK_STATE_DIR");
         StringAssert.Contains(portalSettingsText, "\"DownloadsBaseUrl\": \"/downloads/\"");
         StringAssert.Contains(portalSettingsText, "\"DownloadsFallbackUrl\": \"\"");
         Assert.IsFalse(

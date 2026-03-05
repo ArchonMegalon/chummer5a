@@ -8,6 +8,8 @@ Purpose: publish desktop artifacts to a self-hosted downloads surface and verify
 `releases.json` and `files/chummer-*.zip|tar.gz`.
 2. Portal serves `/downloads/releases.json` from your storage topology.
 3. Use preapproved runbook/script paths from repository root (`/docker/chummer5a`).
+4. Optional unattended overrides:
+`RUNBOOK_LOG_DIR` pins runbook log files to a known writable directory and `RUNBOOK_STATE_DIR` pins writable state (for example `DOTNET_CLI_HOME`) to a known writable directory.
 
 ## Recommended Production Topology
 

@@ -193,6 +193,7 @@ Desktop artifact workflow:
 * Parity checklist generator: `RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh` (writes `docs/PARITY_CHECKLIST.md`).
 * Host readiness probe for strict gates: `RUNBOOK_MODE=host-prereqs bash scripts/runbook.sh`.
 * Strict host-side gate wrapper (no soft-skips, defaults to `net10.0`): `bash scripts/runbook-strict-host-gates.sh [optionalTestFilter] [optionalFramework]`.
+* Optional unattended path overrides: `RUNBOOK_LOG_DIR` controls runbook log placement and `RUNBOOK_STATE_DIR` controls writable state such as `DOTNET_CLI_HOME`.
 * Strict wrapper local stage default excludes API/parity and legacy host-mutating classes (`ApiIntegrationTests`, `DualHeadAcceptanceTests`, `ChummerTest`) so environment-free local checks run first; docker stage still runs full filter scope.
 * Strict wrapper now compares tracked `git status` before/after run and fails on new worktree drift unless `STRICT_ALLOW_WORKTREE_DRIFT=1` is explicitly set.
 * Manual deployment remains available through workflow dispatch with `deploy_portal_downloads=true`.
