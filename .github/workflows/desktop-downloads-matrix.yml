@@ -271,6 +271,7 @@ jobs:
     env:
       CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR }}
       CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL }}
+      CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY }}
 
     steps:
       - name: Validate deployment directory variable
@@ -279,6 +280,16 @@ jobs:
           set -euo pipefail
           if [[ -z "${CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR}" ]]; then
             echo "Set repository variable CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR before enabling deploy_portal_downloads." >&2
+            exit 1
+          fi
+
+      - name: Validate live verify configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          require_live_verify="$(printf '%s' "${CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY:-}" | tr '[:upper:]' '[:lower:]')"
+          if [[ "${require_live_verify}" == "true" && -z "${CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL:-}" ]]; then
+            echo "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY=true requires CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL." >&2
             exit 1
           fi
 
@@ -303,7 +314,7 @@ jobs:
           set -euo pipefail
           bash scripts/verify-releases-manifest.sh "$CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR"
 
-      - name: Verify deployed portal manifest has artifacts (optional)
+      - name: Verify deployed portal manifest has artifacts
         if: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL != '' }}
         shell: bash
         run: |

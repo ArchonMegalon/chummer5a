@@ -699,6 +699,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "deploy_portal_downloads");
         StringAssert.Contains(workflowText, "deploy-downloads");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY");
+        StringAssert.Contains(workflowText, "Validate live verify configuration");
+        StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY=true requires CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL.");
         StringAssert.Contains(workflowText, "Verify deployed manifest has artifacts");
         StringAssert.Contains(workflowText, "bash scripts/verify-releases-manifest.sh \"$CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR\"");
         StringAssert.Contains(workflowText, "Verify deployed portal manifest has artifacts");
@@ -721,6 +724,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_DESKTOP_CLIENT_MODE");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY");
         Assert.IsFalse(
             readmeText.Contains("two UI heads (`Chummer.Blazor`, `Chummer.Avalonia`)", StringComparison.Ordinal),
             "README summary regressed to outdated two-head architecture language.");
