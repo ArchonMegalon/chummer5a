@@ -66,6 +66,11 @@ jobs:
             os: macos-latest
             rid: osx-arm64
             archive_ext: tar.gz
+          - app: avalonia
+            project: Chummer.Avalonia/Chummer.Avalonia.csproj
+            os: macos-latest
+            rid: osx-x64
+            archive_ext: tar.gz
           - app: blazor-desktop
             project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
             os: windows-latest
@@ -90,6 +95,11 @@ jobs:
             project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
             os: macos-latest
             rid: osx-arm64
+            archive_ext: tar.gz
+          - app: blazor-desktop
+            project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
+            os: macos-latest
+            rid: osx-x64
             archive_ext: tar.gz
 
     steps:

@@ -691,6 +691,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalDownloadsServiceText, "DiscoverLocalArtifacts");
         StringAssert.Contains(portalDownloadsServiceText, "LocalArtifactPattern");
         StringAssert.Contains(portalDownloadsServiceText, "chummer-(?<app>avalonia|blazor-desktop)-(?<rid>[^.]+)\\.(?<ext>zip|tar\\.gz)");
+        StringAssert.Contains(portalDownloadsServiceText, "\"osx-x64\" => \"macOS x64\"");
         StringAssert.Contains(portalDownloadsServiceText, "if (parsedManifest is not null && parsedManifest.Downloads.Count > 0)");
         StringAssert.Contains(portalDownloadsServiceText, "return new DownloadReleaseManifest(");
         StringAssert.Contains(portalDownloadsServiceText, "Url: $\"/downloads/{relativePath}\"");
@@ -708,6 +709,8 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(workflowText, "project: Chummer.Avalonia/Chummer.Avalonia.csproj");
         StringAssert.Contains(workflowText, "project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj");
+        StringAssert.Contains(workflowText, "rid: osx-arm64");
+        StringAssert.Contains(workflowText, "rid: osx-x64");
         StringAssert.Contains(workflowText, "bash scripts/generate-releases-manifest.sh");
         StringAssert.Contains(workflowText, "Chummer.Application/**");
         StringAssert.Contains(workflowText, "Chummer.Core/**");
@@ -732,6 +735,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "scripts/verify-releases-manifest.sh");
 
         StringAssert.Contains(manifestScriptText, "chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>[^.]+)\\.(?P<ext>zip|tar\\.gz)");
+        StringAssert.Contains(manifestScriptText, "\"osx-x64\": \"macOS x64\"");
         StringAssert.Contains(manifestScriptText, "\"id\": f\"{app}-{rid}\"");
         StringAssert.Contains(manifestScriptText, "\"url\": f\"/downloads/files/{artifact.name}\"");
         StringAssert.Contains(verifyScriptText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");

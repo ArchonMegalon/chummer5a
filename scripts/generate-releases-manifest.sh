@@ -39,6 +39,7 @@ platform_names = {
     "linux-x64": "Linux x64",
     "linux-arm64": "Linux ARM64",
     "osx-arm64": "macOS ARM64",
+    "osx-x64": "macOS x64",
 }
 
 pattern = re.compile(r"^chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>[^.]+)\.(?P<ext>zip|tar\.gz)$")

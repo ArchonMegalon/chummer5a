@@ -232,6 +232,7 @@ internal static class PortalDownloadsService
             "linux-x64" => "Linux x64",
             "linux-arm64" => "Linux ARM64",
             "osx-arm64" => "macOS ARM64",
+            "osx-x64" => "macOS x64",
             _ => rid
         };
 
