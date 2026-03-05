@@ -20,7 +20,7 @@ namespace Chummer.Tests.Presentation;
 public class ShellPresenterTests
 {
     [TestMethod]
-    public async Task InitializeAsync_loads_shell_contract_and_restores_workspaces()
+    public async Task InitializeAsync_loads_shell_contract_and_restores_workspaces_without_auto_selecting_active_workspace()
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
         var client = new ShellClientStub
@@ -38,9 +38,10 @@ public class ShellPresenterTests
         Assert.IsFalse(presenter.State.IsBusy);
         Assert.IsNull(presenter.State.Error);
         Assert.HasCount(2, presenter.State.OpenWorkspaces);
-        Assert.AreEqual("ws-new", presenter.State.ActiveWorkspaceId?.Value);
+        Assert.IsNull(presenter.State.ActiveWorkspaceId);
         Assert.AreEqual("ws-new", presenter.State.OpenWorkspaces[0].Id.Value);
         Assert.AreEqual("file", presenter.State.MenuRoots[0].Id);
+        Assert.AreEqual(RulesetDefaults.Sr5, presenter.State.ActiveRulesetId);
         Assert.AreEqual("tab-info", presenter.State.ActiveTabId);
         StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Restored 2 workspace(s).");
     }
@@ -76,7 +77,8 @@ public class ShellPresenterTests
             [
                 CreateWorkspace("ws-sr5", "SR5 Character", "SR5", now.AddMinutes(-25), RulesetDefaults.Sr5),
                 CreateWorkspace("ws-sr6", "SR6 Character", "SR6", now.AddMinutes(-5), "sr6")
-            ]
+            ],
+            Session = new ShellSessionState("ws-sr6")
         };
         var presenter = new ShellPresenter(client);
 
@@ -97,7 +99,8 @@ public class ShellPresenterTests
             [
                 CreateWorkspace("ws-sr5", "SR5 Character", "SR5", now.AddMinutes(-25), RulesetDefaults.Sr5),
                 CreateWorkspace("ws-sr6", "SR6 Character", "SR6", now.AddMinutes(-5), "sr6")
-            ]
+            ],
+            Session = new ShellSessionState("ws-sr6")
         };
         var presenter = new ShellPresenter(client);
 
@@ -223,7 +226,8 @@ public class ShellPresenterTests
             Workspaces =
             [
                 CreateWorkspace("ws-sr5", "SR5 Character", "SR5", now, RulesetDefaults.Sr5)
-            ]
+            ],
+            Session = new ShellSessionState(ActiveWorkspaceId: "ws-sr5")
         };
         var presenter = new ShellPresenter(client);
         await presenter.InitializeAsync(CancellationToken.None);
@@ -316,7 +320,8 @@ public class ShellPresenterTests
             Workspaces =
             [
                 CreateWorkspace("ws-1", "Runner", "R1", now)
-            ]
+            ],
+            Session = new ShellSessionState(ActiveWorkspaceId: "ws-1")
         };
         var presenter = new ShellPresenter(client);
         await presenter.InitializeAsync(CancellationToken.None);
@@ -539,20 +544,12 @@ public class ShellPresenterTests
             IReadOnlyList<WorkspaceListItem> workspaces,
             string? preferredWorkspaceId)
         {
-            if (!string.IsNullOrWhiteSpace(preferredWorkspaceId))
-            {
-                WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
-                    string.Equals(workspace.Id.Value, preferredWorkspaceId, StringComparison.Ordinal));
-                if (matchingWorkspace is not null)
-                {
-                    return matchingWorkspace.Id;
-                }
-            }
+            if (string.IsNullOrWhiteSpace(preferredWorkspaceId))
+                return null;
 
-            return workspaces
-                .OrderByDescending(workspace => workspace.LastUpdatedUtc)
-                .FirstOrDefault()
-                ?.Id;
+            WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
+                string.Equals(workspace.Id.Value, preferredWorkspaceId, StringComparison.Ordinal));
+            return matchingWorkspace?.Id;
         }
     }
 }

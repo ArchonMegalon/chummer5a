@@ -88,6 +88,28 @@ public class ShellBootstrapDataProviderTests
     }
 
     [TestMethod]
+    public async Task GetAsync_does_not_infer_active_workspace_from_workspace_order_when_session_is_empty()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var client = new BootstrapClientStub
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-old", now.AddMinutes(-25), RulesetDefaults.Sr5),
+                CreateWorkspace("ws-new", now.AddMinutes(-5), "sr6")
+            ],
+            Preferences = new ShellPreferences(RulesetDefaults.Sr5),
+            Session = ShellSessionState.Default
+        };
+        var provider = new ShellBootstrapDataProvider(client);
+
+        ShellBootstrapData bootstrap = await provider.GetAsync(CancellationToken.None);
+
+        Assert.IsNull(bootstrap.ActiveWorkspaceId);
+        Assert.AreEqual(RulesetDefaults.Sr5, bootstrap.ActiveRulesetId);
+    }
+
+    [TestMethod]
     public async Task GetAsync_includes_active_tab_from_bootstrap_snapshot()
     {
         var client = new BootstrapClientStub
@@ -307,19 +329,12 @@ public class ShellBootstrapDataProviderTests
             IReadOnlyList<WorkspaceListItem> workspaces,
             string? preferredWorkspaceId)
         {
-            if (!string.IsNullOrWhiteSpace(preferredWorkspaceId))
-            {
-                WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
-                    string.Equals(workspace.Id.Value, preferredWorkspaceId, StringComparison.Ordinal));
-                if (matchingWorkspace is not null)
-                {
-                    return matchingWorkspace.Id;
-                }
-            }
+            if (string.IsNullOrWhiteSpace(preferredWorkspaceId))
+                return null;
 
-            return workspaces.Count == 0
-                ? null
-                : workspaces[0].Id;
+            WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
+                string.Equals(workspace.Id.Value, preferredWorkspaceId, StringComparison.Ordinal));
+            return matchingWorkspace?.Id;
         }
     }
 

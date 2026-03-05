@@ -360,12 +360,12 @@ public sealed class ShellPresenter : IShellPresenter
         IReadOnlyList<ShellWorkspaceState> openWorkspaces)
     {
         if (requestedActiveWorkspaceId is null)
-            return openWorkspaces.FirstOrDefault()?.Id;
+            return null;
 
         bool exists = openWorkspaces.Any(workspace => WorkspaceIdsEqual(workspace.Id, requestedActiveWorkspaceId.Value));
         return exists
             ? requestedActiveWorkspaceId
-            : openWorkspaces.FirstOrDefault()?.Id;
+            : null;
     }
 
     private static string ResolveRulesetForActiveWorkspace(

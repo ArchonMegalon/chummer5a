@@ -207,17 +207,12 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
         IReadOnlyList<WorkspaceListItem> workspaces,
         string? preferredActiveWorkspaceId)
     {
-        if (!string.IsNullOrWhiteSpace(preferredActiveWorkspaceId))
-        {
-            WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
-                string.Equals(workspace.Id.Value, preferredActiveWorkspaceId, StringComparison.Ordinal));
-            if (matchingWorkspace is not null)
-            {
-                return matchingWorkspace.Id;
-            }
-        }
+        if (string.IsNullOrWhiteSpace(preferredActiveWorkspaceId))
+            return null;
 
-        return workspaces.FirstOrDefault()?.Id;
+        WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
+            string.Equals(workspace.Id.Value, preferredActiveWorkspaceId, StringComparison.Ordinal));
+        return matchingWorkspace?.Id;
     }
 
     private static string ResolveRulesetForWorkspace(

@@ -899,6 +899,42 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Shell_session_restore_does_not_infer_active_workspace_from_workspace_order()
+    {
+        string shellEndpointsPath = FindPath("Chummer.Api", "Endpoints", "ShellEndpoints.cs");
+        string shellEndpointsText = File.ReadAllText(shellEndpointsPath);
+        string bootstrapProviderPath = FindPath("Chummer.Presentation", "Shell", "ShellBootstrapDataProvider.cs");
+        string bootstrapProviderText = File.ReadAllText(bootstrapProviderPath);
+        string inProcessClientPath = FindPath("Chummer.Desktop.Runtime", "InProcessChummerClient.cs");
+        string inProcessClientText = File.ReadAllText(inProcessClientPath);
+        string shellPresenterPath = FindPath("Chummer.Presentation", "Shell", "ShellPresenter.cs");
+        string shellPresenterText = File.ReadAllText(shellPresenterPath);
+
+        Assert.IsTrue(
+            Regex.IsMatch(shellEndpointsText, @"if\s*\(string\.IsNullOrWhiteSpace\(preferredActiveWorkspaceId\)\)\s*return null;", RegexOptions.Multiline),
+            "Shell bootstrap endpoint should return no active workspace when session state is empty.");
+        Assert.IsTrue(
+            Regex.IsMatch(bootstrapProviderText, @"if\s*\(string\.IsNullOrWhiteSpace\(preferredActiveWorkspaceId\)\)\s*return null;", RegexOptions.Multiline),
+            "Shell bootstrap provider should return no active workspace when session state is empty.");
+        Assert.IsTrue(
+            Regex.IsMatch(inProcessClientText, @"if\s*\(string\.IsNullOrWhiteSpace\(persistedActiveWorkspaceId\)\)\s*return null;", RegexOptions.Multiline),
+            "In-process bootstrap client should return no active workspace when session state is empty.");
+        Assert.IsTrue(
+            Regex.IsMatch(shellPresenterText, @"if\s*\(requestedActiveWorkspaceId is null\)\s*return null;", RegexOptions.Multiline),
+            "Shell presenter should preserve the explicit no-active-workspace state instead of auto-selecting one.");
+
+        Assert.IsFalse(
+            shellEndpointsText.Contains("workspaces[0]", StringComparison.Ordinal),
+            "Shell bootstrap endpoint must not fall back to the first workspace.");
+        Assert.IsFalse(
+            bootstrapProviderText.Contains("workspaces[0]", StringComparison.Ordinal),
+            "Shell bootstrap provider must not fall back to the first workspace.");
+        Assert.IsFalse(
+            inProcessClientText.Contains("workspaces[0]", StringComparison.Ordinal),
+            "In-process bootstrap client must not fall back to the first workspace.");
+    }
+
+    [TestMethod]
     public void Dual_head_shell_actions_and_controls_are_scoped_by_active_ruleset()
     {
         string blazorShellCodePath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor.cs");

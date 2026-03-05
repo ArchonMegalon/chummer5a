@@ -521,7 +521,7 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
-    public async Task Shell_bootstrap_endpoint_defaults_to_active_workspace_ruleset_when_unspecified()
+    public async Task Shell_bootstrap_endpoint_uses_preferred_ruleset_when_no_active_workspace_is_saved_even_if_workspaces_exist()
     {
         using var client = CreateClient();
         client.Timeout = TimeSpan.FromSeconds(180);
@@ -541,10 +541,10 @@ public class ApiIntegrationTests
         await PostRequiredJsonObject(client, "/api/workspaces/import", importBody);
         JsonObject response = await GetRequiredJsonObject(client, "/api/shell/bootstrap");
 
-        Assert.AreEqual("sr6", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.AreEqual("sr5", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.AreEqual("sr5", (response["preferredRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
-        Assert.AreEqual("sr6", (response["activeRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
-        Assert.IsFalse(string.IsNullOrWhiteSpace(response["activeWorkspaceId"]?.GetValue<string>()));
+        Assert.AreEqual("sr5", (response["activeRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.IsNull(response["activeWorkspaceId"]);
     }
 
     [TestMethod]

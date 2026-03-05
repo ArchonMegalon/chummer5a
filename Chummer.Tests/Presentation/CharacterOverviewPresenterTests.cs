@@ -1165,20 +1165,14 @@ public class CharacterOverviewPresenterTests
             string? preferredWorkspaceId)
         {
             WorkspaceListItem[] workspaceList = workspaces as WorkspaceListItem[] ?? workspaces.ToArray();
-            if (!string.IsNullOrWhiteSpace(preferredWorkspaceId))
+            if (string.IsNullOrWhiteSpace(preferredWorkspaceId))
             {
-                WorkspaceListItem? matchingWorkspace = workspaceList.FirstOrDefault(workspace =>
-                    string.Equals(workspace.Id.Value, preferredWorkspaceId, StringComparison.Ordinal));
-                if (matchingWorkspace is not null)
-                {
-                    return matchingWorkspace.Id;
-                }
+                return null;
             }
 
-            return workspaceList
-                .OrderByDescending(workspace => workspace.LastUpdatedUtc)
-                .FirstOrDefault()
-                ?.Id;
+            WorkspaceListItem? matchingWorkspace = workspaceList.FirstOrDefault(workspace =>
+                string.Equals(workspace.Id.Value, preferredWorkspaceId, StringComparison.Ordinal));
+            return matchingWorkspace?.Id;
         }
     }
 

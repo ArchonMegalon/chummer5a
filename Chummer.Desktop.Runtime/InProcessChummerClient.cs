@@ -255,17 +255,12 @@ public sealed class InProcessChummerClient : IChummerClient
         IReadOnlyList<WorkspaceListItem> workspaces,
         string? persistedActiveWorkspaceId)
     {
-        if (!string.IsNullOrWhiteSpace(persistedActiveWorkspaceId))
-        {
-            WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
-                string.Equals(workspace.Id.Value, persistedActiveWorkspaceId, StringComparison.Ordinal));
-            if (matchingWorkspace is not null)
-            {
-                return matchingWorkspace.Id;
-            }
-        }
+        if (string.IsNullOrWhiteSpace(persistedActiveWorkspaceId))
+            return null;
 
-        return workspaces.FirstOrDefault()?.Id;
+        WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
+            string.Equals(workspace.Id.Value, persistedActiveWorkspaceId, StringComparison.Ordinal));
+        return matchingWorkspace?.Id;
     }
 
     private static string ResolveRulesetForWorkspace(

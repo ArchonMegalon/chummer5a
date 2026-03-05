@@ -148,6 +148,32 @@ public sealed class InProcessChummerClientRulesetPluginTests
     }
 
     [TestMethod]
+    public async Task GetShellBootstrap_does_not_infer_active_workspace_from_list_order_when_session_is_empty()
+    {
+        var workspaceService = new NoOpWorkspaceService
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-sr5", DateTimeOffset.UtcNow.AddMinutes(-10), RulesetDefaults.Sr5),
+                CreateWorkspace("ws-sr6", DateTimeOffset.UtcNow.AddMinutes(-5), "sr6")
+            ]
+        };
+        var preferencesStore = new InMemoryShellPreferencesStore();
+        preferencesStore.Save(new ShellPreferences(RulesetDefaults.Sr5));
+        var client = new InProcessChummerClient(
+            workspaceService,
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            new ShellPreferencesService(preferencesStore),
+            new ShellSessionService(new InMemoryShellSessionStore()));
+
+        ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
+
+        Assert.IsNull(snapshot.ActiveWorkspaceId);
+        Assert.AreEqual(RulesetDefaults.Sr5, snapshot.ActiveRulesetId);
+        Assert.AreEqual(RulesetDefaults.Sr5, snapshot.RulesetId);
+    }
+
+    [TestMethod]
     public async Task GetShellBootstrap_restores_saved_active_tab()
     {
         var preferencesStore = new InMemoryShellPreferencesStore();
