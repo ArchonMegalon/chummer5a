@@ -7,7 +7,7 @@ public interface IWorkspaceSessionPresenter
 {
     WorkspaceSessionState State { get; }
 
-    WorkspaceSessionState Restore(IReadOnlyList<WorkspaceListItem> workspaces);
+    WorkspaceSessionState Restore(IReadOnlyList<WorkspaceListItem> workspaces, CharacterWorkspaceId? activeWorkspaceId = null);
 
     WorkspaceSessionState Open(CharacterWorkspaceId id, CharacterProfileSection? profile, string? rulesetId = null);
 

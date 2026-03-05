@@ -46,6 +46,28 @@ public class ShellPresenterTests
     }
 
     [TestMethod]
+    public async Task InitializeAsync_restores_persisted_active_workspace_from_bootstrap_session()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var client = new ShellClientStub
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-older", "Older Character", "OLD", now.AddMinutes(-25)),
+                CreateWorkspace("ws-newer", "Newer Character", "NEW", now.AddMinutes(-5))
+            ],
+            Preferences = new ShellUserPreferences(
+                PreferredRulesetId: RulesetDefaults.Sr5,
+                ActiveWorkspaceId: "ws-older")
+        };
+        var presenter = new ShellPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        Assert.AreEqual("ws-older", presenter.State.ActiveWorkspaceId?.Value);
+    }
+
+    [TestMethod]
     public async Task InitializeAsync_uses_active_workspace_ruleset_for_shell_contract()
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
@@ -313,39 +335,36 @@ public class ShellPresenterTests
 
         public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
         {
-            Preferences = new ShellUserPreferences(RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+            Preferences = new ShellUserPreferences(
+                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId),
+                ActiveWorkspaceId: NormalizeWorkspaceId(preferences.ActiveWorkspaceId));
             SavedPreferences.Add(Preferences);
             return Task.CompletedTask;
         }
 
         public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
         {
+            IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
+            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, Preferences.ActiveWorkspaceId);
+            string preferredRulesetId = RulesetDefaults.Normalize(Preferences.PreferredRulesetId);
+            string activeRulesetId = activeWorkspaceId is null
+                ? preferredRulesetId
+                : RulesetDefaults.Normalize(
+                    workspaces.First(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal)).RulesetId);
             string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
-                ? RulesetDefaults.Normalize(
-                    Workspaces
-                        .OrderByDescending(workspace => workspace.LastUpdatedUtc)
-                        .FirstOrDefault()
-                        ?.RulesetId
-                    ?? Preferences.PreferredRulesetId)
+                ? activeRulesetId
                 : RulesetDefaults.Normalize(rulesetId);
             RequestedBootstrapRulesets.Add(effectiveRulesetId);
             IReadOnlyList<AppCommandDefinition> commands = await GetCommandsAsync(effectiveRulesetId, ct);
             IReadOnlyList<NavigationTabDefinition> tabs = await GetNavigationTabsAsync(effectiveRulesetId, ct);
-            IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
-            string preferredRulesetId = RulesetDefaults.Normalize(Preferences.PreferredRulesetId);
-            string activeRulesetId = RulesetDefaults.Normalize(
-                workspaces
-                    .OrderByDescending(workspace => workspace.LastUpdatedUtc)
-                    .FirstOrDefault()
-                    ?.RulesetId
-                ?? preferredRulesetId);
             return new ShellBootstrapSnapshot(
                 RulesetId: effectiveRulesetId,
                 Commands: commands,
                 NavigationTabs: tabs,
                 Workspaces: workspaces,
                 PreferredRulesetId: preferredRulesetId,
-                ActiveRulesetId: activeRulesetId);
+                ActiveRulesetId: activeRulesetId,
+                ActiveWorkspaceId: activeWorkspaceId);
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();
@@ -377,5 +396,32 @@ public class ShellPresenterTests
         public Task<CommandResult<WorkspaceSaveReceipt>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
 
         public Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
+
+        private static string? NormalizeWorkspaceId(string? workspaceId)
+        {
+            return string.IsNullOrWhiteSpace(workspaceId)
+                ? null
+                : workspaceId.Trim();
+        }
+
+        private static CharacterWorkspaceId? ResolveActiveWorkspaceId(
+            IReadOnlyList<WorkspaceListItem> workspaces,
+            string? preferredWorkspaceId)
+        {
+            if (!string.IsNullOrWhiteSpace(preferredWorkspaceId))
+            {
+                WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
+                    string.Equals(workspace.Id.Value, preferredWorkspaceId, StringComparison.Ordinal));
+                if (matchingWorkspace is not null)
+                {
+                    return matchingWorkspace.Id;
+                }
+            }
+
+            return workspaces
+                .OrderByDescending(workspace => workspace.LastUpdatedUtc)
+                .FirstOrDefault()
+                ?.Id;
+        }
     }
 }

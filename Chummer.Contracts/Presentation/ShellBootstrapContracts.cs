@@ -9,7 +9,8 @@ public static class ShellBootstrapDefaults
 }
 
 public sealed record ShellUserPreferences(
-    string PreferredRulesetId)
+    string PreferredRulesetId,
+    string? ActiveWorkspaceId = null)
 {
     public static ShellUserPreferences Default { get; } = new(RulesetDefaults.Sr5);
 }
@@ -20,7 +21,8 @@ public sealed record ShellBootstrapResponse(
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     IReadOnlyList<WorkspaceListItemResponse> Workspaces,
     string PreferredRulesetId = RulesetDefaults.Sr5,
-    string ActiveRulesetId = RulesetDefaults.Sr5);
+    string ActiveRulesetId = RulesetDefaults.Sr5,
+    string? ActiveWorkspaceId = null);
 
 public sealed record ShellBootstrapSnapshot(
     string RulesetId,
@@ -28,4 +30,5 @@ public sealed record ShellBootstrapSnapshot(
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     IReadOnlyList<WorkspaceListItem> Workspaces,
     string PreferredRulesetId = RulesetDefaults.Sr5,
-    string ActiveRulesetId = RulesetDefaults.Sr5);
+    string ActiveRulesetId = RulesetDefaults.Sr5,
+    CharacterWorkspaceId? ActiveWorkspaceId = null);

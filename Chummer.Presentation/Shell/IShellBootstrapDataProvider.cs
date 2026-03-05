@@ -10,7 +10,8 @@ public sealed record ShellBootstrapData(
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     IReadOnlyList<WorkspaceListItem> Workspaces,
     string PreferredRulesetId = RulesetDefaults.Sr5,
-    string ActiveRulesetId = RulesetDefaults.Sr5);
+    string ActiveRulesetId = RulesetDefaults.Sr5,
+    CharacterWorkspaceId? ActiveWorkspaceId = null);
 
 public interface IShellBootstrapDataProvider
 {

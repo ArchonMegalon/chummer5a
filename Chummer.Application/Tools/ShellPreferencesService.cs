@@ -15,12 +15,23 @@ public sealed class ShellPreferencesService : IShellPreferencesService
     public ShellUserPreferences Load()
     {
         ShellUserPreferences stored = _store.Load();
-        return new ShellUserPreferences(RulesetDefaults.Normalize(stored.PreferredRulesetId));
+        return new ShellUserPreferences(
+            PreferredRulesetId: RulesetDefaults.Normalize(stored.PreferredRulesetId),
+            ActiveWorkspaceId: NormalizeWorkspaceId(stored.ActiveWorkspaceId));
     }
 
     public void Save(ShellUserPreferences preferences)
     {
-        ShellUserPreferences normalized = new(RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+        ShellUserPreferences normalized = new(
+            PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId),
+            ActiveWorkspaceId: NormalizeWorkspaceId(preferences.ActiveWorkspaceId));
         _store.Save(normalized);
+    }
+
+    private static string? NormalizeWorkspaceId(string? workspaceId)
+    {
+        return string.IsNullOrWhiteSpace(workspaceId)
+            ? null
+            : workspaceId.Trim();
     }
 }

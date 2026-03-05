@@ -75,9 +75,12 @@ public sealed class InProcessChummerClient : IChummerClient
         ct.ThrowIfCancellationRequested();
 
         IReadOnlyList<WorkspaceListItem> workspaces = _workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
-        string preferredRulesetId = RulesetDefaults.Normalize(_shellPreferencesService.Load().PreferredRulesetId);
+        ShellUserPreferences preferences = _shellPreferencesService.Load();
+        string preferredRulesetId = RulesetDefaults.Normalize(preferences.PreferredRulesetId);
+        CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, preferences.ActiveWorkspaceId);
+        string activeRulesetId = ResolveRulesetForWorkspace(activeWorkspaceId, workspaces, preferredRulesetId);
         string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
-            ? RulesetDefaults.Normalize(workspaces.FirstOrDefault()?.RulesetId ?? preferredRulesetId)
+            ? activeRulesetId
             : RulesetDefaults.Normalize(rulesetId);
 
         return Task.FromResult(new ShellBootstrapSnapshot(
@@ -86,7 +89,8 @@ public sealed class InProcessChummerClient : IChummerClient
             NavigationTabs: _shellCatalogResolver.ResolveNavigationTabs(effectiveRulesetId),
             Workspaces: workspaces,
             PreferredRulesetId: preferredRulesetId,
-            ActiveRulesetId: RulesetDefaults.Normalize(workspaces.FirstOrDefault()?.RulesetId ?? preferredRulesetId)));
+            ActiveRulesetId: activeRulesetId,
+            ActiveWorkspaceId: activeWorkspaceId));
     }
 
     public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
@@ -223,6 +227,40 @@ public sealed class InProcessChummerClient : IChummerClient
     {
         return payload
             ?? throw new InvalidOperationException($"{payloadName} was not found for workspace '{id.Value}'.");
+    }
+
+    private static CharacterWorkspaceId? ResolveActiveWorkspaceId(
+        IReadOnlyList<WorkspaceListItem> workspaces,
+        string? persistedActiveWorkspaceId)
+    {
+        if (!string.IsNullOrWhiteSpace(persistedActiveWorkspaceId))
+        {
+            WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
+                string.Equals(workspace.Id.Value, persistedActiveWorkspaceId, StringComparison.Ordinal));
+            if (matchingWorkspace is not null)
+            {
+                return matchingWorkspace.Id;
+            }
+        }
+
+        return workspaces.FirstOrDefault()?.Id;
+    }
+
+    private static string ResolveRulesetForWorkspace(
+        CharacterWorkspaceId? activeWorkspaceId,
+        IReadOnlyList<WorkspaceListItem> workspaces,
+        string preferredRulesetId)
+    {
+        if (activeWorkspaceId is null)
+        {
+            return RulesetDefaults.Normalize(preferredRulesetId);
+        }
+
+        WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
+            string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal));
+        return matchingWorkspace is null
+            ? RulesetDefaults.Normalize(preferredRulesetId)
+            : RulesetDefaults.Normalize(matchingWorkspace.RulesetId);
     }
 
     private sealed class InMemoryShellPreferencesStore : IShellPreferencesStore

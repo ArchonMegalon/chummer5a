@@ -77,7 +77,9 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
             ShellBootstrapData bootstrap = TryCreateBootstrapFromShellState(out ShellBootstrapData shellBootstrap)
                 ? shellBootstrap
                 : await _bootstrapDataProvider.GetAsync(ct);
-            WorkspaceSessionState session = _workspaceSessionPresenter.Restore(bootstrap.Workspaces);
+            WorkspaceSessionState session = _workspaceSessionPresenter.Restore(
+                bootstrap.Workspaces,
+                bootstrap.ActiveWorkspaceId);
 
             Publish(State with
             {
@@ -139,7 +141,10 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
             RulesetId: shellState.ActiveRulesetId,
             Commands: shellState.Commands,
             NavigationTabs: shellState.NavigationTabs,
-            Workspaces: workspaces);
+            Workspaces: workspaces,
+            PreferredRulesetId: shellState.PreferredRulesetId,
+            ActiveRulesetId: shellState.ActiveRulesetId,
+            ActiveWorkspaceId: shellState.ActiveWorkspaceId);
         return true;
     }
 }

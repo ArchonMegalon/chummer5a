@@ -35,6 +35,28 @@ public class WorkspaceSessionPresenterTests
     }
 
     [TestMethod]
+    public void Restore_prefers_explicit_active_workspace_when_available()
+    {
+        WorkspaceSessionPresenter presenter = new();
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        WorkspaceListItem[] workspaces =
+        [
+            CreateWorkspace("ws-old", "Old", "O", now.AddMinutes(-20)),
+            CreateWorkspace("ws-new", "New", "N", now.AddMinutes(-5))
+        ];
+
+        WorkspaceSessionState state = presenter.Restore(
+            workspaces,
+            new CharacterWorkspaceId("ws-old"));
+
+        Assert.AreEqual("ws-old", state.ActiveWorkspaceId?.Value);
+        string[] expectedRecent = ["ws-new", "ws-old"];
+        CollectionAssert.AreEqual(
+            expectedRecent,
+            state.RecentWorkspaceIds.Select(id => id.Value).ToArray());
+    }
+
+    [TestMethod]
     public void Switch_updates_active_workspace_and_recent_order()
     {
         WorkspaceSessionPresenter presenter = new();

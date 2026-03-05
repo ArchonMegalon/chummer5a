@@ -42,11 +42,14 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
             Task<ShellUserPreferences> preferencesTask = _client.GetShellPreferencesAsync(ct);
             await Task.WhenAll(workspacesTask, preferencesTask);
             IReadOnlyList<WorkspaceListItem> workspaces = workspacesTask.Result;
-            string preferredRulesetId = RulesetDefaults.Normalize(preferencesTask.Result.PreferredRulesetId);
+            ShellUserPreferences preferences = preferencesTask.Result;
+            string preferredRulesetId = RulesetDefaults.Normalize(preferences.PreferredRulesetId);
+            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, preferences.ActiveWorkspaceId);
             _cachedWorkspaces = new CachedWorkspaceData(
                 Workspaces: workspaces,
                 PreferredRulesetId: preferredRulesetId,
-                ActiveRulesetId: RulesetDefaults.Normalize(workspaces.FirstOrDefault()?.RulesetId ?? preferredRulesetId),
+                ActiveRulesetId: ResolveRulesetForWorkspace(activeWorkspaceId, workspaces, preferredRulesetId),
+                ActiveWorkspaceId: activeWorkspaceId,
                 CachedAtUtc: DateTimeOffset.UtcNow);
             return workspaces;
         }
@@ -78,10 +81,20 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
             ShellBootstrapSnapshot snapshot = await _client.GetShellBootstrapAsync(requestedRulesetId, ct);
             string resolvedRulesetId = RulesetDefaults.Normalize(snapshot.RulesetId);
             DateTimeOffset cachedAtUtc = DateTimeOffset.UtcNow;
+            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(
+                snapshot.Workspaces,
+                snapshot.ActiveWorkspaceId?.Value);
+            string activeRulesetId = activeWorkspaceId is null
+                ? RulesetDefaults.Normalize(snapshot.ActiveRulesetId)
+                : ResolveRulesetForWorkspace(
+                    activeWorkspaceId,
+                    snapshot.Workspaces,
+                    snapshot.PreferredRulesetId);
             _cachedWorkspaces = new CachedWorkspaceData(
                 Workspaces: snapshot.Workspaces,
                 PreferredRulesetId: RulesetDefaults.Normalize(snapshot.PreferredRulesetId),
-                ActiveRulesetId: RulesetDefaults.Normalize(snapshot.ActiveRulesetId),
+                ActiveRulesetId: activeRulesetId,
+                ActiveWorkspaceId: activeWorkspaceId,
                 CachedAtUtc: cachedAtUtc);
             var cachedCatalog = new CachedCatalogData(snapshot.Commands, snapshot.NavigationTabs, cachedAtUtc);
             _cachedCatalogsByRuleset[resolvedRulesetId] = cachedCatalog;
@@ -97,7 +110,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 NavigationTabs: snapshot.NavigationTabs,
                 Workspaces: snapshot.Workspaces,
                 PreferredRulesetId: RulesetDefaults.Normalize(snapshot.PreferredRulesetId),
-                ActiveRulesetId: RulesetDefaults.Normalize(snapshot.ActiveRulesetId));
+                ActiveRulesetId: activeRulesetId,
+                ActiveWorkspaceId: activeWorkspaceId);
         }
         finally
         {
@@ -122,7 +136,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 NavigationTabs: cachedCatalog.NavigationTabs,
                 Workspaces: cachedWorkspaces.Workspaces,
                 PreferredRulesetId: cachedWorkspaces.PreferredRulesetId,
-                ActiveRulesetId: cachedWorkspaces.ActiveRulesetId);
+                ActiveRulesetId: cachedWorkspaces.ActiveRulesetId,
+                ActiveWorkspaceId: cachedWorkspaces.ActiveWorkspaceId);
             return true;
         }
 
@@ -141,7 +156,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 NavigationTabs: cachedCatalog.NavigationTabs,
                 Workspaces: cachedWorkspaces.Workspaces,
                 PreferredRulesetId: cachedWorkspaces.PreferredRulesetId,
-                ActiveRulesetId: cachedWorkspaces.ActiveRulesetId);
+                ActiveRulesetId: cachedWorkspaces.ActiveRulesetId,
+                ActiveWorkspaceId: cachedWorkspaces.ActiveWorkspaceId);
             return true;
         }
 
@@ -174,6 +190,40 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
         return false;
     }
 
+    private static CharacterWorkspaceId? ResolveActiveWorkspaceId(
+        IReadOnlyList<WorkspaceListItem> workspaces,
+        string? preferredActiveWorkspaceId)
+    {
+        if (!string.IsNullOrWhiteSpace(preferredActiveWorkspaceId))
+        {
+            WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
+                string.Equals(workspace.Id.Value, preferredActiveWorkspaceId, StringComparison.Ordinal));
+            if (matchingWorkspace is not null)
+            {
+                return matchingWorkspace.Id;
+            }
+        }
+
+        return workspaces.FirstOrDefault()?.Id;
+    }
+
+    private static string ResolveRulesetForWorkspace(
+        CharacterWorkspaceId? activeWorkspaceId,
+        IReadOnlyList<WorkspaceListItem> workspaces,
+        string preferredRulesetId)
+    {
+        if (activeWorkspaceId is null)
+        {
+            return RulesetDefaults.Normalize(preferredRulesetId);
+        }
+
+        WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
+            string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal));
+        return matchingWorkspace is null
+            ? RulesetDefaults.Normalize(preferredRulesetId)
+            : RulesetDefaults.Normalize(matchingWorkspace.RulesetId);
+    }
+
     private sealed record CachedCatalogData(
         IReadOnlyList<AppCommandDefinition> Commands,
         IReadOnlyList<NavigationTabDefinition> NavigationTabs,
@@ -183,5 +233,6 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
         IReadOnlyList<WorkspaceListItem> Workspaces,
         string PreferredRulesetId,
         string ActiveRulesetId,
+        CharacterWorkspaceId? ActiveWorkspaceId,
         DateTimeOffset CachedAtUtc);
 }

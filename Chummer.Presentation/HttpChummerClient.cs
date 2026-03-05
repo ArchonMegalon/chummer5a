@@ -27,12 +27,16 @@ public sealed class HttpChummerClient : IChummerClient
         if (response is null)
             throw new InvalidOperationException("Shell preferences response was empty.");
 
-        return new ShellUserPreferences(RulesetDefaults.Normalize(response.PreferredRulesetId));
+        return new ShellUserPreferences(
+            PreferredRulesetId: RulesetDefaults.Normalize(response.PreferredRulesetId),
+            ActiveWorkspaceId: NormalizeWorkspaceId(response.ActiveWorkspaceId));
     }
 
     public async Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
     {
-        ShellUserPreferences payload = new(RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+        ShellUserPreferences payload = new(
+            PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId),
+            ActiveWorkspaceId: NormalizeWorkspaceId(preferences.ActiveWorkspaceId));
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             "/api/shell/preferences",
             payload,
@@ -156,7 +160,8 @@ public sealed class HttpChummerClient : IChummerClient
             NavigationTabs: response.NavigationTabs,
             Workspaces: workspaces,
             PreferredRulesetId: RulesetDefaults.Normalize(response.PreferredRulesetId),
-            ActiveRulesetId: RulesetDefaults.Normalize(response.ActiveRulesetId));
+            ActiveRulesetId: RulesetDefaults.Normalize(response.ActiveRulesetId),
+            ActiveWorkspaceId: ParseWorkspaceId(response.ActiveWorkspaceId));
     }
 
     public async Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
@@ -322,6 +327,21 @@ public sealed class HttpChummerClient : IChummerClient
                 DocumentLength: payload.DocumentLength,
                 RulesetId: RulesetDefaults.Normalize(payload.RulesetId)),
             Error: null);
+    }
+
+    private static string? NormalizeWorkspaceId(string? workspaceId)
+    {
+        return string.IsNullOrWhiteSpace(workspaceId)
+            ? null
+            : workspaceId.Trim();
+    }
+
+    private static CharacterWorkspaceId? ParseWorkspaceId(string? workspaceId)
+    {
+        string? normalized = NormalizeWorkspaceId(workspaceId);
+        return normalized is null
+            ? null
+            : new CharacterWorkspaceId(normalized);
     }
 
     private async Task<T> GetRequiredAsync<T>(string path, CancellationToken ct)

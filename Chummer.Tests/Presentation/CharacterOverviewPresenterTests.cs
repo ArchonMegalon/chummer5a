@@ -734,37 +734,34 @@ public class CharacterOverviewPresenterTests
 
         public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
         {
-            _preferences = new ShellUserPreferences(RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+            _preferences = new ShellUserPreferences(
+                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId),
+                ActiveWorkspaceId: NormalizeWorkspaceId(preferences.ActiveWorkspaceId));
             return Task.CompletedTask;
         }
 
         public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
         {
+            IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
+            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, _preferences.ActiveWorkspaceId);
+            string preferredRulesetId = RulesetDefaults.Normalize(_preferences.PreferredRulesetId);
+            string activeRulesetId = activeWorkspaceId is null
+                ? preferredRulesetId
+                : RulesetDefaults.Normalize(
+                    workspaces.First(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal)).RulesetId);
             string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
-                ? RulesetDefaults.Normalize(
-                    _workspaces.Values
-                        .OrderByDescending(workspace => workspace.LastUpdatedUtc)
-                        .FirstOrDefault()
-                        ?.RulesetId
-                    ?? _preferences.PreferredRulesetId)
+                ? activeRulesetId
                 : RulesetDefaults.Normalize(rulesetId);
             IReadOnlyList<AppCommandDefinition> commands = await GetCommandsAsync(effectiveRulesetId, ct);
             IReadOnlyList<NavigationTabDefinition> tabs = await GetNavigationTabsAsync(effectiveRulesetId, ct);
-            IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
-            string preferredRulesetId = RulesetDefaults.Normalize(_preferences.PreferredRulesetId);
-            string activeRulesetId = RulesetDefaults.Normalize(
-                workspaces
-                    .OrderByDescending(workspace => workspace.LastUpdatedUtc)
-                    .FirstOrDefault()
-                    ?.RulesetId
-                ?? preferredRulesetId);
             return new ShellBootstrapSnapshot(
                 RulesetId: effectiveRulesetId,
                 Commands: commands,
                 NavigationTabs: tabs,
                 Workspaces: workspaces,
                 PreferredRulesetId: preferredRulesetId,
-                ActiveRulesetId: activeRulesetId);
+                ActiveRulesetId: activeRulesetId,
+                ActiveWorkspaceId: activeWorkspaceId);
         }
 
         public void SeedWorkspace(
@@ -1106,6 +1103,34 @@ public class CharacterOverviewPresenterTests
                     FileName: $"{id.Value}.chum5",
                     DocumentLength: 41),
                 Error: null));
+        }
+
+        private static string? NormalizeWorkspaceId(string? workspaceId)
+        {
+            return string.IsNullOrWhiteSpace(workspaceId)
+                ? null
+                : workspaceId.Trim();
+        }
+
+        private static CharacterWorkspaceId? ResolveActiveWorkspaceId(
+            IEnumerable<WorkspaceListItem> workspaces,
+            string? preferredWorkspaceId)
+        {
+            WorkspaceListItem[] workspaceList = workspaces as WorkspaceListItem[] ?? workspaces.ToArray();
+            if (!string.IsNullOrWhiteSpace(preferredWorkspaceId))
+            {
+                WorkspaceListItem? matchingWorkspace = workspaceList.FirstOrDefault(workspace =>
+                    string.Equals(workspace.Id.Value, preferredWorkspaceId, StringComparison.Ordinal));
+                if (matchingWorkspace is not null)
+                {
+                    return matchingWorkspace.Id;
+                }
+            }
+
+            return workspaceList
+                .OrderByDescending(workspace => workspace.LastUpdatedUtc)
+                .FirstOrDefault()
+                ?.Id;
         }
     }
 

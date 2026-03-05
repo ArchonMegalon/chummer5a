@@ -104,6 +104,33 @@ public sealed class InProcessChummerClientRulesetPluginTests
         Assert.AreEqual("sr6", restored.PreferredRulesetId);
     }
 
+    [TestMethod]
+    public async Task GetShellBootstrap_restores_saved_active_workspace_when_present()
+    {
+        var workspaceService = new NoOpWorkspaceService
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-sr5", DateTimeOffset.UtcNow.AddMinutes(-10), RulesetDefaults.Sr5),
+                CreateWorkspace("ws-sr6", DateTimeOffset.UtcNow.AddMinutes(-5), "sr6")
+            ]
+        };
+        var preferencesStore = new InMemoryShellPreferencesStore();
+        preferencesStore.Save(new ShellUserPreferences(
+            PreferredRulesetId: RulesetDefaults.Sr5,
+            ActiveWorkspaceId: "ws-sr5"));
+        var client = new InProcessChummerClient(
+            workspaceService,
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            new ShellPreferencesService(preferencesStore));
+
+        ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
+
+        Assert.AreEqual("ws-sr5", snapshot.ActiveWorkspaceId?.Value);
+        Assert.AreEqual(RulesetDefaults.Sr5, snapshot.ActiveRulesetId);
+        Assert.AreEqual(RulesetDefaults.Sr5, snapshot.RulesetId);
+    }
+
     private sealed class StubRulesetPlugin : IRulesetPlugin
     {
         public StubRulesetPlugin(
@@ -224,7 +251,17 @@ public sealed class InProcessChummerClientRulesetPluginTests
     {
         public WorkspaceImportResult Import(WorkspaceImportDocument document) => throw new NotSupportedException();
 
-        public IReadOnlyList<WorkspaceListItem> List(int? maxCount = null) => Array.Empty<WorkspaceListItem>();
+        public IReadOnlyList<WorkspaceListItem> Workspaces { get; init; } = Array.Empty<WorkspaceListItem>();
+
+        public IReadOnlyList<WorkspaceListItem> List(int? maxCount = null)
+        {
+            if (maxCount is > 0)
+            {
+                return Workspaces.Take(maxCount.Value).ToArray();
+            }
+
+            return Workspaces;
+        }
 
         public bool Close(CharacterWorkspaceId id) => throw new NotSupportedException();
 
@@ -253,5 +290,26 @@ public sealed class InProcessChummerClientRulesetPluginTests
         public CommandResult<WorkspaceSaveReceipt> Save(CharacterWorkspaceId id) => throw new NotSupportedException();
 
         public CommandResult<WorkspaceDownloadReceipt> Download(CharacterWorkspaceId id) => throw new NotSupportedException();
+    }
+
+    private static WorkspaceListItem CreateWorkspace(
+        string id,
+        DateTimeOffset lastUpdatedUtc,
+        string rulesetId)
+    {
+        return new WorkspaceListItem(
+            Id: new CharacterWorkspaceId(id),
+            Summary: new CharacterFileSummary(
+                Name: id,
+                Alias: id,
+                Metatype: "Human",
+                BuildMethod: "Priority",
+                CreatedVersion: "5",
+                AppVersion: "5",
+                Karma: 0m,
+                Nuyen: 0m,
+                Created: true),
+            LastUpdatedUtc: lastUpdatedUtc,
+            RulesetId: rulesetId);
     }
 }

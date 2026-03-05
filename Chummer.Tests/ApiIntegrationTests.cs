@@ -514,6 +514,7 @@ public class ApiIntegrationTests
         Assert.AreEqual("sr5", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.AreEqual("sr5", (response["preferredRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.AreEqual("sr5", (response["activeRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.IsNull(response["activeWorkspaceId"]);
         Assert.IsTrue(response["commands"] is JsonArray commands && commands.Count > 0);
         Assert.IsTrue(response["navigationTabs"] is JsonArray tabs && tabs.Count > 0);
         Assert.IsTrue(response["workspaces"] is JsonArray);
@@ -543,6 +544,7 @@ public class ApiIntegrationTests
         Assert.AreEqual("sr6", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.AreEqual("sr5", (response["preferredRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.AreEqual("sr6", (response["activeRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.IsFalse(string.IsNullOrWhiteSpace(response["activeWorkspaceId"]?.GetValue<string>()));
     }
 
     [TestMethod]
@@ -560,6 +562,43 @@ public class ApiIntegrationTests
         JsonObject response = await GetRequiredJsonObject(client, "/api/shell/bootstrap");
 
         Assert.AreEqual("sr6", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.IsNull(response["activeWorkspaceId"]);
+    }
+
+    [TestMethod]
+    public async Task Shell_bootstrap_endpoint_restores_saved_active_workspace_when_present()
+    {
+        using var client = CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(180);
+        await ClearAllWorkspacesAsync(client);
+
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        JsonObject sr5Import = await PostRequiredJsonObject(client, "/api/workspaces/import", new JsonObject
+        {
+            ["xml"] = xml,
+            ["rulesetId"] = "sr5"
+        });
+        string sr5WorkspaceId = sr5Import["id"]?.GetValue<string>() ?? string.Empty;
+        Assert.IsFalse(string.IsNullOrWhiteSpace(sr5WorkspaceId));
+
+        await PostRequiredJsonObject(client, "/api/workspaces/import", new JsonObject
+        {
+            ["xml"] = xml,
+            ["rulesetId"] = "sr6"
+        });
+
+        await PostRequiredJsonObject(client, "/api/shell/preferences", new JsonObject
+        {
+            ["preferredRulesetId"] = "sr6",
+            ["activeWorkspaceId"] = sr5WorkspaceId
+        });
+
+        JsonObject response = await GetRequiredJsonObject(client, "/api/shell/bootstrap");
+
+        Assert.AreEqual(sr5WorkspaceId, response["activeWorkspaceId"]?.GetValue<string>());
+        Assert.AreEqual("sr6", (response["preferredRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.AreEqual("sr5", (response["activeRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.AreEqual("sr5", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
     }
 
     [TestMethod]

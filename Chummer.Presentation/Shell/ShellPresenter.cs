@@ -34,7 +34,7 @@ public sealed class ShellPresenter : IShellPresenter
             string preferredRulesetId = RulesetDefaults.Normalize(bootstrap.PreferredRulesetId);
             ShellWorkspaceState[] openWorkspaces = MapWorkspaces(bootstrap.Workspaces);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(
-                requestedActiveWorkspaceId: null,
+                requestedActiveWorkspaceId: bootstrap.ActiveWorkspaceId,
                 openWorkspaces);
             string activeRulesetId = ResolveRulesetForActiveWorkspace(activeWorkspaceId, openWorkspaces, preferredRulesetId);
             if (activeWorkspaceId is null)
@@ -45,6 +45,13 @@ public sealed class ShellPresenter : IShellPresenter
             if (!string.Equals(RulesetDefaults.Normalize(bootstrap.RulesetId), activeRulesetId, StringComparison.Ordinal))
             {
                 bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
+                openWorkspaces = MapWorkspaces(bootstrap.Workspaces);
+                activeWorkspaceId = ResolveActiveWorkspaceId(activeWorkspaceId ?? bootstrap.ActiveWorkspaceId, openWorkspaces);
+                activeRulesetId = ResolveRulesetForActiveWorkspace(activeWorkspaceId, openWorkspaces, preferredRulesetId);
+                if (activeWorkspaceId is null)
+                {
+                    activeRulesetId = RulesetDefaults.Normalize(bootstrap.ActiveRulesetId);
+                }
             }
 
             IReadOnlyList<AppCommandDefinition> commands = bootstrap.Commands;
@@ -212,7 +219,9 @@ public sealed class ShellPresenter : IShellPresenter
         }
 
         await _runtimeClient.SaveShellPreferencesAsync(
-            new ShellUserPreferences(preferredRulesetId),
+            new ShellUserPreferences(
+                PreferredRulesetId: preferredRulesetId,
+                ActiveWorkspaceId: State.ActiveWorkspaceId?.Value),
             ct);
 
         Publish(State with
@@ -237,6 +246,7 @@ public sealed class ShellPresenter : IShellPresenter
         CharacterWorkspaceId? resolvedActiveWorkspace = ResolveActiveWorkspaceId(activeWorkspaceId, openWorkspaces);
         string activeRulesetId = ResolveRulesetForActiveWorkspace(resolvedActiveWorkspace, openWorkspaces, preferredRulesetId);
         bool rulesetChanged = !string.Equals(State.ActiveRulesetId, activeRulesetId, StringComparison.Ordinal);
+        bool activeWorkspaceChanged = !WorkspaceIdsEqual(State.ActiveWorkspaceId, resolvedActiveWorkspace);
 
         IReadOnlyList<AppCommandDefinition> commands = State.Commands;
         IReadOnlyList<NavigationTabDefinition> tabs = State.NavigationTabs;
@@ -245,6 +255,15 @@ public sealed class ShellPresenter : IShellPresenter
             ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
             commands = bootstrap.Commands;
             tabs = bootstrap.NavigationTabs;
+        }
+
+        if (activeWorkspaceChanged)
+        {
+            await _runtimeClient.SaveShellPreferencesAsync(
+                new ShellUserPreferences(
+                    PreferredRulesetId: preferredRulesetId,
+                    ActiveWorkspaceId: resolvedActiveWorkspace?.Value),
+                ct);
         }
 
         Publish(State with
@@ -335,6 +354,16 @@ public sealed class ShellPresenter : IShellPresenter
     private static bool WorkspaceIdsEqual(CharacterWorkspaceId left, CharacterWorkspaceId right)
     {
         return string.Equals(left.Value, right.Value, StringComparison.Ordinal);
+    }
+
+    private static bool WorkspaceIdsEqual(CharacterWorkspaceId? left, CharacterWorkspaceId? right)
+    {
+        if (left is null && right is null)
+            return true;
+        if (left is null || right is null)
+            return false;
+
+        return WorkspaceIdsEqual(left.Value, right.Value);
     }
 
     private void Publish(ShellState nextState)

@@ -15,12 +15,10 @@ public sealed class WorkspaceSessionPresenter : IWorkspaceSessionPresenter
 
     public WorkspaceSessionState State { get; private set; } = WorkspaceSessionState.Empty;
 
-    public WorkspaceSessionState Restore(IReadOnlyList<WorkspaceListItem> workspaces)
+    public WorkspaceSessionState Restore(IReadOnlyList<WorkspaceListItem> workspaces, CharacterWorkspaceId? activeWorkspaceId = null)
     {
         IReadOnlyList<OpenWorkspaceState> openWorkspaces = _manager.Restore(workspaces);
-        CharacterWorkspaceId? activeWorkspace = openWorkspaces.Count == 0
-            ? null
-            : openWorkspaces[0].Id;
+        CharacterWorkspaceId? activeWorkspace = ResolveActiveWorkspaceId(activeWorkspaceId, openWorkspaces);
 
         State = new WorkspaceSessionState(
             ActiveWorkspaceId: activeWorkspace,
@@ -199,6 +197,20 @@ public sealed class WorkspaceSessionPresenter : IWorkspaceSessionPresenter
         }
 
         return null;
+    }
+
+    private static CharacterWorkspaceId? ResolveActiveWorkspaceId(
+        CharacterWorkspaceId? requestedActiveWorkspaceId,
+        IReadOnlyList<OpenWorkspaceState> openWorkspaces)
+    {
+        if (requestedActiveWorkspaceId is not null && Contains(openWorkspaces, requestedActiveWorkspaceId.Value))
+        {
+            return requestedActiveWorkspaceId;
+        }
+
+        return openWorkspaces.Count == 0
+            ? null
+            : openWorkspaces[0].Id;
     }
 
     private static bool Contains(IReadOnlyList<OpenWorkspaceState> openWorkspaces, CharacterWorkspaceId id)
