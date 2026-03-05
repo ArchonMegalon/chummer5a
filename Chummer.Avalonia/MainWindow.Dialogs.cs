@@ -44,6 +44,7 @@ public partial class MainWindow
         try
         {
             await operation();
+            await SyncShellWorkspaceContextAsync();
         }
         catch (OperationCanceledException)
         {
@@ -56,5 +57,12 @@ public partial class MainWindow
             _serviceStateText.Text = "Service: error";
             _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
         }
+    }
+
+    private Task SyncShellWorkspaceContextAsync()
+    {
+        var state = _adapter.State;
+        var activeWorkspaceId = state.Session.ActiveWorkspaceId ?? state.WorkspaceId;
+        return _shellPresenter.SyncWorkspaceContextAsync(activeWorkspaceId, CancellationToken.None);
     }
 }

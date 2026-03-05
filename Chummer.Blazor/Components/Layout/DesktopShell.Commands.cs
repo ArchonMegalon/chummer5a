@@ -41,6 +41,7 @@ public partial class DesktopShell
             return;
 
         await _bridge.ExecuteCommandAsync(commandId, CancellationToken.None);
+        await SyncShellWorkspaceContextAsync();
     }
 
     private async Task SelectTabAsync(string tabId)

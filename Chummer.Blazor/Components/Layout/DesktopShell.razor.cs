@@ -69,6 +69,7 @@ public partial class DesktopShell : IDisposable
             _ = InvokeAsync(StateHasChanged);
         });
         await _bridge.InitializeAsync(CancellationToken.None);
+        await SyncShellWorkspaceContextAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -120,5 +121,11 @@ public partial class DesktopShell : IDisposable
         {
             ImportError = $"Download failed: {ex.Message}";
         }
+    }
+
+    private Task SyncShellWorkspaceContextAsync()
+    {
+        CharacterWorkspaceId? activeWorkspaceId = State.Session.ActiveWorkspaceId ?? State.WorkspaceId;
+        return ShellPresenter.SyncWorkspaceContextAsync(activeWorkspaceId, CancellationToken.None);
     }
 }

@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Shell;
@@ -6,10 +7,12 @@ namespace Chummer.Presentation.Shell;
 public sealed class ShellPresenter : IShellPresenter
 {
     private static readonly string[] MenuOrder = ["file", "edit", "special", "tools", "windows", "help"];
+    private readonly IChummerClient _runtimeClient;
     private readonly IShellBootstrapDataProvider _bootstrapDataProvider;
 
     public ShellPresenter(IChummerClient client, IShellBootstrapDataProvider? bootstrapDataProvider = null)
     {
+        _runtimeClient = client;
         _bootstrapDataProvider = bootstrapDataProvider ?? new ShellBootstrapDataProvider(client);
     }
 
@@ -28,35 +31,37 @@ public sealed class ShellPresenter : IShellPresenter
         try
         {
             ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(ct);
+            ShellWorkspaceState[] openWorkspaces = MapWorkspaces(bootstrap.Workspaces);
+            CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(
+                requestedActiveWorkspaceId: null,
+                openWorkspaces);
+            string activeRulesetId = ResolveRulesetForActiveWorkspace(activeWorkspaceId, openWorkspaces);
+
             IReadOnlyList<AppCommandDefinition> commands = bootstrap.Commands;
             IReadOnlyList<NavigationTabDefinition> tabs = bootstrap.NavigationTabs;
+            if (!string.Equals(activeRulesetId, RulesetDefaults.Sr5, StringComparison.Ordinal))
+            {
+                Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _runtimeClient.GetCommandsAsync(activeRulesetId, ct);
+                Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _runtimeClient.GetNavigationTabsAsync(activeRulesetId, ct);
+                await Task.WhenAll(commandsTask, tabsTask);
+                commands = commandsTask.Result;
+                tabs = tabsTask.Result;
+            }
 
-            ShellWorkspaceState[] openWorkspaces = bootstrap.Workspaces
-                .Select(workspace => new ShellWorkspaceState(
-                    Id: workspace.Id,
-                    Name: string.IsNullOrWhiteSpace(workspace.Summary.Name) ? "(Unnamed Character)" : workspace.Summary.Name,
-                    Alias: workspace.Summary.Alias ?? string.Empty,
-                    LastOpenedUtc: workspace.LastUpdatedUtc))
-                .OrderByDescending(workspace => workspace.LastOpenedUtc)
-                .ToArray();
-
-            AppCommandDefinition[] menuRoots = commands
-                .Where(command => string.Equals(command.Group, "menu", StringComparison.Ordinal))
-                .OrderBy(command => MenuSortIndex(command.Id))
-                .ThenBy(command => command.Id, StringComparer.Ordinal)
-                .ToArray();
+            AppCommandDefinition[] menuRoots = BuildMenuRoots(commands);
 
             Publish(State with
             {
                 IsBusy = false,
                 Error = null,
                 Notice = openWorkspaces.Length == 0 ? "Shell initialized." : $"Restored {openWorkspaces.Length} workspace(s).",
-                ActiveWorkspaceId = openWorkspaces.Length == 0 ? null : openWorkspaces[0].Id,
+                ActiveRulesetId = activeRulesetId,
+                ActiveWorkspaceId = activeWorkspaceId,
                 OpenWorkspaces = openWorkspaces,
                 Commands = commands,
                 MenuRoots = menuRoots,
                 NavigationTabs = tabs,
-                ActiveTabId = tabs.FirstOrDefault(tab => tab.EnabledByDefault)?.Id,
+                ActiveTabId = ResolveActiveTabId(tabs, currentActiveTabId: State.ActiveTabId),
                 OpenMenuId = null
             });
         }
@@ -183,16 +188,111 @@ public sealed class ShellPresenter : IShellPresenter
         return Task.CompletedTask;
     }
 
+    public async Task SyncWorkspaceContextAsync(CharacterWorkspaceId? activeWorkspaceId, CancellationToken ct)
+    {
+        IReadOnlyList<WorkspaceListItem> workspaces = await _runtimeClient.ListWorkspacesAsync(ct);
+        ShellWorkspaceState[] openWorkspaces = MapWorkspaces(workspaces);
+        CharacterWorkspaceId? resolvedActiveWorkspace = ResolveActiveWorkspaceId(activeWorkspaceId, openWorkspaces);
+        string activeRulesetId = ResolveRulesetForActiveWorkspace(resolvedActiveWorkspace, openWorkspaces);
+        bool rulesetChanged = !string.Equals(State.ActiveRulesetId, activeRulesetId, StringComparison.Ordinal);
+
+        IReadOnlyList<AppCommandDefinition> commands = State.Commands;
+        IReadOnlyList<NavigationTabDefinition> tabs = State.NavigationTabs;
+        if (rulesetChanged || commands.Count == 0 || tabs.Count == 0)
+        {
+            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _runtimeClient.GetCommandsAsync(activeRulesetId, ct);
+            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _runtimeClient.GetNavigationTabsAsync(activeRulesetId, ct);
+            await Task.WhenAll(commandsTask, tabsTask);
+            commands = commandsTask.Result;
+            tabs = tabsTask.Result;
+        }
+
+        Publish(State with
+        {
+            ActiveRulesetId = activeRulesetId,
+            ActiveWorkspaceId = resolvedActiveWorkspace,
+            OpenWorkspaces = openWorkspaces,
+            Commands = commands,
+            MenuRoots = BuildMenuRoots(commands),
+            NavigationTabs = tabs,
+            ActiveTabId = ResolveActiveTabId(tabs, State.ActiveTabId)
+        });
+    }
+
     private bool IsCommandEnabled(AppCommandDefinition command)
     {
         return command.EnabledByDefault
             && (!command.RequiresOpenCharacter || State.ActiveWorkspaceId is not null);
     }
 
+    private static ShellWorkspaceState[] MapWorkspaces(IReadOnlyList<WorkspaceListItem> workspaces)
+    {
+        return workspaces
+            .Select(workspace => new ShellWorkspaceState(
+                Id: workspace.Id,
+                Name: string.IsNullOrWhiteSpace(workspace.Summary.Name) ? "(Unnamed Character)" : workspace.Summary.Name,
+                Alias: workspace.Summary.Alias ?? string.Empty,
+                LastOpenedUtc: workspace.LastUpdatedUtc,
+                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId)))
+            .OrderByDescending(workspace => workspace.LastOpenedUtc)
+            .ToArray();
+    }
+
+    private static AppCommandDefinition[] BuildMenuRoots(IReadOnlyList<AppCommandDefinition> commands)
+    {
+        return commands
+            .Where(command => string.Equals(command.Group, "menu", StringComparison.Ordinal))
+            .OrderBy(command => MenuSortIndex(command.Id))
+            .ThenBy(command => command.Id, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    private static CharacterWorkspaceId? ResolveActiveWorkspaceId(
+        CharacterWorkspaceId? requestedActiveWorkspaceId,
+        IReadOnlyList<ShellWorkspaceState> openWorkspaces)
+    {
+        if (requestedActiveWorkspaceId is null)
+            return openWorkspaces.FirstOrDefault()?.Id;
+
+        bool exists = openWorkspaces.Any(workspace => WorkspaceIdsEqual(workspace.Id, requestedActiveWorkspaceId.Value));
+        return exists
+            ? requestedActiveWorkspaceId
+            : openWorkspaces.FirstOrDefault()?.Id;
+    }
+
+    private static string ResolveRulesetForActiveWorkspace(
+        CharacterWorkspaceId? activeWorkspaceId,
+        IReadOnlyList<ShellWorkspaceState> openWorkspaces)
+    {
+        if (activeWorkspaceId is null)
+            return RulesetDefaults.Sr5;
+
+        ShellWorkspaceState? workspace = openWorkspaces.FirstOrDefault(candidate => WorkspaceIdsEqual(candidate.Id, activeWorkspaceId.Value));
+        return workspace is null
+            ? RulesetDefaults.Sr5
+            : RulesetDefaults.Normalize(workspace.RulesetId);
+    }
+
+    private static string? ResolveActiveTabId(IReadOnlyList<NavigationTabDefinition> tabs, string? currentActiveTabId)
+    {
+        if (!string.IsNullOrWhiteSpace(currentActiveTabId)
+            && tabs.Any(tab => tab.EnabledByDefault && string.Equals(tab.Id, currentActiveTabId, StringComparison.Ordinal)))
+        {
+            return currentActiveTabId;
+        }
+
+        return tabs.FirstOrDefault(tab => tab.EnabledByDefault)?.Id;
+    }
+
     private static int MenuSortIndex(string id)
     {
         int index = Array.IndexOf(MenuOrder, id);
         return index < 0 ? int.MaxValue : index;
+    }
+
+    private static bool WorkspaceIdsEqual(CharacterWorkspaceId left, CharacterWorkspaceId right)
+    {
+        return string.Equals(left.Value, right.Value, StringComparison.Ordinal);
     }
 
     private void Publish(ShellState nextState)

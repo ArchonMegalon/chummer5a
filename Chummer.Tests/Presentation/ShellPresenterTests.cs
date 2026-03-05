@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Shell;
@@ -39,6 +40,56 @@ public class ShellPresenterTests
         Assert.AreEqual("file", presenter.State.MenuRoots[0].Id);
         Assert.AreEqual("tab-info", presenter.State.ActiveTabId);
         StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Restored 2 workspace(s).");
+    }
+
+    [TestMethod]
+    public async Task InitializeAsync_uses_active_workspace_ruleset_for_shell_contract()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var client = new ShellClientStub
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-sr5", "SR5 Character", "SR5", now.AddMinutes(-25), RulesetDefaults.Sr5),
+                CreateWorkspace("ws-sr6", "SR6 Character", "SR6", now.AddMinutes(-5), "sr6")
+            ]
+        };
+        var presenter = new ShellPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        Assert.AreEqual("sr6", presenter.State.ActiveRulesetId);
+        CollectionAssert.Contains(client.RequestedCommandRulesets, "sr6");
+        CollectionAssert.Contains(client.RequestedNavigationRulesets, "sr6");
+    }
+
+    [TestMethod]
+    public async Task SyncWorkspaceContextAsync_switches_ruleset_when_active_workspace_changes()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var client = new ShellClientStub
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-sr5", "SR5 Character", "SR5", now.AddMinutes(-5), RulesetDefaults.Sr5),
+                CreateWorkspace("ws-sr6", "SR6 Character", "SR6", now.AddMinutes(-25), "sr6")
+            ]
+        };
+        var presenter = new ShellPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        client.Workspaces =
+        [
+            CreateWorkspace("ws-sr6", "SR6 Character", "SR6", now.AddMinutes(-1), "sr6"),
+            CreateWorkspace("ws-sr5", "SR5 Character", "SR5", now.AddMinutes(-20), RulesetDefaults.Sr5)
+        ];
+        await presenter.SyncWorkspaceContextAsync(new CharacterWorkspaceId("ws-sr6"), CancellationToken.None);
+
+        Assert.AreEqual("ws-sr6", presenter.State.ActiveWorkspaceId?.Value);
+        Assert.AreEqual("sr6", presenter.State.ActiveRulesetId);
+        CollectionAssert.Contains(client.RequestedCommandRulesets, "sr6");
+        CollectionAssert.Contains(client.RequestedNavigationRulesets, "sr6");
     }
 
     [TestMethod]
@@ -102,7 +153,8 @@ public class ShellPresenterTests
         string id,
         string name,
         string alias,
-        DateTimeOffset lastUpdatedUtc)
+        DateTimeOffset lastUpdatedUtc,
+        string rulesetId = RulesetDefaults.Sr5)
     {
         return new WorkspaceListItem(
             Id: new CharacterWorkspaceId(id),
@@ -116,7 +168,8 @@ public class ShellPresenterTests
                 Karma: 0m,
                 Nuyen: 0m,
                 Created: true),
-            LastUpdatedUtc: lastUpdatedUtc);
+            LastUpdatedUtc: lastUpdatedUtc,
+            RulesetId: rulesetId);
     }
 
     private sealed class ShellClientStub : IChummerClient
@@ -127,9 +180,21 @@ public class ShellPresenterTests
 
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
 
-        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct) => Task.FromResult(Commands);
+        public List<string?> RequestedCommandRulesets { get; } = new();
 
-        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct) => Task.FromResult(NavigationTabs);
+        public List<string?> RequestedNavigationRulesets { get; } = new();
+
+        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
+        {
+            RequestedCommandRulesets.Add(rulesetId);
+            return Task.FromResult(Commands);
+        }
+
+        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
+        {
+            RequestedNavigationRulesets.Add(rulesetId);
+            return Task.FromResult(NavigationTabs);
+        }
 
         public Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct) => Task.FromResult(Workspaces);
 

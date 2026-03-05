@@ -14,6 +14,7 @@ public partial class DesktopShell
 
         ImportError = null;
         await _bridge.ImportAsync(Encoding.UTF8.GetBytes(RawImportXml), CancellationToken.None);
+        await SyncShellWorkspaceContextAsync();
         SyncMetadataDraftFromState();
     }
 
@@ -32,6 +33,7 @@ public partial class DesktopShell
             using MemoryStream memory = new();
             await stream.CopyToAsync(memory, CancellationToken.None);
             await _bridge.ImportAsync(memory.ToArray(), CancellationToken.None);
+            await SyncShellWorkspaceContextAsync();
             SyncMetadataDraftFromState();
         }
         catch (Exception ex)
@@ -46,6 +48,7 @@ public partial class DesktopShell
             return;
 
         await _bridge.LoadAsync(new CharacterWorkspaceId(LoadWorkspaceId.Trim()), CancellationToken.None);
+        await SyncShellWorkspaceContextAsync();
         SyncMetadataDraftFromState();
     }
 
@@ -56,6 +59,7 @@ public partial class DesktopShell
 
         LoadWorkspaceId = workspaceId;
         await _bridge.SwitchWorkspaceAsync(new CharacterWorkspaceId(workspaceId), CancellationToken.None);
+        await SyncShellWorkspaceContextAsync();
         SyncMetadataDraftFromState();
     }
 
@@ -65,6 +69,7 @@ public partial class DesktopShell
             return;
 
         await _bridge.CloseWorkspaceAsync(new CharacterWorkspaceId(workspaceId), CancellationToken.None);
+        await SyncShellWorkspaceContextAsync();
         SyncMetadataDraftFromState();
     }
 

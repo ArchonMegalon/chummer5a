@@ -10,6 +10,7 @@ public partial class DesktopShell
             return;
 
         await _bridge.ExecuteDialogActionAsync(actionId, CancellationToken.None);
+        await SyncShellWorkspaceContextAsync();
     }
 
     private Task OnDialogFieldInputAsync(DialogFieldInputChange change)
