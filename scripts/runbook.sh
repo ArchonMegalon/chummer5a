@@ -161,8 +161,12 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "Chummer.Portal/\\*\\*" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "scripts/generate-releases-manifest.sh" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "scripts/publish-download-bundle.sh" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "scripts/publish-download-bundle-s3.sh" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "scripts/validate-amend-manifests.sh" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "rid: osx-x64" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "deploy-downloads-object-storage" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "CHUMMER_PORTAL_DOWNLOADS_S3_URI" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "chummer-\\(\\?P<app>avalonia\\|blazor-desktop\\)-" "scripts/generate-releases-manifest.sh"
   require_match "\"osx-x64\": \"macOS x64\"" "scripts/generate-releases-manifest.sh"
   require_match "\"id\": f\"\\{app\\}-\\{rid\\}\"" "scripts/generate-releases-manifest.sh"
@@ -171,9 +175,11 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_no_match "GetShellBootstrapAsync\\(string\\? rulesetId, CancellationToken ct\\)\\s*=>" "Chummer.Presentation/IChummerClient.cs"
   require_match "RUNBOOK_MODE\" == \"downloads-manifest\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"downloads-sync\"" "scripts/runbook.sh"
+  require_match "RUNBOOK_MODE\" == \"downloads-sync-s3\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"amend-checksums\"" "scripts/runbook.sh"
   require_match "bash scripts/generate-releases-manifest.sh" "scripts/runbook.sh"
   require_match "bash scripts/publish-download-bundle.sh" "scripts/runbook.sh"
+  require_match "bash scripts/publish-download-bundle-s3.sh" "scripts/runbook.sh"
   require_match "bash scripts/validate-amend-manifests.sh" "scripts/runbook.sh"
   require_match "Docker/Downloads/releases.json" "scripts/generate-releases-manifest.sh"
   require_match "Chummer.Portal/downloads/releases.json" "scripts/generate-releases-manifest.sh"
@@ -265,6 +271,19 @@ if [[ "$RUNBOOK_MODE" == "downloads-sync" ]]; then
     echo "== deployment-mode verification summary =="
     rg -n "Verified manifest at" "$SYNC_LOG_FILE" | tail -n 20 || true
   fi
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "downloads-sync-s3" ]]; then
+  DOWNLOAD_BUNDLE_DIR="${DOWNLOAD_BUNDLE_DIR:-${RUNBOOK_ARG_FRAMEWORK:-$REPO_ROOT/dist}}"
+  SYNC_S3_LOG_FILE="${SYNC_S3_LOG_FILE:-/tmp/chummer-downloads-sync-s3.log}"
+  set +e
+  bash scripts/publish-download-bundle-s3.sh "$DOWNLOAD_BUNDLE_DIR" 2>&1 | tee "$SYNC_S3_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== object storage sync summary =="
+  rg -n "Published|Verified manifest|Set CHUMMER|Expected desktop-download-bundle|aws CLI" "$SYNC_S3_LOG_FILE" | tail -n 200 || true
   exit "$status"
 fi
 

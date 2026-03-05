@@ -709,8 +709,12 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(workflowText, "project: Chummer.Avalonia/Chummer.Avalonia.csproj");
         StringAssert.Contains(workflowText, "project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj");
-        StringAssert.Contains(workflowText, "rid: osx-arm64");
-        StringAssert.Contains(workflowText, "rid: osx-x64");
+        StringAssert.Contains(
+            workflowText,
+            "app: avalonia\n            project: Chummer.Avalonia/Chummer.Avalonia.csproj\n            os: macos-latest\n            rid: osx-x64");
+        StringAssert.Contains(
+            workflowText,
+            "app: blazor-desktop\n            project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj\n            os: macos-latest\n            rid: osx-x64");
         StringAssert.Contains(workflowText, "bash scripts/generate-releases-manifest.sh");
         StringAssert.Contains(workflowText, "Chummer.Application/**");
         StringAssert.Contains(workflowText, "Chummer.Core/**");
@@ -719,11 +723,15 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "Chummer.Portal/**");
         StringAssert.Contains(workflowText, "scripts/generate-releases-manifest.sh");
         StringAssert.Contains(workflowText, "scripts/publish-download-bundle.sh");
+        StringAssert.Contains(workflowText, "scripts/publish-download-bundle-s3.sh");
         StringAssert.Contains(workflowText, "deploy_portal_downloads");
         StringAssert.Contains(workflowText, "deploy-downloads");
+        StringAssert.Contains(workflowText, "deploy-downloads-object-storage");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
+        StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
+        StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID");
         StringAssert.Contains(workflowText, "Validate live verify URL");
         StringAssert.Contains(workflowText, "Set CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL to verify the live portal manifest after deployment.");
         StringAssert.Contains(workflowText, "Verify deployed manifest has artifacts");
@@ -758,8 +766,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_DESKTOP_CLIENT_MODE");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
+        StringAssert.Contains(readmeText, "scripts/publish-download-bundle-s3.sh");
         StringAssert.Contains(readmeText, "Live deployment verification is required");
         Assert.IsFalse(
             readmeText.Contains("two UI heads (`Chummer.Blazor`, `Chummer.Avalonia`)", StringComparison.Ordinal),
@@ -1073,15 +1084,19 @@ public class MigrationComplianceTests
         string generatorText = File.ReadAllText(generatorPath);
         string publisherPath = FindPath("scripts", "publish-download-bundle.sh");
         string publisherText = File.ReadAllText(publisherPath);
+        string s3PublisherPath = FindPath("scripts", "publish-download-bundle-s3.sh");
+        string s3PublisherText = File.ReadAllText(s3PublisherPath);
         string amendValidatorPath = FindPath("scripts", "validate-amend-manifests.sh");
         string amendValidatorText = File.ReadAllText(amendValidatorPath);
 
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-manifest\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync\"");
+        StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync-s3\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-verify\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"amend-checksums\"");
         StringAssert.Contains(runbookText, "bash scripts/generate-releases-manifest.sh");
         StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle.sh");
+        StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle-s3.sh");
         StringAssert.Contains(runbookText, "bash scripts/verify-releases-manifest.sh");
         StringAssert.Contains(runbookText, "bash scripts/validate-amend-manifests.sh");
         StringAssert.Contains(runbookText, "permission denied while trying to connect to the Docker daemon socket");
@@ -1111,6 +1126,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(publisherText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(publisherText, "Deployment mode requires CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
         StringAssert.Contains(publisherText, "Published ${#artifacts[@]} desktop artifact(s)");
+        StringAssert.Contains(s3PublisherText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
+        StringAssert.Contains(s3PublisherText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(s3PublisherText, "aws s3 cp");
+        StringAssert.Contains(s3PublisherText, "verify-releases-manifest.sh");
+        StringAssert.Contains(s3PublisherText, "Published ${artifact_count} desktop artifact(s) to object storage target");
 
         string verifierPath = FindPath("scripts", "verify-releases-manifest.sh");
         string verifierText = File.ReadAllText(verifierPath);

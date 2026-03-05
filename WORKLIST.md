@@ -38,7 +38,9 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-025 | done | P2 | Keep `IChummerClient` interface pure by moving bootstrap helper to extension/helper layer. | agent | Completed 2026-03-05: contract remains method-signature-only and new compliance/runbook guardrails block default shell-bootstrap method bodies from reappearing on the interface. |
 | WL-026 | done | P2 | Harden preapproved `runbook local-tests` for unattended sandbox execution. | agent | Completed 2026-03-05: added first-run/IPC-safe env defaults, single-process/build-server toggles, and optional no-restore/no-build switches for preapproved-script local test runs. |
 | WL-027 | done | P3 | Add fast-fail NuGet preflight for `runbook local-tests`. | agent | Completed 2026-03-05: restore-enabled local-tests now perform a quick NuGet endpoint preflight and fail fast with explicit offline guidance when connectivity is blocked. |
-| WL-028 | in_progress | P2 | Add optional object-storage publish path for desktop downloads bundles. | agent | Extend workflow/scripts with an opt-in S3/R2-compatible publish target and verification while keeping deploy-dir mode as default. |
+| WL-028 | done | P2 | Add optional object-storage publish path for desktop downloads bundles. | agent | Completed 2026-03-05: optional S3/R2-compatible publish script and workflow job are in place, runbook gained `downloads-sync-s3`, and README/compliance guardrails cover object-storage deployment variables. |
+| WL-029 | done | P3 | Strengthen `osx-x64` matrix guardrail to per-app enforcement. | agent | Completed 2026-03-05: compliance checks now assert explicit per-app macOS Intel rows for both desktop heads. |
+| WL-030 | blocked | P1 | Run targeted/full local test gates via preapproved runbook path. | agent | Blocked in this sandbox by outbound NuGet restriction (`api.nuget.org:443` denied) during restore; runbook now preflights and fails fast instead of retry loops. |
 
 ## Intake Template
 Add new items at the bottom:

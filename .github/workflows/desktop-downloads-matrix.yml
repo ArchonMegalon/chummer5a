@@ -27,6 +27,7 @@ on:
       - 'global.json'
       - 'scripts/generate-releases-manifest.sh'
       - 'scripts/publish-download-bundle.sh'
+      - 'scripts/publish-download-bundle-s3.sh'
       - 'scripts/verify-releases-manifest.sh'
       - 'scripts/validate-amend-manifests.sh'
 
@@ -278,3 +279,48 @@ jobs:
         run: |
           set -euo pipefail
           bash scripts/verify-releases-manifest.sh "$CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL"
+
+  deploy-downloads-object-storage:
+    name: Deploy Downloads Bundle (Object Storage)
+    needs: generate-manifest
+    if: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_portal_downloads)) && vars.CHUMMER_PORTAL_DOWNLOADS_S3_URI != '' }}
+    runs-on: ubuntu-latest
+    env:
+      CHUMMER_PORTAL_DOWNLOADS_S3_URI: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_S3_URI }}
+      CHUMMER_PORTAL_DOWNLOADS_S3_LATEST_URI: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_S3_LATEST_URI }}
+      CHUMMER_PORTAL_DOWNLOADS_S3_ENDPOINT_URL: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_S3_ENDPOINT_URL }}
+      CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.CHUMMER_PORTAL_DOWNLOADS_AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.CHUMMER_PORTAL_DOWNLOADS_AWS_SESSION_TOKEN }}
+      AWS_DEFAULT_REGION: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_S3_REGION }}
+
+    steps:
+      - name: Validate object-storage variables
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CHUMMER_PORTAL_DOWNLOADS_S3_URI:-}" ]]; then
+            echo "Set repository variable CHUMMER_PORTAL_DOWNLOADS_S3_URI to enable object-storage deploy mode." >&2
+            exit 1
+          fi
+          if [[ -z "${CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL:-}" ]]; then
+            echo "Set CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL to verify the live portal manifest after object-storage deployment." >&2
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download manifest bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: desktop-download-bundle
+          path: dist
+
+      - name: Publish bundle to object storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
+          bash scripts/publish-download-bundle-s3.sh dist
