@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Chummer.Avalonia;
 using Chummer.Blazor;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -539,24 +540,32 @@ public class DualHeadAcceptanceTests
             .ToArray();
         CollectionAssert.AreEquivalent(avaloniaTabIds, blazorTabIds);
 
-        string[] avaloniaActionIds = WorkspaceSurfaceActionCatalog.ForTab(avaloniaState.ActiveTabId)
+        string[] avaloniaActionIds = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(
+                avaloniaState.ActiveTabId,
+                ResolveActiveRulesetId(avaloniaState))
             .Where(action => evaluator.IsWorkspaceActionEnabled(action, avaloniaState))
             .Select(action => action.Id)
             .OrderBy(id => id, StringComparer.Ordinal)
             .ToArray();
-        string[] blazorActionIds = WorkspaceSurfaceActionCatalog.ForTab(blazorState.ActiveTabId)
+        string[] blazorActionIds = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(
+                blazorState.ActiveTabId,
+                ResolveActiveRulesetId(blazorState))
             .Where(action => evaluator.IsWorkspaceActionEnabled(action, blazorState))
             .Select(action => action.Id)
             .OrderBy(id => id, StringComparer.Ordinal)
             .ToArray();
         CollectionAssert.AreEquivalent(avaloniaActionIds, blazorActionIds);
 
-        string[] avaloniaControlIds = DesktopUiControlCatalog.ForTab(avaloniaState.ActiveTabId)
+        string[] avaloniaControlIds = RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(
+                avaloniaState.ActiveTabId,
+                ResolveActiveRulesetId(avaloniaState))
             .Where(control => evaluator.IsUiControlEnabled(control, avaloniaState))
             .Select(control => control.Id)
             .OrderBy(id => id, StringComparer.Ordinal)
             .ToArray();
-        string[] blazorControlIds = DesktopUiControlCatalog.ForTab(blazorState.ActiveTabId)
+        string[] blazorControlIds = RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(
+                blazorState.ActiveTabId,
+                ResolveActiveRulesetId(blazorState))
             .Where(control => evaluator.IsUiControlEnabled(control, blazorState))
             .Select(control => control.Id)
             .OrderBy(id => id, StringComparer.Ordinal)
@@ -735,6 +744,19 @@ public class DualHeadAcceptanceTests
         string? DialogTitle,
         string[] DialogFieldIds,
         string[] DialogActionIds);
+
+    private static string ResolveActiveRulesetId(CharacterOverviewState state)
+    {
+        CharacterWorkspaceId? activeWorkspaceId = state.Session.ActiveWorkspaceId ?? state.WorkspaceId;
+        if (activeWorkspaceId is null)
+            return RulesetDefaults.Sr5;
+
+        OpenWorkspaceState? openWorkspace = state.Session.OpenWorkspaces
+            .FirstOrDefault(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal));
+        return openWorkspace is null
+            ? RulesetDefaults.Sr5
+            : RulesetDefaults.Normalize(openWorkspace.RulesetId);
+    }
 
     private static HttpClient CreateClient()
     {

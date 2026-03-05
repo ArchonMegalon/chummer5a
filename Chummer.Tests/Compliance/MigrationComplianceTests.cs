@@ -785,12 +785,19 @@ public class MigrationComplianceTests
         string blazorShellCodeText = File.ReadAllText(blazorShellCodePath);
         string avaloniaStatePath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
         string avaloniaStateText = File.ReadAllText(avaloniaStatePath);
+        string dualHeadAcceptancePath = FindPath("Chummer.Tests", "Presentation", "DualHeadAcceptanceTests.cs");
+        string dualHeadAcceptanceText = File.ReadAllText(dualHeadAcceptancePath);
 
         StringAssert.Contains(blazorShellCodeText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(State.ActiveTabId, ShellState.ActiveRulesetId, RulesetPlugins)");
         StringAssert.Contains(blazorShellCodeText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(State.ActiveTabId, ShellState.ActiveRulesetId, RulesetPlugins)");
 
         StringAssert.Contains(avaloniaStateText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(state.ActiveTabId, shellState.ActiveRulesetId, _rulesetPlugins)");
         StringAssert.Contains(avaloniaStateText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(state.ActiveTabId, shellState.ActiveRulesetId, _rulesetPlugins)");
+
+        StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(");
+        StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(");
+        Assert.IsFalse(dualHeadAcceptanceText.Contains("WorkspaceSurfaceActionCatalog.ForTab(avaloniaState.ActiveTabId", StringComparison.Ordinal));
+        Assert.IsFalse(dualHeadAcceptanceText.Contains("DesktopUiControlCatalog.ForTab(avaloniaState.ActiveTabId", StringComparison.Ordinal));
     }
 
     [TestMethod]
