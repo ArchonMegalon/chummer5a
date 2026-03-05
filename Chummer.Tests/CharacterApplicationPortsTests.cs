@@ -1,3 +1,5 @@
+#nullable enable annotations
+
 using Chummer.Application.Characters;
 using Chummer.Contracts.Characters;
 using Chummer.Infrastructure.Xml;

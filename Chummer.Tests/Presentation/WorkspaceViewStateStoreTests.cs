@@ -1,3 +1,5 @@
+#nullable enable annotations
+
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
