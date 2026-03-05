@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using Chummer.Presentation.Rulesets;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;
@@ -75,5 +78,43 @@ public class RulesetSeamContractsTests
         Assert.IsTrue(typeof(IRulesetCatalogProvider).IsInterface);
         Assert.IsTrue(typeof(IRulesetRuleHost).IsInterface);
         Assert.IsTrue(typeof(IRulesetScriptHost).IsInterface);
+    }
+
+    [TestMethod]
+    public async Task Sr5_plugin_adapters_expose_existing_shell_catalogs_without_behavior_change()
+    {
+        IRulesetPlugin plugin = new Sr5RulesetPlugin();
+
+        Assert.AreEqual(RulesetDefaults.Sr5, plugin.Id.NormalizedValue);
+        Assert.AreEqual("Shadowrun 5", plugin.DisplayName);
+        Assert.AreEqual(RulesetDefaults.Sr5, plugin.Serializer.RulesetId.NormalizedValue);
+        Assert.AreEqual(1, plugin.Serializer.SchemaVersion);
+
+        WorkspacePayloadEnvelope envelope = plugin.Serializer.Wrap("workspace", "{}");
+        Assert.AreEqual(RulesetDefaults.Sr5, envelope.RulesetId);
+        Assert.AreEqual("workspace", envelope.PayloadKind);
+        Assert.AreEqual("{}", envelope.Payload);
+
+        Assert.IsTrue(plugin.ShellDefinitions.GetCommands().Count > 0);
+        Assert.IsTrue(plugin.ShellDefinitions.GetNavigationTabs().Count > 0);
+        Assert.IsTrue(plugin.Catalogs.GetWorkspaceActions().Count > 0);
+        Assert.IsTrue(plugin.Catalogs.GetDesktopUiControls().Count > 0);
+
+        RulesetRuleEvaluationResult ruleResult = await plugin.Rules.EvaluateAsync(
+            new RulesetRuleEvaluationRequest(
+                RuleId: "sr5.noop",
+                Inputs: new Dictionary<string, object?> { ["karma"] = 12 }),
+            CancellationToken.None);
+        Assert.IsTrue(ruleResult.Success);
+        Assert.IsTrue(ruleResult.Outputs.ContainsKey("karma"));
+
+        RulesetScriptExecutionResult scriptResult = await plugin.Scripts.ExecuteAsync(
+            new RulesetScriptExecutionRequest(
+                ScriptId: "sr5.noop",
+                ScriptSource: "-- noop",
+                Inputs: new Dictionary<string, object?> { ["nuyen"] = 5000 }),
+            CancellationToken.None);
+        Assert.IsTrue(scriptResult.Success);
+        Assert.AreEqual("noop", scriptResult.Outputs["mode"]);
     }
 }
