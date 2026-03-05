@@ -226,8 +226,8 @@ public class ArchitectureGuardrailTests
             HashSet<string> actual = ReadProjectReferenceNames(project);
             List<string> forbidden = actual.Except(allowed, StringComparer.Ordinal).OrderBy(name => name, StringComparer.Ordinal).ToList();
 
-            Assert.IsFalse(
-                forbidden.Any(),
+            Assert.IsEmpty(
+                forbidden,
                 $"{project} has forbidden project references: {string.Join(", ", forbidden)}.");
         }
     }

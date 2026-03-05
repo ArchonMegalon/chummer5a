@@ -61,7 +61,7 @@ public class MigrationComplianceTests
             "API endpoint set must match ICharacterSectionService parser set.");
 
         List<string> missingInUi = expectedSections.Where(section => !uiActions.Contains(section)).OrderBy(x => x).ToList();
-        Assert.IsFalse(missingInUi.Any(), "Missing UI actions for sections: " + string.Join(", ", missingInUi));
+        Assert.IsEmpty(missingInUi, "Missing UI actions for sections: " + string.Join(", ", missingInUi));
     }
 
     [TestMethod]
@@ -84,7 +84,7 @@ public class MigrationComplianceTests
         commandIds.UnionWith(menuCommands);
 
         List<string> missingCommands = RequiredDesktopCommands.Where(command => !commandIds.Contains(command)).OrderBy(x => x).ToList();
-        Assert.IsFalse(missingCommands.Any(), "Missing desktop command buttons: " + string.Join(", ", missingCommands));
+        Assert.IsEmpty(missingCommands, "Missing desktop command buttons: " + string.Join(", ", missingCommands));
 
         foreach (string command in RequiredDesktopCommands)
         {
@@ -254,7 +254,7 @@ public class MigrationComplianceTests
             .OrderBy(id => id)
             .ToList();
 
-        Assert.IsFalse(duplicateIds.Any(), "Duplicate command ids in AppCommandCatalog: " + string.Join(", ", duplicateIds));
+        Assert.IsEmpty(duplicateIds, "Duplicate command ids in AppCommandCatalog: " + string.Join(", ", duplicateIds));
     }
 
     [TestMethod]
@@ -274,7 +274,7 @@ public class MigrationComplianceTests
             .OrderBy(id => id)
             .ToList();
 
-        Assert.IsFalse(duplicateIds.Any(), "Duplicate tab ids in NavigationTabCatalog: " + string.Join(", ", duplicateIds));
+        Assert.IsEmpty(duplicateIds, "Duplicate tab ids in NavigationTabCatalog: " + string.Join(", ", duplicateIds));
 
         HashSet<string> catalogTabIds = NavigationTabCatalog.All
             .Select(tab => tab.Id)
@@ -285,7 +285,7 @@ public class MigrationComplianceTests
             .OrderBy(x => x)
             .ToList();
 
-        Assert.IsFalse(missingInCatalog.Any(), "Legacy shell tabs missing from NavigationTabCatalog: " + string.Join(", ", missingInCatalog));
+        Assert.IsEmpty(missingInCatalog, "Legacy shell tabs missing from NavigationTabCatalog: " + string.Join(", ", missingInCatalog));
 
         List<string> tabsWithoutSection = NavigationTabCatalog.All
             .Where(tab => string.IsNullOrWhiteSpace(tab.SectionId))
@@ -293,7 +293,7 @@ public class MigrationComplianceTests
             .OrderBy(id => id)
             .ToList();
 
-        Assert.IsFalse(tabsWithoutSection.Any(), "Navigation tabs without section bindings: " + string.Join(", ", tabsWithoutSection));
+        Assert.IsEmpty(tabsWithoutSection, "Navigation tabs without section bindings: " + string.Join(", ", tabsWithoutSection));
     }
 
     [TestMethod]
@@ -314,7 +314,7 @@ public class MigrationComplianceTests
             .Where(actionId => !catalogTargets.Contains(actionId))
             .OrderBy(x => x)
             .ToList();
-        Assert.IsFalse(missingTargets.Any(), "Legacy data-action ids missing in WorkspaceSurfaceActionCatalog: " + string.Join(", ", missingTargets));
+        Assert.IsEmpty(missingTargets, "Legacy data-action ids missing in WorkspaceSurfaceActionCatalog: " + string.Join(", ", missingTargets));
 
         List<string> duplicateActionIds = WorkspaceSurfaceActionCatalog.All
             .GroupBy(action => action.Id, StringComparer.Ordinal)
@@ -322,7 +322,7 @@ public class MigrationComplianceTests
             .Select(group => group.Key)
             .OrderBy(id => id)
             .ToList();
-        Assert.IsFalse(duplicateActionIds.Any(), "Duplicate workspace surface action ids: " + string.Join(", ", duplicateActionIds));
+        Assert.IsEmpty(duplicateActionIds, "Duplicate workspace surface action ids: " + string.Join(", ", duplicateActionIds));
     }
 
     [TestMethod]
@@ -348,13 +348,13 @@ public class MigrationComplianceTests
             .Where(controlId => !catalogControlIds.Contains(controlId))
             .OrderBy(x => x)
             .ToList();
-        Assert.IsFalse(missingControls.Any(), "Legacy ui-control ids missing in DesktopUiControlCatalog: " + string.Join(", ", missingControls));
+        Assert.IsEmpty(missingControls, "Legacy ui-control ids missing in DesktopUiControlCatalog: " + string.Join(", ", missingControls));
 
         List<string> controlsMissingPresenterTemplate = legacyControlIds
             .Where(controlId => !dialogTemplateText.Contains($"\"{controlId}\" =>", StringComparison.Ordinal))
             .OrderBy(x => x)
             .ToList();
-        Assert.IsFalse(controlsMissingPresenterTemplate.Any(), "Controls missing dialog templates: " + string.Join(", ", controlsMissingPresenterTemplate));
+        Assert.IsEmpty(controlsMissingPresenterTemplate, "Controls missing dialog templates: " + string.Join(", ", controlsMissingPresenterTemplate));
     }
 
     [TestMethod]
@@ -509,7 +509,7 @@ public class MigrationComplianceTests
             .Where(controlId => !indexText.Contains($"{controlId}:", StringComparison.Ordinal))
             .OrderBy(x => x)
             .ToList();
-        Assert.IsFalse(missingHandlers.Any(), "Missing ui control handler mappings: " + string.Join(", ", missingHandlers));
+        Assert.IsEmpty(missingHandlers, "Missing ui control handler mappings: " + string.Join(", ", missingHandlers));
         Assert.IsFalse(indexText.Contains("showNote(`Desktop control '${controlId}' invoked on", StringComparison.Ordinal),
             "Generic ui control placeholder behavior is still present.");
     }
