@@ -174,8 +174,8 @@ Desktop artifact workflow:
 * `scripts/publish-download-bundle.sh` now derives portal file-sync destination from `PORTAL_MANIFEST_PATH` and supports explicit override via `PORTAL_DOWNLOADS_DIR` for non-default portal layouts.
 * Deploy job hard-gate: after publish, deployment now verifies `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR/releases.json` contains at least one artifact and fails otherwise.
 * `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` is resolved on the workflow runner filesystem; automatic deployment requires a runner that can write to the portal downloads storage (for example, self-hosted runner with shared mount/network volume).
-* Optional live deployment smoke: set repository variable `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` (portal base URL or direct `.../downloads/releases.json`) to additionally verify the live portal endpoint after local deploy verification passes.
-* To hard-gate live verification, set repository variable `CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY=true`; deployment then fails unless `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` is configured and verified.
+* Live deployment verification is required: set repository variable `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` (portal base URL or direct `.../downloads/releases.json`) so deployment can verify the live portal endpoint after local deploy verification passes.
+* Deploy job hard-gate: deployment fails when `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` is missing or when the live portal manifest has no published artifacts.
 * Deploy verification enforces published manifests (`CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION=true`) so `version: "unpublished"` cannot pass deployment gates.
 * Local verification helper: `bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
 * Manual deployment remains available through workflow dispatch with `deploy_portal_downloads=true`.

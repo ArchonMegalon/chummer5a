@@ -707,13 +707,15 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "deploy_portal_downloads");
         StringAssert.Contains(workflowText, "deploy-downloads");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
-        StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
-        StringAssert.Contains(workflowText, "Validate live verify configuration");
-        StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY=true requires CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL.");
+        StringAssert.Contains(workflowText, "Validate live verify URL");
+        StringAssert.Contains(workflowText, "Set CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL to verify the live portal manifest after deployment.");
         StringAssert.Contains(workflowText, "Verify deployed manifest has artifacts");
         StringAssert.Contains(workflowText, "bash scripts/verify-releases-manifest.sh \"$CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR\"");
         StringAssert.Contains(workflowText, "Verify deployed portal manifest has artifacts");
+        Assert.IsFalse(
+            workflowText.Contains("if: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL != '' }}", StringComparison.Ordinal),
+            "Live portal manifest verification should be mandatory when deployment is enabled.");
         StringAssert.Contains(workflowText, "scripts/verify-releases-manifest.sh");
 
         StringAssert.Contains(manifestScriptText, "chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>[^.]+)\\.(?P<ext>zip|tar\\.gz)");
@@ -739,8 +741,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_DESKTOP_CLIENT_MODE");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
-        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
+        StringAssert.Contains(readmeText, "Live deployment verification is required");
         Assert.IsFalse(
             readmeText.Contains("two UI heads (`Chummer.Blazor`, `Chummer.Avalonia`)", StringComparison.Ordinal),
             "README summary regressed to outdated two-head architecture language.");
