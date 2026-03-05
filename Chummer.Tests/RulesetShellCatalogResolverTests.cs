@@ -72,18 +72,64 @@ public sealed class RulesetShellCatalogResolverTests
         Assert.AreEqual("second", commands[0].Id);
     }
 
+    [TestMethod]
+    public void ResolveWorkspaceActionsForTab_prefers_ruleset_plugin_catalogs()
+    {
+        IReadOnlyList<WorkspaceSurfaceActionDefinition> actions = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(
+            tabId: "tab-sr6",
+            rulesetId: "sr6",
+            plugins:
+            [
+                new StubRulesetPlugin(
+                    rulesetId: "sr6",
+                    commands: [],
+                    tabs: [],
+                    actions:
+                    [
+                        new WorkspaceSurfaceActionDefinition(
+                            Id: "tab-sr6.summary",
+                            Label: "SR6 Summary",
+                            TabId: "tab-sr6",
+                            Kind: WorkspaceSurfaceActionKind.Summary,
+                            TargetId: "summary",
+                            RequiresOpenCharacter: true,
+                            EnabledByDefault: true,
+                            RulesetId: "sr6")
+                    ],
+                    controls: [])
+            ]);
+
+        Assert.AreEqual(1, actions.Count);
+        Assert.AreEqual("tab-sr6.summary", actions[0].Id);
+        Assert.AreEqual("sr6", actions[0].RulesetId);
+    }
+
+    [TestMethod]
+    public void ResolveDesktopUiControlsForTab_falls_back_to_catalog_without_matching_plugin()
+    {
+        IReadOnlyList<DesktopUiControlDefinition> controls = RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(
+            tabId: "tab-info",
+            rulesetId: "sr5",
+            plugins: [new StubRulesetPlugin("sr6", commands: [], tabs: [])]);
+
+        Assert.AreEqual(DesktopUiControlCatalog.ForTab("tab-info", "sr5").Count, controls.Count);
+        Assert.IsTrue(controls.Any(control => string.Equals(control.TabId, "tab-info", StringComparison.Ordinal)));
+    }
+
     private sealed class StubRulesetPlugin : IRulesetPlugin
     {
         public StubRulesetPlugin(
             string rulesetId,
             IReadOnlyList<AppCommandDefinition> commands,
-            IReadOnlyList<NavigationTabDefinition> tabs)
+            IReadOnlyList<NavigationTabDefinition> tabs,
+            IReadOnlyList<WorkspaceSurfaceActionDefinition>? actions = null,
+            IReadOnlyList<DesktopUiControlDefinition>? controls = null)
         {
             Id = new RulesetId(rulesetId);
             DisplayName = rulesetId;
             Serializer = new StubSerializer(Id);
             ShellDefinitions = new StubShellDefinitions(commands, tabs);
-            Catalogs = new StubCatalogs();
+            Catalogs = new StubCatalogs(actions, controls);
             Rules = new StubRules();
             Scripts = new StubScripts();
         }
@@ -140,9 +186,20 @@ public sealed class RulesetShellCatalogResolverTests
 
     private sealed class StubCatalogs : IRulesetCatalogProvider
     {
-        public IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions() => Array.Empty<WorkspaceSurfaceActionDefinition>();
+        private readonly IReadOnlyList<WorkspaceSurfaceActionDefinition> _actions;
+        private readonly IReadOnlyList<DesktopUiControlDefinition> _controls;
 
-        public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls() => Array.Empty<DesktopUiControlDefinition>();
+        public StubCatalogs(
+            IReadOnlyList<WorkspaceSurfaceActionDefinition>? actions = null,
+            IReadOnlyList<DesktopUiControlDefinition>? controls = null)
+        {
+            _actions = actions ?? Array.Empty<WorkspaceSurfaceActionDefinition>();
+            _controls = controls ?? Array.Empty<DesktopUiControlDefinition>();
+        }
+
+        public IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions() => _actions;
+
+        public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls() => _controls;
     }
 
     private sealed class StubRules : IRulesetRuleHost

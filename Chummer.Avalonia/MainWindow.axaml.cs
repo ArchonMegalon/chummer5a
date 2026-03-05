@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Chummer.Contracts.Rulesets;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 
@@ -9,6 +10,7 @@ public partial class MainWindow : Window
     private readonly ICharacterOverviewPresenter _presenter;
     private readonly IShellPresenter _shellPresenter;
     private readonly ICommandAvailabilityEvaluator _commandAvailabilityEvaluator;
+    private readonly IReadOnlyList<IRulesetPlugin> _rulesetPlugins;
     private readonly CharacterOverviewViewModelAdapter _adapter;
     private readonly TextBox _xmlInputBox;
     private readonly TextBlock _statusText;
@@ -47,6 +49,7 @@ public partial class MainWindow : Window
         ICharacterOverviewPresenter presenter,
         IShellPresenter shellPresenter,
         ICommandAvailabilityEvaluator commandAvailabilityEvaluator,
+        IEnumerable<IRulesetPlugin> rulesetPlugins,
         CharacterOverviewViewModelAdapter adapter)
     {
         InitializeComponent();
@@ -54,6 +57,7 @@ public partial class MainWindow : Window
         _presenter = presenter;
         _shellPresenter = shellPresenter;
         _commandAvailabilityEvaluator = commandAvailabilityEvaluator;
+        _rulesetPlugins = [.. rulesetPlugins];
         _adapter = adapter;
         _adapter.Updated += (_, _) => RefreshState();
         _shellPresenter.StateChanged += ShellPresenter_OnStateChanged;

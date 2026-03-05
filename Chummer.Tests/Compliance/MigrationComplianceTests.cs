@@ -771,11 +771,11 @@ public class MigrationComplianceTests
         string avaloniaStatePath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
         string avaloniaStateText = File.ReadAllText(avaloniaStatePath);
 
-        StringAssert.Contains(blazorShellCodeText, "WorkspaceSurfaceActionCatalog.ForTab(State.ActiveTabId, ShellState.ActiveRulesetId)");
-        StringAssert.Contains(blazorShellCodeText, "DesktopUiControlCatalog.ForTab(State.ActiveTabId, ShellState.ActiveRulesetId)");
+        StringAssert.Contains(blazorShellCodeText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(State.ActiveTabId, ShellState.ActiveRulesetId, RulesetPlugins)");
+        StringAssert.Contains(blazorShellCodeText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(State.ActiveTabId, ShellState.ActiveRulesetId, RulesetPlugins)");
 
-        StringAssert.Contains(avaloniaStateText, "WorkspaceSurfaceActionCatalog.ForTab(state.ActiveTabId, shellState.ActiveRulesetId)");
-        StringAssert.Contains(avaloniaStateText, "DesktopUiControlCatalog.ForTab(state.ActiveTabId, shellState.ActiveRulesetId)");
+        StringAssert.Contains(avaloniaStateText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(state.ActiveTabId, shellState.ActiveRulesetId, _rulesetPlugins)");
+        StringAssert.Contains(avaloniaStateText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(state.ActiveTabId, shellState.ActiveRulesetId, _rulesetPlugins)");
     }
 
     [TestMethod]

@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
@@ -25,6 +26,9 @@ public partial class DesktopShell : IDisposable
     [Inject]
     public IJSRuntime JsRuntime { get; set; } = default!;
 
+    [Inject]
+    public IEnumerable<IRulesetPlugin> RulesetPlugins { get; set; } = Array.Empty<IRulesetPlugin>();
+
     private string RawImportXml { get; set; } = "<character><name>Demo</name><alias>Sample</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created></character>";
     private string? ImportedFileName { get; set; }
     private string? ImportError { get; set; }
@@ -46,12 +50,12 @@ public partial class DesktopShell : IDisposable
         HeadCommands.Where(command => command.Group is "file" or "tools").Take(10);
 
     private IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions =>
-        WorkspaceSurfaceActionCatalog.ForTab(State.ActiveTabId, ShellState.ActiveRulesetId)
+        RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(State.ActiveTabId, ShellState.ActiveRulesetId, RulesetPlugins)
             .Where(action => AvailabilityEvaluator.IsWorkspaceActionEnabled(action, State))
             .ToArray();
 
     private IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls =>
-        DesktopUiControlCatalog.ForTab(State.ActiveTabId, ShellState.ActiveRulesetId)
+        RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(State.ActiveTabId, ShellState.ActiveRulesetId, RulesetPlugins)
             .Where(control => AvailabilityEvaluator.IsUiControlEnabled(control, State))
             .ToArray();
 
