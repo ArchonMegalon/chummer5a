@@ -1039,14 +1039,14 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(avaloniaStateText, "_shellSurfaceResolver.Resolve(state, _shellPresenter.State)");
         StringAssert.Contains(avaloniaStateText, "MainWindowShellFrameProjector.Project(");
-        StringAssert.Contains(avaloniaStateText, "CommandDialogPaneState commandDialogState = BuildCommandDialogState(state, shellFrame);");
-        StringAssert.Contains(avaloniaStateText, "ApplyShellFrame(shellFrame, commandDialogState);");
+        StringAssert.Contains(avaloniaStateText, "ApplyShellFrame(shellFrame);");
         Assert.IsFalse(avaloniaStateText.Contains("shellSurface.Commands", StringComparison.Ordinal));
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.Commands");
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.MenuRoots");
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.NavigationTabs");
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.WorkspaceActions");
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.DesktopUiControls");
+        StringAssert.Contains(avaloniaProjectorText, "ProjectCommandDialogState(");
 
         StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(");
         StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(");
@@ -1551,11 +1551,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(codeText, "_navigatorPane.WorkspaceSelected +=");
         StringAssert.Contains(codeText, "_commandDialogPane.CommandSelected +=");
         StringAssert.Contains(stateText, "MainWindowShellFrameProjector.Project(");
-        StringAssert.Contains(stateText, "CommandDialogPaneState commandDialogState = BuildCommandDialogState(state, shellFrame);");
-        StringAssert.Contains(stateText, "ApplyShellFrame(shellFrame, commandDialogState);");
+        StringAssert.Contains(stateText, "ApplyShellFrame(shellFrame);");
         StringAssert.Contains(stateText, "ApplyHeaderState(shellFrame.HeaderState);");
         StringAssert.Contains(stateText, "_navigatorPane.SetState(shellFrame.NavigatorPaneState);");
-        StringAssert.Contains(stateText, "_commandDialogPane.SetState(commandDialogState);");
+        StringAssert.Contains(stateText, "_commandDialogPane.SetState(shellFrame.CommandDialogPaneState);");
         StringAssert.Contains(stateText, "_sectionHost.SetState(shellFrame.SectionHostState);");
         StringAssert.Contains(stateText, "_toolStrip.SetState(headerState.ToolStrip);");
         StringAssert.Contains(stateText, "_menuBar.SetState(headerState.MenuBar);");
@@ -1563,7 +1562,6 @@ public class MigrationComplianceTests
         StringAssert.Contains(stateText, "_workspaceStrip.SetState(chromeState.WorkspaceStrip);");
         StringAssert.Contains(stateText, "_summaryHeader.SetState(chromeState.SummaryHeader);");
         StringAssert.Contains(stateText, "_statusStrip.SetState(chromeState.StatusStrip);");
-        StringAssert.Contains(stateText, "private static CommandDialogPaneState BuildCommandDialogState(");
         StringAssert.Contains(stateText, "private void ApplyHeaderState(MainWindowHeaderState headerState)");
         StringAssert.Contains(stateText, "private void ApplyChromeState(MainWindowChromeState chromeState)");
         StringAssert.Contains(navigatorCodeText, "public void SetState(NavigatorPaneState state)");
@@ -1597,6 +1595,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(projectorText, "SummaryHeader: new SummaryHeaderState(");
         StringAssert.Contains(projectorText, "StatusStrip: new StatusStripState(");
         StringAssert.Contains(projectorText, "SectionHostState: new SectionHostState(");
+        StringAssert.Contains(projectorText, "CommandDialogPaneState: ProjectCommandDialogState(");
         StringAssert.Contains(projectorText, "NavigatorPaneState: new NavigatorPaneState(");
         StringAssert.Contains(projectorText, "shellSurface.Commands");
         StringAssert.Contains(projectorText, "shellSurface.NavigationTabs");

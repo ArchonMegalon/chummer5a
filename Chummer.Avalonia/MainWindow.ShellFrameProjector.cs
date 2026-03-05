@@ -15,6 +15,7 @@ internal static class MainWindowShellFrameProjector
     {
         ActiveWorkspaceContext workspaceContext = ResolveActiveWorkspaceContext(shellSurface);
         IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> workspaceActionsById = BuildWorkspaceActionLookup(shellSurface.WorkspaceActions);
+        CommandPaletteItem[] commands = ProjectCommands(state, shellSurface, commandAvailabilityEvaluator);
 
         return new MainWindowShellFrame(
             HeaderState: new MainWindowHeaderState(
@@ -43,8 +44,7 @@ internal static class MainWindowShellFrameProjector
                 Rows: state.ActiveSectionRows
                     .Select(row => new SectionRowDisplayItem(row.Path, row.Value))
                     .ToArray()),
-            Commands: ProjectCommands(state, shellSurface, commandAvailabilityEvaluator),
-            LastCommandId: shellSurface.LastCommandId,
+            CommandDialogPaneState: ProjectCommandDialogState(state, commands, shellSurface.LastCommandId),
             NavigatorPaneState: new NavigatorPaneState(
                 OpenWorkspaces: ProjectOpenWorkspaces(state, shellSurface),
                 SelectedWorkspaceId: shellSurface.ActiveWorkspaceId?.Value,
@@ -145,6 +145,37 @@ internal static class MainWindowShellFrameProjector
             .ToArray();
     }
 
+    private static CommandDialogPaneState ProjectCommandDialogState(
+        CharacterOverviewState state,
+        CommandPaletteItem[] commands,
+        string? lastCommandId)
+    {
+        if (state.ActiveDialog is null)
+        {
+            return new CommandDialogPaneState(
+                Commands: commands,
+                SelectedCommandId: lastCommandId,
+                DialogTitle: null,
+                DialogMessage: null,
+                Fields: Array.Empty<DialogFieldDisplayItem>(),
+                Actions: Array.Empty<DialogActionDisplayItem>());
+        }
+
+        DialogFieldDisplayItem[] fields = state.ActiveDialog.Fields
+            .Select(field => new DialogFieldDisplayItem(field.Id, field.Label, field.Value))
+            .ToArray();
+        DialogActionDisplayItem[] actions = state.ActiveDialog.Actions
+            .Select(action => new DialogActionDisplayItem(action.Id, action.Label, action.IsPrimary))
+            .ToArray();
+        return new CommandDialogPaneState(
+            Commands: commands,
+            SelectedCommandId: lastCommandId,
+            DialogTitle: state.ActiveDialog.Title,
+            DialogMessage: state.ActiveDialog.Message,
+            Fields: fields,
+            Actions: actions);
+    }
+
     private static IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> BuildWorkspaceActionLookup(
         IReadOnlyList<WorkspaceSurfaceActionDefinition> workspaceActions)
     {
@@ -167,8 +198,7 @@ internal sealed record MainWindowShellFrame(
     MainWindowHeaderState HeaderState,
     MainWindowChromeState ChromeState,
     SectionHostState SectionHostState,
-    CommandPaletteItem[] Commands,
-    string? LastCommandId,
+    CommandDialogPaneState CommandDialogPaneState,
     NavigatorPaneState NavigatorPaneState,
     IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> WorkspaceActionsById);
 
