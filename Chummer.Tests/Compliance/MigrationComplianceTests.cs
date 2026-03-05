@@ -1000,6 +1000,42 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Workspace_service_routes_behavior_through_ruleset_codec_seam()
+    {
+        string workspaceServicePath = FindPath("Chummer.Infrastructure", "Workspaces", "WorkspaceService.cs");
+        string workspaceServiceText = File.ReadAllText(workspaceServicePath);
+        string codecContractPath = FindPath("Chummer.Application", "Workspaces", "IRulesetWorkspaceCodec.cs");
+        string codecContractText = File.ReadAllText(codecContractPath);
+        string codecResolverContractPath = FindPath("Chummer.Application", "Workspaces", "IRulesetWorkspaceCodecResolver.cs");
+        string codecResolverContractText = File.ReadAllText(codecResolverContractPath);
+        string sr5CodecPath = FindPath("Chummer.Infrastructure", "Workspaces", "Sr5WorkspaceCodec.cs");
+        string sr5CodecText = File.ReadAllText(sr5CodecPath);
+        string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string infrastructureDiText = File.ReadAllText(infrastructureDiPath);
+
+        StringAssert.Contains(codecContractText, "public interface IRulesetWorkspaceCodec");
+        StringAssert.Contains(codecContractText, "WrapImport");
+        StringAssert.Contains(codecContractText, "ParseSummary");
+        StringAssert.Contains(codecContractText, "ParseSection");
+        StringAssert.Contains(codecContractText, "Validate");
+        StringAssert.Contains(codecContractText, "UpdateMetadata");
+        StringAssert.Contains(codecResolverContractText, "public interface IRulesetWorkspaceCodecResolver");
+
+        StringAssert.Contains(workspaceServiceText, "IRulesetWorkspaceCodecResolver _workspaceCodecResolver");
+        StringAssert.Contains(workspaceServiceText, "_workspaceCodecResolver.Resolve");
+        Assert.IsFalse(workspaceServiceText.Contains("_characterFileQueries.ParseSummary", StringComparison.Ordinal));
+        Assert.IsFalse(workspaceServiceText.Contains("_characterSectionQueries.ParseSection", StringComparison.Ordinal));
+        Assert.IsFalse(workspaceServiceText.Contains("_characterMetadataCommands.UpdateMetadata", StringComparison.Ordinal));
+
+        StringAssert.Contains(sr5CodecText, "public sealed class Sr5WorkspaceCodec");
+        StringAssert.Contains(sr5CodecText, "public const string Sr5PayloadKind = \"sr5/chum5-xml\"");
+        StringAssert.Contains(sr5CodecText, "UpdateMetadata");
+
+        StringAssert.Contains(infrastructureDiText, "AddSingleton<IRulesetWorkspaceCodec, Sr5WorkspaceCodec>();");
+        StringAssert.Contains(infrastructureDiText, "AddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();");
+    }
+
+    [TestMethod]
     public void Architecture_guardrails_treat_portal_as_ui_head()
     {
         string guardrailPath = FindPath("Chummer.Tests", "Compliance", "ArchitectureGuardrailTests.cs");
