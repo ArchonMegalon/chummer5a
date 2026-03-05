@@ -17,6 +17,16 @@ public partial class CommandDialogPaneControl : UserControl
     public event EventHandler<string>? CommandSelected;
     public event EventHandler<string>? DialogActionSelected;
 
+    public void SetState(CommandDialogPaneState state)
+    {
+        SetCommands(state.Commands, state.SelectedCommandId);
+        SetDialog(
+            state.DialogTitle,
+            state.DialogMessage,
+            state.Fields,
+            state.Actions);
+    }
+
     public void SetCommands(IEnumerable<CommandPaletteItem> commands, string? selectedCommandId)
     {
         CommandPaletteItem[] commandItems = commands.ToArray();
@@ -81,6 +91,14 @@ public sealed record CommandPaletteItem(string Id, string Group, bool Enabled)
         return $"{Id} [{Group}] {(Enabled ? "enabled" : "disabled")}";
     }
 }
+
+public sealed record CommandDialogPaneState(
+    CommandPaletteItem[] Commands,
+    string? SelectedCommandId,
+    string? DialogTitle,
+    string? DialogMessage,
+    DialogFieldDisplayItem[] Fields,
+    DialogActionDisplayItem[] Actions);
 
 public sealed record DialogFieldDisplayItem(string Id, string Label, string Value)
 {

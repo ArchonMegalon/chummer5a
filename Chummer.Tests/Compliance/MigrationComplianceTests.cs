@@ -1039,7 +1039,8 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(avaloniaStateText, "_shellSurfaceResolver.Resolve(state, _shellPresenter.State)");
         StringAssert.Contains(avaloniaStateText, "MainWindowShellFrameProjector.Project(");
-        StringAssert.Contains(avaloniaStateText, "ApplyShellFrame(shellFrame);");
+        StringAssert.Contains(avaloniaStateText, "CommandDialogPaneState commandDialogState = BuildCommandDialogState(state, shellFrame);");
+        StringAssert.Contains(avaloniaStateText, "ApplyShellFrame(shellFrame, commandDialogState);");
         Assert.IsFalse(avaloniaStateText.Contains("shellSurface.Commands", StringComparison.Ordinal));
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.Commands");
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.MenuRoots");
@@ -1517,6 +1518,8 @@ public class MigrationComplianceTests
         string projectorText = File.ReadAllText(projectorPath);
         string navigatorCodePath = FindPath("Chummer.Avalonia", "Controls", "NavigatorPaneControl.axaml.cs");
         string navigatorCodeText = File.ReadAllText(navigatorCodePath);
+        string commandPaneCodePath = FindPath("Chummer.Avalonia", "Controls", "CommandDialogPaneControl.axaml.cs");
+        string commandPaneCodeText = File.ReadAllText(commandPaneCodePath);
 
         Assert.IsFalse(codeText.Contains("FindControl<", StringComparison.Ordinal));
         StringAssert.Contains(codeText, "public MainWindow(");
@@ -1536,22 +1539,26 @@ public class MigrationComplianceTests
         StringAssert.Contains(codeText, "_navigatorPane.WorkspaceSelected +=");
         StringAssert.Contains(codeText, "_commandDialogPane.CommandSelected +=");
         StringAssert.Contains(stateText, "MainWindowShellFrameProjector.Project(");
-        StringAssert.Contains(stateText, "ApplyShellFrame(shellFrame);");
+        StringAssert.Contains(stateText, "CommandDialogPaneState commandDialogState = BuildCommandDialogState(state, shellFrame);");
+        StringAssert.Contains(stateText, "ApplyShellFrame(shellFrame, commandDialogState);");
         StringAssert.Contains(stateText, "_menuBar.SetMenuState(");
         StringAssert.Contains(stateText, "_navigatorPane.SetState(shellFrame.NavigatorPaneState);");
-        StringAssert.Contains(stateText, "_commandDialogPane.SetCommands(");
-        StringAssert.Contains(stateText, "_commandDialogPane.SetDialog(");
+        StringAssert.Contains(stateText, "_commandDialogPane.SetState(commandDialogState);");
         StringAssert.Contains(stateText, "_sectionHost.SetNotice(");
         StringAssert.Contains(stateText, "_sectionHost.SetSectionPreview(");
         StringAssert.Contains(stateText, "_toolStrip.SetStatusText(");
         StringAssert.Contains(stateText, "_workspaceStrip.SetWorkspaceText(");
         StringAssert.Contains(stateText, "_summaryHeader.SetValues(");
         StringAssert.Contains(stateText, "_statusStrip.SetValues(");
+        StringAssert.Contains(stateText, "private static CommandDialogPaneState BuildCommandDialogState(");
         StringAssert.Contains(navigatorCodeText, "public void SetState(NavigatorPaneState state)");
         StringAssert.Contains(navigatorCodeText, "SetOpenWorkspaces(state.OpenWorkspaces, state.SelectedWorkspaceId);");
         StringAssert.Contains(navigatorCodeText, "SetNavigationTabs(state.NavigationTabs, state.ActiveTabId);");
         StringAssert.Contains(navigatorCodeText, "SetSectionActions(state.SectionActions, state.ActiveActionId);");
         StringAssert.Contains(navigatorCodeText, "SetUiControls(state.UiControls);");
+        StringAssert.Contains(commandPaneCodeText, "public void SetState(CommandDialogPaneState state)");
+        StringAssert.Contains(commandPaneCodeText, "SetCommands(state.Commands, state.SelectedCommandId);");
+        StringAssert.Contains(commandPaneCodeText, "SetDialog(");
         StringAssert.Contains(projectorText, "BuildWorkspaceActionLookup");
         StringAssert.Contains(projectorText, "WorkspaceActionsById");
         StringAssert.Contains(projectorText, "NavigatorPaneState: new NavigatorPaneState(");

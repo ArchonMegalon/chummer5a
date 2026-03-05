@@ -18,15 +18,17 @@ public partial class MainWindow
             state,
             _shellSurfaceResolver.Resolve(state, _shellPresenter.State),
             _commandAvailabilityEvaluator);
+        CommandDialogPaneState commandDialogState = BuildCommandDialogState(state, shellFrame);
 
-        ApplyShellFrame(shellFrame);
-        RefreshDialogState(state);
+        ApplyShellFrame(shellFrame, commandDialogState);
 
         SyncDialogWindow(state);
         DispatchPendingDownload(state);
     }
 
-    private void ApplyShellFrame(MainWindowShellFrame shellFrame)
+    private void ApplyShellFrame(
+        MainWindowShellFrame shellFrame,
+        CommandDialogPaneState commandDialogState)
     {
         _workspaceActionsById = shellFrame.WorkspaceActionsById;
 
@@ -51,21 +53,24 @@ public partial class MainWindow
             knownMenuIds: shellFrame.KnownMenuIds,
             isBusy: shellFrame.IsBusy);
 
-        _commandDialogPane.SetCommands(shellFrame.Commands, shellFrame.LastCommandId);
+        _commandDialogPane.SetState(commandDialogState);
         _navigatorPane.SetState(shellFrame.NavigatorPaneState);
         _sectionHost.SetSectionPreview(shellFrame.SectionPreviewJson, shellFrame.SectionRows);
     }
 
-    private void RefreshDialogState(CharacterOverviewState state)
+    private static CommandDialogPaneState BuildCommandDialogState(
+        CharacterOverviewState state,
+        MainWindowShellFrame shellFrame)
     {
         if (state.ActiveDialog is null)
         {
-            _commandDialogPane.SetDialog(
-                title: null,
-                message: null,
-                fields: Array.Empty<DialogFieldDisplayItem>(),
-                actions: Array.Empty<DialogActionDisplayItem>());
-            return;
+            return new CommandDialogPaneState(
+                Commands: shellFrame.Commands,
+                SelectedCommandId: shellFrame.LastCommandId,
+                DialogTitle: null,
+                DialogMessage: null,
+                Fields: Array.Empty<DialogFieldDisplayItem>(),
+                Actions: Array.Empty<DialogActionDisplayItem>());
         }
 
         DialogFieldDisplayItem[] fields = state.ActiveDialog.Fields
@@ -74,10 +79,12 @@ public partial class MainWindow
         DialogActionDisplayItem[] actions = state.ActiveDialog.Actions
             .Select(action => new DialogActionDisplayItem(action.Id, action.Label, action.IsPrimary))
             .ToArray();
-        _commandDialogPane.SetDialog(
-            title: state.ActiveDialog.Title,
-            message: state.ActiveDialog.Message,
-            fields: fields,
-            actions: actions);
+        return new CommandDialogPaneState(
+            Commands: shellFrame.Commands,
+            SelectedCommandId: shellFrame.LastCommandId,
+            DialogTitle: state.ActiveDialog.Title,
+            DialogMessage: state.ActiveDialog.Message,
+            Fields: fields,
+            Actions: actions);
     }
 }
