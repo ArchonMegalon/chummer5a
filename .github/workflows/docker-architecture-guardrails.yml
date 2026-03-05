@@ -65,6 +65,26 @@ jobs:
       - name: Run repo-local downloads smoke
         run: RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh
 
+  fresh-state-local-runbook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run local-tests with fresh runbook state
+        run: |
+          RUNBOOK_LOG_DIR="$PWD/.tmp/runbook-logs" \
+          RUNBOOK_STATE_DIR="$PWD/.tmp/runbook-state" \
+          TEST_NUGET_SOFT_FAIL=0 \
+          TEST_DISABLE_BUILD_SERVERS=1 \
+          TEST_MAX_CPU=1 \
+          bash scripts/runbook.sh local-tests net10.0 "FullyQualifiedName~MigrationComplianceTests"
+
   linux-migration-loop:
     runs-on: ubuntu-latest
     timeout-minutes: 60

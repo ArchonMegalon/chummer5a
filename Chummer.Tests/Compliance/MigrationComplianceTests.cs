@@ -1437,6 +1437,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(guardrailsWorkflowText, "RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh");
         StringAssert.Contains(guardrailsWorkflowText, "downloads-smoke-runbook");
         StringAssert.Contains(guardrailsWorkflowText, "RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh");
+        StringAssert.Contains(guardrailsWorkflowText, "fresh-state-local-runbook");
+        StringAssert.Contains(guardrailsWorkflowText, "RUNBOOK_LOG_DIR=\"$PWD/.tmp/runbook-logs\"");
+        StringAssert.Contains(guardrailsWorkflowText, "RUNBOOK_STATE_DIR=\"$PWD/.tmp/runbook-state\"");
+        StringAssert.Contains(guardrailsWorkflowText, "TEST_NUGET_SOFT_FAIL=0");
+        StringAssert.Contains(guardrailsWorkflowText, "bash scripts/runbook.sh local-tests net10.0 \"FullyQualifiedName~MigrationComplianceTests\"");
         StringAssert.Contains(guardrailsWorkflowText, "git diff --exit-code -- docs/PARITY_CHECKLIST.md");
     }
 
