@@ -24,6 +24,14 @@ public partial class NavigatorPaneControl : UserControl
     public event EventHandler<string>? SectionActionSelected;
     public event EventHandler<string>? UiControlSelected;
 
+    public void SetState(NavigatorPaneState state)
+    {
+        SetOpenWorkspaces(state.OpenWorkspaces, state.SelectedWorkspaceId);
+        SetNavigationTabs(state.NavigationTabs, state.ActiveTabId);
+        SetSectionActions(state.SectionActions, state.ActiveActionId);
+        SetUiControls(state.UiControls);
+    }
+
     public void SetOpenWorkspaces(IEnumerable<NavigatorWorkspaceItem> workspaces, string? selectedWorkspaceId)
     {
         NavigatorWorkspaceItem[] workspaceItems = workspaces.ToArray();
@@ -131,6 +139,15 @@ public sealed record NavigatorWorkspaceItem(
         return $"{label} [{Id}] [{saveTag}] {(Enabled ? "enabled" : "disabled")}";
     }
 }
+
+public sealed record NavigatorPaneState(
+    NavigatorWorkspaceItem[] OpenWorkspaces,
+    string? SelectedWorkspaceId,
+    NavigatorTabItem[] NavigationTabs,
+    string? ActiveTabId,
+    NavigatorSectionActionItem[] SectionActions,
+    string? ActiveActionId,
+    NavigatorUiControlItem[] UiControls);
 
 public sealed record NavigatorTabItem(
     string Id,

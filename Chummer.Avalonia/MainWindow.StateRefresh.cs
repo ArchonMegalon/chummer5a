@@ -52,11 +52,7 @@ public partial class MainWindow
             isBusy: shellFrame.IsBusy);
 
         _commandDialogPane.SetCommands(shellFrame.Commands, shellFrame.LastCommandId);
-        _navigatorPane.SetOpenWorkspaces(shellFrame.OpenWorkspaces, shellFrame.SelectedWorkspaceId);
-        _navigatorPane.SetNavigationTabs(shellFrame.NavigationTabs, shellFrame.ActiveTabId);
-        _navigatorPane.SetSectionActions(shellFrame.SectionActions, shellFrame.ActiveActionId);
-        _navigatorPane.SetUiControls(shellFrame.UiControls);
-
+        _navigatorPane.SetState(shellFrame.NavigatorPaneState);
         _sectionHost.SetSectionPreview(shellFrame.SectionPreviewJson, shellFrame.SectionRows);
     }
 
