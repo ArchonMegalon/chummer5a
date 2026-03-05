@@ -39,7 +39,8 @@ public class ContentOverlayCatalogServiceTests
 
             var catalog = service.GetCatalog();
             Assert.AreEqual(2, catalog.Overlays.Count);
-            CollectionAssert.AreEqual(new[] { "pack-low", "pack-high" }, catalog.Overlays.Select(overlay => overlay.Id).ToArray());
+            string[] expectedOverlayIds = ["pack-low", "pack-high"];
+            CollectionAssert.AreEqual(expectedOverlayIds, catalog.Overlays.Select(overlay => overlay.Id).ToArray());
         }
         finally
         {
@@ -101,8 +102,9 @@ public class ContentOverlayCatalogServiceTests
             var catalog = service.GetCatalog();
 
             Assert.AreEqual(2, catalog.Overlays.Count);
+            string[] expectedOverlayIds = ["pack-one", "pack-two"];
             CollectionAssert.AreEqual(
-                new[] { "pack-one", "pack-two" },
+                expectedOverlayIds,
                 catalog.Overlays.Select(overlay => overlay.Id).ToArray());
         }
         finally

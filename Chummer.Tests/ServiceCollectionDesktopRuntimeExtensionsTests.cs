@@ -98,8 +98,9 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
                     Assert.IsNotNull(httpClient.BaseAddress);
                     Assert.AreEqual("https://api.example.invalid/", httpClient.BaseAddress!.ToString());
                     Assert.IsTrue(httpClient.DefaultRequestHeaders.Contains("X-Api-Key"));
+                    string[] expectedApiKeyValues = ["test-key"];
                     CollectionAssert.AreEqual(
-                        new[] { "test-key" },
+                        expectedApiKeyValues,
                         new List<string>(httpClient.DefaultRequestHeaders.GetValues("X-Api-Key")));
                 });
             }

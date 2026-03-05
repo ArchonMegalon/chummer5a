@@ -271,8 +271,9 @@ public sealed class BlazorShellComponentTests
         cut.Find("#dialogFooter .action-btn.primary").Click();
         cut.Find("#dialogClose").Click();
 
+        string[] expectedInputFieldIds = ["name", "notes"];
         CollectionAssert.AreEquivalent(
-            new[] { "name", "notes" },
+            expectedInputFieldIds,
             inputChanges.Select(change => change.FieldId).ToArray());
         Assert.AreEqual("houseRules", checkboxChanges[0].FieldId);
         Assert.IsTrue(checkboxChanges[0].Value);

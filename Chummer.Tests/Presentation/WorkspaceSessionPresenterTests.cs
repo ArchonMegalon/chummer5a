@@ -25,11 +25,12 @@ public class WorkspaceSessionPresenterTests
         WorkspaceSessionState state = presenter.Restore(workspaces);
 
         Assert.AreEqual("ws-new", state.ActiveWorkspaceId?.Value);
+        string[] expectedOrder = ["ws-new", "ws-old"];
         CollectionAssert.AreEqual(
-            new[] { "ws-new", "ws-old" },
+            expectedOrder,
             state.OpenWorkspaces.Select(workspace => workspace.Id.Value).ToArray());
         CollectionAssert.AreEqual(
-            new[] { "ws-new", "ws-old" },
+            expectedOrder,
             state.RecentWorkspaceIds.Select(id => id.Value).ToArray());
     }
 
@@ -47,8 +48,9 @@ public class WorkspaceSessionPresenterTests
         WorkspaceSessionState switched = presenter.Switch(new CharacterWorkspaceId("ws-1"));
 
         Assert.AreEqual("ws-1", switched.ActiveWorkspaceId?.Value);
+        string[] expectedRecent = ["ws-1", "ws-2"];
         CollectionAssert.AreEqual(
-            new[] { "ws-1", "ws-2" },
+            expectedRecent,
             switched.RecentWorkspaceIds.Select(id => id.Value).ToArray());
     }
 
@@ -65,8 +67,9 @@ public class WorkspaceSessionPresenterTests
         Assert.AreEqual(1, opened.OpenWorkspaces.Count);
         Assert.AreEqual("Opened Character", opened.OpenWorkspaces[0].Name);
         Assert.AreEqual("OPEN", opened.OpenWorkspaces[0].Alias);
+        string[] expectedRecent = ["ws-open"];
         CollectionAssert.AreEqual(
-            new[] { "ws-open" },
+            expectedRecent,
             opened.RecentWorkspaceIds.Select(id => id.Value).ToArray());
     }
 
@@ -86,8 +89,9 @@ public class WorkspaceSessionPresenterTests
         WorkspaceSessionState closed = presenter.Close(new CharacterWorkspaceId("ws-1"));
 
         Assert.AreEqual("ws-3", closed.ActiveWorkspaceId?.Value);
+        string[] expectedOpenWorkspaces = ["ws-2", "ws-3"];
         CollectionAssert.AreEquivalent(
-            new[] { "ws-2", "ws-3" },
+            expectedOpenWorkspaces,
             closed.OpenWorkspaces.Select(workspace => workspace.Id.Value).ToArray());
     }
 
@@ -102,8 +106,9 @@ public class WorkspaceSessionPresenterTests
 
         Assert.IsNull(cleared.ActiveWorkspaceId);
         Assert.AreEqual(0, cleared.OpenWorkspaces.Count);
+        string[] expectedRecent = ["ws-2", "ws-1"];
         CollectionAssert.AreEqual(
-            new[] { "ws-2", "ws-1" },
+            expectedRecent,
             cleared.RecentWorkspaceIds.Select(id => id.Value).ToArray());
     }
 
@@ -120,8 +125,9 @@ public class WorkspaceSessionPresenterTests
         OpenWorkspaceState ws2 = updated.OpenWorkspaces.First(workspace => string.Equals(workspace.Id.Value, "ws-2", StringComparison.Ordinal));
         Assert.IsTrue(ws1.HasSavedWorkspace);
         Assert.IsFalse(ws2.HasSavedWorkspace);
+        string[] expectedRecent = ["ws-2", "ws-1"];
         CollectionAssert.AreEqual(
-            new[] { "ws-2", "ws-1" },
+            expectedRecent,
             updated.RecentWorkspaceIds.Select(id => id.Value).ToArray());
     }
 

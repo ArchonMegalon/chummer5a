@@ -75,8 +75,9 @@ public class ShellBootstrapDataProviderTests
         Assert.AreEqual(2, client.GetNavigationTabsCalls);
         Assert.AreEqual(2, client.ListWorkspacesCalls);
 
+        string[] expectedRulesets = ["sr5", "sr6"];
         CollectionAssert.AreEquivalent(
-            new[] { "sr5", "sr6" },
+            expectedRulesets,
             client.CommandRulesets
                 .Distinct(StringComparer.Ordinal)
                 .OrderBy(id => id, StringComparer.Ordinal)

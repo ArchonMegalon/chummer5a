@@ -80,8 +80,9 @@ public class ShellPresenterTests
 
         await presenter.InitializeAsync(CancellationToken.None);
 
-        CollectionAssert.AreEqual(new string?[] { "sr6" }, client.RequestedCommandRulesets);
-        CollectionAssert.AreEqual(new string?[] { "sr6" }, client.RequestedNavigationRulesets);
+        string?[] expectedSr6Rulesets = ["sr6"];
+        CollectionAssert.AreEqual(expectedSr6Rulesets, client.RequestedCommandRulesets);
+        CollectionAssert.AreEqual(expectedSr6Rulesets, client.RequestedNavigationRulesets);
     }
 
     [TestMethod]
@@ -208,9 +209,11 @@ public class ShellPresenterTests
 
         Assert.AreEqual("sr6", presenter.State.PreferredRulesetId);
         Assert.AreEqual("sr5", presenter.State.ActiveRulesetId);
-        CollectionAssert.AreEqual(new[] { "sr5" }, client.RequestedBootstrapRulesets);
-        CollectionAssert.AreEqual(new string?[] { "sr5" }, client.RequestedCommandRulesets);
-        CollectionAssert.AreEqual(new string?[] { "sr5" }, client.RequestedNavigationRulesets);
+        string[] expectedSr5BootstrapRulesets = ["sr5"];
+        string?[] expectedSr5Rulesets = ["sr5"];
+        CollectionAssert.AreEqual(expectedSr5BootstrapRulesets, client.RequestedBootstrapRulesets);
+        CollectionAssert.AreEqual(expectedSr5Rulesets, client.RequestedCommandRulesets);
+        CollectionAssert.AreEqual(expectedSr5Rulesets, client.RequestedNavigationRulesets);
         Assert.AreEqual("sr6", client.Preferences.PreferredRulesetId);
     }
 
@@ -228,7 +231,8 @@ public class ShellPresenterTests
 
         Assert.AreEqual("sr6", presenter.State.PreferredRulesetId);
         Assert.AreEqual("sr6", presenter.State.ActiveRulesetId);
-        CollectionAssert.AreEqual(new[] { "sr6" }, client.RequestedBootstrapRulesets);
+        string[] expectedSr6BootstrapRulesets = ["sr6"];
+        CollectionAssert.AreEqual(expectedSr6BootstrapRulesets, client.RequestedBootstrapRulesets);
     }
 
     [TestMethod]

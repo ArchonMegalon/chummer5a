@@ -139,8 +139,9 @@ public class CharacterOverviewPresenterTests
 
         Assert.AreEqual("ws-2", presenter.State.WorkspaceId?.Value);
         Assert.AreEqual(2, presenter.State.OpenWorkspaces.Count);
+        string[] expectedWorkspaceIds = ["ws-1", "ws-2"];
         CollectionAssert.AreEquivalent(
-            new[] { "ws-1", "ws-2" },
+            expectedWorkspaceIds,
             presenter.State.OpenWorkspaces.Select(workspace => workspace.Id.Value).ToArray());
     }
 
