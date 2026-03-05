@@ -16,7 +16,7 @@ public class CharacterApplicationPortsTests
     {
         const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created></character>";
 
-        ICharacterFileQueries queries = new XmlCharacterFileQueries(new CharacterFileService());
+        XmlCharacterFileQueries queries = new(new CharacterFileService());
         CharacterFileSummary summary = queries.ParseSummary(new CharacterDocument(xml));
 
         Assert.AreEqual("Neo", summary.Name);
@@ -29,7 +29,7 @@ public class CharacterApplicationPortsTests
     {
         const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>15</karma><nuyen>2500</nuyen><created>True</created></character>";
 
-        ICharacterMetadataCommands commands = new XmlCharacterMetadataCommands(new CharacterFileService());
+        XmlCharacterMetadataCommands commands = new(new CharacterFileService());
         UpdateCharacterMetadataResult result = commands.UpdateMetadata(new UpdateCharacterMetadataCommand(
             Document: new CharacterDocument(xml),
             Update: new CharacterMetadataUpdate(
@@ -47,7 +47,7 @@ public class CharacterApplicationPortsTests
     {
         const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created><adept>False</adept><magician>False</magician><technomancer>False</technomancer><ai>False</ai></character>";
 
-        ICharacterSectionQueries queries = new XmlCharacterSectionQueries(new CharacterSectionService());
+        XmlCharacterSectionQueries queries = new(new CharacterSectionService());
         object section = queries.ParseSection("profile", new CharacterDocument(xml));
 
         Assert.IsInstanceOfType<CharacterProfileSection>(section);
@@ -61,11 +61,11 @@ public class CharacterApplicationPortsTests
         const string xml = "<character><name>Neo</name><alias>The One</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created><adept>False</adept><magician>False</magician><technomancer>False</technomancer><ai>False</ai></character>";
 
         ICharacterSectionService sectionService = new CharacterSectionService();
-        ICharacterOverviewQueries overview = new XmlCharacterOverviewQueries(sectionService);
-        ICharacterStatsQueries stats = new XmlCharacterStatsQueries(sectionService);
-        ICharacterInventoryQueries inventory = new XmlCharacterInventoryQueries(sectionService);
-        ICharacterMagicResonanceQueries magic = new XmlCharacterMagicResonanceQueries(sectionService);
-        ICharacterSocialNarrativeQueries social = new XmlCharacterSocialNarrativeQueries(sectionService);
+        XmlCharacterOverviewQueries overview = new(sectionService);
+        XmlCharacterStatsQueries stats = new(sectionService);
+        XmlCharacterInventoryQueries inventory = new(sectionService);
+        XmlCharacterMagicResonanceQueries magic = new(sectionService);
+        XmlCharacterSocialNarrativeQueries social = new(sectionService);
         CharacterDocument document = new(xml);
 
         Assert.IsNotNull(overview.ParseProfile(document));
@@ -81,7 +81,7 @@ public class CharacterApplicationPortsTests
         string xml = File.ReadAllText(FindTestFilePath("BLUE.chum5"));
         ICharacterSectionService sectionService = new CharacterSectionService();
 
-        ICharacterSectionQueries queries = new XmlCharacterSectionQueries(
+        XmlCharacterSectionQueries queries = new(
             new XmlCharacterOverviewQueries(sectionService),
             new XmlCharacterStatsQueries(sectionService),
             new XmlCharacterInventoryQueries(sectionService),

@@ -285,7 +285,7 @@ public class DualHeadAcceptanceTests
     {
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
         byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
-        ICommandAvailabilityEvaluator evaluator = new DefaultCommandAvailabilityEvaluator();
+        DefaultCommandAvailabilityEvaluator evaluator = new();
 
         ShellRegionSnapshot avaloniaBeforeDialog;
         ShellRegionSnapshot avaloniaDialogOpen;
@@ -865,7 +865,7 @@ public class DualHeadAcceptanceTests
     {
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
         byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
-        ICommandAvailabilityEvaluator evaluator = new DefaultCommandAvailabilityEvaluator();
+        DefaultCommandAvailabilityEvaluator evaluator = new();
 
         CharacterOverviewState avaloniaState;
         using (HttpClient http = CreateClient())
@@ -1043,7 +1043,7 @@ public class DualHeadAcceptanceTests
         Assert.AreEqual("Blazor Two", blazorAfterSwitchToSecond.Profile?.Name);
     }
 
-    private static ShellRegionSnapshot BuildShellRegionSnapshot(CharacterOverviewState state, ICommandAvailabilityEvaluator evaluator)
+    private static ShellRegionSnapshot BuildShellRegionSnapshot(CharacterOverviewState state, DefaultCommandAvailabilityEvaluator evaluator)
     {
         string[] enabledCommandIds = state.Commands
             .Where(command => evaluator.IsCommandEnabled(command, state))

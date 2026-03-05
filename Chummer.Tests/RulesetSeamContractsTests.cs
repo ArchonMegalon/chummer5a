@@ -85,7 +85,7 @@ public class RulesetSeamContractsTests
     [TestMethod]
     public async Task Sr5_plugin_adapters_expose_existing_shell_catalogs_without_behavior_change()
     {
-        IRulesetPlugin plugin = new Sr5RulesetPlugin();
+        Sr5RulesetPlugin plugin = new();
 
         Assert.AreEqual(RulesetDefaults.Sr5, plugin.Id.NormalizedValue);
         Assert.AreEqual("Shadowrun 5", plugin.DisplayName);

@@ -18,7 +18,7 @@ public class WorkspaceServiceTests
     public void Import_does_not_create_workspace_when_summary_parse_fails()
     {
         TrackingWorkspaceStore store = new();
-        IWorkspaceService workspaceService = new WorkspaceService(
+        WorkspaceService workspaceService = new(
             store,
             new ThrowingCharacterFileQueries(),
             new NoopCharacterSectionQueries(),
@@ -39,7 +39,7 @@ public class WorkspaceServiceTests
         ICharacterFileQueries fileQueries = new XmlCharacterFileQueries(new CharacterFileService());
         ICharacterSectionQueries sectionQueries = new XmlCharacterSectionQueries(new CharacterSectionService());
         ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
-        IWorkspaceService workspaceService = new WorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
+        WorkspaceService workspaceService = new(store, fileQueries, sectionQueries, metadataCommands);
 
         WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml, RulesetId: "SR6"));
         Assert.IsFalse(string.IsNullOrWhiteSpace(imported.Id.Value));
@@ -101,7 +101,7 @@ public class WorkspaceServiceTests
         ICharacterFileQueries fileQueries = new XmlCharacterFileQueries(new CharacterFileService());
         ICharacterSectionQueries sectionQueries = new XmlCharacterSectionQueries(new CharacterSectionService());
         ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
-        IWorkspaceService workspaceService = new WorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
+        WorkspaceService workspaceService = new(store, fileQueries, sectionQueries, metadataCommands);
 
         WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml));
         Assert.IsFalse(string.IsNullOrWhiteSpace(imported.Id.Value));
@@ -117,7 +117,7 @@ public class WorkspaceServiceTests
         ICharacterFileQueries fileQueries = new XmlCharacterFileQueries(new CharacterFileService());
         ICharacterSectionQueries sectionQueries = new XmlCharacterSectionQueries(new CharacterSectionService());
         ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
-        IWorkspaceService workspaceService = new WorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
+        WorkspaceService workspaceService = new(store, fileQueries, sectionQueries, metadataCommands);
 
         workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "One"), WorkspaceDocumentFormat.Chum5Xml));
         workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "Two"), WorkspaceDocumentFormat.Chum5Xml));

@@ -20,7 +20,7 @@ public class WorkspaceStoreTests
         string stateDirectory = CreateTempStateDirectory();
         try
         {
-            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            FileWorkspaceStore store = new(stateDirectory);
             WorkspaceDocument expected = new("<character><name>Neo</name></character>");
 
             CharacterWorkspaceId id = store.Create(expected);
@@ -45,12 +45,12 @@ public class WorkspaceStoreTests
         {
             CharacterWorkspaceId id;
             {
-                IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+                FileWorkspaceStore store = new(stateDirectory);
                 id = store.Create(new WorkspaceDocument("<character><alias>BLUE</alias></character>"));
             }
 
             {
-                IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+                FileWorkspaceStore store = new(stateDirectory);
                 bool found = store.TryGet(id, out WorkspaceDocument loaded);
                 Assert.IsTrue(found);
                 StringAssert.Contains(loaded.Content, "BLUE");
@@ -70,12 +70,12 @@ public class WorkspaceStoreTests
         {
             CharacterWorkspaceId id;
             {
-                IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+                FileWorkspaceStore store = new(stateDirectory);
                 id = store.Create(new WorkspaceDocument("<character><name>Ruleset</name></character>", RulesetId: "SR6"));
             }
 
             {
-                IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+                FileWorkspaceStore store = new(stateDirectory);
                 bool found = store.TryGet(id, out WorkspaceDocument loaded);
                 Assert.IsTrue(found);
                 Assert.AreEqual("sr6", loaded.RulesetId);
@@ -93,7 +93,7 @@ public class WorkspaceStoreTests
         string stateDirectory = CreateTempStateDirectory();
         try
         {
-            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            FileWorkspaceStore store = new(stateDirectory);
             CharacterWorkspaceId id = store.Create(new WorkspaceDocument(
                 "<character><name>Envelope</name></character>",
                 RulesetId: "SR6"));
@@ -119,7 +119,7 @@ public class WorkspaceStoreTests
         string stateDirectory = CreateTempStateDirectory();
         try
         {
-            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            FileWorkspaceStore store = new(stateDirectory);
             CharacterWorkspaceId id = new("legacypayload");
             string persistedPath = Path.Combine(stateDirectory, "workspaces", $"{id.Value}.json");
             File.WriteAllText(
@@ -151,7 +151,7 @@ public class WorkspaceStoreTests
         string stateDirectory = CreateTempStateDirectory();
         try
         {
-            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            FileWorkspaceStore store = new(stateDirectory);
             bool found = store.TryGet(new CharacterWorkspaceId("../bad"), out _);
             Assert.IsFalse(found);
         }
@@ -167,7 +167,7 @@ public class WorkspaceStoreTests
         string stateDirectory = CreateTempStateDirectory();
         try
         {
-            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            FileWorkspaceStore store = new(stateDirectory);
             CharacterWorkspaceId id = store.Create(new WorkspaceDocument("<character><name>Neo</name></character>"));
             string persistedPath = Path.Combine(stateDirectory, "workspaces", $"{id.Value}.json");
 
@@ -188,7 +188,7 @@ public class WorkspaceStoreTests
         string stateDirectory = CreateTempStateDirectory();
         try
         {
-            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            FileWorkspaceStore store = new(stateDirectory);
             CharacterWorkspaceId first = store.Create(new WorkspaceDocument("<character><name>First</name></character>"));
             CharacterWorkspaceId second = store.Create(new WorkspaceDocument("<character><name>Second</name></character>"));
 
@@ -210,7 +210,7 @@ public class WorkspaceStoreTests
         string stateDirectory = CreateTempStateDirectory();
         try
         {
-            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            FileWorkspaceStore store = new(stateDirectory);
             CharacterWorkspaceId id = store.Create(new WorkspaceDocument("<character><name>DeleteMe</name></character>"));
 
             bool deleted = store.Delete(id);

@@ -12,7 +12,7 @@ public class CommandAvailabilityEvaluatorTests
     [TestMethod]
     public void IsCommandEnabled_requires_open_workspace_when_flagged()
     {
-        ICommandAvailabilityEvaluator evaluator = new DefaultCommandAvailabilityEvaluator();
+        DefaultCommandAvailabilityEvaluator evaluator = new();
         AppCommandDefinition command = new("save_character", "Save", "file", true, true);
 
         bool withoutWorkspace = evaluator.IsCommandEnabled(command, CharacterOverviewState.Empty);
@@ -27,7 +27,7 @@ public class CommandAvailabilityEvaluatorTests
     [TestMethod]
     public void IsNavigationTabEnabled_honors_enabled_flag()
     {
-        ICommandAvailabilityEvaluator evaluator = new DefaultCommandAvailabilityEvaluator();
+        DefaultCommandAvailabilityEvaluator evaluator = new();
         NavigationTabDefinition tab = new("tab-skills", "Skills", "skills", "character", true, false);
 
         bool enabled = evaluator.IsNavigationTabEnabled(
@@ -40,7 +40,7 @@ public class CommandAvailabilityEvaluatorTests
     [TestMethod]
     public void IsWorkspaceActionEnabled_requires_open_workspace_when_flagged()
     {
-        ICommandAvailabilityEvaluator evaluator = new DefaultCommandAvailabilityEvaluator();
+        DefaultCommandAvailabilityEvaluator evaluator = new();
         WorkspaceSurfaceActionDefinition action = new(
             Id: "tab-info.summary",
             Label: "Summary",
@@ -62,7 +62,7 @@ public class CommandAvailabilityEvaluatorTests
     [TestMethod]
     public void IsUiControlEnabled_requires_open_workspace_when_flagged()
     {
-        ICommandAvailabilityEvaluator evaluator = new DefaultCommandAvailabilityEvaluator();
+        DefaultCommandAvailabilityEvaluator evaluator = new();
         DesktopUiControlDefinition control = new("gear_add", "Add Gear", "tab-gear", true, true);
 
         bool withoutWorkspace = evaluator.IsUiControlEnabled(control, CharacterOverviewState.Empty);
