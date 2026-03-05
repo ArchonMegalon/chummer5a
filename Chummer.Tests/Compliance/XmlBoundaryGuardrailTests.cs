@@ -46,7 +46,7 @@ public class XmlBoundaryGuardrailTests
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToList();
 
-        Assert.AreEqual(0, unexpectedInterfaces.Count,
+        Assert.IsFalse(unexpectedInterfaces.Any(),
             "Unexpected public interfaces with raw xml string parameters: " + string.Join(", ", unexpectedInterfaces));
 
         foreach ((string interfaceName, int baselineCount) in AllowedXmlInterfaceParameterCounts)
@@ -70,7 +70,7 @@ public class XmlBoundaryGuardrailTests
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToList();
 
-        Assert.AreEqual(0, offenders.Count, "Legacy CharacterXmlDocument references found:\n" + string.Join('\n', offenders));
+        Assert.IsFalse(offenders.Any(), "Legacy CharacterXmlDocument references found:\n" + string.Join('\n', offenders));
     }
 
     private static string FindDirectory(params string[] parts)

@@ -16,7 +16,8 @@ Purpose: keep a live, ordered queue of actionable work and execute items continu
 | WQ-003 | in_progress | P2 | Continue zero-risk warning reduction from dominant buckets. | agent | 2026-03-05 progress: cleared `CA1875` and `MSTEST0001`, fully eliminated `CS8632`, and reduced `MSTEST0037` in several assertion-conversion batches. Latest `docker-tests` run passed (`390/390`) with `128 Warning(s)`, `0 Error(s)`; dominant residual bucket is `MSTEST0037`. |
 | WQ-004 | blocked | P1 | Push `Docker` branch updates to `origin`. | user/background | Commit-only handoff remains active; user can push in background. |
 | WQ-005 | done | P2 | Continue `MSTEST0037` reduction batch 2 in top warning files. | agent | Completed 2026-03-05: converted safe numeric/null `Assert.IsTrue` patterns in `ApiIntegrationTests`, `MigrationComplianceTests`, and `CharacterSectionServiceTests`; `docker-tests` passed (`390/390`) and warning baseline moved to `128`. |
-| WQ-006 | queued | P2 | Continue `MSTEST0037` reduction batch 3 on collection assertions. | agent | Target safe `Assert.AreEqual(0, list.Count)` and related patterns (`IsEmpty`/`IsNotEmpty`/`HasCount`) in `CharacterSectionServiceTests`, `ContentOverlayCatalogServiceTests`, and `BlazorShellComponentTests`, then run `bash scripts/runbook.sh docker-tests`. |
+| WQ-006 | done | P2 | Continue `MSTEST0037` reduction batch 3 on collection assertions. | agent | Completed 2026-03-05: rewrote high-volume `Assert.AreEqual(0, x.Count)` patterns in compliance/ruleset tests and revalidated. `docker-tests` passed (`390/390`) and warning baseline moved to `122`. |
+| WQ-007 | queued | P2 | Resolve `CA1860` warnings introduced by `Any()` conversions while keeping `MSTEST0037` gains. | agent | Replace `x.Any()` usage with analyzer-preferred emptiness checks per concrete collection types in touched compliance/ruleset tests, then rerun `bash scripts/runbook.sh docker-tests`. |
 
 ## Intake Template
 Append new items at bottom:

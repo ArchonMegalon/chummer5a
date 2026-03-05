@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Contracts.Presentation;
@@ -63,12 +64,12 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, sr5Actions.Count);
         Assert.IsGreaterThan(0, sr5Controls.Count);
 
-        Assert.AreEqual(0, AppCommandCatalog.ForRuleset("sr6").Count);
-        Assert.AreEqual(0, NavigationTabCatalog.ForRuleset("sr6").Count);
-        Assert.AreEqual(0, WorkspaceSurfaceActionCatalog.ForRuleset("sr6").Count);
-        Assert.AreEqual(0, DesktopUiControlCatalog.ForRuleset("sr6").Count);
-        Assert.AreEqual(0, WorkspaceSurfaceActionCatalog.ForTab("tab-info", "sr6").Count);
-        Assert.AreEqual(0, DesktopUiControlCatalog.ForTab("tab-info", "sr6").Count);
+        Assert.IsFalse(AppCommandCatalog.ForRuleset("sr6").Any());
+        Assert.IsFalse(NavigationTabCatalog.ForRuleset("sr6").Any());
+        Assert.IsFalse(WorkspaceSurfaceActionCatalog.ForRuleset("sr6").Any());
+        Assert.IsFalse(DesktopUiControlCatalog.ForRuleset("sr6").Any());
+        Assert.IsFalse(WorkspaceSurfaceActionCatalog.ForTab("tab-info", "sr6").Any());
+        Assert.IsFalse(DesktopUiControlCatalog.ForTab("tab-info", "sr6").Any());
     }
 
     [TestMethod]
