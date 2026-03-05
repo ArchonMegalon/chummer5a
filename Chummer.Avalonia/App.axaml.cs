@@ -8,6 +8,7 @@ using Chummer.Presentation;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Chummer.Avalonia;
 
@@ -49,7 +50,7 @@ public partial class App : global::Avalonia.Application
         services.AddSingleton<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
         services.AddSingleton<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
         services.AddSingleton<IShellPresenter, ShellPresenter>();
-        services.AddSingleton<IRulesetPlugin, Sr5RulesetPlugin>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
         services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
         services.AddSingleton<CharacterOverviewViewModelAdapter>();
         services.AddSingleton<MainWindow>();

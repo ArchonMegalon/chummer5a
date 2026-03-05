@@ -3,6 +3,7 @@ using Chummer.Contracts.Rulesets;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 string? configuredPathBase = builder.Configuration["Chummer:PathBase"];
@@ -35,7 +36,7 @@ builder.Services.AddHttpClient<IChummerClient, HttpChummerClient>((_, client) =>
 builder.Services.AddScoped<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
 builder.Services.AddScoped<IShellPresenter, ShellPresenter>();
 builder.Services.AddScoped<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
-builder.Services.AddSingleton<IRulesetPlugin, Sr5RulesetPlugin>();
+builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
 builder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
 
 var app = builder.Build();

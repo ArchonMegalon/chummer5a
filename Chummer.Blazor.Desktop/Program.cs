@@ -4,6 +4,7 @@ using Chummer.Presentation.Shell;
 using Chummer.Desktop.Runtime;
 using Chummer.Contracts.Rulesets;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Photino.Blazor;
 
 namespace Chummer.Blazor.Desktop;
@@ -20,7 +21,7 @@ internal static class Program
         appBuilder.Services.AddSingleton<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
         appBuilder.Services.AddSingleton<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
         appBuilder.Services.AddSingleton<IShellPresenter, ShellPresenter>();
-        appBuilder.Services.AddSingleton<IRulesetPlugin, Sr5RulesetPlugin>();
+        appBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
         appBuilder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
         appBuilder.Services.AddSingleton<Chummer.Blazor.CharacterOverviewStateBridge>();
 
