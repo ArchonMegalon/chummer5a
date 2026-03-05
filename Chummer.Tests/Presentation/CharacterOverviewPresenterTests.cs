@@ -1135,7 +1135,7 @@ public class CharacterOverviewPresenterTests
                 : tabId.Trim();
         }
 
-        private static IReadOnlyDictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
+        private static Dictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
         {
             if (rawMap is null || rawMap.Count == 0)
             {

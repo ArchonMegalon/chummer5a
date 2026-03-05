@@ -303,7 +303,7 @@ public class ShellPresenterTests
 
         await presenter.SelectTabAsync("tab-info", CancellationToken.None);
 
-        Assert.IsTrue(client.SavedSessions.Count > 0);
+        Assert.IsNotEmpty(client.SavedSessions);
         Assert.AreEqual("tab-info", client.SavedSessions[^1].ActiveTabId);
     }
 
@@ -323,7 +323,7 @@ public class ShellPresenterTests
 
         await presenter.SelectTabAsync("tab-rules", CancellationToken.None);
 
-        Assert.IsTrue(client.SavedSessions.Count > 0);
+        Assert.IsNotEmpty(client.SavedSessions);
         Assert.IsNotNull(client.SavedSessions[^1].ActiveTabsByWorkspace);
         Assert.AreEqual("tab-rules", client.SavedSessions[^1].ActiveTabsByWorkspace!["ws-1"]);
     }
@@ -510,7 +510,7 @@ public class ShellPresenterTests
                 : tabId.Trim();
         }
 
-        private static IReadOnlyDictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
+        private static Dictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
         {
             if (rawMap is null || rawMap.Count == 0)
             {
