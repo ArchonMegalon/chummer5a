@@ -33,6 +33,7 @@ builder.Services.AddHttpClient<IChummerClient, HttpChummerClient>((_, client) =>
 
 builder.Services.AddScoped<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
 builder.Services.AddScoped<IShellPresenter, ShellPresenter>();
+builder.Services.AddScoped<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
 builder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
 
 var app = builder.Build();

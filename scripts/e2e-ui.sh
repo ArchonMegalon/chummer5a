@@ -58,8 +58,13 @@ if ! grep -q "_framework/blazor.web.js" <<<"$ui_html"; then
 fi
 
 RUN_PLAYWRIGHT="${CHUMMER_UI_PLAYWRIGHT:-1}"
+PLAYWRIGHT_TIMEOUT_SECONDS="${CHUMMER_UI_PLAYWRIGHT_TIMEOUT_SECONDS:-240}"
 if [[ "$RUN_PLAYWRIGHT" == "1" ]]; then
-  CHUMMER_API_KEY="$API_KEY" docker compose --profile test run --build --rm -T chummer-playwright
+  echo "running playwright ui e2e (timeout: ${PLAYWRIGHT_TIMEOUT_SECONDS}s)"
+  if ! CHUMMER_API_KEY="$API_KEY" timeout "${PLAYWRIGHT_TIMEOUT_SECONDS}"s docker compose --profile test run --build --rm -T chummer-playwright; then
+    echo "playwright ui e2e failed or timed out after ${PLAYWRIGHT_TIMEOUT_SECONDS}s" >&2
+    exit 1
+  fi
 fi
 
 echo "ui E2E completed"

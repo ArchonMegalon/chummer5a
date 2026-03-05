@@ -1,5 +1,6 @@
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
+using Chummer.Presentation.Shell;
 
 namespace Chummer.Presentation.Overview;
 
@@ -18,6 +19,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
     private readonly IWorkspaceRemoteCloseService _workspaceRemoteCloseService;
     private readonly IWorkspaceSessionActivationService _workspaceSessionActivationService;
     private readonly IWorkspaceOverviewStateFactory _workspaceOverviewStateFactory;
+    private readonly IShellBootstrapDataProvider _bootstrapDataProvider;
     private CharacterWorkspaceId? _currentWorkspace;
 
     public CharacterOverviewPresenter(
@@ -34,7 +36,8 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         IWorkspaceShellStateFactory? workspaceShellStateFactory = null,
         IWorkspaceRemoteCloseService? workspaceRemoteCloseService = null,
         IWorkspaceSessionActivationService? workspaceSessionActivationService = null,
-        IWorkspaceOverviewStateFactory? workspaceOverviewStateFactory = null)
+        IWorkspaceOverviewStateFactory? workspaceOverviewStateFactory = null,
+        IShellBootstrapDataProvider? bootstrapDataProvider = null)
     {
         _client = client;
         IWorkspaceSessionManager manager = workspaceSessionManager ?? new WorkspaceSessionManager();
@@ -50,6 +53,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         _workspaceRemoteCloseService = workspaceRemoteCloseService ?? new WorkspaceRemoteCloseService();
         _workspaceSessionActivationService = workspaceSessionActivationService ?? new WorkspaceSessionActivationService();
         _workspaceOverviewStateFactory = workspaceOverviewStateFactory ?? new WorkspaceOverviewStateFactory();
+        _bootstrapDataProvider = bootstrapDataProvider ?? new ShellBootstrapDataProvider(client);
     }
 
     public CharacterOverviewState State { get; private set; } = CharacterOverviewState.Empty;
@@ -66,20 +70,16 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
 
         try
         {
-            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _client.GetCommandsAsync(ct);
-            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _client.GetNavigationTabsAsync(ct);
-            Task<IReadOnlyList<WorkspaceListItem>> workspacesTask = _client.ListWorkspacesAsync(ct);
-            await Task.WhenAll(commandsTask, tabsTask, workspacesTask);
-
-            WorkspaceSessionState session = _workspaceSessionPresenter.Restore(workspacesTask.Result);
+            ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(ct);
+            WorkspaceSessionState session = _workspaceSessionPresenter.Restore(bootstrap.Workspaces);
 
             Publish(State with
             {
                 IsBusy = false,
                 Error = null,
                 Session = session,
-                Commands = commandsTask.Result,
-                NavigationTabs = tabsTask.Result,
+                Commands = bootstrap.Commands,
+                NavigationTabs = bootstrap.NavigationTabs,
                 OpenWorkspaces = session.OpenWorkspaces,
                 Notice = session.OpenWorkspaces.Count == 0
                     ? State.Notice

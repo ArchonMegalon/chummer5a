@@ -16,6 +16,7 @@ internal static class Program
 
         appBuilder.Services.AddLogging();
         appBuilder.Services.AddChummerLocalRuntimeClient(AppContext.BaseDirectory, Directory.GetCurrentDirectory());
+        appBuilder.Services.AddSingleton<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
         appBuilder.Services.AddSingleton<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
         appBuilder.Services.AddSingleton<IShellPresenter, ShellPresenter>();
         appBuilder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();

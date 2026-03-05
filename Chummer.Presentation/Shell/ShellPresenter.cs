@@ -6,11 +6,11 @@ namespace Chummer.Presentation.Shell;
 public sealed class ShellPresenter : IShellPresenter
 {
     private static readonly string[] MenuOrder = ["file", "edit", "special", "tools", "windows", "help"];
-    private readonly IChummerClient _client;
+    private readonly IShellBootstrapDataProvider _bootstrapDataProvider;
 
-    public ShellPresenter(IChummerClient client)
+    public ShellPresenter(IChummerClient client, IShellBootstrapDataProvider? bootstrapDataProvider = null)
     {
-        _client = client;
+        _bootstrapDataProvider = bootstrapDataProvider ?? new ShellBootstrapDataProvider(client);
     }
 
     public ShellState State { get; private set; } = ShellState.Empty;
@@ -27,15 +27,11 @@ public sealed class ShellPresenter : IShellPresenter
 
         try
         {
-            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _client.GetCommandsAsync(ct);
-            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _client.GetNavigationTabsAsync(ct);
-            Task<IReadOnlyList<WorkspaceListItem>> workspacesTask = _client.ListWorkspacesAsync(ct);
-            await Task.WhenAll(commandsTask, tabsTask, workspacesTask);
+            ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(ct);
+            IReadOnlyList<AppCommandDefinition> commands = bootstrap.Commands;
+            IReadOnlyList<NavigationTabDefinition> tabs = bootstrap.NavigationTabs;
 
-            IReadOnlyList<AppCommandDefinition> commands = commandsTask.Result;
-            IReadOnlyList<NavigationTabDefinition> tabs = tabsTask.Result;
-
-            ShellWorkspaceState[] openWorkspaces = workspacesTask.Result
+            ShellWorkspaceState[] openWorkspaces = bootstrap.Workspaces
                 .Select(workspace => new ShellWorkspaceState(
                     Id: workspace.Id,
                     Name: string.IsNullOrWhiteSpace(workspace.Summary.Name) ? "(Unnamed Character)" : workspace.Summary.Name,

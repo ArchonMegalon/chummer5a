@@ -5,13 +5,14 @@ const { chromium } = require('playwright');
 
 const UI_URL = process.env.CHUMMER_BLAZOR_BASE_URL || 'http://127.0.0.1:8089';
 const SAMPLE_CHARACTER_FILE = process.env.CHUMMER_UI_SAMPLE_FILE || '/work/testdata/BLUE.chum5';
+const NAVIGATION_WAIT_UNTIL = process.env.CHUMMER_UI_NAV_WAIT_UNTIL || 'domcontentloaded';
 
 async function run() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
   try {
-    await page.goto(`${UI_URL}/`, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(`${UI_URL}/`, { waitUntil: NAVIGATION_WAIT_UNTIL, timeout: 30000 });
     await page.waitForSelector('text=Import Character File', { timeout: 15000 });
 
     const workspaceButtons = page.locator('#openCharactersTree .command-button');

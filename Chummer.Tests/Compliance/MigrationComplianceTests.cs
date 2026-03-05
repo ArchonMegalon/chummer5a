@@ -708,6 +708,43 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Shell_and_overview_share_bootstrap_provider_for_startup_contract_data()
+    {
+        string providerContractPath = FindPath("Chummer.Presentation", "Shell", "IShellBootstrapDataProvider.cs");
+        string providerContractText = File.ReadAllText(providerContractPath);
+        string providerImplementationPath = FindPath("Chummer.Presentation", "Shell", "ShellBootstrapDataProvider.cs");
+        string providerImplementationText = File.ReadAllText(providerImplementationPath);
+        string shellPresenterPath = FindPath("Chummer.Presentation", "Shell", "ShellPresenter.cs");
+        string shellPresenterText = File.ReadAllText(shellPresenterPath);
+        string overviewPresenterPath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.cs");
+        string overviewPresenterText = File.ReadAllText(overviewPresenterPath);
+        string blazorProgramPath = FindPath("Chummer.Blazor", "Program.cs");
+        string blazorProgramText = File.ReadAllText(blazorProgramPath);
+        string desktopProgramPath = FindPath("Chummer.Blazor.Desktop", "Program.cs");
+        string desktopProgramText = File.ReadAllText(desktopProgramPath);
+        string avaloniaAppPath = FindPath("Chummer.Avalonia", "App.axaml.cs");
+        string avaloniaAppText = File.ReadAllText(avaloniaAppPath);
+
+        StringAssert.Contains(providerContractText, "public interface IShellBootstrapDataProvider");
+        StringAssert.Contains(providerContractText, "ShellBootstrapData");
+        StringAssert.Contains(providerImplementationText, "public sealed class ShellBootstrapDataProvider");
+        StringAssert.Contains(providerImplementationText, "BootstrapCacheWindow");
+        StringAssert.Contains(providerImplementationText, "Task.WhenAll");
+        StringAssert.Contains(providerImplementationText, "_client.GetCommandsAsync");
+        StringAssert.Contains(providerImplementationText, "_client.GetNavigationTabsAsync");
+        StringAssert.Contains(providerImplementationText, "_client.ListWorkspacesAsync");
+
+        StringAssert.Contains(shellPresenterText, "_bootstrapDataProvider.GetAsync");
+        StringAssert.Contains(overviewPresenterText, "_bootstrapDataProvider.GetAsync");
+        Assert.IsFalse(shellPresenterText.Contains("_client.GetCommandsAsync", StringComparison.Ordinal));
+        Assert.IsFalse(overviewPresenterText.Contains("_client.GetCommandsAsync", StringComparison.Ordinal));
+
+        StringAssert.Contains(blazorProgramText, "AddScoped<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();");
+        StringAssert.Contains(desktopProgramText, "AddSingleton<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();");
+        StringAssert.Contains(avaloniaAppText, "AddSingleton<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();");
+    }
+
+    [TestMethod]
     public void Ruleset_seam_contracts_are_declared_without_changing_default_sr5_catalog_behavior()
     {
         string rulesetContractsPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetContracts.cs");
