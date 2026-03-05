@@ -51,6 +51,9 @@ Manual path:
 
 Use these when you want hard failures instead of soft-skips.
 
+Prerequisite probe:
+1. `RUNBOOK_MODE=host-prereqs bash scripts/runbook.sh`
+
 Single wrapper command:
 1. `bash scripts/runbook-strict-host-gates.sh [optionalTestFilter] [optionalFramework]`
 

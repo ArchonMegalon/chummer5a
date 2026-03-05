@@ -51,7 +51,10 @@ Purpose: keep a live, ordered queue of actionable work and execute items continu
 | WQ-038 | done | P3 | Revalidate UI/portal e2e soft-skip behavior in restricted sandbox. | agent | Completed 2026-03-05: `RUNBOOK_MODE=ui-e2e` and `RUNBOOK_MODE=portal-e2e` both exit cleanly with explicit Docker permission skip reasons, preserving unattended queue progression. |
 | WQ-039 | done | P1 | Add optional per-artifact link/file verification to downloads manifest validation. | agent | Completed 2026-03-05: `verify-releases-manifest.sh` now supports opt-in per-artifact checks (`CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS`), wired through workflow/runbook/deploy scripts and validated with local synthetic bundle checks. |
 | WQ-040 | done | P2 | Add strict host gate wrapper script for unattended manual execution. | agent | Completed 2026-03-05: added `scripts/runbook-strict-host-gates.sh` to run strict local+docker gates (`TEST_NUGET_SOFT_FAIL=0`, `DOCKER_TESTS_SOFT_FAIL=0`) in one command and wired docs/guardrails. |
-| WQ-041 | in_progress | P2 | Land verification hardening + strict-gate wrapper batch commit. | agent | Run final guardrail checks, commit all pending runbook/workflow/docs changes, then continue with next unblockable item. |
+| WQ-041 | done | P2 | Land verification hardening + strict-gate wrapper batch commit. | agent | Completed 2026-03-05 in commit `564953e39`: artifact-link verification hardening, workflow/runbook/docs wiring, and strict host gate wrapper script are merged. |
+| WQ-042 | blocked | P1 | Execute strict host-gate wrapper in this sandbox. | agent | `scripts/runbook-strict-host-gates.sh` fails immediately on strict NuGet preflight (`api.nuget.org:443` denied), which is expected until host/network access is available. |
+| WQ-043 | done | P2 | Add host prerequisite check script for strict gate readiness. | agent | Completed 2026-03-05: added `scripts/check-host-gate-prereqs.sh` plus `RUNBOOK_MODE=host-prereqs` with summary output, and wired docs/guardrails/compliance checks. |
+| WQ-044 | in_progress | P2 | Commit prerequisite-check and verification-hardening follow-up batch. | agent | Finalize current queue/doc/script updates into a cohesive commit and continue with remaining actionable backlog. |
 
 ## Intake Template
 Append new items at bottom:

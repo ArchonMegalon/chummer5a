@@ -775,6 +775,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID");
         StringAssert.Contains(readmeText, "DOWNLOADS_VERIFY_LINKS=1");
+        StringAssert.Contains(readmeText, "RUNBOOK_MODE=host-prereqs");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(readmeText, "scripts/publish-download-bundle-s3.sh");
@@ -1099,12 +1100,15 @@ public class MigrationComplianceTests
         string publisherText = File.ReadAllText(publisherPath);
         string s3PublisherPath = FindPath("scripts", "publish-download-bundle-s3.sh");
         string s3PublisherText = File.ReadAllText(s3PublisherPath);
+        string hostPrereqPath = FindPath("scripts", "check-host-gate-prereqs.sh");
+        string hostPrereqText = File.ReadAllText(hostPrereqPath);
         string strictHostGatesPath = FindPath("scripts", "runbook-strict-host-gates.sh");
         string strictHostGatesText = File.ReadAllText(strictHostGatesPath);
         string amendValidatorPath = FindPath("scripts", "validate-amend-manifests.sh");
         string amendValidatorText = File.ReadAllText(amendValidatorPath);
 
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-manifest\"");
+        StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"host-prereqs\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync-s3\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-verify\"");
@@ -1143,6 +1147,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(strictHostGatesText, "TEST_NUGET_SOFT_FAIL=0");
         StringAssert.Contains(strictHostGatesText, "DOCKER_TESTS_SOFT_FAIL=0");
         StringAssert.Contains(strictHostGatesText, "Strict host gates completed successfully.");
+        StringAssert.Contains(hostPrereqText, "strict host gate prerequisites");
+        StringAssert.Contains(hostPrereqText, "[PASS]");
+        StringAssert.Contains(hostPrereqText, "[FAIL]");
+        StringAssert.Contains(hostPrereqText, "Strict host gates are");
 
         StringAssert.Contains(generatorText, "Docker/Downloads/releases.json");
         StringAssert.Contains(generatorText, "Chummer.Portal/downloads/releases.json");

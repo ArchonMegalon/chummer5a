@@ -48,7 +48,10 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-035 | done | P3 | Revalidate UI/portal e2e soft-skip behavior in restricted environment. | agent | Completed 2026-03-05: `runbook` UI/portal e2e modes now confirm skip-with-reason behavior and return success for unattended progression when Docker daemon permissions are unavailable. |
 | WL-036 | done | P1 | Add optional per-artifact verification to downloads manifest checks. | agent | Completed 2026-03-05: manifest verifier now supports opt-in artifact URL/file checks and deployment/runbook/docs/guardrails were updated to enforce and expose the stricter validation path. |
 | WL-037 | done | P2 | Add strict host gate wrapper script. | agent | Completed 2026-03-05: added `scripts/runbook-strict-host-gates.sh` with strict local+docker sequencing and wired documentation/guardrails for operator usage. |
-| WL-038 | in_progress | P2 | Commit verification hardening and strict-gate wrapper batch. | agent | Finalize the current runbook/workflow/docs verification batch into a single commit and continue queue progression. |
+| WL-038 | done | P2 | Commit verification hardening and strict-gate wrapper batch. | agent | Completed 2026-03-05 in commit `564953e39` with artifact-link verification, workflow/runbook wiring, docs updates, and strict host-gate wrapper script. |
+| WL-039 | blocked | P1 | Execute strict host-gate wrapper in this sandbox. | agent | Strict wrapper intentionally fails on blocked NuGet preflight (`api.nuget.org:443`) in this environment; requires host/network access for full execution. |
+| WL-040 | done | P2 | Add host prerequisite checker for strict gate readiness. | agent | Completed 2026-03-05: added `scripts/check-host-gate-prereqs.sh` and `runbook` mode `host-prereqs` with summarized PASS/FAIL output for Docker+NuGet readiness. |
+| WL-041 | in_progress | P2 | Commit prerequisite checker and verifier hardening batch. | agent | Consolidate current workflow/runbook/verifier/docs/queue updates into a commit, then continue chaining the next actionable item. |
 
 ## Intake Template
 Add new items at the bottom:

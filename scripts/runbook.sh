@@ -121,6 +121,18 @@ PY
   exit "$status"
 fi
 
+if [[ "$RUNBOOK_MODE" == "host-prereqs" ]]; then
+  PREREQ_LOG_FILE="${PREREQ_LOG_FILE:-/tmp/chummer-host-prereqs.log}"
+  set +e
+  bash scripts/check-host-gate-prereqs.sh 2>&1 | tee "$PREREQ_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== host prerequisite summary =="
+  rg -n "\\[PASS\\]|\\[FAIL\\]|\\[SKIP\\]|Strict host gates are" "$PREREQ_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
 if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   status=0
 
@@ -155,6 +167,7 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_path "Chummer.Desktop.Runtime/ServiceCollectionDesktopRuntimeExtensions.cs"
   require_path "Chummer.Blazor.Desktop/wwwroot/index.html"
   require_path "scripts/validate-amend-manifests.sh"
+  require_path "scripts/check-host-gate-prereqs.sh"
   require_path "scripts/runbook-strict-host-gates.sh"
   require_path "docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md"
 
@@ -191,6 +204,7 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_no_match "GetShellBootstrapAsync\\(string\\? rulesetId, CancellationToken ct\\)\\s*\\{" "Chummer.Presentation/IChummerClient.cs"
   require_no_match "GetShellBootstrapAsync\\(string\\? rulesetId, CancellationToken ct\\)\\s*=>" "Chummer.Presentation/IChummerClient.cs"
   require_match "RUNBOOK_MODE\" == \"downloads-manifest\"" "scripts/runbook.sh"
+  require_match "RUNBOOK_MODE\" == \"host-prereqs\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"downloads-sync\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"downloads-sync-s3\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"amend-checksums\"" "scripts/runbook.sh"
@@ -201,6 +215,9 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "TEST_NUGET_SOFT_FAIL=0" "scripts/runbook-strict-host-gates.sh"
   require_match "RUNBOOK_MODE=docker-tests" "scripts/runbook-strict-host-gates.sh"
   require_match "RUNBOOK_MODE=local-tests" "scripts/runbook-strict-host-gates.sh"
+  require_match "Strict host gates are" "scripts/check-host-gate-prereqs.sh"
+  require_match "\\[PASS\\]" "scripts/check-host-gate-prereqs.sh"
+  require_match "\\[FAIL\\]" "scripts/check-host-gate-prereqs.sh"
   require_match "bash scripts/validate-amend-manifests.sh" "scripts/runbook.sh"
   require_match "Docker/Downloads/releases.json" "scripts/generate-releases-manifest.sh"
   require_match "Chummer.Portal/downloads/releases.json" "scripts/generate-releases-manifest.sh"
