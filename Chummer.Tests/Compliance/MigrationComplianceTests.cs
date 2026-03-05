@@ -523,6 +523,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(testText, "Avalonia_and_Blazor_tab_selection_loads_same_workspace_section");
         StringAssert.Contains(testText, "Avalonia_and_Blazor_command_dispatch_save_character_matches");
         StringAssert.Contains(testText, "Avalonia_and_Blazor_workspace_action_summary_matches");
+        StringAssert.Contains(testText, "Avalonia_and_Blazor_info_family_workspace_actions_render_matching_sections");
         StringAssert.Contains(testText, "Avalonia_and_Blazor_dialog_workflow_keeps_shell_regions_in_parity");
     }
 
