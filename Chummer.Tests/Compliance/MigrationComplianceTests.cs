@@ -683,12 +683,12 @@ public class MigrationComplianceTests
     {
         string workflowPath = FindPath(".github", "workflows", "desktop-downloads-matrix.yml");
         string workflowText = File.ReadAllText(workflowPath);
+        string manifestScriptPath = FindPath("scripts", "generate-releases-manifest.sh");
+        string manifestScriptText = File.ReadAllText(manifestScriptPath);
 
         StringAssert.Contains(workflowText, "project: Chummer.Avalonia/Chummer.Avalonia.csproj");
         StringAssert.Contains(workflowText, "project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj");
-        StringAssert.Contains(workflowText, "pattern = re.compile(r'^chummer-(?P<app>avalonia|blazor-desktop)-");
-        StringAssert.Contains(workflowText, "'id': f'{app}-{rid}'");
-        StringAssert.Contains(workflowText, "'url': f'/downloads/files/{artifact.name}'");
+        StringAssert.Contains(workflowText, "bash scripts/generate-releases-manifest.sh");
         StringAssert.Contains(workflowText, "Chummer.Application/**");
         StringAssert.Contains(workflowText, "Chummer.Core/**");
         StringAssert.Contains(workflowText, "Chummer.Desktop.Runtime/**");
@@ -706,6 +706,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "bash scripts/verify-releases-manifest.sh \"$CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR\"");
         StringAssert.Contains(workflowText, "Verify deployed portal manifest has artifacts");
         StringAssert.Contains(workflowText, "scripts/verify-releases-manifest.sh");
+
+        StringAssert.Contains(manifestScriptText, "chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>[^.]+)\\.(?P<ext>zip|tar\\.gz)");
+        StringAssert.Contains(manifestScriptText, "\"id\": f\"{app}-{rid}\"");
+        StringAssert.Contains(manifestScriptText, "\"url\": f\"/downloads/files/{artifact.name}\"");
     }
 
     [TestMethod]

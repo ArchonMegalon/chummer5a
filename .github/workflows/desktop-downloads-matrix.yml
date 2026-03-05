@@ -182,66 +182,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import datetime
-          import hashlib
-          import json
-          import os
-          import re
-          from pathlib import Path
-
-          dist = Path('dist')
-          files_dir = dist / 'files'
-          dist.mkdir(parents=True, exist_ok=True)
-          files_dir.mkdir(parents=True, exist_ok=True)
-
-          app_labels = {
-              'avalonia': 'Avalonia Desktop',
-              'blazor-desktop': 'Blazor Desktop',
-          }
-          platform_names = {
-              'win-x64': 'Windows x64',
-              'win-arm64': 'Windows ARM64',
-              'linux-x64': 'Linux x64',
-              'linux-arm64': 'Linux ARM64',
-              'osx-arm64': 'macOS ARM64',
-          }
-
-          downloads = []
-          pattern = re.compile(r'^chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>[^.]+)\.(?P<ext>zip|tar\.gz)$')
-          for artifact in sorted(files_dir.iterdir()):
-              if not artifact.is_file():
-                  continue
-              match = pattern.match(artifact.name)
-              if not match:
-                  continue
-
-              app = match.group('app')
-              rid = match.group('rid')
-              sha256 = hashlib.sha256(artifact.read_bytes()).hexdigest()
-              downloads.append(
-                  {
-                      'id': f'{app}-{rid}',
-                      'platform': f"{app_labels.get(app, app)} {platform_names.get(rid, rid)}",
-                      'url': f'/downloads/files/{artifact.name}',
-                      'sha256': sha256,
-                  }
-              )
-
-          if not downloads:
-              raise SystemExit('No desktop artifacts were found for manifest generation')
-
-          manifest = {
-              'version': f"run-{os.environ.get('GITHUB_RUN_NUMBER', 'local')}",
-              'channel': 'docker',
-              'publishedAt': datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00', 'Z'),
-              'downloads': downloads,
-          }
-
-          manifest_path = dist / 'releases.json'
-          manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
-          print(f'Wrote {manifest_path}')
-          PY
+          RELEASE_PUBLISHED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          DOWNLOADS_DIR="dist/files" \
+          MANIFEST_PATH="dist/releases.json" \
+          PORTAL_MANIFEST_PATH="dist/releases.json" \
+          RELEASE_VERSION="run-${GITHUB_RUN_NUMBER:-local}" \
+          RELEASE_CHANNEL="docker" \
+          RELEASE_PUBLISHED_AT="${RELEASE_PUBLISHED_AT}" \
+          bash scripts/generate-releases-manifest.sh
 
       - name: Upload manifest bundle
         uses: actions/upload-artifact@v4
