@@ -11,6 +11,7 @@ string apiBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration,
 string apiProxyKey = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ApiKey", "CHUMMER_PORTAL_API_KEY", Environment.GetEnvironmentVariable("CHUMMER_API_KEY") ?? string.Empty);
 string downloadsBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "/downloads/");
 string downloadsProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsProxyBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_PROXY_URL", string.Empty);
+string downloadsFallbackUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsFallbackUrl", "CHUMMER_PORTAL_DOWNLOADS_FALLBACK_URL", string.Empty);
 string releaseManifestPath = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ReleaseManifestPath", "CHUMMER_PORTAL_RELEASES_FILE", "downloads/releases.json");
 string releaseFilesPath = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ReleaseFilesPath", "CHUMMER_PORTAL_RELEASES_DIR", string.Empty);
 string resolvedManifestPath = PortalDownloadsService.ResolveManifestPath(releaseManifestPath);
@@ -173,11 +174,11 @@ app.MapGet("/", () => Results.Content(
     "text/html; charset=utf-8"));
 
 app.MapGet("/downloads/releases.json", () => Results.Json(
-    PortalDownloadsService.LoadReleaseManifest(resolvedManifestPath, resolvedReleaseFilesPath, downloadsBaseUrl),
+    PortalDownloadsService.LoadReleaseManifest(resolvedManifestPath, resolvedReleaseFilesPath, downloadsFallbackUrl),
     new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 
 app.MapGet("/downloads/", () => Results.Content(
-    PortalPageBuilder.BuildDownloadsHtml(downloadsBaseUrl, PortalDownloadsService.HasConfiguredFallbackSource(downloadsBaseUrl)),
+    PortalPageBuilder.BuildDownloadsHtml(downloadsFallbackUrl, PortalDownloadsService.HasConfiguredFallbackSource(downloadsFallbackUrl)),
     "text/html; charset=utf-8"));
 
 if (!useBlazorProxy)
@@ -188,8 +189,11 @@ if (!useBlazorProxy)
 
 if (!useAvaloniaProxy)
 {
+    string avaloniaDownloadsTarget = PortalDownloadsService.HasConfiguredFallbackSource(downloadsFallbackUrl)
+        ? downloadsFallbackUrl
+        : downloadsBaseUrl;
     app.MapGet("/avalonia/{**path}", () => Results.Content(
-        PortalPageBuilder.BuildAvaloniaPlaceholderHtml(avaloniaBrowserBaseUrl, downloadsBaseUrl),
+        PortalPageBuilder.BuildAvaloniaPlaceholderHtml(avaloniaBrowserBaseUrl, avaloniaDownloadsTarget),
         "text/html; charset=utf-8"));
 }
 
@@ -204,7 +208,16 @@ if (!useDownloadsProxy)
             return Results.File(filePath, "application/octet-stream", fileName, enableRangeProcessing: true);
         }
 
-        return Results.Redirect(PortalProxyUtils.ComposeRedirect(downloadsBaseUrl, path, context.Request.QueryString));
+        if (PortalDownloadsService.HasConfiguredFallbackSource(downloadsFallbackUrl))
+        {
+            return Results.Redirect(PortalProxyUtils.ComposeRedirect(downloadsFallbackUrl, path, context.Request.QueryString));
+        }
+
+        return Results.NotFound(new
+        {
+            error = "download_not_found",
+            path = path ?? string.Empty
+        });
     });
 }
 

@@ -57,6 +57,8 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-044 | done | P1 | Run strict host gates and capture output for next remediation chain. | agent | Completed 2026-03-05: strict host gates pass with `Total tests: 408, Passed: 408` after regression fixes and script-default hardening. |
 | WL-045 | done | P2 | Add strict-host worktree drift guard for unattended execution. | agent | Completed 2026-03-05: strict wrapper now compares tracked `git` state pre/post run and fails on unexpected drift unless explicitly overridden (`STRICT_ALLOW_WORKTREE_DRIFT=1`). |
 | WL-046 | done | P2 | Clean up strict-gate shell/session test analyzer warnings and revalidate. | agent | Completed 2026-03-05: updated assertion/return types in shell/session test stubs and reran strict host gates successfully (`349/349` local, `408/408` docker). |
+| WL-047 | done | P1 | Split portal downloads fallback from self-hosted downloads base URL and lock guardrails. | agent | Completed 2026-03-05: introduced `DownloadsFallbackUrl` config/env, updated portal fallback redirect behavior to avoid self-loop defaults, and revalidated via compliance-focused local tests + strict host gates. |
+| WL-048 | done | P2 | Reduce strict-gate restore noise from known legacy package compatibility warnings. | agent | Completed 2026-03-05: added targeted `NU1701` suppressions in migration test/runtime csproj files; strict local+docker gates remain green (`349/349`, `408/408`). |
 
 ## Intake Template
 Add new items at the bottom:

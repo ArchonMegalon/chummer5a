@@ -687,7 +687,9 @@ public class MigrationComplianceTests
         string portalDownloadsServicePath = FindPath("Chummer.Portal", "PortalDownloadsService.cs");
         string portalDownloadsServiceText = File.ReadAllText(portalDownloadsServicePath);
 
-        StringAssert.Contains(portalProgramText, "LoadReleaseManifest(resolvedManifestPath, resolvedReleaseFilesPath, downloadsBaseUrl)");
+        StringAssert.Contains(portalProgramText, "LoadReleaseManifest(resolvedManifestPath, resolvedReleaseFilesPath, downloadsFallbackUrl)");
+        StringAssert.Contains(portalProgramText, "CHUMMER_PORTAL_DOWNLOADS_FALLBACK_URL");
+        StringAssert.Contains(portalProgramText, "return Results.NotFound(new");
         StringAssert.Contains(portalDownloadsServiceText, "DiscoverLocalArtifacts");
         StringAssert.Contains(portalDownloadsServiceText, "LocalArtifactPattern");
         StringAssert.Contains(portalDownloadsServiceText, "chummer-(?<app>avalonia|blazor-desktop)-(?<rid>[^.]+)\\.(?<ext>zip|tar\\.gz)");
@@ -772,6 +774,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_DESKTOP_CLIENT_MODE");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_FALLBACK_URL");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID");
         StringAssert.Contains(readmeText, "DOWNLOADS_VERIFY_LINKS=1");
@@ -783,6 +786,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "scripts/runbook-strict-host-gates.sh");
         StringAssert.Contains(readmeText, "Live deployment verification is required");
         StringAssert.Contains(portalSettingsText, "\"DownloadsBaseUrl\": \"/downloads/\"");
+        StringAssert.Contains(portalSettingsText, "\"DownloadsFallbackUrl\": \"\"");
         Assert.IsFalse(
             portalSettingsText.Contains("github.com/ArchonMegalon/chummer5a/releases/latest", StringComparison.Ordinal),
             "Portal default downloads base URL should remain self-hosted by default.");
