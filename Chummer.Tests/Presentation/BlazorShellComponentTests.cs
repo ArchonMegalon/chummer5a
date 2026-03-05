@@ -124,7 +124,7 @@ public sealed class BlazorShellComponentTests
         IReadOnlyList<AngleSharp.Dom.IElement> docs = cut.FindAll(".mdi-doc");
         Assert.AreEqual(2, docs.Count);
         StringAssert.Contains(docs[0].TextContent, "*");
-        Assert.IsFalse(docs[1].TextContent.Contains("*", StringComparison.Ordinal));
+        Assert.IsFalse(docs[1].TextContent.Contains('*'));
     }
 
     [TestMethod]

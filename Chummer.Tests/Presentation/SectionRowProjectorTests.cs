@@ -27,7 +27,7 @@ public class SectionRowProjectorTests
 
         Assert.IsTrue(rows.Any(row => row.Path == "name" && row.Value == "\"Apex\""));
         Assert.IsTrue(rows.Any(row => row.Path == "stats.body" && row.Value == "4"));
-        Assert.IsTrue(rows.Any(row => row.Path == "stats.limits" && row.Value.Contains("5", StringComparison.Ordinal)));
+        Assert.IsTrue(rows.Any(row => row.Path == "stats.limits" && row.Value.Contains('5')));
     }
 
     [TestMethod]

@@ -202,6 +202,32 @@ if [[ "$RUNBOOK_MODE" == "downloads-verify" ]]; then
   exit "$status"
 fi
 
+if [[ "$RUNBOOK_MODE" == "ui-e2e" ]]; then
+  UI_E2E_LOG_FILE="${UI_E2E_LOG_FILE:-/tmp/chummer-ui-e2e.log}"
+  export CHUMMER_UI_PLAYWRIGHT=1
+  set +e
+  bash scripts/e2e-ui.sh 2>&1 | tee "$UI_E2E_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== ui e2e summary =="
+  rg -n "running playwright ui e2e|playwright ui e2e failed|ui E2E completed|Timed out waiting|request failed" "$UI_E2E_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "portal-e2e" ]]; then
+  PORTAL_E2E_LOG_FILE="${PORTAL_E2E_LOG_FILE:-/tmp/chummer-portal-e2e.log}"
+  export CHUMMER_PORTAL_PLAYWRIGHT=1
+  set +e
+  bash scripts/e2e-portal.sh 2>&1 | tee "$PORTAL_E2E_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== portal e2e summary =="
+  rg -n "running portal playwright e2e|portal playwright e2e failed|portal e2e completed" "$PORTAL_E2E_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
 if [[ "$RUNBOOK_MODE" == "docker-tests" ]]; then
   TEST_PROJECT="${TEST_PROJECT:-Chummer.Tests/Chummer.Tests.csproj}"
   TEST_FRAMEWORK="${TEST_FRAMEWORK:-${RUNBOOK_ARG_FRAMEWORK:-net10.0}}"

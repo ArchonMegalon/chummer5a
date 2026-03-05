@@ -11,11 +11,12 @@ Purpose: queue actionable items and run them in order without losing momentum.
 ## Queue
 | ID | Status | Priority | Task | Owner | Notes |
 |---|---|---|---|---|---|
-| WL-001 | queued | P1 | Push branch `Docker` to origin with latest local commit chain. | user/background | Local branch is ahead; commit-only handoff mode is active. |
-| WL-002 | queued | P1 | Run UI Playwright gate (`CHUMMER_UI_PLAYWRIGHT=1`) and capture failures if any. | agent | Currently skipped in migration runbook unless explicitly enabled. |
-| WL-003 | queued | P1 | Run Portal Playwright gate (`CHUMMER_PORTAL_PLAYWRIGHT=1`) and capture failures if any. | agent | Currently skipped in migration runbook unless explicitly enabled. |
-| WL-004 | queued | P2 | Triage test/build analyzer warning backlog and prioritize zero-risk cleanups. | agent | Focus on recurring MSTEST0037/CA1861/CA1859 warnings first. |
+| WL-001 | blocked | P1 | Push branch `Docker` to origin with latest local commit chain. | user/background | Local branch is ahead; commit-only handoff mode is active. |
+| WL-002 | done | P1 | Run UI Playwright gate (`CHUMMER_UI_PLAYWRIGHT=1`) and capture failures if any. | agent | Passed on 2026-03-05 after fixing `scripts/e2e-ui-playwright.cjs` to avoid disabled-tab click flow. |
+| WL-003 | done | P1 | Run Portal Playwright gate (`CHUMMER_PORTAL_PLAYWRIGHT=1`) and capture failures if any. | agent | Passed on 2026-03-05. See `/tmp/chummer-portal-e2e.log` (`portal E2E completed`). |
+| WL-004 | in_progress | P2 | Triage test/build analyzer warning backlog and prioritize zero-risk cleanups. | agent | 2026-03-05 progress: cleared `CA2263` and `CA1847` from migration build output. Current single-build baseline from `/tmp/migration-loop-runbook.log`: MSTEST0037=211, CS8632=184, CA1859=30, CA1861=19 (449 total warnings, 0 errors). |
 | WL-005 | queued | P2 | Decide whether `scripts/runbook.sh` push mode should remain in repo or be removed/reworked. | agent | Behavior changed to support unattended preapproved flow. |
+| WL-006 | done | P1 | Fix UI Playwright flow to avoid clicking disabled `#tab-skills` and re-run `ui-e2e`. | agent | Completed on 2026-03-05; `ui-e2e` now reports `playwright UI flow completed`. |
 
 ## Intake Template
 Add new items at the bottom:

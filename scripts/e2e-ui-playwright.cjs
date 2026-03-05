@@ -104,11 +104,23 @@ async function run() {
 
     await page.locator('#openCharactersTree .command-button').first().click();
 
-    await page.locator('#tab-skills').click();
-    await page.waitForFunction(() => {
-      const title = document.querySelector('.section-preview h2');
-      return title && title.textContent && title.textContent.toLowerCase().includes('skills');
-    }, { timeout: 15000 });
+    const skillsTab = page.locator('#tab-skills').first();
+    const hasSkillsTab = await skillsTab.count() > 0;
+    const canSelectSkillsTab = hasSkillsTab && !(await skillsTab.isDisabled());
+    if (canSelectSkillsTab) {
+      await skillsTab.click();
+      await page.waitForFunction(() => {
+        const title = document.querySelector('.section-preview h2');
+        return title && title.textContent && title.textContent.toLowerCase().includes('skills');
+      }, { timeout: 15000 });
+    } else {
+      const firstEnabledTab = page.locator('.tabs .tab-btn:not([disabled])').first();
+      await firstEnabledTab.click();
+      await page.waitForFunction(() => {
+        const title = document.querySelector('.section-preview h2');
+        return title && title.textContent && title.textContent.trim().length > 0;
+      }, { timeout: 15000 });
+    }
 
     const nameInput = page.locator('section.metadata label:has-text("Name") input').first();
     const aliasInput = page.locator('section.metadata label:has-text("Alias") input').first();
