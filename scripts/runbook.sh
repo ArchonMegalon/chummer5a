@@ -100,8 +100,8 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "scripts/generate-releases-manifest.sh" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "scripts/publish-download-bundle.sh" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "scripts/validate-amend-manifests.sh" ".github/workflows/desktop-downloads-matrix.yml"
-  require_match "chummer-\\(\\?P<app>avalonia\\|blazor-desktop\\)-" ".github/workflows/desktop-downloads-matrix.yml"
-  require_match "id': f'\\{app\\}-\\{rid\\}'" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "chummer-\\(\\?P<app>avalonia\\|blazor-desktop\\)-" "scripts/generate-releases-manifest.sh"
+  require_match "\"id\": f\"\\{app\\}-\\{rid\\}\"" "scripts/generate-releases-manifest.sh"
   require_match "RUNBOOK_MODE\" == \"downloads-manifest\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"downloads-sync\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"amend-checksums\"" "scripts/runbook.sh"
@@ -233,21 +233,27 @@ if [[ "$RUNBOOK_MODE" == "docker-tests" ]]; then
 fi
 
 if [[ "$RUNBOOK_MODE" == "push" ]]; then
+  git_cmd=(git --git-dir="$REPO_ROOT/.git" --work-tree="$REPO_ROOT")
   echo "== push mode =="
-  echo "branch: $(git rev-parse --abbrev-ref HEAD)"
-  echo "status: $(git status --short --branch | head -n 1)"
+  echo "branch: $(${git_cmd[@]} rev-parse --abbrev-ref HEAD)"
+  echo "status: $(${git_cmd[@]} status --short --branch | head -n 1)"
 
   echo
   echo "== attempt 1: https origin push =="
-  if git push; then
+  if "${git_cmd[@]}" push; then
     echo "push completed via https origin"
     exit 0
   fi
 
   echo
   echo "== attempt 2: ssh push with local key =="
-  GIT_SSH_COMMAND='ssh -i /home/tibor/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new' \
-    git push git@github.com:ArchonMegalon/chummer5a.git Docker
+  mkdir -p ~/.ssh
+  ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || true
+  ssh_cmd='ssh -o StrictHostKeyChecking=accept-new'
+  if [[ -f /home/tibor/.ssh/id_ed25519 ]]; then
+    ssh_cmd='ssh -i /home/tibor/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new'
+  fi
+  GIT_SSH_COMMAND="$ssh_cmd" "${git_cmd[@]}" push git@github.com:ArchonMegalon/chummer5a.git Docker
   echo "push completed via ssh"
   exit 0
 fi
