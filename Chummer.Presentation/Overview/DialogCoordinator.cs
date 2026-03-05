@@ -1,3 +1,4 @@
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using System.Text.RegularExpressions;
 
@@ -225,10 +226,12 @@ public sealed class DialogCoordinator : IDialogCoordinator
         DialogCoordinationContext context,
         CancellationToken ct,
         string fieldId = "openCharacterXml",
+        string rulesetFieldId = "importRulesetId",
         string requiredError = "Character XML is required.",
         string successNotice = "Character imported.")
     {
         string xml = DesktopDialogFieldValueParser.GetValue(dialog, fieldId) ?? string.Empty;
+        string rulesetId = RulesetDefaults.Normalize(DesktopDialogFieldValueParser.GetValue(dialog, rulesetFieldId));
         if (string.IsNullOrWhiteSpace(xml))
         {
             context.Publish(context.State with
@@ -239,7 +242,7 @@ public sealed class DialogCoordinator : IDialogCoordinator
             return;
         }
 
-        await context.ImportAsync(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml), ct);
+        await context.ImportAsync(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml, rulesetId), ct);
 
         CharacterOverviewState stateAfterImport = context.GetState();
         if (stateAfterImport.Error is null)

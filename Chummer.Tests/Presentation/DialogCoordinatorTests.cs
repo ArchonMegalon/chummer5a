@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -178,6 +179,7 @@ public class DialogCoordinatorTests
                 Message: null,
                 Fields:
                 [
+                    new DesktopDialogField("importRulesetId", "Ruleset", " SR6 ", "sr5"),
                     new DesktopDialogField("openCharacterXml", "Character XML", "<character><name>Runner</name></character>", "<character />", true)
                 ],
                 Actions:
@@ -207,6 +209,7 @@ public class DialogCoordinatorTests
 
         Assert.IsNotNull(imported);
         StringAssert.Contains(imported!.Content, "<character>");
+        Assert.AreEqual("sr6", imported.RulesetId);
         Assert.IsNull(published.ActiveDialog);
         Assert.AreEqual("Character imported.", published.Notice);
         Assert.AreEqual("ws-imported", published.WorkspaceId?.Value);
@@ -253,6 +256,7 @@ public class DialogCoordinatorTests
 
         Assert.IsNotNull(imported);
         StringAssert.Contains(imported!.Content, "<character>");
+        Assert.AreEqual(RulesetDefaults.Sr5, imported.RulesetId);
         Assert.IsNull(published.ActiveDialog);
         Assert.AreEqual("Hero Lab XML imported.", published.Notice);
         Assert.AreEqual("ws-hero", published.WorkspaceId?.Value);

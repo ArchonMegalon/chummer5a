@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Overview;
@@ -175,6 +176,7 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 "Paste Hero Lab XML payload to import using compatibility mode.",
                 [
                     new DesktopDialogField("heroLabSource", "Input File", ".por/.xml", ".por/.xml"),
+                    CreateRulesetField(),
                     new DesktopDialogField(
                         "heroLabXml",
                         "Hero Lab XML",
@@ -262,6 +264,7 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
             Message: message,
             Fields:
             [
+                CreateRulesetField(),
                 new DesktopDialogField(
                     Id: "openCharacterXml",
                     Label: "Character XML",
@@ -274,6 +277,15 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 new DesktopDialogAction("import", "Import", true),
                 new DesktopDialogAction("cancel", "Cancel")
             ]);
+    }
+
+    private static DesktopDialogField CreateRulesetField()
+    {
+        return new DesktopDialogField(
+            Id: "importRulesetId",
+            Label: "Ruleset",
+            Value: RulesetDefaults.Sr5,
+            Placeholder: RulesetDefaults.Sr5);
     }
 
     public DesktopDialogState CreateUiControlDialog(

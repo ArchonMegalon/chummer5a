@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -119,6 +120,7 @@ public class DesktopDialogFactoryTests
 
         Assert.AreEqual("dialog.open_character", dialog.Id);
         Assert.IsNotNull(dialog.Fields.SingleOrDefault(field => string.Equals(field.Id, "openCharacterXml", StringComparison.Ordinal)));
+        Assert.AreEqual(RulesetDefaults.Sr5, DesktopDialogFieldValueParser.GetValue(dialog, "importRulesetId"));
         Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "import", StringComparison.Ordinal)));
     }
 
@@ -136,6 +138,7 @@ public class DesktopDialogFactoryTests
 
         Assert.AreEqual("dialog.hero_lab_importer", dialog.Id);
         Assert.IsNotNull(dialog.Fields.SingleOrDefault(field => string.Equals(field.Id, "heroLabXml", StringComparison.Ordinal)));
+        Assert.AreEqual(RulesetDefaults.Sr5, DesktopDialogFieldValueParser.GetValue(dialog, "importRulesetId"));
         Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "import", StringComparison.Ordinal)));
     }
 

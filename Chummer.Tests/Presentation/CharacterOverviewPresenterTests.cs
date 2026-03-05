@@ -6,6 +6,7 @@ using System;
 using System.Text.Json.Nodes;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -346,11 +347,13 @@ public class CharacterOverviewPresenterTests
         var presenter = new CharacterOverviewPresenter(client);
 
         await presenter.ExecuteCommandAsync("open_character", CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("importRulesetId", " SR6 ", CancellationToken.None);
         await presenter.UpdateDialogFieldAsync("openCharacterXml", "<character><name>Dialog Import</name></character>", CancellationToken.None);
         await presenter.ExecuteDialogActionAsync("import", CancellationToken.None);
 
         Assert.IsNotNull(client.LastImportedDocument);
         StringAssert.Contains(client.LastImportedDocument!.Content, "Dialog Import");
+        Assert.AreEqual("sr6", client.LastImportedDocument.RulesetId);
         Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
         Assert.IsNull(presenter.State.ActiveDialog);
         Assert.AreEqual("Character imported.", presenter.State.Notice);
@@ -628,7 +631,8 @@ public class CharacterOverviewPresenterTests
                     AppVersion: "1.0",
                     Karma: 0m,
                     Nuyen: 0m,
-                    Created: true));
+                    Created: true),
+                RulesetDefaults.Normalize(document.RulesetId));
 
             return Task.FromResult(result);
         }
