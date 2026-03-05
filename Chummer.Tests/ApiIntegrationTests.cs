@@ -500,10 +500,17 @@ public class ApiIntegrationTests
     {
         using var client = CreateClient();
         client.Timeout = TimeSpan.FromSeconds(180);
+        await ClearAllWorkspacesAsync(client);
+        await PostRequiredJsonObject(client, "/api/tools/settings/global", new JsonObject
+        {
+            ["preferredRulesetId"] = "sr5"
+        });
 
         JsonObject response = await GetRequiredJsonObject(client, "/api/shell/bootstrap?ruleset=sr5");
 
         Assert.AreEqual("sr5", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.AreEqual("sr5", (response["preferredRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.AreEqual("sr5", (response["activeRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.IsTrue(response["commands"] is JsonArray commands && commands.Count > 0);
         Assert.IsTrue(response["navigationTabs"] is JsonArray tabs && tabs.Count > 0);
         Assert.IsTrue(response["workspaces"] is JsonArray);
@@ -514,6 +521,11 @@ public class ApiIntegrationTests
     {
         using var client = CreateClient();
         client.Timeout = TimeSpan.FromSeconds(180);
+        await ClearAllWorkspacesAsync(client);
+        await PostRequiredJsonObject(client, "/api/tools/settings/global", new JsonObject
+        {
+            ["preferredRulesetId"] = "sr5"
+        });
 
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
         JsonObject importBody = new()
@@ -523,6 +535,25 @@ public class ApiIntegrationTests
         };
 
         await PostRequiredJsonObject(client, "/api/workspaces/import", importBody);
+        JsonObject response = await GetRequiredJsonObject(client, "/api/shell/bootstrap");
+
+        Assert.AreEqual("sr6", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.AreEqual("sr5", (response["preferredRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.AreEqual("sr6", (response["activeRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+    }
+
+    [TestMethod]
+    public async Task Shell_bootstrap_endpoint_uses_saved_preferred_ruleset_when_no_workspace_is_open()
+    {
+        using var client = CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(180);
+
+        await ClearAllWorkspacesAsync(client);
+        await PostRequiredJsonObject(client, "/api/tools/settings/global", new JsonObject
+        {
+            ["preferredRulesetId"] = "sr6"
+        });
+
         JsonObject response = await GetRequiredJsonObject(client, "/api/shell/bootstrap");
 
         Assert.AreEqual("sr6", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
@@ -817,6 +848,47 @@ public class ApiIntegrationTests
         JsonNode parsed = JsonNode.Parse(content);
         Assert.IsInstanceOfType<JsonObject>(parsed);
         return (JsonObject)parsed!;
+    }
+
+    private static async Task ClearAllWorkspacesAsync(HttpClient client)
+    {
+        const int maxAttempts = 20;
+        const int batchSize = 500;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            JsonObject listed = await GetRequiredJsonObject(client, $"/api/workspaces?maxCount={batchSize}");
+            JsonArray workspaces = listed["workspaces"] as JsonArray ?? [];
+            if (workspaces.Count == 0)
+            {
+                return;
+            }
+
+            int deletedCount = 0;
+            foreach (JsonNode? node in workspaces)
+            {
+                string workspaceId = node?["id"]?.GetValue<string>() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(workspaceId))
+                {
+                    continue;
+                }
+
+                using HttpResponseMessage response = await client.DeleteAsync($"/api/workspaces/{workspaceId}");
+                Assert.IsTrue(
+                    response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.NotFound,
+                    $"DELETE /api/workspaces/{workspaceId} failed with {(int)response.StatusCode}");
+                deletedCount++;
+            }
+
+            if (deletedCount == 0)
+            {
+                break;
+            }
+        }
+
+        JsonObject remaining = await GetRequiredJsonObject(client, "/api/workspaces?maxCount=1");
+        JsonArray remainingWorkspaces = remaining["workspaces"] as JsonArray ?? [];
+        Assert.AreEqual(0, remainingWorkspaces.Count, "Unable to clear all persisted workspaces before running test.");
     }
 
     private static Uri ResolveBaseUri()
