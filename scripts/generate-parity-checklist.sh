@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+OUTPUT_PATH="${PARITY_CHECKLIST_OUTPUT:-$REPO_ROOT/docs/PARITY_CHECKLIST.md}"
+
+python3 - "$REPO_ROOT" "$OUTPUT_PATH" <<'PY'
+from __future__ import annotations
+
+import datetime as dt
+import pathlib
+import re
+import sys
+from typing import Iterable, Sequence
+
+
+repo_root = pathlib.Path(sys.argv[1])
+output_path = pathlib.Path(sys.argv[2])
+
+legacy_shell_path = repo_root / "Chummer.Web" / "wwwroot" / "index.html"
+navigation_catalog_path = repo_root / "Chummer.Contracts" / "Presentation" / "NavigationTabCatalog.cs"
+action_catalog_path = repo_root / "Chummer.Contracts" / "Presentation" / "WorkspaceSurfaceActionCatalog.cs"
+control_catalog_path = repo_root / "Chummer.Contracts" / "Presentation" / "DesktopUiControlCatalog.cs"
+
+
+def read_text(path: pathlib.Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def parse_legacy_ids(text: str, attribute: str) -> list[str]:
+    return sorted(set(re.findall(rf'{attribute}="([^"]+)"', text)))
+
+
+def parse_catalog_ids(text: str) -> list[str]:
+    return sorted(set(re.findall(r'new\("([^"]+)"\s*,', text)))
+
+
+def parse_workspace_action_target_ids(text: str) -> list[str]:
+    return sorted(
+        set(
+            re.findall(
+                r'new\(\s*"[^"]+"\s*,\s*"[^"]+"\s*,\s*"[^"]+"\s*,\s*[^,]+,\s*"([^"]+)"',
+                text,
+            )
+        )
+    )
+
+
+def partition_coverage(legacy_ids: Sequence[str], catalog_ids: Sequence[str]) -> tuple[list[str], list[str], list[str]]:
+    legacy_set = set(legacy_ids)
+    catalog_set = set(catalog_ids)
+    covered = sorted(legacy_set & catalog_set)
+    missing = sorted(legacy_set - catalog_set)
+    catalog_only = sorted(catalog_set - legacy_set)
+    return covered, missing, catalog_only
+
+
+def write_summary_row(kind: str, legacy_ids: Sequence[str], covered: Sequence[str], missing: Sequence[str], catalog_only: Sequence[str]) -> str:
+    return f"| {kind} | {len(legacy_ids)} | {len(covered)} | {len(missing)} | {len(catalog_only)} |"
+
+
+def write_coverage_table(title: str, covered: Sequence[str], missing: Sequence[str], catalog_only: Sequence[str]) -> list[str]:
+    lines: list[str] = [f"## {title}", "", "| ID | Status |", "| --- | --- |"]
+    for value in covered:
+        lines.append(f"| `{value}` | covered |")
+    for value in missing:
+        lines.append(f"| `{value}` | missing_in_catalog |")
+    for value in catalog_only:
+        lines.append(f"| `{value}` | catalog_only |")
+    if not (covered or missing or catalog_only):
+        lines.append("| _(none)_ | _(none)_ |")
+    lines.append("")
+    return lines
+
+
+legacy_shell_text = read_text(legacy_shell_path)
+navigation_catalog_text = read_text(navigation_catalog_path)
+action_catalog_text = read_text(action_catalog_path)
+control_catalog_text = read_text(control_catalog_path)
+
+legacy_tabs = parse_legacy_ids(legacy_shell_text, "data-tab")
+legacy_actions = parse_legacy_ids(legacy_shell_text, "data-action")
+legacy_controls = parse_legacy_ids(legacy_shell_text, "data-ui-control")
+
+catalog_tabs = parse_catalog_ids(navigation_catalog_text)
+catalog_actions = parse_workspace_action_target_ids(action_catalog_text)
+catalog_controls = parse_catalog_ids(control_catalog_text)
+
+covered_tabs, missing_tabs, catalog_only_tabs = partition_coverage(legacy_tabs, catalog_tabs)
+covered_actions, missing_actions, catalog_only_actions = partition_coverage(legacy_actions, catalog_actions)
+covered_controls, missing_controls, catalog_only_controls = partition_coverage(legacy_controls, catalog_controls)
+
+generated_utc = dt.datetime.now(tz=dt.timezone.utc).replace(microsecond=0).isoformat()
+
+output_lines: list[str] = [
+    "# UI Parity Checklist",
+    "",
+    "Generated automatically from the legacy shell contract and current contracts catalogs.",
+    "",
+    f"- Generated UTC: `{generated_utc}`",
+    f"- Legacy shell source: `{legacy_shell_path.relative_to(repo_root)}`",
+    f"- Tab catalog source: `{navigation_catalog_path.relative_to(repo_root)}`",
+    f"- Action catalog source: `{action_catalog_path.relative_to(repo_root)}`",
+    f"- Control catalog source: `{control_catalog_path.relative_to(repo_root)}`",
+    "- Workspace Actions coverage compares legacy `data-action` IDs to action `TargetId` values.",
+    "",
+    "## Summary",
+    "",
+    "| Surface | Legacy IDs | Covered | Missing In Catalog | Catalog Only |",
+    "| --- | ---: | ---: | ---: | ---: |",
+    write_summary_row("Tabs", legacy_tabs, covered_tabs, missing_tabs, catalog_only_tabs),
+    write_summary_row("Workspace Actions", legacy_actions, covered_actions, missing_actions, catalog_only_actions),
+    write_summary_row("Desktop Controls", legacy_controls, covered_controls, missing_controls, catalog_only_controls),
+    "",
+]
+
+output_lines.extend(write_coverage_table("Tabs Coverage", covered_tabs, missing_tabs, catalog_only_tabs))
+output_lines.extend(write_coverage_table("Workspace Actions Coverage", covered_actions, missing_actions, catalog_only_actions))
+output_lines.extend(write_coverage_table("Desktop Controls Coverage", covered_controls, missing_controls, catalog_only_controls))
+
+output_path.parent.mkdir(parents=True, exist_ok=True)
+output_path.write_text("\n".join(output_lines).rstrip() + "\n", encoding="utf-8")
+
+print(f"Wrote parity checklist to {output_path}")
+print(
+    "Summary: "
+    f"tabs covered={len(covered_tabs)}/{len(legacy_tabs)}, "
+    f"actions covered={len(covered_actions)}/{len(legacy_actions)}, "
+    f"controls covered={len(covered_controls)}/{len(legacy_controls)}"
+)
+PY

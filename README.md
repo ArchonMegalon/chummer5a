@@ -186,6 +186,7 @@ Desktop artifact workflow:
 * Canonical topology: self-hosted runner publishes bundle into mounted portal downloads storage (`CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR`), then verifies both local manifest file and live `/downloads/releases.json` endpoint before success.
 * Local verification helper: `bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
 * Optional local strict artifact check: `DOWNLOADS_VERIFY_LINKS=1 bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
+* Parity checklist generator: `RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh` (writes `docs/PARITY_CHECKLIST.md`).
 * Host readiness probe for strict gates: `RUNBOOK_MODE=host-prereqs bash scripts/runbook.sh`.
 * Strict host-side gate wrapper (no soft-skips, defaults to `net10.0`): `bash scripts/runbook-strict-host-gates.sh [optionalTestFilter] [optionalFramework]`.
 * Strict wrapper local stage default excludes API/parity and legacy host-mutating classes (`ApiIntegrationTests`, `DualHeadAcceptanceTests`, `ChummerTest`) so environment-free local checks run first; docker stage still runs full filter scope.

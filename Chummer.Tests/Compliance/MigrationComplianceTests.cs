@@ -788,6 +788,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID");
         StringAssert.Contains(readmeText, "DOWNLOADS_VERIFY_LINKS=1");
         StringAssert.Contains(readmeText, "RUNBOOK_MODE=host-prereqs");
+        StringAssert.Contains(readmeText, "RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(readmeText, "scripts/publish-download-bundle-s3.sh");
@@ -1119,15 +1120,21 @@ public class MigrationComplianceTests
         string strictHostGatesText = File.ReadAllText(strictHostGatesPath);
         string amendValidatorPath = FindPath("scripts", "validate-amend-manifests.sh");
         string amendValidatorText = File.ReadAllText(amendValidatorPath);
+        string parityGeneratorPath = FindPath("scripts", "generate-parity-checklist.sh");
+        string parityGeneratorText = File.ReadAllText(parityGeneratorPath);
+        string parityChecklistPath = FindPath("docs", "PARITY_CHECKLIST.md");
+        string parityChecklistText = File.ReadAllText(parityChecklistPath);
 
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-manifest\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"host-prereqs\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync-s3\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-verify\"");
+        StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"parity-checklist\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"amend-checksums\"");
         StringAssert.Contains(runbookText, "docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md");
         StringAssert.Contains(runbookText, "bash scripts/generate-releases-manifest.sh");
+        StringAssert.Contains(runbookText, "bash scripts/generate-parity-checklist.sh");
         StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle.sh");
         StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle-s3.sh");
         StringAssert.Contains(runbookText, "bash scripts/verify-releases-manifest.sh");
@@ -1204,6 +1211,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(amendValidatorText, "missing checksum entry");
         StringAssert.Contains(amendValidatorText, "data");
         StringAssert.Contains(amendValidatorText, "lang");
+        StringAssert.Contains(parityGeneratorText, "data-action");
+        StringAssert.Contains(parityGeneratorText, "Workspace Actions coverage compares legacy `data-action` IDs to action `TargetId` values.");
+        StringAssert.Contains(parityGeneratorText, "Wrote parity checklist");
+        StringAssert.Contains(parityChecklistText, "# UI Parity Checklist");
+        StringAssert.Contains(parityChecklistText, "| Workspace Actions |");
     }
 
     [TestMethod]

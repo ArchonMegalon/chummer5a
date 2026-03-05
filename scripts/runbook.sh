@@ -204,6 +204,7 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_path "Chummer.Desktop.Runtime/ServiceCollectionDesktopRuntimeExtensions.cs"
   require_path "Chummer.Blazor.Desktop/wwwroot/index.html"
   require_path "scripts/validate-amend-manifests.sh"
+  require_path "scripts/generate-parity-checklist.sh"
   require_path "scripts/check-host-gate-prereqs.sh"
   require_path "scripts/runbook-strict-host-gates.sh"
   require_path "docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md"
@@ -244,8 +245,10 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "RUNBOOK_MODE\" == \"host-prereqs\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"downloads-sync\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"downloads-sync-s3\"" "scripts/runbook.sh"
+  require_match "RUNBOOK_MODE\" == \"parity-checklist\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"amend-checksums\"" "scripts/runbook.sh"
   require_match "bash scripts/generate-releases-manifest.sh" "scripts/runbook.sh"
+  require_match "bash scripts/generate-parity-checklist.sh" "scripts/runbook.sh"
   require_match "bash scripts/publish-download-bundle.sh" "scripts/runbook.sh"
   require_match "bash scripts/publish-download-bundle-s3.sh" "scripts/runbook.sh"
   require_match "DOCKER_TESTS_SOFT_FAIL=0" "scripts/runbook-strict-host-gates.sh"
@@ -298,6 +301,18 @@ if [[ "$RUNBOOK_MODE" == "amend-checksums" ]]; then
   echo
   echo "== amend checksum validation summary =="
   rg -n "Validated|ERROR:" "$AMEND_CHECKSUM_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "parity-checklist" ]]; then
+  PARITY_CHECKLIST_LOG_FILE="${PARITY_CHECKLIST_LOG_FILE:-/tmp/chummer-parity-checklist.log}"
+  set +e
+  bash scripts/generate-parity-checklist.sh 2>&1 | tee "$PARITY_CHECKLIST_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== parity checklist summary =="
+  rg -n "Wrote parity checklist|Summary:" "$PARITY_CHECKLIST_LOG_FILE" | tail -n 50 || true
   exit "$status"
 fi
 
