@@ -9,6 +9,13 @@ Purpose: publish desktop artifacts to a self-hosted downloads surface and verify
 2. Portal serves `/downloads/releases.json` from your storage topology.
 3. Use preapproved runbook/script paths from repository root (`/docker/chummer5a`).
 
+## Recommended Production Topology
+
+1. Default recommendation: use `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` with a self-hosted runner that can write directly into the portal downloads storage mount.
+2. Reason: this keeps `/downloads/` self-hosted, lets the deploy job verify both the local manifest file and the live portal manifest, and matches the canonical topology enforced in repo docs.
+3. Treat object storage as the alternate topology for environments where the runner cannot write to portal storage directly; keep portal proxying and live manifest verification enabled there too.
+4. Start from [`docs/examples/self-hosted-downloads.env.example`](examples/self-hosted-downloads.env.example) and adapt it to your portal base URL and storage target.
+
 ## Mode A: Filesystem Deploy (shared mount)
 
 Repository variables:

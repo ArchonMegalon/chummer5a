@@ -728,6 +728,8 @@ public class MigrationComplianceTests
     {
         string runbookPath = FindPath("docs", "SELF_HOSTED_DOWNLOADS_RUNBOOK.md");
         string runbookText = File.ReadAllText(runbookPath);
+        string envExamplePath = FindPath("docs", "examples", "self-hosted-downloads.env.example");
+        string envExampleText = File.ReadAllText(envExamplePath);
 
         StringAssert.Contains(runbookText, "Portal Status Meanings");
         StringAssert.Contains(runbookText, "`manifest-empty`");
@@ -735,6 +737,16 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "`manifest-error`");
         StringAssert.Contains(runbookText, "`fallback-source`");
         StringAssert.Contains(runbookText, "Production/self-hosted deploys should end in `published`.");
+        StringAssert.Contains(runbookText, "Recommended Production Topology");
+        StringAssert.Contains(runbookText, "Default recommendation: use `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR`");
+        StringAssert.Contains(runbookText, "Treat object storage as the alternate topology");
+        StringAssert.Contains(runbookText, "docs/examples/self-hosted-downloads.env.example");
+
+        StringAssert.Contains(envExampleText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED=true");
+        StringAssert.Contains(envExampleText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR=/srv/chummer/portal-downloads");
+        StringAssert.Contains(envExampleText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL=https://chummer.example.com/downloads/releases.json");
+        StringAssert.Contains(envExampleText, "# Alternate object-storage topology:");
+        StringAssert.Contains(envExampleText, "# CHUMMER_PORTAL_DOWNLOADS_S3_URI=s3://chummer-downloads/releases");
     }
 
     [TestMethod]
@@ -824,6 +836,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md");
         StringAssert.Contains(readmeText, "scripts/runbook-strict-host-gates.sh");
         StringAssert.Contains(readmeText, "Live deployment verification is required");
+        StringAssert.Contains(readmeText, "Recommended self-hosted deployment");
+        StringAssert.Contains(readmeText, "Alternate object-storage deployment");
+        StringAssert.Contains(readmeText, "Treat object storage as the alternate topology, not the default");
+        StringAssert.Contains(readmeText, "docs/examples/self-hosted-downloads.env.example");
         StringAssert.Contains(portalSettingsText, "\"DownloadsBaseUrl\": \"/downloads/\"");
         StringAssert.Contains(portalSettingsText, "\"DownloadsFallbackUrl\": \"\"");
         Assert.IsFalse(
