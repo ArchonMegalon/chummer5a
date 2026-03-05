@@ -109,6 +109,8 @@ public class MigrationComplianceTests
         string avaloniaMainWindowCodeText = File.ReadAllText(avaloniaMainWindowCodePath);
         string avaloniaDialogsCodePath = FindPath("Chummer.Avalonia", "MainWindow.Dialogs.cs");
         string avaloniaDialogsCodeText = File.ReadAllText(avaloniaDialogsCodePath);
+        string avaloniaPostRefreshCoordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.PostRefreshCoordinators.cs");
+        string avaloniaPostRefreshCoordinatorText = File.ReadAllText(avaloniaPostRefreshCoordinatorPath);
 
         StringAssert.Contains(blazorProjectText, @"..\Chummer.Presentation\Chummer.Presentation.csproj");
         StringAssert.Contains(blazorProjectText, @"..\Chummer.Contracts\Chummer.Contracts.csproj");
@@ -135,7 +137,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(avaloniaAppCodeText, "AddChummerLocalRuntimeClient");
         StringAssert.Contains(avaloniaAppCodeText, "ICharacterOverviewPresenter");
         StringAssert.Contains(avaloniaMainWindowCodeText, "public MainWindow(");
-        StringAssert.Contains(avaloniaDialogsCodeText, "new DesktopDialogWindow(");
+        StringAssert.Contains(avaloniaDialogsCodeText, "private async Task RunUiActionAsync");
+        StringAssert.Contains(avaloniaPostRefreshCoordinatorText, "DesktopDialogWindow dialogWindow = new(adapter);");
     }
 
     [TestMethod]
@@ -1532,6 +1535,8 @@ public class MigrationComplianceTests
         string toolStripCodeText = File.ReadAllText(toolStripCodePath);
         string menuBarCodePath = FindPath("Chummer.Avalonia", "Controls", "ShellMenuBarControl.axaml.cs");
         string menuBarCodeText = File.ReadAllText(menuBarCodePath);
+        string postRefreshCoordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.PostRefreshCoordinators.cs");
+        string postRefreshCoordinatorText = File.ReadAllText(postRefreshCoordinatorPath);
 
         Assert.IsFalse(codeText.Contains("FindControl<", StringComparison.Ordinal));
         StringAssert.Contains(codeText, "public MainWindow(");
@@ -1552,6 +1557,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(codeText, "_commandDialogPane.CommandSelected +=");
         StringAssert.Contains(stateText, "MainWindowShellFrameProjector.Project(");
         StringAssert.Contains(stateText, "ApplyShellFrame(shellFrame);");
+        StringAssert.Contains(stateText, "ApplyPostRefreshEffects(state);");
         StringAssert.Contains(stateText, "ApplyHeaderState(shellFrame.HeaderState);");
         StringAssert.Contains(stateText, "_navigatorPane.SetState(shellFrame.NavigatorPaneState);");
         StringAssert.Contains(stateText, "_commandDialogPane.SetState(shellFrame.CommandDialogPaneState);");
@@ -1562,6 +1568,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(stateText, "_workspaceStrip.SetState(chromeState.WorkspaceStrip);");
         StringAssert.Contains(stateText, "_summaryHeader.SetState(chromeState.SummaryHeader);");
         StringAssert.Contains(stateText, "_statusStrip.SetState(chromeState.StatusStrip);");
+        StringAssert.Contains(stateText, "private void ApplyPostRefreshEffects(CharacterOverviewState state)");
+        StringAssert.Contains(stateText, "MainWindowDialogWindowCoordinator.Sync(");
+        StringAssert.Contains(stateText, "PendingDownloadDispatchCoordinator.TryCreate(");
         StringAssert.Contains(stateText, "private void ApplyHeaderState(MainWindowHeaderState headerState)");
         StringAssert.Contains(stateText, "private void ApplyChromeState(MainWindowChromeState chromeState)");
         StringAssert.Contains(navigatorCodeText, "public void SetState(NavigatorPaneState state)");
@@ -1585,6 +1594,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(toolStripCodeText, "SetStatusText(state.StatusText);");
         StringAssert.Contains(menuBarCodeText, "public void SetState(MenuBarState state)");
         StringAssert.Contains(menuBarCodeText, "SetMenuState(");
+        StringAssert.Contains(postRefreshCoordinatorText, "internal static class MainWindowDialogWindowCoordinator");
+        StringAssert.Contains(postRefreshCoordinatorText, "internal static class PendingDownloadDispatchCoordinator");
+        StringAssert.Contains(postRefreshCoordinatorText, "public static DesktopDialogWindow? Sync(");
+        StringAssert.Contains(postRefreshCoordinatorText, "public static PendingDownloadDispatchRequest? TryCreate(");
         StringAssert.Contains(projectorText, "BuildWorkspaceActionLookup");
         StringAssert.Contains(projectorText, "WorkspaceActionsById");
         StringAssert.Contains(projectorText, "HeaderState: new MainWindowHeaderState(");

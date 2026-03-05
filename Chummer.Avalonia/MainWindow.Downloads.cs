@@ -7,22 +7,9 @@ namespace Chummer.Avalonia;
 
 public partial class MainWindow
 {
-    private void DispatchPendingDownload(CharacterOverviewState state)
+    private async Task HandlePendingDownloadAsync(PendingDownloadDispatchRequest request)
     {
-        WorkspaceDownloadReceipt? pendingDownload = state.PendingDownload;
-        if (pendingDownload is null || state.PendingDownloadVersion <= _lastDownloadVersionHandled)
-            return;
-
-        long pendingVersion = state.PendingDownloadVersion;
-        _lastDownloadVersionHandled = pendingVersion;
-        _ = RunUiActionAsync(
-            () => HandlePendingDownloadAsync(pendingDownload, pendingVersion),
-            "pending download");
-    }
-
-    private async Task HandlePendingDownloadAsync(WorkspaceDownloadReceipt pendingDownload, long pendingVersion)
-    {
-        if (pendingVersion < _lastDownloadVersionHandled)
+        if (request.Version < _lastDownloadVersionHandled)
             return;
 
         if (!StorageProvider.CanSave)
@@ -32,7 +19,7 @@ public partial class MainWindow
         }
 
         IReadOnlyList<FilePickerFileType> fileTypes =
-            pendingDownload.Format == WorkspaceDocumentFormat.Json
+            request.Download.Format == WorkspaceDocumentFormat.Json
                 ? [
                     new FilePickerFileType("JSON Files")
                     {
@@ -48,14 +35,14 @@ public partial class MainWindow
                     }
                 ];
 
-        string pickerTitle = pendingDownload.Format == WorkspaceDocumentFormat.Json
+        string pickerTitle = request.Download.Format == WorkspaceDocumentFormat.Json
             ? "Download Export Bundle"
             : "Save Character As";
 
         IStorageFile? targetFile = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             Title = pickerTitle,
-            SuggestedFileName = pendingDownload.FileName,
+            SuggestedFileName = request.Download.FileName,
             FileTypeChoices = fileTypes,
             ShowOverwritePrompt = true
         });
@@ -66,13 +53,13 @@ public partial class MainWindow
             return;
         }
 
-        byte[] payloadBytes = Convert.FromBase64String(pendingDownload.ContentBase64);
+        byte[] payloadBytes = Convert.FromBase64String(request.Download.ContentBase64);
         await using Stream output = await targetFile.OpenWriteAsync();
         if (output.CanSeek)
             output.SetLength(0);
 
         await output.WriteAsync(payloadBytes, CancellationToken.None);
         await output.FlushAsync(CancellationToken.None);
-        _sectionHost.SetNotice($"Notice: downloaded {pendingDownload.FileName} to {targetFile.Name}.");
+        _sectionHost.SetNotice($"Notice: downloaded {request.Download.FileName} to {targetFile.Name}.");
     }
 }

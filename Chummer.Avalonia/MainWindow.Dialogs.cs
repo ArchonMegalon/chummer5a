@@ -5,32 +5,6 @@ namespace Chummer.Avalonia;
 
 public partial class MainWindow
 {
-    private void SyncDialogWindow(CharacterOverviewState state)
-    {
-        if (state.ActiveDialog is null)
-        {
-            if (_dialogWindow is not null)
-            {
-                _dialogWindow.CloseFromPresenter();
-                _dialogWindow = null;
-            }
-
-            return;
-        }
-
-        if (_dialogWindow is null)
-        {
-            _dialogWindow = new DesktopDialogWindow(_adapter);
-            _dialogWindow.Closed += DialogWindow_OnClosed;
-        }
-
-        _dialogWindow.BindDialog(state.ActiveDialog);
-        if (!_dialogWindow.IsVisible)
-        {
-            _dialogWindow.Show(this);
-        }
-    }
-
     private void DialogWindow_OnClosed(object? sender, EventArgs e)
     {
         if (ReferenceEquals(sender, _dialogWindow))

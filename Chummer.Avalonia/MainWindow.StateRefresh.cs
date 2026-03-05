@@ -20,9 +20,7 @@ public partial class MainWindow
             _commandAvailabilityEvaluator);
 
         ApplyShellFrame(shellFrame);
-
-        SyncDialogWindow(state);
-        DispatchPendingDownload(state);
+        ApplyPostRefreshEffects(state);
     }
 
     private void ApplyShellFrame(MainWindowShellFrame shellFrame)
@@ -48,5 +46,28 @@ public partial class MainWindow
         _workspaceStrip.SetState(chromeState.WorkspaceStrip);
         _summaryHeader.SetState(chromeState.SummaryHeader);
         _statusStrip.SetState(chromeState.StatusStrip);
+    }
+
+    private void ApplyPostRefreshEffects(CharacterOverviewState state)
+    {
+        _dialogWindow = MainWindowDialogWindowCoordinator.Sync(
+            owner: this,
+            currentWindow: _dialogWindow,
+            activeDialog: state.ActiveDialog,
+            adapter: _adapter,
+            onClosed: DialogWindow_OnClosed);
+
+        PendingDownloadDispatchRequest? pendingDownloadRequest = PendingDownloadDispatchCoordinator.TryCreate(
+            state,
+            _lastDownloadVersionHandled);
+        if (pendingDownloadRequest is null)
+        {
+            return;
+        }
+
+        _lastDownloadVersionHandled = pendingDownloadRequest.Version;
+        _ = RunUiActionAsync(
+            () => HandlePendingDownloadAsync(pendingDownloadRequest),
+            "pending download");
     }
 }
