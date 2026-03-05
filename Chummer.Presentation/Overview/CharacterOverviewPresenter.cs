@@ -135,7 +135,11 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
                 workspace.RulesetId))
             .ToArray();
 
-        bootstrap = new ShellBootstrapData(shellState.Commands, shellState.NavigationTabs, workspaces);
+        bootstrap = new ShellBootstrapData(
+            RulesetId: shellState.ActiveRulesetId,
+            Commands: shellState.Commands,
+            NavigationTabs: shellState.NavigationTabs,
+            Workspaces: workspaces);
         return true;
     }
 }

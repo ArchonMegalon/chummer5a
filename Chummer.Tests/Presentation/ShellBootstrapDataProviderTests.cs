@@ -109,6 +109,17 @@ public class ShellBootstrapDataProviderTests
             return Task.FromResult<IReadOnlyList<WorkspaceListItem>>([]);
         }
 
+        public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
+        {
+            string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
+                ? "sr5"
+                : rulesetId;
+            IReadOnlyList<AppCommandDefinition> commands = await GetCommandsAsync(effectiveRulesetId, ct);
+            IReadOnlyList<NavigationTabDefinition> tabs = await GetNavigationTabsAsync(effectiveRulesetId, ct);
+            IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
+            return new ShellBootstrapSnapshot(effectiveRulesetId, commands, tabs, workspaces);
+        }
+
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();
         public Task<bool> CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
         public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct) => throw new NotImplementedException();

@@ -50,38 +50,100 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
 
     public async Task<ShellBootstrapData> GetAsync(string? rulesetId, CancellationToken ct)
     {
-        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
-        IReadOnlyList<WorkspaceListItem> workspaces = await GetWorkspacesAsync(ct);
-        if (TryGetCachedCatalog(effectiveRulesetId, out CachedCatalogData? cachedCatalog))
+        string? requestedRulesetId = string.IsNullOrWhiteSpace(rulesetId)
+            ? null
+            : RulesetDefaults.Normalize(rulesetId);
+
+        if (TryGetCachedBootstrap(requestedRulesetId, out ShellBootstrapData? cachedBootstrap))
         {
-            return new ShellBootstrapData(cachedCatalog.Commands, cachedCatalog.NavigationTabs, workspaces);
+            return cachedBootstrap;
         }
 
         await _sync.WaitAsync(ct);
         try
         {
-            if (TryGetCachedCatalog(effectiveRulesetId, out cachedCatalog))
+            if (TryGetCachedBootstrap(requestedRulesetId, out cachedBootstrap))
             {
-                return new ShellBootstrapData(cachedCatalog.Commands, cachedCatalog.NavigationTabs, workspaces);
+                return cachedBootstrap;
             }
 
-            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _client.GetCommandsAsync(effectiveRulesetId, ct);
-            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _client.GetNavigationTabsAsync(effectiveRulesetId, ct);
-            await Task.WhenAll(commandsTask, tabsTask);
-            cachedCatalog = new CachedCatalogData(commandsTask.Result, tabsTask.Result, DateTimeOffset.UtcNow);
-            _cachedCatalogsByRuleset[effectiveRulesetId] = cachedCatalog;
-
-            if (cachedCatalog is null)
+            if (!string.IsNullOrWhiteSpace(requestedRulesetId) && TryGetCachedWorkspaces(out CachedWorkspaceData? cachedWorkspaces))
             {
-                throw new InvalidOperationException("Shell bootstrap cache could not be resolved.");
+                Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _client.GetCommandsAsync(requestedRulesetId, ct);
+                Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _client.GetNavigationTabsAsync(requestedRulesetId, ct);
+                await Task.WhenAll(commandsTask, tabsTask);
+                var requestedCatalog = new CachedCatalogData(commandsTask.Result, tabsTask.Result, DateTimeOffset.UtcNow);
+                _cachedCatalogsByRuleset[requestedRulesetId] = requestedCatalog;
+
+                return new ShellBootstrapData(
+                    RulesetId: requestedRulesetId,
+                    Commands: requestedCatalog.Commands,
+                    NavigationTabs: requestedCatalog.NavigationTabs,
+                    Workspaces: cachedWorkspaces.Workspaces);
             }
 
-            return new ShellBootstrapData(cachedCatalog.Commands, cachedCatalog.NavigationTabs, workspaces);
+            ShellBootstrapSnapshot snapshot = await _client.GetShellBootstrapAsync(requestedRulesetId, ct);
+            string resolvedRulesetId = RulesetDefaults.Normalize(snapshot.RulesetId);
+            DateTimeOffset cachedAtUtc = DateTimeOffset.UtcNow;
+            _cachedWorkspaces = new CachedWorkspaceData(snapshot.Workspaces, cachedAtUtc);
+            var cachedCatalog = new CachedCatalogData(snapshot.Commands, snapshot.NavigationTabs, cachedAtUtc);
+            _cachedCatalogsByRuleset[resolvedRulesetId] = cachedCatalog;
+            if (!string.IsNullOrWhiteSpace(requestedRulesetId)
+                && !string.Equals(requestedRulesetId, resolvedRulesetId, StringComparison.OrdinalIgnoreCase))
+            {
+                _cachedCatalogsByRuleset[requestedRulesetId] = cachedCatalog;
+            }
+
+            return new ShellBootstrapData(
+                RulesetId: resolvedRulesetId,
+                Commands: snapshot.Commands,
+                NavigationTabs: snapshot.NavigationTabs,
+                Workspaces: snapshot.Workspaces);
         }
         finally
         {
             _sync.Release();
         }
+    }
+
+    private bool TryGetCachedBootstrap(string? requestedRulesetId, [NotNullWhen(true)] out ShellBootstrapData? cachedBootstrap)
+    {
+        string effectiveRulesetId = RulesetDefaults.Normalize(requestedRulesetId);
+        if (!TryGetCachedWorkspaces(out CachedWorkspaceData? cachedWorkspaces))
+        {
+            cachedBootstrap = null;
+            return false;
+        }
+
+        if (TryGetCachedCatalog(effectiveRulesetId, out CachedCatalogData? cachedCatalog))
+        {
+            cachedBootstrap = new ShellBootstrapData(
+                RulesetId: effectiveRulesetId,
+                Commands: cachedCatalog.Commands,
+                NavigationTabs: cachedCatalog.NavigationTabs,
+                Workspaces: cachedWorkspaces.Workspaces);
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(requestedRulesetId))
+        {
+            cachedBootstrap = null;
+            return false;
+        }
+
+        string activeWorkspaceRulesetId = RulesetDefaults.Normalize(cachedWorkspaces.Workspaces.FirstOrDefault()?.RulesetId);
+        if (TryGetCachedCatalog(activeWorkspaceRulesetId, out cachedCatalog))
+        {
+            cachedBootstrap = new ShellBootstrapData(
+                RulesetId: activeWorkspaceRulesetId,
+                Commands: cachedCatalog.Commands,
+                NavigationTabs: cachedCatalog.NavigationTabs,
+                Workspaces: cachedWorkspaces.Workspaces);
+            return true;
+        }
+
+        cachedBootstrap = null;
+        return false;
     }
 
     private bool TryGetCachedCatalog(string rulesetId, [NotNullWhen(true)] out CachedCatalogData? cached)

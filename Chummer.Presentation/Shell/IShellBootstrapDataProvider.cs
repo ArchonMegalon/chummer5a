@@ -4,6 +4,7 @@ using Chummer.Contracts.Workspaces;
 namespace Chummer.Presentation.Shell;
 
 public sealed record ShellBootstrapData(
+    string RulesetId,
     IReadOnlyList<AppCommandDefinition> Commands,
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     IReadOnlyList<WorkspaceListItem> Workspaces);

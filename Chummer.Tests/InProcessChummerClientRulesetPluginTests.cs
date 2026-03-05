@@ -176,7 +176,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
     {
         public WorkspaceImportResult Import(WorkspaceImportDocument document) => throw new NotSupportedException();
 
-        public IReadOnlyList<WorkspaceListItem> List() => throw new NotSupportedException();
+        public IReadOnlyList<WorkspaceListItem> List(int? maxCount = null) => throw new NotSupportedException();
 
         public bool Close(CharacterWorkspaceId id) => throw new NotSupportedException();
 

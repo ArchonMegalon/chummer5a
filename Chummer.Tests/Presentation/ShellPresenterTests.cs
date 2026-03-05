@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
@@ -257,6 +258,21 @@ public class ShellPresenterTests
         }
 
         public Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct) => Task.FromResult(Workspaces);
+
+        public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
+        {
+            string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
+                ? RulesetDefaults.Normalize(
+                    Workspaces
+                        .OrderByDescending(workspace => workspace.LastUpdatedUtc)
+                        .FirstOrDefault()
+                        ?.RulesetId)
+                : RulesetDefaults.Normalize(rulesetId);
+            IReadOnlyList<AppCommandDefinition> commands = await GetCommandsAsync(effectiveRulesetId, ct);
+            IReadOnlyList<NavigationTabDefinition> tabs = await GetNavigationTabsAsync(effectiveRulesetId, ct);
+            IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
+            return new ShellBootstrapSnapshot(effectiveRulesetId, commands, tabs, workspaces);
+        }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();
 

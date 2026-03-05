@@ -7,7 +7,7 @@ public interface IWorkspaceService
 {
     WorkspaceImportResult Import(WorkspaceImportDocument document);
 
-    IReadOnlyList<WorkspaceListItem> List();
+    IReadOnlyList<WorkspaceListItem> List(int? maxCount = null);
 
     bool Close(CharacterWorkspaceId id);
 

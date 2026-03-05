@@ -53,6 +53,22 @@ public sealed class InProcessChummerClient : IChummerClient
         return Task.FromResult(_shellCatalogResolver.ResolveNavigationTabs(rulesetId));
     }
 
+    public Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        IReadOnlyList<WorkspaceListItem> workspaces = _workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
+        string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
+            ? RulesetDefaults.Normalize(workspaces.FirstOrDefault()?.RulesetId)
+            : RulesetDefaults.Normalize(rulesetId);
+
+        return Task.FromResult(new ShellBootstrapSnapshot(
+            RulesetId: effectiveRulesetId,
+            Commands: _shellCatalogResolver.ResolveCommands(effectiveRulesetId),
+            NavigationTabs: _shellCatalogResolver.ResolveNavigationTabs(effectiveRulesetId),
+            Workspaces: workspaces));
+    }
+
     public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();

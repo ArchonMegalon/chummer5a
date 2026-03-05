@@ -776,11 +776,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(providerImplementationText, "BootstrapCacheWindow");
         StringAssert.Contains(providerImplementationText, "Task.WhenAll");
         StringAssert.Contains(providerImplementationText, "GetWorkspacesAsync");
+        StringAssert.Contains(providerImplementationText, "_client.GetShellBootstrapAsync");
         StringAssert.Contains(providerImplementationText, "_client.GetCommandsAsync");
         StringAssert.Contains(providerImplementationText, "_client.GetNavigationTabsAsync");
         StringAssert.Contains(providerImplementationText, "_client.ListWorkspacesAsync");
 
-        StringAssert.Contains(shellPresenterText, "_bootstrapDataProvider.GetWorkspacesAsync");
         StringAssert.Contains(shellPresenterText, "_bootstrapDataProvider.GetAsync");
         StringAssert.Contains(overviewPresenterText, "_bootstrapDataProvider.GetAsync");
         Assert.IsFalse(shellPresenterText.Contains("_client.GetCommandsAsync", StringComparison.Ordinal));

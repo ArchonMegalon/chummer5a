@@ -1,5 +1,6 @@
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using System.Text.Json.Nodes;
 
@@ -16,6 +17,21 @@ public interface IChummerClient
     Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct);
 
     Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct);
+
+    async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
+    {
+        string normalizedRulesetId = RulesetDefaults.Normalize(rulesetId);
+        Task<IReadOnlyList<AppCommandDefinition>> commandsTask = GetCommandsAsync(normalizedRulesetId, ct);
+        Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = GetNavigationTabsAsync(normalizedRulesetId, ct);
+        Task<IReadOnlyList<WorkspaceListItem>> workspacesTask = ListWorkspacesAsync(ct);
+        await Task.WhenAll(commandsTask, tabsTask, workspacesTask);
+
+        return new ShellBootstrapSnapshot(
+            RulesetId: normalizedRulesetId,
+            Commands: commandsTask.Result,
+            NavigationTabs: tabsTask.Result,
+            Workspaces: workspacesTask.Result);
+    }
 
     Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct);
 

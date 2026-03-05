@@ -11,6 +11,7 @@ namespace Chummer.Presentation;
 
 public sealed class HttpChummerClient : IChummerClient
 {
+    private static readonly TimeSpan ShellBootstrapRequestTimeout = TimeSpan.FromSeconds(10);
     private readonly HttpClient _httpClient;
 
     public HttpChummerClient(HttpClient httpClient)
@@ -87,6 +88,49 @@ public sealed class HttpChummerClient : IChummerClient
             throw new InvalidOperationException("Navigation tab catalog response was empty.");
 
         return response.Tabs;
+    }
+
+    public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
+    {
+        string path = "/api/shell/bootstrap";
+        if (!string.IsNullOrWhiteSpace(rulesetId))
+        {
+            string normalizedRuleset = RulesetDefaults.Normalize(rulesetId);
+            path += $"?ruleset={Uri.EscapeDataString(normalizedRuleset)}";
+        }
+
+        using var bootstrapTimeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        bootstrapTimeoutCts.CancelAfter(ShellBootstrapRequestTimeout);
+        ShellBootstrapResponse? response;
+        try
+        {
+            response = await _httpClient.GetFromJsonAsync<ShellBootstrapResponse>(path, bootstrapTimeoutCts.Token);
+        }
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            throw new InvalidOperationException(
+                $"Shell bootstrap request timed out after {ShellBootstrapRequestTimeout.TotalSeconds:0} seconds.",
+                ex);
+        }
+
+        if (response is null)
+        {
+            throw new InvalidOperationException("Shell bootstrap response was empty.");
+        }
+
+        IReadOnlyList<WorkspaceListItem> workspaces = response.Workspaces
+            .Select(workspace => new WorkspaceListItem(
+                Id: new CharacterWorkspaceId(workspace.Id),
+                Summary: workspace.Summary,
+                LastUpdatedUtc: workspace.LastUpdatedUtc,
+                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId)))
+            .ToArray();
+
+        return new ShellBootstrapSnapshot(
+            RulesetId: RulesetDefaults.Normalize(response.RulesetId),
+            Commands: response.Commands,
+            NavigationTabs: response.NavigationTabs,
+            Workspaces: workspaces);
     }
 
     public async Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)

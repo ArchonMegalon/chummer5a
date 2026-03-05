@@ -68,6 +68,7 @@ app.MapSettingsEndpoints();
 app.MapRosterEndpoints();
 app.MapCommandEndpoints();
 app.MapNavigationEndpoints();
+app.MapShellEndpoints();
 app.MapWorkspaceEndpoints();
 
 app.Run();
@@ -78,7 +79,8 @@ static bool IsPublicApiPath(PathString path)
         || path.StartsWithSegments("/api/info", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/content/overlays", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/commands", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/navigation-tabs", StringComparison.Ordinal);
+        || path.StartsWithSegments("/api/navigation-tabs", StringComparison.Ordinal)
+        || path.StartsWithSegments("/api/shell/bootstrap", StringComparison.Ordinal);
 }
 
 static bool RequiresApiKey(PathString path, bool protectApiDocs)

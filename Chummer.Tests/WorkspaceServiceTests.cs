@@ -109,6 +109,28 @@ public class WorkspaceServiceTests
         Assert.AreEqual("BOM", imported.Summary.Alias);
     }
 
+    [TestMethod]
+    public void List_honors_maxCount_parameter()
+    {
+        const string xmlTemplate = "<character><name>{0}</name><alias>{0}</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>0</karma><nuyen>0</nuyen><created>True</created></character>";
+        IWorkspaceStore store = new InMemoryWorkspaceStore();
+        ICharacterFileQueries fileQueries = new XmlCharacterFileQueries(new CharacterFileService());
+        ICharacterSectionQueries sectionQueries = new XmlCharacterSectionQueries(new CharacterSectionService());
+        ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
+        IWorkspaceService workspaceService = new WorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
+
+        workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "One"), WorkspaceDocumentFormat.Chum5Xml));
+        workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "Two"), WorkspaceDocumentFormat.Chum5Xml));
+        workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "Three"), WorkspaceDocumentFormat.Chum5Xml));
+
+        IReadOnlyList<WorkspaceListItem> fullList = workspaceService.List();
+        IReadOnlyList<WorkspaceListItem> cappedList = workspaceService.List(maxCount: 2);
+
+        Assert.AreEqual(3, fullList.Count);
+        Assert.AreEqual(2, cappedList.Count);
+        Assert.IsTrue(cappedList.All(item => fullList.Any(full => string.Equals(full.Id.Value, item.Id.Value, StringComparison.Ordinal))));
+    }
+
     private sealed class TrackingWorkspaceStore : IWorkspaceStore
     {
         public int CreateCallCount { get; private set; }

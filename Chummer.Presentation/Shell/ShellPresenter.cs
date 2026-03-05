@@ -30,15 +30,18 @@ public sealed class ShellPresenter : IShellPresenter
 
         try
         {
-            IReadOnlyList<WorkspaceListItem> workspaceList = await _bootstrapDataProvider.GetWorkspacesAsync(ct);
-            ShellWorkspaceState[] openWorkspaces = MapWorkspaces(workspaceList);
+            ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(ct);
+            ShellWorkspaceState[] openWorkspaces = MapWorkspaces(bootstrap.Workspaces);
             string preferredRulesetId = RulesetDefaults.Normalize(State.PreferredRulesetId);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(
                 requestedActiveWorkspaceId: null,
                 openWorkspaces);
             string activeRulesetId = ResolveRulesetForActiveWorkspace(activeWorkspaceId, openWorkspaces, preferredRulesetId);
+            if (!string.Equals(RulesetDefaults.Normalize(bootstrap.RulesetId), activeRulesetId, StringComparison.Ordinal))
+            {
+                bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
+            }
 
-            ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
             IReadOnlyList<AppCommandDefinition> commands = bootstrap.Commands;
             IReadOnlyList<NavigationTabDefinition> tabs = bootstrap.NavigationTabs;
 

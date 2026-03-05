@@ -496,6 +496,39 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Shell_bootstrap_endpoint_returns_ruleset_catalog_and_workspace_snapshot()
+    {
+        using var client = CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(180);
+
+        JsonObject response = await GetRequiredJsonObject(client, "/api/shell/bootstrap?ruleset=sr5");
+
+        Assert.AreEqual("sr5", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.IsTrue(response["commands"] is JsonArray commands && commands.Count > 0);
+        Assert.IsTrue(response["navigationTabs"] is JsonArray tabs && tabs.Count > 0);
+        Assert.IsTrue(response["workspaces"] is JsonArray);
+    }
+
+    [TestMethod]
+    public async Task Shell_bootstrap_endpoint_defaults_to_active_workspace_ruleset_when_unspecified()
+    {
+        using var client = CreateClient();
+        client.Timeout = TimeSpan.FromSeconds(180);
+
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        JsonObject importBody = new()
+        {
+            ["xml"] = xml,
+            ["rulesetId"] = "SR6"
+        };
+
+        await PostRequiredJsonObject(client, "/api/workspaces/import", importBody);
+        JsonObject response = await GetRequiredJsonObject(client, "/api/shell/bootstrap");
+
+        Assert.AreEqual("sr6", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+    }
+
+    [TestMethod]
     public async Task Workspace_endpoints_import_read_update_and_save_character()
     {
         using var client = CreateClient();

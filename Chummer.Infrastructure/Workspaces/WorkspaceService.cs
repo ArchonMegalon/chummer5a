@@ -35,12 +35,16 @@ public sealed class WorkspaceService : IWorkspaceService
         return new WorkspaceImportResult(id, summary, rulesetId);
     }
 
-    public IReadOnlyList<WorkspaceListItem> List()
+    public IReadOnlyList<WorkspaceListItem> List(int? maxCount = null)
     {
         List<WorkspaceListItem> workspaces = [];
+        int? normalizedMaxCount = maxCount is > 0 ? maxCount : null;
 
         foreach (WorkspaceStoreEntry entry in _workspaceStore.List())
         {
+            if (normalizedMaxCount is not null && workspaces.Count >= normalizedMaxCount.Value)
+                break;
+
             CharacterWorkspaceId id = entry.Id;
             if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
                 continue;
