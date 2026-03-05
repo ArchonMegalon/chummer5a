@@ -459,6 +459,17 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Commands_endpoint_returns_empty_catalog_for_unknown_ruleset()
+    {
+        using var client = CreateClient();
+
+        JsonObject response = await GetRequiredJsonObject(client, "/api/commands?ruleset=sr6");
+
+        Assert.AreEqual(0, response["count"]?.GetValue<int>() ?? -1);
+        Assert.IsTrue(response["commands"] is JsonArray commands && commands.Count == 0);
+    }
+
+    [TestMethod]
     public async Task Navigation_tabs_endpoint_returns_catalog()
     {
         using var client = CreateClient();
@@ -471,6 +482,17 @@ public class ApiIntegrationTests
         Assert.IsTrue((response["tabs"] as JsonArray)?.Any(node => string.Equals(node?["id"]?.GetValue<string>(), "tab-info", StringComparison.Ordinal)) ?? false);
         Assert.IsTrue((response["tabs"] as JsonArray)?.All(node => !string.IsNullOrWhiteSpace(node?["sectionId"]?.GetValue<string>())) ?? false);
         Assert.AreEqual(response.ToJsonString(), defaultResponse.ToJsonString());
+    }
+
+    [TestMethod]
+    public async Task Navigation_tabs_endpoint_returns_empty_catalog_for_unknown_ruleset()
+    {
+        using var client = CreateClient();
+
+        JsonObject response = await GetRequiredJsonObject(client, "/api/navigation-tabs?ruleset=sr6");
+
+        Assert.AreEqual(0, response["count"]?.GetValue<int>() ?? -1);
+        Assert.IsTrue(response["tabs"] is JsonArray tabs && tabs.Count == 0);
     }
 
     [TestMethod]
