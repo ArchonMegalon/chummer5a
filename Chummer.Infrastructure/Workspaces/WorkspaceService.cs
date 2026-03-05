@@ -4,14 +4,11 @@ using Chummer.Contracts.Characters;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text;
 
 namespace Chummer.Infrastructure.Workspaces;
 
 public sealed class WorkspaceService : IWorkspaceService
 {
-    private const int DefaultEnvelopeSchemaVersion = Sr5WorkspaceCodec.SchemaVersion;
-    private const string DefaultEnvelopePayloadKind = Sr5WorkspaceCodec.Sr5PayloadKind;
     private readonly IWorkspaceStore _workspaceStore;
     private readonly IRulesetWorkspaceCodecResolver _workspaceCodecResolver;
 
@@ -240,23 +237,12 @@ public sealed class WorkspaceService : IWorkspaceService
         }
 
         WorkspacePayloadEnvelope envelope = ResolveEnvelope(document);
-        byte[] contentBytes = Encoding.UTF8.GetBytes(envelope.Payload);
-        string contentBase64 = Convert.ToBase64String(contentBytes);
-        string fileExtension = document.Format switch
-        {
-            WorkspaceDocumentFormat.Chum5Xml => ".chum5",
-            _ => ".dat"
-        };
+        IRulesetWorkspaceCodec codec = _workspaceCodecResolver.Resolve(envelope.RulesetId);
+        WorkspaceDownloadReceipt receipt = codec.BuildDownload(id, envelope, document.Format);
 
         return new CommandResult<WorkspaceDownloadReceipt>(
             Success: true,
-            Value: new WorkspaceDownloadReceipt(
-                Id: id,
-                Format: document.Format,
-                ContentBase64: contentBase64,
-                FileName: $"{id.Value}{fileExtension}",
-                DocumentLength: envelope.Payload.Length,
-                RulesetId: envelope.RulesetId),
+            Value: receipt,
             Error: null);
     }
 
@@ -278,16 +264,17 @@ public sealed class WorkspaceService : IWorkspaceService
         return true;
     }
 
-    private static WorkspacePayloadEnvelope ResolveEnvelope(WorkspaceDocument document)
+    private WorkspacePayloadEnvelope ResolveEnvelope(WorkspaceDocument document)
     {
         WorkspacePayloadEnvelope? existing = document.PayloadEnvelope;
         string normalizedRulesetId = RulesetDefaults.Normalize(
             existing?.RulesetId ?? document.RulesetId);
+        IRulesetWorkspaceCodec codec = _workspaceCodecResolver.Resolve(normalizedRulesetId);
         int schemaVersion = existing?.SchemaVersion is > 0
             ? existing.SchemaVersion
-            : DefaultEnvelopeSchemaVersion;
+            : codec.SchemaVersion;
         string payloadKind = string.IsNullOrWhiteSpace(existing?.PayloadKind)
-            ? DefaultEnvelopePayloadKind
+            ? codec.PayloadKind
             : existing.PayloadKind;
         string payload = existing?.Payload ?? document.Content;
         return new WorkspacePayloadEnvelope(

@@ -3,6 +3,7 @@ using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using System.Text;
 
 namespace Chummer.Infrastructure.Workspaces;
 
@@ -25,6 +26,8 @@ public sealed class Sr5WorkspaceCodec : IRulesetWorkspaceCodec
     }
 
     public string RulesetId => RulesetDefaults.Sr5;
+
+    int IRulesetWorkspaceCodec.SchemaVersion => SchemaVersion;
 
     public string PayloadKind => Sr5PayloadKind;
 
@@ -69,6 +72,29 @@ public sealed class Sr5WorkspaceCodec : IRulesetWorkspaceCodec
             PayloadKind = string.IsNullOrWhiteSpace(envelope.PayloadKind) ? PayloadKind : envelope.PayloadKind,
             Payload = result.UpdatedDocument.Content
         };
+    }
+
+    public WorkspaceDownloadReceipt BuildDownload(
+        CharacterWorkspaceId id,
+        WorkspacePayloadEnvelope envelope,
+        WorkspaceDocumentFormat format)
+    {
+        string xml = ToXmlContent(envelope.Payload, format);
+        byte[] contentBytes = Encoding.UTF8.GetBytes(xml);
+        string contentBase64 = Convert.ToBase64String(contentBytes);
+        string fileName = format switch
+        {
+            WorkspaceDocumentFormat.Chum5Xml => $"{id.Value}.chum5",
+            _ => throw new InvalidOperationException($"Workspace format '{format}' is not supported.")
+        };
+
+        return new WorkspaceDownloadReceipt(
+            Id: id,
+            Format: format,
+            ContentBase64: contentBase64,
+            FileName: fileName,
+            DocumentLength: xml.Length,
+            RulesetId: RulesetDefaults.Normalize(envelope.RulesetId));
     }
 
     private static string ToXmlContent(string content, WorkspaceDocumentFormat format)

@@ -1140,21 +1140,30 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(codecContractText, "public interface IRulesetWorkspaceCodec");
         StringAssert.Contains(codecContractText, "WrapImport");
+        StringAssert.Contains(codecContractText, "int SchemaVersion { get; }");
         StringAssert.Contains(codecContractText, "ParseSummary");
         StringAssert.Contains(codecContractText, "ParseSection");
         StringAssert.Contains(codecContractText, "Validate");
         StringAssert.Contains(codecContractText, "UpdateMetadata");
+        StringAssert.Contains(codecContractText, "WorkspaceDownloadReceipt BuildDownload");
         StringAssert.Contains(codecResolverContractText, "public interface IRulesetWorkspaceCodecResolver");
 
         StringAssert.Contains(workspaceServiceText, "IRulesetWorkspaceCodecResolver _workspaceCodecResolver");
         StringAssert.Contains(workspaceServiceText, "_workspaceCodecResolver.Resolve");
+        StringAssert.Contains(workspaceServiceText, "codec.SchemaVersion");
+        StringAssert.Contains(workspaceServiceText, "codec.PayloadKind");
+        StringAssert.Contains(workspaceServiceText, "codec.BuildDownload(id, envelope, document.Format)");
         Assert.IsFalse(workspaceServiceText.Contains("_characterFileQueries.ParseSummary", StringComparison.Ordinal));
         Assert.IsFalse(workspaceServiceText.Contains("_characterSectionQueries.ParseSection", StringComparison.Ordinal));
         Assert.IsFalse(workspaceServiceText.Contains("_characterMetadataCommands.UpdateMetadata", StringComparison.Ordinal));
+        Assert.IsFalse(workspaceServiceText.Contains("DefaultEnvelopeSchemaVersion", StringComparison.Ordinal));
+        Assert.IsFalse(workspaceServiceText.Contains("DefaultEnvelopePayloadKind", StringComparison.Ordinal));
+        Assert.IsFalse(workspaceServiceText.Contains("WorkspaceDocumentFormat.Chum5Xml => \".chum5\"", StringComparison.Ordinal));
 
         StringAssert.Contains(sr5CodecText, "public sealed class Sr5WorkspaceCodec");
         StringAssert.Contains(sr5CodecText, "public const string Sr5PayloadKind = \"sr5/chum5-xml\"");
         StringAssert.Contains(sr5CodecText, "UpdateMetadata");
+        StringAssert.Contains(sr5CodecText, "WorkspaceDownloadReceipt BuildDownload");
 
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IRulesetWorkspaceCodec, Sr5WorkspaceCodec>();");
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();");

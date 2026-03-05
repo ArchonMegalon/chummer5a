@@ -1,9 +1,12 @@
+#nullable enable annotations
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Infrastructure.Xml;
 using Chummer.Infrastructure.Workspaces;
@@ -131,6 +134,52 @@ public class WorkspaceServiceTests
         Assert.IsTrue(cappedList.All(item => fullList.Any(full => string.Equals(full.Id.Value, item.Id.Value, StringComparison.Ordinal))));
     }
 
+    [TestMethod]
+    public void GetSummary_uses_codec_defaults_when_document_envelope_is_missing()
+    {
+        InMemoryWorkspaceStore store = new();
+        CharacterWorkspaceId id = store.Create(new WorkspaceDocument(
+            Content: "<codec-payload/>",
+            Format: WorkspaceDocumentFormat.Chum5Xml,
+            RulesetId: "sr6",
+            PayloadEnvelope: null));
+        RecordingWorkspaceCodec codec = new();
+        WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
+
+        CharacterFileSummary? summary = workspaceService.GetSummary(id);
+
+        Assert.IsNotNull(summary);
+        Assert.IsNotNull(codec.LastSummaryEnvelope);
+        Assert.AreEqual("sr6", codec.LastSummaryEnvelope.RulesetId);
+        Assert.AreEqual(7, codec.LastSummaryEnvelope.SchemaVersion);
+        Assert.AreEqual("sr6/custom-payload", codec.LastSummaryEnvelope.PayloadKind);
+        Assert.AreEqual("<codec-payload/>", codec.LastSummaryEnvelope.Payload);
+    }
+
+    [TestMethod]
+    public void Download_delegates_file_shape_to_ruleset_codec()
+    {
+        InMemoryWorkspaceStore store = new();
+        CharacterWorkspaceId id = store.Create(new WorkspaceDocument(
+            Content: "<codec-download/>",
+            Format: WorkspaceDocumentFormat.Chum5Xml,
+            RulesetId: "sr6",
+            PayloadEnvelope: null));
+        RecordingWorkspaceCodec codec = new();
+        WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
+
+        CommandResult<WorkspaceDownloadReceipt> result = workspaceService.Download(id);
+
+        Assert.IsTrue(result.Success);
+        Assert.IsNotNull(result.Value);
+        Assert.IsNotNull(codec.LastDownloadEnvelope);
+        Assert.AreEqual("codec-export.sr6pkg", result.Value.FileName);
+        Assert.AreEqual("sr6", result.Value.RulesetId);
+        Assert.AreEqual(7, codec.LastDownloadEnvelope.SchemaVersion);
+        Assert.AreEqual("sr6/custom-payload", codec.LastDownloadEnvelope.PayloadKind);
+        Assert.AreEqual(16, result.Value.DocumentLength);
+    }
+
     private sealed class TrackingWorkspaceStore : IWorkspaceStore
     {
         public int CreateCallCount { get; private set; }
@@ -205,5 +254,69 @@ public class WorkspaceServiceTests
                 metadataCommands)
         ]);
         return new WorkspaceService(workspaceStore, resolver);
+    }
+
+    private sealed class RecordingWorkspaceCodec : IRulesetWorkspaceCodec
+    {
+        public string RulesetId => "sr6";
+
+        public int SchemaVersion => 7;
+
+        public string PayloadKind => "sr6/custom-payload";
+
+        public WorkspacePayloadEnvelope? LastSummaryEnvelope { get; private set; }
+
+        public WorkspacePayloadEnvelope? LastDownloadEnvelope { get; private set; }
+
+        public WorkspacePayloadEnvelope WrapImport(string rulesetId, WorkspaceImportDocument document)
+        {
+            return new WorkspacePayloadEnvelope(
+                RulesetId: RulesetDefaults.Normalize(rulesetId),
+                SchemaVersion: SchemaVersion,
+                PayloadKind: PayloadKind,
+                Payload: document.Content);
+        }
+
+        public CharacterFileSummary ParseSummary(WorkspacePayloadEnvelope envelope)
+        {
+            LastSummaryEnvelope = envelope;
+            return new CharacterFileSummary(
+                Name: "Codec Runner",
+                Alias: "SR6",
+                Metatype: string.Empty,
+                BuildMethod: string.Empty,
+                CreatedVersion: string.Empty,
+                AppVersion: string.Empty,
+                Karma: 0m,
+                Nuyen: 0m,
+                Created: false);
+        }
+
+        public object ParseSection(string sectionId, WorkspacePayloadEnvelope envelope)
+        {
+            throw new NotSupportedException();
+        }
+
+        public CharacterValidationResult Validate(WorkspacePayloadEnvelope envelope)
+        {
+            throw new NotSupportedException();
+        }
+
+        public WorkspacePayloadEnvelope UpdateMetadata(WorkspacePayloadEnvelope envelope, UpdateWorkspaceMetadata command)
+        {
+            throw new NotSupportedException();
+        }
+
+        public WorkspaceDownloadReceipt BuildDownload(CharacterWorkspaceId id, WorkspacePayloadEnvelope envelope, WorkspaceDocumentFormat format)
+        {
+            LastDownloadEnvelope = envelope;
+            return new WorkspaceDownloadReceipt(
+                Id: id,
+                Format: format,
+                ContentBase64: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("codec-download")),
+                FileName: "codec-export.sr6pkg",
+                DocumentLength: 16,
+                RulesetId: envelope.RulesetId);
+        }
     }
 }
