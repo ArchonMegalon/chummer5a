@@ -1,5 +1,7 @@
+using Chummer.Contracts.Rulesets;
 using Chummer.Infrastructure.DependencyInjection;
 using Chummer.Presentation;
+using Chummer.Presentation.Rulesets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -19,6 +21,7 @@ public static class ServiceCollectionDesktopRuntimeExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         services.RemoveAll<IChummerClient>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
 
         if (UseHttpClientMode())
         {

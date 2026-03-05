@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
+using Chummer.Contracts.Rulesets;
 using Chummer.Desktop.Runtime;
 using Chummer.Presentation;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,8 +31,10 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
 
                     using ServiceProvider provider = services.BuildServiceProvider();
                     IChummerClient client = provider.GetRequiredService<IChummerClient>();
+                    IReadOnlyList<IRulesetPlugin> plugins = provider.GetServices<IRulesetPlugin>().ToArray();
 
                     Assert.IsInstanceOfType(client, typeof(InProcessChummerClient));
+                    Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr5, StringComparison.Ordinal)));
                 });
             }
             finally
