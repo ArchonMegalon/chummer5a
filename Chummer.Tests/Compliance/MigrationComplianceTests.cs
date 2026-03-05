@@ -1373,6 +1373,29 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Repo_guidance_marks_legacy_heads_as_oracle_only()
+    {
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+        string backlogPath = FindPath("docs", "MIGRATION_BACKLOG.md");
+        string backlogText = File.ReadAllText(backlogPath);
+        string prTemplatePath = FindPath(".github", "PULL_REQUEST_TEMPLATE.md");
+        string prTemplateText = File.ReadAllText(prTemplatePath);
+
+        StringAssert.Contains(readmeText, "Legacy head policy: `Chummer` and `Chummer.Web` are oracle/parity assets only.");
+        StringAssert.Contains(readmeText, "Net-new user-facing behavior belongs in the shared seam and active heads;");
+        StringAssert.Contains(readmeText, "legacy changes must be limited to regression-oracle maintenance, parity extraction, or compatibility verification.");
+
+        StringAssert.Contains(backlogText, "Guardrail: until this phase is complete, `Chummer` (WinForms) and `Chummer.Web` remain oracle/parity assets only.");
+        StringAssert.Contains(backlogText, "Net-new user-facing behavior must land in the shared seam and active heads;");
+        StringAssert.Contains(backlogText, "legacy changes are limited to parity extraction, regression-oracle maintenance, or compatibility verification.");
+
+        StringAssert.Contains(prTemplateText, "Net-new user-facing behavior is implemented in the shared seam and active heads, not in legacy-only surfaces.");
+        StringAssert.Contains(prTemplateText, "If this PR touches `Chummer` or `Chummer.Web`, the change is limited to parity extraction, regression-oracle maintenance, or compatibility verification");
+        StringAssert.Contains(prTemplateText, "## Legacy Touch Rationale");
+    }
+
+    [TestMethod]
     public void Ci_wires_blazor_component_and_playwright_jobs_for_phase4_gate()
     {
         string componentSuitePath = FindPath("scripts", "test-blazor-components.sh");

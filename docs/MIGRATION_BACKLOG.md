@@ -174,6 +174,8 @@ Progress: introduced `CHUMMER_AMENDS_PATH` overlay discovery in infrastructure w
 
 ### Phase 8: Retire static legacy shell
 
+Guardrail: until this phase is complete, `Chummer` (WinForms) and `Chummer.Web` remain oracle/parity assets only. Net-new user-facing behavior must land in the shared seam and active heads; legacy changes are limited to parity extraction, regression-oracle maintenance, or compatibility verification.
+
 - [ ] `MIG-080` Remove `Chummer.Web` from default product runtime path once parity gates are met.
 Acceptance criteria: compose and README primary flows reference API + Blazor + Avalonia only.
 

@@ -27,6 +27,7 @@ The `Docker` branch is an active migration branch and no longer follows a WinFor
 * `Chummer.Blazor` is the browser/web head, `Chummer.Avalonia` is the native desktop head, and `Chummer.Blazor.Desktop` is the desktop webview host.
 * `Chummer.Portal` is the single public gateway surface and `Chummer.Avalonia.Browser` provides the browser-hosted `/avalonia` route behind the portal profile.
 * `Chummer.Web` is currently retained as a temporary legacy-shell parity artifact during migration.
+* Legacy head policy: `Chummer` and `Chummer.Web` are oracle/parity assets only. Net-new user-facing behavior belongs in the shared seam and active heads; legacy changes must be limited to regression-oracle maintenance, parity extraction, or compatibility verification.
 * Runtime compose flows target `chummer-api` and `chummer-blazor`; no `chummer-web` service is part of the active product path.
 * Migration execution backlog: [`docs/MIGRATION_BACKLOG.md`](docs/MIGRATION_BACKLOG.md).
 
