@@ -11,4 +11,9 @@ public sealed record ShellBootstrapData(
 public interface IShellBootstrapDataProvider
 {
     Task<ShellBootstrapData> GetAsync(CancellationToken ct);
+
+    Task<ShellBootstrapData> GetAsync(string? rulesetId, CancellationToken ct)
+    {
+        return GetAsync(ct);
+    }
 }

@@ -41,11 +41,9 @@ public sealed class ShellPresenter : IShellPresenter
             IReadOnlyList<NavigationTabDefinition> tabs = bootstrap.NavigationTabs;
             if (!string.Equals(activeRulesetId, RulesetDefaults.Sr5, StringComparison.Ordinal))
             {
-                Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _runtimeClient.GetCommandsAsync(activeRulesetId, ct);
-                Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _runtimeClient.GetNavigationTabsAsync(activeRulesetId, ct);
-                await Task.WhenAll(commandsTask, tabsTask);
-                commands = commandsTask.Result;
-                tabs = tabsTask.Result;
+                ShellBootstrapData rulesetBootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
+                commands = rulesetBootstrap.Commands;
+                tabs = rulesetBootstrap.NavigationTabs;
             }
 
             AppCommandDefinition[] menuRoots = BuildMenuRoots(commands);

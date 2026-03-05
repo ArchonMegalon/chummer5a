@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,15 +47,39 @@ public class ShellBootstrapDataProviderTests
         Assert.AreEqual(1, client.ListWorkspacesCalls);
     }
 
+    [TestMethod]
+    public async Task GetAsync_caches_workspaces_across_rulesets_and_scopes_catalog_requests()
+    {
+        var client = new BootstrapClientStub();
+        var provider = new ShellBootstrapDataProvider(client);
+
+        await provider.GetAsync("sr5", CancellationToken.None);
+        await provider.GetAsync("sr6", CancellationToken.None);
+        await provider.GetAsync("sr6", CancellationToken.None);
+
+        Assert.AreEqual(2, client.GetCommandsCalls);
+        Assert.AreEqual(2, client.GetNavigationTabsCalls);
+        Assert.AreEqual(1, client.ListWorkspacesCalls);
+
+        CollectionAssert.AreEquivalent(
+            new[] { "sr5", "sr6" },
+            client.CommandRulesets
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(id => id, StringComparer.Ordinal)
+                .ToArray());
+    }
+
     private sealed class BootstrapClientStub : IChummerClient
     {
         public int GetCommandsCalls { get; private set; }
         public int GetNavigationTabsCalls { get; private set; }
         public int ListWorkspacesCalls { get; private set; }
+        public List<string> CommandRulesets { get; } = new();
 
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
         {
             GetCommandsCalls++;
+            CommandRulesets.Add(rulesetId ?? "sr5");
             return Task.FromResult<IReadOnlyList<AppCommandDefinition>>(AppCommandCatalog.All);
         }
 
