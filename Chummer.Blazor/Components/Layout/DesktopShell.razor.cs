@@ -46,12 +46,12 @@ public partial class DesktopShell : IDisposable
         HeadCommands.Where(command => command.Group is "file" or "tools").Take(10);
 
     private IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions =>
-        WorkspaceSurfaceActionCatalog.ForTab(State.ActiveTabId)
+        WorkspaceSurfaceActionCatalog.ForTab(State.ActiveTabId, ShellState.ActiveRulesetId)
             .Where(action => AvailabilityEvaluator.IsWorkspaceActionEnabled(action, State))
             .ToArray();
 
     private IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls =>
-        DesktopUiControlCatalog.ForTab(State.ActiveTabId)
+        DesktopUiControlCatalog.ForTab(State.ActiveTabId, ShellState.ActiveRulesetId)
             .Where(control => AvailabilityEvaluator.IsUiControlEnabled(control, State))
             .ToArray();
 

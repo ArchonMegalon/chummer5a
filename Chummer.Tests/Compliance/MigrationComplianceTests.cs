@@ -764,6 +764,21 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Dual_head_shell_actions_and_controls_are_scoped_by_active_ruleset()
+    {
+        string blazorShellCodePath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor.cs");
+        string blazorShellCodeText = File.ReadAllText(blazorShellCodePath);
+        string avaloniaStatePath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
+        string avaloniaStateText = File.ReadAllText(avaloniaStatePath);
+
+        StringAssert.Contains(blazorShellCodeText, "WorkspaceSurfaceActionCatalog.ForTab(State.ActiveTabId, ShellState.ActiveRulesetId)");
+        StringAssert.Contains(blazorShellCodeText, "DesktopUiControlCatalog.ForTab(State.ActiveTabId, ShellState.ActiveRulesetId)");
+
+        StringAssert.Contains(avaloniaStateText, "WorkspaceSurfaceActionCatalog.ForTab(state.ActiveTabId, shellState.ActiveRulesetId)");
+        StringAssert.Contains(avaloniaStateText, "DesktopUiControlCatalog.ForTab(state.ActiveTabId, shellState.ActiveRulesetId)");
+    }
+
+    [TestMethod]
     public void Ruleset_seam_contracts_are_declared_without_changing_default_sr5_catalog_behavior()
     {
         string rulesetContractsPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetContracts.cs");

@@ -26,8 +26,8 @@ public partial class MainWindow
         RefreshCommands(state, shellState);
         RefreshOpenWorkspaces(state, workspaceContext.ActiveWorkspaceId);
         RefreshNavigationTabs(state, shellState);
-        RefreshSectionActions(state);
-        RefreshUiControls(state);
+        RefreshSectionActions(state, shellState);
+        RefreshUiControls(state, shellState);
         RefreshSectionPreview(state);
         RefreshDialogState(state);
 
@@ -124,9 +124,9 @@ public partial class MainWindow
         _suppressTabSelectionEvent = false;
     }
 
-    private void RefreshSectionActions(CharacterOverviewState state)
+    private void RefreshSectionActions(CharacterOverviewState state, ShellState shellState)
     {
-        WorkspaceSurfaceActionDefinition[] actions = WorkspaceSurfaceActionCatalog.ForTab(state.ActiveTabId)
+        WorkspaceSurfaceActionDefinition[] actions = WorkspaceSurfaceActionCatalog.ForTab(state.ActiveTabId, shellState.ActiveRulesetId)
             .Where(action => _commandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, state))
             .ToArray();
         SectionActionListItem[] sectionActionItems = actions
@@ -138,9 +138,9 @@ public partial class MainWindow
         _suppressSectionActionSelectionEvent = false;
     }
 
-    private void RefreshUiControls(CharacterOverviewState state)
+    private void RefreshUiControls(CharacterOverviewState state, ShellState shellState)
     {
-        DesktopUiControlDefinition[] uiControls = DesktopUiControlCatalog.ForTab(state.ActiveTabId)
+        DesktopUiControlDefinition[] uiControls = DesktopUiControlCatalog.ForTab(state.ActiveTabId, shellState.ActiveRulesetId)
             .Where(control => _commandAvailabilityEvaluator.IsUiControlEnabled(control, state))
             .ToArray();
         _suppressUiControlSelectionEvent = true;
