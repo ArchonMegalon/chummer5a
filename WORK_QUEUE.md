@@ -55,6 +55,7 @@ Purpose: keep a live, ordered queue of actionable work and execute items continu
 | WQ-042 | blocked | P1 | Execute strict host-gate wrapper in this sandbox. | agent | `scripts/runbook-strict-host-gates.sh` fails immediately on strict NuGet preflight (`api.nuget.org:443` denied), which is expected until host/network access is available. |
 | WQ-043 | done | P2 | Add host prerequisite check script for strict gate readiness. | agent | Completed 2026-03-05: added `scripts/check-host-gate-prereqs.sh` plus `RUNBOOK_MODE=host-prereqs` with summary output, and wired docs/guardrails/compliance checks. |
 | WQ-044 | done | P2 | Commit prerequisite-check and verification-hardening follow-up batch. | agent | Completed 2026-03-05 in commit `8205d6a81`: host prerequisite runbook mode, verifier hardening wiring, and updated docs/compliance coverage are committed. |
+| WQ-045 | done | P1 | Fix host-prereqs log path/summary reliability for non-sudo users. | agent | Completed 2026-03-05: replaced fixed `/tmp` prereq logs with per-user writable-path resolution in `runbook` + `check-host-gate-prereqs`, eliminating permission-denied logging and stale summary mismatches. |
 
 ## Intake Template
 Append new items at bottom:

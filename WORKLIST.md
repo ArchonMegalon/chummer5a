@@ -52,6 +52,7 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-039 | blocked | P1 | Execute strict host-gate wrapper in this sandbox. | agent | Strict wrapper intentionally fails on blocked NuGet preflight (`api.nuget.org:443`) in this environment; requires host/network access for full execution. |
 | WL-040 | done | P2 | Add host prerequisite checker for strict gate readiness. | agent | Completed 2026-03-05: added `scripts/check-host-gate-prereqs.sh` and `runbook` mode `host-prereqs` with summarized PASS/FAIL output for Docker+NuGet readiness. |
 | WL-041 | done | P2 | Commit prerequisite checker and verifier hardening batch. | agent | Completed 2026-03-05 in commit `8205d6a81` with host-prereq runbook mode, stricter verifier flow wiring, and documentation/compliance updates. |
+| WL-042 | done | P1 | Fix host-prereqs logging path reliability for non-sudo runs. | agent | Completed 2026-03-05: runbook/prereq scripts now choose per-user writable log files, so host-prereqs reports accurate PASS/FAIL summaries without `/tmp` permission collisions. |
 
 ## Intake Template
 Add new items at the bottom:

@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 NUGET_ENDPOINT="${NUGET_ENDPOINT:-api.nuget.org:443}"
 CHECK_DOCKER="${CHECK_DOCKER:-1}"
 CHECK_NUGET="${CHECK_NUGET:-1}"
+PREREQ_LOG_DIR="${PREREQ_LOG_DIR:-}"
 
 status=0
 
@@ -13,6 +17,41 @@ is_true() {
   [[ "$value" == "1" || "$value" == "true" || "$value" == "yes" || "$value" == "on" ]]
 }
 
+resolve_log_file() {
+  local base_name="$1"
+  local uid_suffix
+  uid_suffix="$(id -u 2>/dev/null || echo user)"
+  local candidates=()
+  if [[ -n "$PREREQ_LOG_DIR" ]]; then
+    candidates+=("$PREREQ_LOG_DIR/${base_name}.${uid_suffix}.log")
+  fi
+  if [[ -n "${XDG_RUNTIME_DIR:-}" ]]; then
+    candidates+=("${XDG_RUNTIME_DIR}/${base_name}.${uid_suffix}.log")
+  fi
+  if [[ -n "${TMPDIR:-}" ]]; then
+    candidates+=("${TMPDIR}/${base_name}.${uid_suffix}.log")
+  fi
+  if [[ -n "${HOME:-}" ]]; then
+    candidates+=("${HOME}/.cache/chummer/${base_name}.${uid_suffix}.log")
+  fi
+  candidates+=("$REPO_ROOT/.tmp/${base_name}.${uid_suffix}.log")
+  candidates+=("$PWD/${base_name}.${uid_suffix}.log")
+
+  for candidate in "${candidates[@]}"; do
+    local dir
+    dir="$(dirname "$candidate")"
+    if mkdir -p "$dir" 2>/dev/null && : > "$candidate" 2>/dev/null; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+
+  echo "/dev/null"
+}
+
+DOCKER_LOG_FILE="$(resolve_log_file "chummer-strict-prereq-docker")"
+NUGET_LOG_FILE="$(resolve_log_file "chummer-strict-prereq-nuget")"
+
 echo "== strict host gate prerequisites =="
 
 if is_true "$CHECK_DOCKER"; then
@@ -20,11 +59,13 @@ if is_true "$CHECK_DOCKER"; then
     echo "[FAIL] docker CLI not found."
     status=1
   else
-    if docker ps >/tmp/chummer-strict-prereq-docker.log 2>&1; then
+    if docker ps >"$DOCKER_LOG_FILE" 2>&1; then
       echo "[PASS] docker daemon reachable."
     else
       echo "[FAIL] docker daemon not reachable."
-      cat /tmp/chummer-strict-prereq-docker.log || true
+      if [[ "$DOCKER_LOG_FILE" != "/dev/null" ]]; then
+        cat "$DOCKER_LOG_FILE" || true
+      fi
       status=1
     fi
   fi
@@ -40,7 +81,7 @@ if is_true "$CHECK_NUGET"; then
     status=1
   else
     set +e
-    python3 - "$host" "$port" <<'PY' >/tmp/chummer-strict-prereq-nuget.log 2>&1
+    python3 - "$host" "$port" <<'PY' >"$NUGET_LOG_FILE" 2>&1
 import socket
 import sys
 
@@ -55,7 +96,9 @@ PY
       echo "[PASS] nuget endpoint reachable: $NUGET_ENDPOINT"
     else
       echo "[FAIL] nuget endpoint not reachable: $NUGET_ENDPOINT"
-      cat /tmp/chummer-strict-prereq-nuget.log || true
+      if [[ "$NUGET_LOG_FILE" != "/dev/null" ]]; then
+        cat "$NUGET_LOG_FILE" || true
+      fi
       status=1
     fi
   fi

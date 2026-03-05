@@ -20,6 +20,38 @@ if ! command -v rg >/dev/null 2>&1; then
   exit 1
 fi
 
+resolve_runbook_log_file() {
+  local base_name="$1"
+  local uid_suffix
+  uid_suffix="$(id -u 2>/dev/null || echo user)"
+  local candidates=()
+  if [[ -n "${RUNBOOK_LOG_DIR:-}" ]]; then
+    candidates+=("${RUNBOOK_LOG_DIR}/${base_name}.${uid_suffix}.log")
+  fi
+  if [[ -n "${XDG_RUNTIME_DIR:-}" ]]; then
+    candidates+=("${XDG_RUNTIME_DIR}/${base_name}.${uid_suffix}.log")
+  fi
+  if [[ -n "${TMPDIR:-}" ]]; then
+    candidates+=("${TMPDIR}/${base_name}.${uid_suffix}.log")
+  fi
+  if [[ -n "${HOME:-}" ]]; then
+    candidates+=("${HOME}/.cache/chummer/${base_name}.${uid_suffix}.log")
+  fi
+  candidates+=("$REPO_ROOT/.tmp/${base_name}.${uid_suffix}.log")
+  candidates+=("$REPO_ROOT/${base_name}.${uid_suffix}.log")
+
+  for candidate in "${candidates[@]}"; do
+    local dir
+    dir="$(dirname "$candidate")"
+    if mkdir -p "$dir" 2>/dev/null && : > "$candidate" 2>/dev/null; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+
+  echo "/dev/null"
+}
+
 if [[ "$RUNBOOK_MODE" == "migration" ]]; then
   LOOPS="${MIGRATION_LOOPS:-1}"
   LOG_FILE="${RUNBOOK_LOG_FILE:-/tmp/migration-loop-runbook.log}"
@@ -122,14 +154,19 @@ PY
 fi
 
 if [[ "$RUNBOOK_MODE" == "host-prereqs" ]]; then
-  PREREQ_LOG_FILE="${PREREQ_LOG_FILE:-/tmp/chummer-host-prereqs.log}"
+  PREREQ_LOG_FILE="${PREREQ_LOG_FILE:-$(resolve_runbook_log_file chummer-host-prereqs)}"
+  PREREQ_LOG_DIR="$(dirname "$PREREQ_LOG_FILE")"
   set +e
-  bash scripts/check-host-gate-prereqs.sh 2>&1 | tee "$PREREQ_LOG_FILE"
+  PREREQ_LOG_DIR="$PREREQ_LOG_DIR" bash scripts/check-host-gate-prereqs.sh 2>&1 | tee "$PREREQ_LOG_FILE"
   status=${PIPESTATUS[0]}
   set -e
   echo
   echo "== host prerequisite summary =="
-  rg -n "\\[PASS\\]|\\[FAIL\\]|\\[SKIP\\]|Strict host gates are" "$PREREQ_LOG_FILE" | tail -n 200 || true
+  if [[ "$PREREQ_LOG_FILE" == "/dev/null" ]]; then
+    echo "host-prereqs log capture disabled (no writable log path found)."
+  else
+    rg -n "\\[PASS\\]|\\[FAIL\\]|\\[SKIP\\]|Strict host gates are" "$PREREQ_LOG_FILE" | tail -n 200 || true
+  fi
   exit "$status"
 fi
 

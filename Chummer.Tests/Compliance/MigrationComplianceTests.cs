@@ -1128,6 +1128,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "DOCKER_TESTS_BUILD");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_SOFT_FAIL");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_PREFLIGHT_LOG");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file");
         StringAssert.Contains(runbookText, "docker ps >\"$DOCKER_TESTS_PREFLIGHT_LOG\" 2>&1");
         StringAssert.Contains(runbookText, "permission denied while trying to connect to the docker API");
         StringAssert.Contains(runbookText, "skipping docker-tests due docker daemon permissions");
@@ -1148,6 +1149,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(strictHostGatesText, "DOCKER_TESTS_SOFT_FAIL=0");
         StringAssert.Contains(strictHostGatesText, "Strict host gates completed successfully.");
         StringAssert.Contains(hostPrereqText, "strict host gate prerequisites");
+        StringAssert.Contains(hostPrereqText, "resolve_log_file");
+        StringAssert.Contains(hostPrereqText, "PREREQ_LOG_DIR");
         StringAssert.Contains(hostPrereqText, "[PASS]");
         StringAssert.Contains(hostPrereqText, "[FAIL]");
         StringAssert.Contains(hostPrereqText, "Strict host gates are");
