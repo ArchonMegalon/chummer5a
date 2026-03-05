@@ -760,14 +760,17 @@ public class MigrationComplianceTests
         string avaloniaAppText = File.ReadAllText(avaloniaAppPath);
 
         StringAssert.Contains(providerContractText, "public interface IShellBootstrapDataProvider");
+        StringAssert.Contains(providerContractText, "GetWorkspacesAsync");
         StringAssert.Contains(providerContractText, "ShellBootstrapData");
         StringAssert.Contains(providerImplementationText, "public sealed class ShellBootstrapDataProvider");
         StringAssert.Contains(providerImplementationText, "BootstrapCacheWindow");
         StringAssert.Contains(providerImplementationText, "Task.WhenAll");
+        StringAssert.Contains(providerImplementationText, "GetWorkspacesAsync");
         StringAssert.Contains(providerImplementationText, "_client.GetCommandsAsync");
         StringAssert.Contains(providerImplementationText, "_client.GetNavigationTabsAsync");
         StringAssert.Contains(providerImplementationText, "_client.ListWorkspacesAsync");
 
+        StringAssert.Contains(shellPresenterText, "_bootstrapDataProvider.GetWorkspacesAsync");
         StringAssert.Contains(shellPresenterText, "_bootstrapDataProvider.GetAsync");
         StringAssert.Contains(overviewPresenterText, "_bootstrapDataProvider.GetAsync");
         Assert.IsFalse(shellPresenterText.Contains("_client.GetCommandsAsync", StringComparison.Ordinal));
