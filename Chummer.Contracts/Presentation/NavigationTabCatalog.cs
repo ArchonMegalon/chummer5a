@@ -20,6 +20,7 @@ public static class NavigationTabCatalog
         new("tab-vehicles", "Vehicles", "vehicles", "character", true, true),
         new("tab-lifestyle", "Lifestyle", "lifestyles", "character", true, true),
         new("tab-contacts", "Contacts", "contacts", "character", true, true),
+        new("tab-rules", "Rules", "rules", "character", true, true),
         new("tab-notes", "Notes", "profile", "character", true, true),
         new("tab-calendar", "Calendar", "calendar", "character", true, true),
         new("tab-improvements", "Improvements", "improvements", "character", true, true)

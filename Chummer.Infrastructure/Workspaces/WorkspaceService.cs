@@ -24,7 +24,7 @@ public sealed class WorkspaceService : IWorkspaceService
         _workspaceCodecResolver = workspaceCodecResolver;
     }
 
-    public WorkspaceService(
+    private WorkspaceService(
         IWorkspaceStore workspaceStore,
         ICharacterFileQueries characterFileQueries,
         ICharacterSectionQueries characterSectionQueries,
