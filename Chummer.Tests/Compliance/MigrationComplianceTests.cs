@@ -935,6 +935,36 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Shell_surface_resolution_uses_shell_state_for_renderer_session_facts()
+    {
+        string shellSurfaceResolverPath = FindPath("Chummer.Presentation", "Shell", "ShellSurfaceResolver.cs");
+        string shellSurfaceResolverText = File.ReadAllText(shellSurfaceResolverPath);
+        string avaloniaProjectorPath = FindPath("Chummer.Avalonia", "MainWindow.ShellFrameProjector.cs");
+        string avaloniaProjectorText = File.ReadAllText(avaloniaProjectorPath);
+
+        Assert.IsFalse(
+            shellSurfaceResolverText.Contains("overviewState.Session.ActiveWorkspaceId", StringComparison.Ordinal),
+            "Shell surface resolver must not source the active workspace from overview session state.");
+        Assert.IsFalse(
+            shellSurfaceResolverText.Contains("overviewState.WorkspaceId", StringComparison.Ordinal),
+            "Shell surface resolver must not source the active workspace from overview workspace state.");
+        Assert.IsFalse(
+            shellSurfaceResolverText.Contains("overviewState.ActiveTabId", StringComparison.Ordinal),
+            "Shell surface resolver must not source the active tab from overview state.");
+        Assert.IsFalse(
+            shellSurfaceResolverText.Contains("overviewState.Session.OpenWorkspaces", StringComparison.Ordinal),
+            "Shell surface resolver must not source open workspaces from overview session state.");
+        StringAssert.Contains(shellSurfaceResolverText, "string? activeTabId = shellState.ActiveTabId;");
+        StringAssert.Contains(shellSurfaceResolverText, "CharacterWorkspaceId? activeWorkspaceId = shellState.ActiveWorkspaceId;");
+        StringAssert.Contains(shellSurfaceResolverText, "ResolveOpenWorkspaces(shellState, overviewState)");
+
+        Assert.IsFalse(
+            avaloniaProjectorText.Contains("shellSurface.ActiveWorkspaceId ?? state.WorkspaceId", StringComparison.Ordinal),
+            "Avalonia shell projector must not fall back to overview workspace state for renderer shell selection.");
+        StringAssert.Contains(avaloniaProjectorText, "CharacterWorkspaceId? activeWorkspaceId = shellSurface.ActiveWorkspaceId;");
+    }
+
+    [TestMethod]
     public void Dual_head_shell_actions_and_controls_are_scoped_by_active_ruleset()
     {
         string blazorShellCodePath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor.cs");

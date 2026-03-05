@@ -20,10 +20,21 @@ public sealed class ShellSurfaceResolverTests
         var fileMenu = new AppCommandDefinition("file", "menu.file", "menu", false, true, "sr6");
         var saveCommand = new AppCommandDefinition("save_character", "command.save", "file", true, true, "sr6");
         var profileTab = new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true, "sr6");
+        var shellWorkspaceId = new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-shell");
         var shellState = ShellState.Empty with
         {
             ActiveRulesetId = "sr6",
             PreferredRulesetId = RulesetDefaults.Sr5,
+            ActiveWorkspaceId = shellWorkspaceId,
+            OpenWorkspaces =
+            [
+                new ShellWorkspaceState(
+                    Id: shellWorkspaceId,
+                    Name: "Shell Runner",
+                    Alias: "SHL",
+                    LastOpenedUtc: DateTimeOffset.UtcNow,
+                    RulesetId: "sr6")
+            ],
             Commands = [fileMenu, saveCommand],
             MenuRoots = [fileMenu],
             NavigationTabs = [profileTab],
@@ -58,18 +69,42 @@ public sealed class ShellSurfaceResolverTests
         CharacterOverviewState overviewState = CharacterOverviewState.Empty with
         {
             Session = new WorkspaceSessionState(
-                ActiveWorkspaceId: new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-1"),
+                ActiveWorkspaceId: new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview"),
                 OpenWorkspaces:
                 [
                     new OpenWorkspaceState(
-                        Id: new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-1"),
-                        Name: "Runner",
-                        Alias: "RUN",
+                        Id: shellWorkspaceId,
+                        Name: "Shell Runner",
+                        Alias: "SHL",
+                        LastOpenedUtc: DateTimeOffset.UtcNow,
+                        RulesetId: "sr6",
+                        HasSavedWorkspace: true),
+                    new OpenWorkspaceState(
+                        Id: new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview"),
+                        Name: "Overview Runner",
+                        Alias: "OVR",
                         LastOpenedUtc: DateTimeOffset.UtcNow,
                         RulesetId: "sr6")
                 ],
                 RecentWorkspaceIds: []),
-            ActiveTabId = profileTab.Id
+            OpenWorkspaces =
+            [
+                new OpenWorkspaceState(
+                    Id: shellWorkspaceId,
+                    Name: "Shell Runner",
+                    Alias: "SHL",
+                    LastOpenedUtc: DateTimeOffset.UtcNow,
+                    RulesetId: "sr6",
+                    HasSavedWorkspace: true),
+                new OpenWorkspaceState(
+                    Id: new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview"),
+                    Name: "Overview Runner",
+                    Alias: "OVR",
+                    LastOpenedUtc: DateTimeOffset.UtcNow,
+                    RulesetId: "sr6")
+            ],
+            ActiveTabId = "tab-overview",
+            WorkspaceId = new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview")
         };
 
         ShellSurfaceState surface = resolver.Resolve(overviewState, shellState);
@@ -81,14 +116,53 @@ public sealed class ShellSurfaceResolverTests
         Assert.AreEqual(profileTab.Id, surface.ActiveTabId);
         Assert.AreEqual(saveCommand.Id, surface.LastCommandId);
         Assert.AreEqual("sr5", surface.PreferredRulesetId);
-        Assert.AreEqual("ws-1", surface.ActiveWorkspaceId?.Value);
+        Assert.AreEqual("ws-shell", surface.ActiveWorkspaceId?.Value);
         Assert.HasCount(1, surface.OpenWorkspaces);
+        Assert.AreEqual("ws-shell", surface.OpenWorkspaces[0].Id.Value);
+        Assert.IsTrue(surface.OpenWorkspaces[0].HasSavedWorkspace);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastWorkspaceActionTabId);
         Assert.AreEqual("sr6", catalogResolver.LastWorkspaceActionRulesetId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastUiControlTabId);
         Assert.AreEqual("sr6", catalogResolver.LastUiControlRulesetId);
         Assert.HasCount(1, surface.WorkspaceActions);
         Assert.HasCount(1, surface.DesktopUiControls);
+    }
+
+    [TestMethod]
+    public void Resolve_does_not_rehydrate_shell_session_facts_from_overview_state_when_shell_state_is_empty()
+    {
+        var resolver = new ShellSurfaceResolver(
+            new StubShellCatalogResolver([], []),
+            new StubAvailabilityEvaluator(
+                commandEnabled: true,
+                tabEnabled: true,
+                actionEnabled: true,
+                controlEnabled: true));
+
+        CharacterOverviewState overviewState = CharacterOverviewState.Empty with
+        {
+            Session = new WorkspaceSessionState(
+                ActiveWorkspaceId: new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview"),
+                OpenWorkspaces:
+                [
+                    new OpenWorkspaceState(
+                        Id: new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview"),
+                        Name: "Overview Runner",
+                        Alias: "OVR",
+                        LastOpenedUtc: DateTimeOffset.UtcNow,
+                        RulesetId: "sr6",
+                        HasSavedWorkspace: true)
+                ],
+                RecentWorkspaceIds: []),
+            WorkspaceId = new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview"),
+            ActiveTabId = "tab-overview"
+        };
+
+        ShellSurfaceState surface = resolver.Resolve(overviewState, ShellState.Empty);
+
+        Assert.IsNull(surface.ActiveWorkspaceId);
+        Assert.IsNull(surface.ActiveTabId);
+        Assert.IsEmpty(surface.OpenWorkspaces);
     }
 
     [TestMethod]

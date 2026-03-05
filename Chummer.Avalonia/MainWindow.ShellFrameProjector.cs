@@ -13,7 +13,7 @@ internal static class MainWindowShellFrameProjector
         ShellSurfaceState shellSurface,
         ICommandAvailabilityEvaluator commandAvailabilityEvaluator)
     {
-        ActiveWorkspaceContext workspaceContext = ResolveActiveWorkspaceContext(shellSurface, state);
+        ActiveWorkspaceContext workspaceContext = ResolveActiveWorkspaceContext(shellSurface);
         IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> workspaceActionsById = BuildWorkspaceActionLookup(shellSurface.WorkspaceActions);
 
         return new MainWindowShellFrame(
@@ -60,12 +60,10 @@ internal static class MainWindowShellFrameProjector
         return $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(workspaceContext.ActiveWorkspaceId?.Value ?? "none")}, open={workspaceContext.OpenWorkspaceCount}, saved={state.HasSavedWorkspace}, last-command={(shellSurface.LastCommandId ?? "none")}";
     }
 
-    private static ActiveWorkspaceContext ResolveActiveWorkspaceContext(
-        ShellSurfaceState shellSurface,
-        CharacterOverviewState state)
+    private static ActiveWorkspaceContext ResolveActiveWorkspaceContext(ShellSurfaceState shellSurface)
     {
         int openWorkspaceCount = shellSurface.OpenWorkspaces.Count;
-        CharacterWorkspaceId? activeWorkspaceId = shellSurface.ActiveWorkspaceId ?? state.WorkspaceId;
+        CharacterWorkspaceId? activeWorkspaceId = shellSurface.ActiveWorkspaceId;
         OpenWorkspaceState? activeWorkspace = shellSurface.OpenWorkspaces
             .FirstOrDefault(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId?.Value, StringComparison.Ordinal));
         string activeWorkspaceSaveStatus = activeWorkspace is null

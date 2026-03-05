@@ -26,13 +26,9 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
         string activeRulesetId = string.IsNullOrWhiteSpace(shellState.ActiveRulesetId)
             ? preferredRulesetId
             : RulesetDefaults.Normalize(shellState.ActiveRulesetId);
-        string? activeTabId = string.IsNullOrWhiteSpace(overviewState.ActiveTabId)
-            ? shellState.ActiveTabId
-            : overviewState.ActiveTabId;
-        CharacterWorkspaceId? activeWorkspaceId = shellState.ActiveWorkspaceId
-            ?? overviewState.Session.ActiveWorkspaceId
-            ?? overviewState.WorkspaceId;
-        IReadOnlyList<OpenWorkspaceState> openWorkspaces = ResolveOpenWorkspaces(overviewState, shellState);
+        string? activeTabId = shellState.ActiveTabId;
+        CharacterWorkspaceId? activeWorkspaceId = shellState.ActiveWorkspaceId;
+        IReadOnlyList<OpenWorkspaceState> openWorkspaces = ResolveOpenWorkspaces(shellState, overviewState);
 
         var workspaceActions = _catalogResolver.ResolveWorkspaceActionsForTab(
                 activeTabId,
@@ -67,12 +63,19 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
         };
     }
 
-    private static IReadOnlyList<OpenWorkspaceState> ResolveOpenWorkspaces(CharacterOverviewState overviewState, ShellState shellState)
+    private static IReadOnlyList<OpenWorkspaceState> ResolveOpenWorkspaces(ShellState shellState, CharacterOverviewState overviewState)
     {
-        if (overviewState.Session.OpenWorkspaces.Count > 0)
+        if (shellState.OpenWorkspaces.Count == 0)
         {
-            return overviewState.Session.OpenWorkspaces;
+            return [];
         }
+
+        Dictionary<string, bool> savedWorkspaceLookup = overviewState.OpenWorkspaces
+            .GroupBy(workspace => workspace.Id.Value, StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Any(workspace => workspace.HasSavedWorkspace),
+                StringComparer.Ordinal);
 
         return shellState.OpenWorkspaces
             .Select(workspace => new OpenWorkspaceState(
@@ -81,7 +84,7 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
                 Alias: workspace.Alias,
                 LastOpenedUtc: workspace.LastOpenedUtc,
                 RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
-                HasSavedWorkspace: false))
+                HasSavedWorkspace: savedWorkspaceLookup.TryGetValue(workspace.Id.Value, out bool hasSavedWorkspace) && hasSavedWorkspace))
             .ToArray();
     }
 }
