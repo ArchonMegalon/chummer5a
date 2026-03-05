@@ -170,7 +170,18 @@ fi
 if [[ "$RUNBOOK_MODE" == "downloads-sync" ]]; then
   DOWNLOAD_BUNDLE_DIR="${DOWNLOAD_BUNDLE_DIR:-${RUNBOOK_ARG_FRAMEWORK:-$REPO_ROOT/dist}}"
   DOWNLOAD_DEPLOY_DIR="${DOWNLOAD_DEPLOY_DIR:-${RUNBOOK_ARG_FILTER:-$REPO_ROOT/Docker/Downloads}}"
+  DOWNLOADS_SYNC_DEPLOY_MODE="${DOWNLOADS_SYNC_DEPLOY_MODE:-0}"
+  DOWNLOADS_SYNC_VERIFY_TARGET="${DOWNLOADS_SYNC_VERIFY_TARGET:-${CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL:-}}"
   SYNC_LOG_FILE="${SYNC_LOG_FILE:-/tmp/chummer-downloads-sync.log}"
+  if [[ "$DOWNLOADS_SYNC_DEPLOY_MODE" == "1" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "true" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "TRUE" ]]; then
+    if [[ -z "$DOWNLOADS_SYNC_VERIFY_TARGET" ]]; then
+      echo "downloads-sync deploy mode requires DOWNLOADS_SYNC_VERIFY_TARGET or CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL." >&2
+      exit 1
+    fi
+    export CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED=true
+    export CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION=true
+    export CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL="$DOWNLOADS_SYNC_VERIFY_TARGET"
+  fi
   set +e
   bash scripts/publish-download-bundle.sh "$DOWNLOAD_BUNDLE_DIR" "$DOWNLOAD_DEPLOY_DIR" 2>&1 | tee "$SYNC_LOG_FILE"
   status=${PIPESTATUS[0]}
@@ -181,6 +192,11 @@ if [[ "$RUNBOOK_MODE" == "downloads-sync" ]]; then
     cat "$DOWNLOAD_DEPLOY_DIR/releases.json"
   else
     echo "$DOWNLOAD_DEPLOY_DIR/releases.json not found"
+  fi
+  if [[ "$DOWNLOADS_SYNC_DEPLOY_MODE" == "1" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "true" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "TRUE" ]]; then
+    echo
+    echo "== deployment-mode verification summary =="
+    rg -n "Verified manifest at" "$SYNC_LOG_FILE" | tail -n 20 || true
   fi
   exit "$status"
 fi

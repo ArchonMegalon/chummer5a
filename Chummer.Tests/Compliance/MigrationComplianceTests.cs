@@ -712,6 +712,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "deploy_portal_downloads");
         StringAssert.Contains(workflowText, "deploy-downloads");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(workflowText, "Validate live verify URL");
         StringAssert.Contains(workflowText, "Set CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL to verify the live portal manifest after deployment.");
@@ -746,6 +747,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_DESKTOP_CLIENT_MODE");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(readmeText, "Live deployment verification is required");
         Assert.IsFalse(
@@ -978,6 +980,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle.sh");
         StringAssert.Contains(runbookText, "bash scripts/verify-releases-manifest.sh");
         StringAssert.Contains(runbookText, "bash scripts/validate-amend-manifests.sh");
+        StringAssert.Contains(runbookText, "DOWNLOADS_SYNC_DEPLOY_MODE");
+        StringAssert.Contains(runbookText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED=true");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_BUILD");
         StringAssert.Contains(runbookText, "docker compose run $build_arg --rm chummer-tests");
 
@@ -991,6 +995,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(publisherText, "generate-releases-manifest.sh");
         StringAssert.Contains(publisherText, "verify-releases-manifest.sh");
         StringAssert.Contains(publisherText, "PORTAL_DOWNLOADS_DIR");
+        StringAssert.Contains(publisherText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
+        StringAssert.Contains(publisherText, "Deployment mode requires CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
         StringAssert.Contains(publisherText, "Published ${#artifacts[@]} desktop artifact(s)");
 
         string verifierPath = FindPath("scripts", "verify-releases-manifest.sh");

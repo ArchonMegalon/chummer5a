@@ -8,8 +8,16 @@ BUNDLE_DIR="${1:-$REPO_ROOT/dist}"
 DEPLOY_DIR="${2:-$REPO_ROOT/Docker/Downloads}"
 PORTAL_MANIFEST_PATH="${PORTAL_MANIFEST_PATH:-}"
 PORTAL_DOWNLOADS_DIR="${PORTAL_DOWNLOADS_DIR:-}"
+DEPLOY_MODE="${CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED:-false}"
+LIVE_VERIFY_TARGET="${CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL:-}"
 MANIFEST_SOURCE="$BUNDLE_DIR/releases.json"
 FILES_SOURCE="$BUNDLE_DIR/files"
+
+to_bool() {
+  local value
+  value="$(echo "${1:-}" | tr '[:upper:]' '[:lower:]')"
+  [[ "$value" == "1" || "$value" == "true" || "$value" == "yes" || "$value" == "on" ]]
+}
 
 if [[ -z "$PORTAL_MANIFEST_PATH" ]]; then
   if [[ "$(realpath "$DEPLOY_DIR")" == "$(realpath "$REPO_ROOT/Docker/Downloads")" ]]; then
@@ -92,6 +100,18 @@ RELEASE_CHANNEL="$release_channel" \
 RELEASE_PUBLISHED_AT="$release_published_at" \
 bash "$SCRIPT_DIR/generate-releases-manifest.sh"
 
+if to_bool "$DEPLOY_MODE"; then
+  export CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION="${CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION:-true}"
+  if [[ -z "$LIVE_VERIFY_TARGET" ]]; then
+    echo "Deployment mode requires CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL for live manifest verification." >&2
+    exit 1
+  fi
+fi
+
 bash "$SCRIPT_DIR/verify-releases-manifest.sh" "$DEPLOY_DIR/releases.json"
+
+if [[ -n "$LIVE_VERIFY_TARGET" ]]; then
+  bash "$SCRIPT_DIR/verify-releases-manifest.sh" "$LIVE_VERIFY_TARGET"
+fi
 
 echo "Published ${#artifacts[@]} desktop artifact(s) into $DEPLOY_DIR"
