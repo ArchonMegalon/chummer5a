@@ -19,13 +19,14 @@ public partial class MainWindow
     {
         CharacterOverviewState state = _adapter.State;
         ShellState shellState = _shellPresenter.State;
+        ShellSurfaceState shellSurface = _shellSurfaceResolver.Resolve(state, shellState);
         ActiveWorkspaceContext workspaceContext = ResolveActiveWorkspaceContext(state);
         UpdateHeaderState(state, shellState, workspaceContext);
         RefreshCommands(state, shellState);
         RefreshOpenWorkspaces(state, workspaceContext.ActiveWorkspaceId);
         RefreshNavigationTabs(state, shellState);
-        RefreshSectionActions(state, shellState);
-        RefreshUiControls(state, shellState);
+        RefreshSectionActions(state, shellSurface);
+        RefreshUiControls(shellSurface);
         RefreshSectionPreview(state);
         RefreshDialogState(state);
 
@@ -122,11 +123,9 @@ public partial class MainWindow
         _suppressTabSelectionEvent = false;
     }
 
-    private void RefreshSectionActions(CharacterOverviewState state, ShellState shellState)
+    private void RefreshSectionActions(CharacterOverviewState state, ShellSurfaceState shellSurface)
     {
-        WorkspaceSurfaceActionDefinition[] actions = _shellCatalogResolver.ResolveWorkspaceActionsForTab(state.ActiveTabId, shellState.ActiveRulesetId)
-            .Where(action => _commandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, state))
-            .ToArray();
+        WorkspaceSurfaceActionDefinition[] actions = shellSurface.WorkspaceActions.ToArray();
         SectionActionListItem[] sectionActionItems = actions
             .Select(action => new SectionActionListItem(action))
             .ToArray();
@@ -136,11 +135,9 @@ public partial class MainWindow
         _suppressSectionActionSelectionEvent = false;
     }
 
-    private void RefreshUiControls(CharacterOverviewState state, ShellState shellState)
+    private void RefreshUiControls(ShellSurfaceState shellSurface)
     {
-        DesktopUiControlDefinition[] uiControls = _shellCatalogResolver.ResolveDesktopUiControlsForTab(state.ActiveTabId, shellState.ActiveRulesetId)
-            .Where(control => _commandAvailabilityEvaluator.IsUiControlEnabled(control, state))
-            .ToArray();
+        DesktopUiControlDefinition[] uiControls = shellSurface.DesktopUiControls.ToArray();
         _suppressUiControlSelectionEvent = true;
         _uiControlsList.ItemsSource = uiControls.Select(control => new UiControlListItem(control.Id, control.Label)).ToArray();
         _uiControlsList.SelectedItem = null;

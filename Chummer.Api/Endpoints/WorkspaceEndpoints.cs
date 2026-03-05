@@ -10,6 +10,9 @@ namespace Chummer.Api.Endpoints;
 
 public static class WorkspaceEndpoints
 {
+    private const int DefaultWorkspaceListCount = 100;
+    private const int MaxWorkspaceListCount = 500;
+
     public static IEndpointRouteBuilder MapWorkspaceEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapPost("/api/workspaces/import", (IWorkspaceService workspaceService, WorkspaceImportRequest request) =>
@@ -37,9 +40,10 @@ public static class WorkspaceEndpoints
 
         });
 
-        app.MapGet("/api/workspaces", (IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces", (IWorkspaceService workspaceService, int? maxCount) =>
         {
-            IReadOnlyList<WorkspaceListItemResponse> workspaces = workspaceService.List()
+            int effectiveMaxCount = ResolveWorkspaceListCount(maxCount);
+            IReadOnlyList<WorkspaceListItemResponse> workspaces = workspaceService.List(effectiveMaxCount)
                 .Select(workspace => new WorkspaceListItemResponse(
                     Id: workspace.Id.Value,
                     Summary: workspace.Summary,
@@ -208,5 +212,13 @@ public static class WorkspaceEndpoints
             return format;
 
         return WorkspaceDocumentFormat.Chum5Xml;
+    }
+
+    private static int ResolveWorkspaceListCount(int? requestedMaxCount)
+    {
+        if (requestedMaxCount is > 0)
+            return Math.Clamp(requestedMaxCount.Value, 1, MaxWorkspaceListCount);
+
+        return DefaultWorkspaceListCount;
     }
 }

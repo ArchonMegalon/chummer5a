@@ -25,6 +25,7 @@ internal static class Program
         appBuilder.Services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
         appBuilder.Services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
         appBuilder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
+        appBuilder.Services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
         appBuilder.Services.AddSingleton<Chummer.Blazor.CharacterOverviewStateBridge>();
 
         appBuilder.RootComponents.Add<App>("app");

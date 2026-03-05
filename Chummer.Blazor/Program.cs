@@ -40,6 +40,7 @@ builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr
 builder.Services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
 builder.Services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
 builder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
+builder.Services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
 
 var app = builder.Build();
 

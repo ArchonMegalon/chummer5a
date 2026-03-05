@@ -94,6 +94,7 @@ public sealed class DesktopShellDownloadDispatchTests
         context.Services.AddSingleton<IRulesetPlugin, Sr5RulesetPlugin>();
         context.Services.AddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
         context.Services.AddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
+        context.Services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
     }
 
     private sealed class TrackingShellPresenter : IShellPresenter

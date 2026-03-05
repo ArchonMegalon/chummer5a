@@ -66,6 +66,7 @@ public sealed class DesktopShellRulesetCatalogTests
         context.Services.AddSingleton<IRulesetPlugin, Sr6CatalogPlugin>();
         context.Services.AddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
         context.Services.AddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
+        context.Services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
 
         IRenderedComponent<DesktopShell> cut = context.Render<DesktopShell>();
 

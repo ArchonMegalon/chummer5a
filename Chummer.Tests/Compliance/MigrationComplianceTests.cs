@@ -801,12 +801,13 @@ public class MigrationComplianceTests
         string dualHeadAcceptancePath = FindPath("Chummer.Tests", "Presentation", "DualHeadAcceptanceTests.cs");
         string dualHeadAcceptanceText = File.ReadAllText(dualHeadAcceptancePath);
 
-        StringAssert.Contains(blazorShellCodeText, "public IRulesetShellCatalogResolver ShellCatalogResolver { get; set; } = default!;");
-        StringAssert.Contains(blazorShellCodeText, "ShellCatalogResolver.ResolveWorkspaceActionsForTab(State.ActiveTabId, ShellState.ActiveRulesetId)");
-        StringAssert.Contains(blazorShellCodeText, "ShellCatalogResolver.ResolveDesktopUiControlsForTab(State.ActiveTabId, ShellState.ActiveRulesetId)");
+        StringAssert.Contains(blazorShellCodeText, "public IShellSurfaceResolver ShellSurfaceResolver { get; set; } = default!;");
+        StringAssert.Contains(blazorShellCodeText, "RefreshShellSurfaceState()");
+        StringAssert.Contains(blazorShellCodeText, "ShellSurfaceResolver.Resolve(State, ShellState)");
 
-        StringAssert.Contains(avaloniaStateText, "_shellCatalogResolver.ResolveWorkspaceActionsForTab(state.ActiveTabId, shellState.ActiveRulesetId)");
-        StringAssert.Contains(avaloniaStateText, "_shellCatalogResolver.ResolveDesktopUiControlsForTab(state.ActiveTabId, shellState.ActiveRulesetId)");
+        StringAssert.Contains(avaloniaStateText, "_shellSurfaceResolver.Resolve(state, shellState)");
+        StringAssert.Contains(avaloniaStateText, "shellSurface.WorkspaceActions");
+        StringAssert.Contains(avaloniaStateText, "shellSurface.DesktopUiControls");
 
         StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(");
         StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(");
@@ -850,15 +851,16 @@ public class MigrationComplianceTests
         StringAssert.Contains(desktopRuntimeDiText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
         StringAssert.Contains(blazorProgramText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
         StringAssert.Contains(blazorProgramText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
+        StringAssert.Contains(blazorProgramText, "AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();");
 
         StringAssert.Contains(commandEndpointsText, "IRulesetShellCatalogResolver shellCatalogResolver");
         StringAssert.Contains(commandEndpointsText, "shellCatalogResolver.ResolveCommands(ruleset)");
         StringAssert.Contains(navigationEndpointsText, "IRulesetShellCatalogResolver shellCatalogResolver");
         StringAssert.Contains(navigationEndpointsText, "shellCatalogResolver.ResolveNavigationTabs(ruleset)");
 
-        StringAssert.Contains(blazorShellText, "public IRulesetShellCatalogResolver ShellCatalogResolver { get; set; } = default!;");
+        StringAssert.Contains(blazorShellText, "public IShellSurfaceResolver ShellSurfaceResolver { get; set; } = default!;");
         Assert.IsFalse(blazorShellText.Contains("IEnumerable<IRulesetPlugin> RulesetPlugins", StringComparison.Ordinal));
-        StringAssert.Contains(avaloniaMainWindowText, "private readonly IRulesetShellCatalogResolver _shellCatalogResolver;");
+        StringAssert.Contains(avaloniaMainWindowText, "private readonly IShellSurfaceResolver _shellSurfaceResolver;");
         StringAssert.Contains(shellStateText, "string PreferredRulesetId");
         StringAssert.Contains(shellPresenterContractText, "Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct);");
         StringAssert.Contains(shellPresenterText, "State.PreferredRulesetId");

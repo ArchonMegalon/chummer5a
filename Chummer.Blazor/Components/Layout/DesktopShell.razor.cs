@@ -1,5 +1,4 @@
 using Chummer.Contracts.Presentation;
-using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
@@ -27,7 +26,7 @@ public partial class DesktopShell : IDisposable
     public IJSRuntime JsRuntime { get; set; } = default!;
 
     [Inject]
-    public IRulesetShellCatalogResolver ShellCatalogResolver { get; set; } = default!;
+    public IShellSurfaceResolver ShellSurfaceResolver { get; set; } = default!;
 
     private string RawImportXml { get; set; } = "<character><name>Demo</name><alias>Sample</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created></character>";
     private string? ImportedFileName { get; set; }
@@ -39,6 +38,7 @@ public partial class DesktopShell : IDisposable
     private string _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
     private long _lastDownloadVersionHandled;
     private bool _isDisposed;
+    private ShellSurfaceState _shellSurfaceState = ShellSurfaceState.Empty;
 
     private CharacterOverviewState State => _bridge?.Current ?? Presenter.State;
     private ShellState ShellState => ShellPresenter.State;
@@ -50,14 +50,10 @@ public partial class DesktopShell : IDisposable
         HeadCommands.Where(command => command.Group is "file" or "tools").Take(10);
 
     private IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions =>
-        ShellCatalogResolver.ResolveWorkspaceActionsForTab(State.ActiveTabId, ShellState.ActiveRulesetId)
-            .Where(action => AvailabilityEvaluator.IsWorkspaceActionEnabled(action, State))
-            .ToArray();
+        _shellSurfaceState.WorkspaceActions;
 
     private IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls =>
-        ShellCatalogResolver.ResolveDesktopUiControlsForTab(State.ActiveTabId, ShellState.ActiveRulesetId)
-            .Where(control => AvailabilityEvaluator.IsUiControlEnabled(control, State))
-            .ToArray();
+        _shellSurfaceState.DesktopUiControls;
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,6 +65,7 @@ public partial class DesktopShell : IDisposable
             if (_isDisposed)
                 return;
 
+            RefreshShellSurfaceState();
             _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
             _ = InvokeAsync(StateHasChanged);
         });
@@ -77,6 +74,8 @@ public partial class DesktopShell : IDisposable
         {
             await SyncShellWorkspaceContextAsync();
         }
+
+        RefreshShellSurfaceState();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -94,6 +93,7 @@ public partial class DesktopShell : IDisposable
         if (_isDisposed)
             return;
 
+        RefreshShellSurfaceState();
         _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
         _ = InvokeAsync(StateHasChanged);
     }
@@ -109,6 +109,11 @@ public partial class DesktopShell : IDisposable
     {
         CharacterWorkspaceId? activeWorkspaceId = State.Session.ActiveWorkspaceId ?? State.WorkspaceId;
         return ShellPresenter.SyncWorkspaceContextAsync(activeWorkspaceId, CancellationToken.None);
+    }
+
+    private void RefreshShellSurfaceState()
+    {
+        _shellSurfaceState = ShellSurfaceResolver.Resolve(State, ShellState);
     }
 
     internal static bool ShouldSyncShellWorkspaceContext(CharacterOverviewState overviewState, ShellState shellState)

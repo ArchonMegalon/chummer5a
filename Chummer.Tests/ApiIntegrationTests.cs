@@ -688,6 +688,22 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Workspace_list_endpoint_honors_maxCount_query_parameter()
+    {
+        using var client = CreateClient();
+
+        string xmlA = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        string xmlB = File.ReadAllText(FindTestFilePath("BLUE.chum5"));
+        await PostRequiredJsonObject(client, "/api/workspaces/import", new JsonObject { ["xml"] = xmlA });
+        await PostRequiredJsonObject(client, "/api/workspaces/import", new JsonObject { ["xml"] = xmlB });
+
+        JsonObject listed = await GetRequiredJsonObject(client, "/api/workspaces?maxCount=1");
+        Assert.AreEqual(1, listed["count"]?.GetValue<int>());
+        JsonArray listedWorkspaces = listed["workspaces"]?.AsArray() ?? [];
+        Assert.AreEqual(1, listedWorkspaces.Count);
+    }
+
+    [TestMethod]
     public async Task Workspace_import_returns_bad_request_for_invalid_summary_payload()
     {
         using var client = CreateClient();
