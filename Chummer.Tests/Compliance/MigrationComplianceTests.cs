@@ -801,6 +801,8 @@ public class MigrationComplianceTests
         string blazorShellCodeText = File.ReadAllText(blazorShellCodePath);
         string avaloniaStatePath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
         string avaloniaStateText = File.ReadAllText(avaloniaStatePath);
+        string avaloniaProjectorPath = FindPath("Chummer.Avalonia", "MainWindow.ShellFrameProjector.cs");
+        string avaloniaProjectorText = File.ReadAllText(avaloniaProjectorPath);
         string dualHeadAcceptancePath = FindPath("Chummer.Tests", "Presentation", "DualHeadAcceptanceTests.cs");
         string dualHeadAcceptanceText = File.ReadAllText(dualHeadAcceptancePath);
 
@@ -812,11 +814,14 @@ public class MigrationComplianceTests
         StringAssert.Contains(blazorShellCodeText, "_shellSurfaceState.NavigationTabs");
 
         StringAssert.Contains(avaloniaStateText, "_shellSurfaceResolver.Resolve(state, _shellPresenter.State)");
-        StringAssert.Contains(avaloniaStateText, "shellSurface.Commands");
-        StringAssert.Contains(avaloniaStateText, "shellSurface.MenuRoots");
-        StringAssert.Contains(avaloniaStateText, "shellSurface.NavigationTabs");
-        StringAssert.Contains(avaloniaStateText, "shellSurface.WorkspaceActions");
-        StringAssert.Contains(avaloniaStateText, "shellSurface.DesktopUiControls");
+        StringAssert.Contains(avaloniaStateText, "MainWindowShellFrameProjector.Project(");
+        StringAssert.Contains(avaloniaStateText, "ApplyShellFrame(shellFrame);");
+        Assert.IsFalse(avaloniaStateText.Contains("shellSurface.Commands", StringComparison.Ordinal));
+        StringAssert.Contains(avaloniaProjectorText, "shellSurface.Commands");
+        StringAssert.Contains(avaloniaProjectorText, "shellSurface.MenuRoots");
+        StringAssert.Contains(avaloniaProjectorText, "shellSurface.NavigationTabs");
+        StringAssert.Contains(avaloniaProjectorText, "shellSurface.WorkspaceActions");
+        StringAssert.Contains(avaloniaProjectorText, "shellSurface.DesktopUiControls");
 
         StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(");
         StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(");
@@ -1071,6 +1076,8 @@ public class MigrationComplianceTests
         string codeText = File.ReadAllText(codePath);
         string statePath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
         string stateText = File.ReadAllText(statePath);
+        string projectorPath = FindPath("Chummer.Avalonia", "MainWindow.ShellFrameProjector.cs");
+        string projectorText = File.ReadAllText(projectorPath);
 
         Assert.IsFalse(codeText.Contains("FindControl<", StringComparison.Ordinal));
         StringAssert.Contains(codeText, "public MainWindow(");
@@ -1089,7 +1096,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(codeText, "_statusStrip = StatusStripControl;");
         StringAssert.Contains(codeText, "_navigatorPane.WorkspaceSelected +=");
         StringAssert.Contains(codeText, "_commandDialogPane.CommandSelected +=");
-        StringAssert.Contains(stateText, "UpdateMenuButtonStates");
+        StringAssert.Contains(stateText, "MainWindowShellFrameProjector.Project(");
+        StringAssert.Contains(stateText, "ApplyShellFrame(shellFrame);");
         StringAssert.Contains(stateText, "_menuBar.SetMenuState(");
         StringAssert.Contains(stateText, "_navigatorPane.SetOpenWorkspaces(");
         StringAssert.Contains(stateText, "_navigatorPane.SetNavigationTabs(");
@@ -1103,6 +1111,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(stateText, "_workspaceStrip.SetWorkspaceText(");
         StringAssert.Contains(stateText, "_summaryHeader.SetValues(");
         StringAssert.Contains(stateText, "_statusStrip.SetValues(");
+        StringAssert.Contains(projectorText, "BuildWorkspaceActionLookup");
+        StringAssert.Contains(projectorText, "WorkspaceActionsById");
+        StringAssert.Contains(projectorText, "shellSurface.Commands");
+        StringAssert.Contains(projectorText, "shellSurface.NavigationTabs");
 
         StringAssert.Contains(xamlText, "x:Name=\"ToolStripControl\"");
         StringAssert.Contains(xamlText, "x:Name=\"WorkspaceStripControl\"");

@@ -1,3 +1,4 @@
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Avalonia;
@@ -38,10 +39,7 @@ public partial class MainWindow
 
     private async void NavigatorPane_OnSectionActionSelected(object? sender, string actionId)
     {
-        var shellSurface = _shellSurfaceResolver.Resolve(_adapter.State, _shellPresenter.State);
-        var action = shellSurface.WorkspaceActions.FirstOrDefault(item =>
-            string.Equals(item.Id, actionId, StringComparison.Ordinal));
-        if (action is null)
+        if (!_workspaceActionsById.TryGetValue(actionId, out WorkspaceSurfaceActionDefinition? action))
             return;
 
         await RunUiActionAsync(

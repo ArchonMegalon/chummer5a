@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Chummer.Avalonia.Controls;
+using Chummer.Contracts.Presentation;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,8 @@ public partial class MainWindow : Window
     private readonly StatusStripControl _statusStrip;
     private DesktopDialogWindow? _dialogWindow;
     private long _lastDownloadVersionHandled;
+    private IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> _workspaceActionsById
+        = new Dictionary<string, WorkspaceSurfaceActionDefinition>(StringComparer.Ordinal);
 
     public MainWindow()
         : this(
