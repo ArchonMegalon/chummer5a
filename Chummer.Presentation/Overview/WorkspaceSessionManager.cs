@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Overview;
@@ -12,7 +13,8 @@ public sealed class WorkspaceSessionManager : IWorkspaceSessionManager
                 Id: workspace.Id,
                 Name: string.IsNullOrWhiteSpace(workspace.Summary.Name) ? "(Unnamed Character)" : workspace.Summary.Name,
                 Alias: workspace.Summary.Alias ?? string.Empty,
-                LastOpenedUtc: workspace.LastUpdatedUtc))
+                LastOpenedUtc: workspace.LastUpdatedUtc,
+                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId)))
             .OrderByDescending(workspace => workspace.LastOpenedUtc)
             .ToArray();
     }
@@ -20,10 +22,12 @@ public sealed class WorkspaceSessionManager : IWorkspaceSessionManager
     public IReadOnlyList<OpenWorkspaceState> Activate(
         IReadOnlyList<OpenWorkspaceState> existing,
         CharacterWorkspaceId id,
-        CharacterProfileSection? profile)
+        CharacterProfileSection? profile,
+        string? rulesetId = null)
     {
         string workspaceName = string.IsNullOrWhiteSpace(profile?.Name) ? "(Unnamed Character)" : profile.Name;
         string workspaceAlias = profile?.Alias ?? string.Empty;
+        string resolvedRulesetId = ResolveRulesetId(existing, id, rulesetId);
         DateTimeOffset now = DateTimeOffset.UtcNow;
 
         OpenWorkspaceState[] retained = existing
@@ -35,7 +39,8 @@ public sealed class WorkspaceSessionManager : IWorkspaceSessionManager
                 Id: id,
                 Name: workspaceName,
                 Alias: workspaceAlias,
-                LastOpenedUtc: now))
+                LastOpenedUtc: now,
+                RulesetId: resolvedRulesetId))
             .OrderByDescending(workspace => workspace.LastOpenedUtc)
             .ToArray();
     }
@@ -53,5 +58,22 @@ public sealed class WorkspaceSessionManager : IWorkspaceSessionManager
     public CharacterWorkspaceId? SelectNext(IReadOnlyList<OpenWorkspaceState> workspaces)
     {
         return workspaces.Count == 0 ? null : workspaces[0].Id;
+    }
+
+    private static string ResolveRulesetId(
+        IReadOnlyList<OpenWorkspaceState> existing,
+        CharacterWorkspaceId workspaceId,
+        string? explicitRulesetId)
+    {
+        if (!string.IsNullOrWhiteSpace(explicitRulesetId))
+        {
+            return RulesetDefaults.Normalize(explicitRulesetId);
+        }
+
+        OpenWorkspaceState? currentWorkspace = existing.FirstOrDefault(
+            workspace => string.Equals(workspace.Id.Value, workspaceId.Value, StringComparison.Ordinal));
+        return currentWorkspace is null
+            ? RulesetDefaults.Sr5
+            : RulesetDefaults.Normalize(currentWorkspace.RulesetId);
     }
 }

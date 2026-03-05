@@ -1,5 +1,6 @@
 using System.Linq;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -26,6 +27,27 @@ public class WorkspaceSessionActivationServiceTests
         Assert.AreEqual("ws-1", state.ActiveWorkspaceId?.Value);
         Assert.AreEqual(1, state.OpenWorkspaces.Count);
         Assert.AreEqual("ws-1", state.OpenWorkspaces[0].Id.Value);
+        Assert.AreEqual(RulesetDefaults.Sr5, state.OpenWorkspaces[0].RulesetId);
+    }
+
+    [TestMethod]
+    public void Activate_applies_explicit_ruleset_to_opened_workspace()
+    {
+        WorkspaceSessionPresenter sessionPresenter = new();
+        WorkspaceSessionActivationService service = new();
+        CharacterWorkspaceId workspaceId = new("ws-ruleset");
+
+        WorkspaceSessionState state = service.Activate(
+            sessionPresenter,
+            workspaceId,
+            CreateProfile("Ruleset", "RS"),
+            sessionSeed: null,
+            updateSession: true,
+            rulesetId: " SR6 ");
+
+        Assert.AreEqual("ws-ruleset", state.ActiveWorkspaceId?.Value);
+        Assert.AreEqual(1, state.OpenWorkspaces.Count);
+        Assert.AreEqual("sr6", state.OpenWorkspaces[0].RulesetId);
     }
 
     [TestMethod]

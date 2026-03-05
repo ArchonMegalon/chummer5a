@@ -10,18 +10,19 @@ public sealed class WorkspaceSessionActivationService : IWorkspaceSessionActivat
         CharacterWorkspaceId workspaceId,
         CharacterProfileSection? profile,
         WorkspaceSessionState? sessionSeed,
-        bool updateSession)
+        bool updateSession,
+        string? rulesetId = null)
     {
         if (sessionSeed is null && updateSession)
         {
-            return sessionPresenter.Open(workspaceId, profile);
+            return sessionPresenter.Open(workspaceId, profile, rulesetId);
         }
 
         WorkspaceSessionState session = sessionPresenter.Switch(workspaceId);
         if (session.ActiveWorkspaceId is null
             || !string.Equals(session.ActiveWorkspaceId.Value.Value, workspaceId.Value, StringComparison.Ordinal))
         {
-            session = sessionPresenter.Open(workspaceId, profile);
+            session = sessionPresenter.Open(workspaceId, profile, rulesetId);
         }
 
         return session;

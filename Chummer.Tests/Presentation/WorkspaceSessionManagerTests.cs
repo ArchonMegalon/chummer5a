@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -23,14 +24,17 @@ public class WorkspaceSessionManagerTests
             new(
                 new CharacterWorkspaceId("ws-new"),
                 CreateSummary("New", "N"),
-                DateTimeOffset.UtcNow.AddMinutes(-1))
+                DateTimeOffset.UtcNow.AddMinutes(-1),
+                "sr6")
         ];
 
         IReadOnlyList<OpenWorkspaceState> restored = manager.Restore(input);
 
         Assert.AreEqual(2, restored.Count);
         Assert.AreEqual("ws-new", restored[0].Id.Value);
+        Assert.AreEqual("sr6", restored[0].RulesetId);
         Assert.AreEqual("ws-old", restored[1].Id.Value);
+        Assert.AreEqual(RulesetDefaults.Sr5, restored[1].RulesetId);
     }
 
     [TestMethod]
@@ -52,6 +56,41 @@ public class WorkspaceSessionManagerTests
         Assert.AreEqual("ws-1", updated[0].Id.Value);
         Assert.AreEqual("One Updated", updated[0].Name);
         Assert.AreEqual("A2", updated[0].Alias);
+        Assert.AreEqual(RulesetDefaults.Sr5, updated[0].RulesetId);
+    }
+
+    [TestMethod]
+    public void Activate_preserves_existing_ruleset_when_workspace_is_reopened()
+    {
+        WorkspaceSessionManager manager = new();
+        OpenWorkspaceState[] existing =
+        [
+            new(new CharacterWorkspaceId("ws-sr6"), "Six", "S", DateTimeOffset.UtcNow.AddMinutes(-2), RulesetId: "sr6"),
+            new(new CharacterWorkspaceId("ws-sr5"), "Five", "F", DateTimeOffset.UtcNow.AddMinutes(-1), RulesetId: RulesetDefaults.Sr5)
+        ];
+
+        IReadOnlyList<OpenWorkspaceState> updated = manager.Activate(
+            existing,
+            new CharacterWorkspaceId("ws-sr6"),
+            CreateProfile("Six Updated", "SX"));
+
+        Assert.AreEqual("ws-sr6", updated[0].Id.Value);
+        Assert.AreEqual("sr6", updated[0].RulesetId);
+    }
+
+    [TestMethod]
+    public void Activate_uses_explicit_ruleset_when_provided()
+    {
+        WorkspaceSessionManager manager = new();
+
+        IReadOnlyList<OpenWorkspaceState> updated = manager.Activate(
+            existing: [],
+            id: new CharacterWorkspaceId("ws-new"),
+            profile: CreateProfile("New", "N"),
+            rulesetId: " sr6 ");
+
+        Assert.AreEqual("ws-new", updated[0].Id.Value);
+        Assert.AreEqual("sr6", updated[0].RulesetId);
     }
 
     [TestMethod]

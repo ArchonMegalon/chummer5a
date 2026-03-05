@@ -9,7 +9,7 @@ public interface IWorkspaceSessionPresenter
 
     WorkspaceSessionState Restore(IReadOnlyList<WorkspaceListItem> workspaces);
 
-    WorkspaceSessionState Open(CharacterWorkspaceId id, CharacterProfileSection? profile);
+    WorkspaceSessionState Open(CharacterWorkspaceId id, CharacterProfileSection? profile, string? rulesetId = null);
 
     WorkspaceSessionState Switch(CharacterWorkspaceId id);
 

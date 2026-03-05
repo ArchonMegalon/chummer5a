@@ -10,7 +10,8 @@ public interface IWorkspaceSessionManager
     IReadOnlyList<OpenWorkspaceState> Activate(
         IReadOnlyList<OpenWorkspaceState> existing,
         CharacterWorkspaceId id,
-        CharacterProfileSection? profile);
+        CharacterProfileSection? profile,
+        string? rulesetId = null);
 
     IReadOnlyList<OpenWorkspaceState> Close(
         IReadOnlyList<OpenWorkspaceState> existing,

@@ -1,3 +1,4 @@
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Overview;
@@ -18,15 +19,11 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
 
         if (OverviewCommandPolicy.IsImportHintCommand(commandId))
         {
+            DesktopDialogState dialog = BuildCommandDialog(commandId, context);
             context.Publish(context.State with
             {
                 Error = null,
-                ActiveDialog = context.DialogFactory.CreateCommandDialog(
-                    commandId,
-                    context.State.Profile,
-                    context.State.Preferences,
-                    context.State.ActiveSectionJson,
-                    context.CurrentWorkspace),
+                ActiveDialog = dialog,
                 Notice = $"Import flow ready for '{commandId}'."
             });
             return;
@@ -34,15 +31,11 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
 
         if (OverviewCommandPolicy.IsDialogCommand(commandId))
         {
+            DesktopDialogState dialog = BuildCommandDialog(commandId, context);
             context.Publish(context.State with
             {
                 Error = null,
-                ActiveDialog = context.DialogFactory.CreateCommandDialog(
-                    commandId,
-                    context.State.Profile,
-                    context.State.Preferences,
-                    context.State.ActiveSectionJson,
-                    context.CurrentWorkspace)
+                ActiveDialog = dialog
             });
             return;
         }
@@ -104,5 +97,53 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
                 });
                 return;
         }
+    }
+
+    private static DesktopDialogState BuildCommandDialog(string commandId, OverviewCommandExecutionContext context)
+    {
+        DesktopDialogState dialog = context.DialogFactory.CreateCommandDialog(
+            commandId,
+            context.State.Profile,
+            context.State.Preferences,
+            context.State.ActiveSectionJson,
+            context.CurrentWorkspace);
+
+        string activeRulesetId = ResolveActiveRulesetId(context);
+        return SetFieldValue(dialog, "importRulesetId", activeRulesetId);
+    }
+
+    private static string ResolveActiveRulesetId(OverviewCommandExecutionContext context)
+    {
+        CharacterWorkspaceId? activeWorkspace = context.CurrentWorkspace;
+        if (activeWorkspace is null)
+            return RulesetDefaults.Sr5;
+
+        OpenWorkspaceState? workspace = context.State.OpenWorkspaces.FirstOrDefault(
+            candidate => string.Equals(candidate.Id.Value, activeWorkspace.Value.Value, StringComparison.Ordinal));
+        return workspace is null
+            ? RulesetDefaults.Sr5
+            : RulesetDefaults.Normalize(workspace.RulesetId);
+    }
+
+    private static DesktopDialogState SetFieldValue(DesktopDialogState dialog, string fieldId, string value)
+    {
+        if (dialog.Fields.Count == 0)
+            return dialog;
+
+        bool updated = false;
+        DesktopDialogField[] fields = dialog.Fields
+            .Select(field =>
+            {
+                if (!string.Equals(field.Id, fieldId, StringComparison.Ordinal))
+                    return field;
+
+                updated = true;
+                return field with { Value = value };
+            })
+            .ToArray();
+
+        return updated
+            ? dialog with { Fields = fields }
+            : dialog;
     }
 }

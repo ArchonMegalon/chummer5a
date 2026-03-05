@@ -360,6 +360,20 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_open_character_prefills_import_ruleset_from_active_workspace()
+    {
+        var client = new FakeChummerClient();
+        client.SeedWorkspace("ws-sr6", "Ruleset Six", "RS6", rulesetId: "sr6");
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-sr6"), CancellationToken.None);
+        await presenter.ExecuteCommandAsync("open_character", CancellationToken.None);
+
+        Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(presenter.State.ActiveDialog!, "importRulesetId"));
+    }
+
+    [TestMethod]
     public async Task HandleUiControlAsync_create_entry_opens_dialog()
     {
         var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
@@ -600,8 +614,16 @@ public class CharacterOverviewPresenterTests
             new("tab-gear", "Gear", "gear", "character", true, true)
         ];
 
-        public void SeedWorkspace(string workspaceId, string name, string alias, DateTimeOffset? lastUpdatedUtc = null)
+        public void SeedWorkspace(
+            string workspaceId,
+            string name,
+            string alias,
+            DateTimeOffset? lastUpdatedUtc = null,
+            string? rulesetId = null)
         {
+            string resolvedRulesetId = _workspaces.TryGetValue(workspaceId, out WorkspaceListItem? existingWorkspace)
+                ? RulesetDefaults.Normalize(rulesetId ?? existingWorkspace.RulesetId)
+                : RulesetDefaults.Normalize(rulesetId);
             CharacterFileSummary summary = new(
                 Name: name,
                 Alias: alias,
@@ -613,7 +635,11 @@ public class CharacterOverviewPresenterTests
                 Nuyen: 0m,
                 Created: true);
             DateTimeOffset timestamp = lastUpdatedUtc ?? DateTimeOffset.UtcNow.AddMinutes(++_clock);
-            _workspaces[workspaceId] = new WorkspaceListItem(new CharacterWorkspaceId(workspaceId), summary, timestamp);
+            _workspaces[workspaceId] = new WorkspaceListItem(
+                new CharacterWorkspaceId(workspaceId),
+                summary,
+                timestamp,
+                resolvedRulesetId);
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)

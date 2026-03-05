@@ -10,5 +10,6 @@ public interface IWorkspaceSessionActivationService
         CharacterWorkspaceId workspaceId,
         CharacterProfileSection? profile,
         WorkspaceSessionState? sessionSeed,
-        bool updateSession);
+        bool updateSession,
+        string? rulesetId = null);
 }

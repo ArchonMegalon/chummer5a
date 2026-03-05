@@ -31,7 +31,12 @@ public sealed class WorkspaceSessionPresenter : IWorkspaceSessionPresenter
 
     public WorkspaceSessionState Open(CharacterWorkspaceId id, CharacterProfileSection? profile)
     {
-        IReadOnlyList<OpenWorkspaceState> openWorkspaces = _manager.Activate(State.OpenWorkspaces, id, profile);
+        return Open(id, profile, rulesetId: null);
+    }
+
+    public WorkspaceSessionState Open(CharacterWorkspaceId id, CharacterProfileSection? profile, string? rulesetId)
+    {
+        IReadOnlyList<OpenWorkspaceState> openWorkspaces = _manager.Activate(State.OpenWorkspaces, id, profile, rulesetId);
         State = State with
         {
             ActiveWorkspaceId = id,

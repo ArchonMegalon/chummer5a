@@ -16,7 +16,7 @@ public sealed partial class CharacterOverviewPresenter
         try
         {
             WorkspaceImportResult imported = await _client.ImportAsync(document, ct);
-            await LoadWorkspaceAsync(imported.Id, ct);
+            await LoadWorkspaceAsync(imported.Id, ct, rulesetId: imported.RulesetId);
         }
         catch (Exception ex)
         {
@@ -119,7 +119,8 @@ public sealed partial class CharacterOverviewPresenter
         CharacterWorkspaceId id,
         CancellationToken ct,
         WorkspaceSessionState? sessionSeed = null,
-        bool updateSession = true)
+        bool updateSession = true,
+        string? rulesetId = null)
     {
         CaptureWorkspaceView();
         WorkspaceOverviewLoadResult loadedOverview = await _workspaceOverviewLoader.LoadAsync(_client, id, ct);
@@ -129,7 +130,8 @@ public sealed partial class CharacterOverviewPresenter
             id,
             loadedOverview.Profile,
             sessionSeed,
-            updateSession);
+            updateSession,
+            rulesetId);
 
         WorkspaceViewState? restoredView = RestoreWorkspaceView(id);
         bool hasSavedWorkspace = restoredView?.HasSavedWorkspace ?? false;
