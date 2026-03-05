@@ -102,6 +102,27 @@ public class ShellBootstrapDataProviderTests
     }
 
     [TestMethod]
+    public async Task GetAsync_includes_workspace_tab_map_from_bootstrap_snapshot()
+    {
+        var client = new BootstrapClientStub
+        {
+            Session = new ShellSessionState(
+                ActiveTabsByWorkspace: new Dictionary<string, string>
+                {
+                    ["ws-a"] = "tab-info",
+                    ["ws-b"] = "tab-rules"
+                })
+        };
+        var provider = new ShellBootstrapDataProvider(client);
+
+        ShellBootstrapData bootstrap = await provider.GetAsync(CancellationToken.None);
+
+        Assert.IsNotNull(bootstrap.ActiveTabsByWorkspace);
+        Assert.AreEqual("tab-info", bootstrap.ActiveTabsByWorkspace!["ws-a"]);
+        Assert.AreEqual("tab-rules", bootstrap.ActiveTabsByWorkspace["ws-b"]);
+    }
+
+    [TestMethod]
     public async Task Shared_provider_avoids_duplicate_startup_fetches_between_shell_and_overview()
     {
         var client = new BootstrapClientStub();
@@ -175,7 +196,8 @@ public class ShellBootstrapDataProviderTests
         {
             Session = new ShellSessionState(
                 ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
-                ActiveTabId: NormalizeTabId(session.ActiveTabId));
+                ActiveTabId: NormalizeTabId(session.ActiveTabId),
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace));
             return Task.CompletedTask;
         }
 
@@ -220,7 +242,8 @@ public class ShellBootstrapDataProviderTests
                 PreferredRulesetId: preferredRulesetId,
                 ActiveRulesetId: activeRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId,
-                ActiveTabId: NormalizeTabId(Session.ActiveTabId));
+                ActiveTabId: NormalizeTabId(Session.ActiveTabId),
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(Session.ActiveTabsByWorkspace));
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();
@@ -251,6 +274,33 @@ public class ShellBootstrapDataProviderTests
             return string.IsNullOrWhiteSpace(tabId)
                 ? null
                 : tabId.Trim();
+        }
+
+        private static IReadOnlyDictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
+        {
+            if (rawMap is null || rawMap.Count == 0)
+            {
+                return null;
+            }
+
+            Dictionary<string, string> normalized = new(StringComparer.Ordinal);
+            foreach ((string workspaceId, string tabId) in rawMap)
+            {
+                string? normalizedWorkspaceId = string.IsNullOrWhiteSpace(workspaceId)
+                    ? null
+                    : workspaceId.Trim();
+                string? normalizedTabId = NormalizeTabId(tabId);
+                if (normalizedWorkspaceId is null || normalizedTabId is null)
+                {
+                    continue;
+                }
+
+                normalized[normalizedWorkspaceId] = normalizedTabId;
+            }
+
+            return normalized.Count == 0
+                ? null
+                : normalized;
         }
 
         private static CharacterWorkspaceId? ResolveActiveWorkspaceId(

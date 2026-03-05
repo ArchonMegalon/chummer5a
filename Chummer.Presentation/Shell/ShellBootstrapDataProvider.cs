@@ -47,12 +47,14 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
             ShellSessionState session = sessionTask.Result;
             string preferredRulesetId = RulesetDefaults.Normalize(preferences.PreferredRulesetId);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, session.ActiveWorkspaceId);
+            IReadOnlyDictionary<string, string>? activeTabsByWorkspace = NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace);
             _cachedWorkspaces = new CachedWorkspaceData(
                 Workspaces: workspaces,
                 PreferredRulesetId: preferredRulesetId,
                 ActiveRulesetId: ResolveRulesetForWorkspace(activeWorkspaceId, workspaces, preferredRulesetId),
                 ActiveWorkspaceId: activeWorkspaceId,
                 ActiveTabId: NormalizeTabId(session.ActiveTabId),
+                ActiveTabsByWorkspace: activeTabsByWorkspace,
                 CachedAtUtc: DateTimeOffset.UtcNow);
             return workspaces;
         }
@@ -99,6 +101,7 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 ActiveRulesetId: activeRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId,
                 ActiveTabId: NormalizeTabId(snapshot.ActiveTabId),
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(snapshot.ActiveTabsByWorkspace),
                 CachedAtUtc: cachedAtUtc);
             var cachedCatalog = new CachedCatalogData(snapshot.Commands, snapshot.NavigationTabs, cachedAtUtc);
             _cachedCatalogsByRuleset[resolvedRulesetId] = cachedCatalog;
@@ -116,7 +119,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 PreferredRulesetId: RulesetDefaults.Normalize(snapshot.PreferredRulesetId),
                 ActiveRulesetId: activeRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId,
-                ActiveTabId: NormalizeTabId(snapshot.ActiveTabId));
+                ActiveTabId: NormalizeTabId(snapshot.ActiveTabId),
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(snapshot.ActiveTabsByWorkspace));
         }
         finally
         {
@@ -143,7 +147,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 PreferredRulesetId: cachedWorkspaces.PreferredRulesetId,
                 ActiveRulesetId: cachedWorkspaces.ActiveRulesetId,
                 ActiveWorkspaceId: cachedWorkspaces.ActiveWorkspaceId,
-                ActiveTabId: cachedWorkspaces.ActiveTabId);
+                ActiveTabId: cachedWorkspaces.ActiveTabId,
+                ActiveTabsByWorkspace: cachedWorkspaces.ActiveTabsByWorkspace);
             return true;
         }
 
@@ -164,7 +169,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 PreferredRulesetId: cachedWorkspaces.PreferredRulesetId,
                 ActiveRulesetId: cachedWorkspaces.ActiveRulesetId,
                 ActiveWorkspaceId: cachedWorkspaces.ActiveWorkspaceId,
-                ActiveTabId: cachedWorkspaces.ActiveTabId);
+                ActiveTabId: cachedWorkspaces.ActiveTabId,
+                ActiveTabsByWorkspace: cachedWorkspaces.ActiveTabsByWorkspace);
             return true;
         }
 
@@ -238,6 +244,33 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
             : tabId.Trim();
     }
 
+    private static IReadOnlyDictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
+    {
+        if (rawMap is null || rawMap.Count == 0)
+        {
+            return null;
+        }
+
+        Dictionary<string, string> normalized = new(StringComparer.Ordinal);
+        foreach (KeyValuePair<string, string> entry in rawMap)
+        {
+            string? workspaceId = string.IsNullOrWhiteSpace(entry.Key)
+                ? null
+                : entry.Key.Trim();
+            string? tabId = NormalizeTabId(entry.Value);
+            if (workspaceId is null || tabId is null)
+            {
+                continue;
+            }
+
+            normalized[workspaceId] = tabId;
+        }
+
+        return normalized.Count == 0
+            ? null
+            : normalized;
+    }
+
     private sealed record CachedCatalogData(
         IReadOnlyList<AppCommandDefinition> Commands,
         IReadOnlyList<NavigationTabDefinition> NavigationTabs,
@@ -249,5 +282,6 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
         string ActiveRulesetId,
         CharacterWorkspaceId? ActiveWorkspaceId,
         string? ActiveTabId,
+        IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace,
         DateTimeOffset CachedAtUtc);
 }

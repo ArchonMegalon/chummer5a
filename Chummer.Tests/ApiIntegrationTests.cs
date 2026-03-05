@@ -556,17 +556,23 @@ public class ApiIntegrationTests
         await PostRequiredJsonObject(client, "/api/shell/session", new JsonObject
         {
             ["activeWorkspaceId"] = "ws-test",
-            ["activeTabId"] = "tab-rules"
+            ["activeTabId"] = "tab-rules",
+            ["activeTabsByWorkspace"] = new JsonObject
+            {
+                ["ws-test"] = "tab-rules"
+            }
         });
 
         JsonObject response = await GetRequiredJsonObject(client, "/api/shell/session");
         Assert.AreEqual("ws-test", response["activeWorkspaceId"]?.GetValue<string>());
         Assert.AreEqual("tab-rules", response["activeTabId"]?.GetValue<string>());
+        Assert.AreEqual("tab-rules", response["activeTabsByWorkspace"]?["ws-test"]?.GetValue<string>());
 
         await PostRequiredJsonObject(client, "/api/shell/session", new JsonObject());
         JsonObject cleared = await GetRequiredJsonObject(client, "/api/shell/session");
         Assert.IsNull(cleared["activeWorkspaceId"]);
         Assert.IsNull(cleared["activeTabId"]);
+        Assert.IsNull(cleared["activeTabsByWorkspace"]);
     }
 
     [TestMethod]
@@ -616,13 +622,18 @@ public class ApiIntegrationTests
         await PostRequiredJsonObject(client, "/api/shell/session", new JsonObject
         {
             ["activeWorkspaceId"] = sr5WorkspaceId,
-            ["activeTabId"] = "tab-rules"
+            ["activeTabId"] = "tab-rules",
+            ["activeTabsByWorkspace"] = new JsonObject
+            {
+                [sr5WorkspaceId] = "tab-rules"
+            }
         });
 
         JsonObject response = await GetRequiredJsonObject(client, "/api/shell/bootstrap");
 
         Assert.AreEqual(sr5WorkspaceId, response["activeWorkspaceId"]?.GetValue<string>());
         Assert.AreEqual("tab-rules", response["activeTabId"]?.GetValue<string>());
+        Assert.AreEqual("tab-rules", response["activeTabsByWorkspace"]?[sr5WorkspaceId]?.GetValue<string>());
         Assert.AreEqual("sr6", (response["preferredRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.AreEqual("sr5", (response["activeRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.AreEqual("sr5", (response["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());

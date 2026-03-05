@@ -55,14 +55,16 @@ public sealed class HttpChummerClient : IChummerClient
 
         return new ShellSessionState(
             ActiveWorkspaceId: NormalizeWorkspaceId(response.ActiveWorkspaceId),
-            ActiveTabId: NormalizeTabId(response.ActiveTabId));
+            ActiveTabId: NormalizeTabId(response.ActiveTabId),
+            ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(response.ActiveTabsByWorkspace));
     }
 
     public async Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
     {
         ShellSessionState payload = new(
             ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
-            ActiveTabId: NormalizeTabId(session.ActiveTabId));
+            ActiveTabId: NormalizeTabId(session.ActiveTabId),
+            ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace));
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             "/api/shell/session",
             payload,
@@ -188,7 +190,8 @@ public sealed class HttpChummerClient : IChummerClient
             PreferredRulesetId: RulesetDefaults.Normalize(response.PreferredRulesetId),
             ActiveRulesetId: RulesetDefaults.Normalize(response.ActiveRulesetId),
             ActiveWorkspaceId: ParseWorkspaceId(response.ActiveWorkspaceId),
-            ActiveTabId: NormalizeTabId(response.ActiveTabId));
+            ActiveTabId: NormalizeTabId(response.ActiveTabId),
+            ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(response.ActiveTabsByWorkspace));
     }
 
     public async Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
@@ -368,6 +371,31 @@ public sealed class HttpChummerClient : IChummerClient
         return string.IsNullOrWhiteSpace(tabId)
             ? null
             : tabId.Trim();
+    }
+
+    private static IReadOnlyDictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
+    {
+        if (rawMap is null || rawMap.Count == 0)
+        {
+            return null;
+        }
+
+        Dictionary<string, string> normalized = new(StringComparer.Ordinal);
+        foreach (KeyValuePair<string, string> entry in rawMap)
+        {
+            string? workspaceId = NormalizeWorkspaceId(entry.Key);
+            string? tabId = NormalizeTabId(entry.Value);
+            if (workspaceId is null || tabId is null)
+            {
+                continue;
+            }
+
+            normalized[workspaceId] = tabId;
+        }
+
+        return normalized.Count == 0
+            ? null
+            : normalized;
     }
 
     private static CharacterWorkspaceId? ParseWorkspaceId(string? workspaceId)

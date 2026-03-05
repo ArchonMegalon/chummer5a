@@ -165,6 +165,31 @@ public sealed class InProcessChummerClientRulesetPluginTests
         Assert.AreEqual("tab-rules", snapshot.ActiveTabId);
     }
 
+    [TestMethod]
+    public async Task GetShellBootstrap_restores_saved_workspace_tab_map()
+    {
+        var preferencesStore = new InMemoryShellPreferencesStore();
+        preferencesStore.Save(new ShellPreferences(RulesetDefaults.Sr5));
+        var sessionStore = new InMemoryShellSessionStore();
+        sessionStore.Save(new ShellSessionState(
+            ActiveTabsByWorkspace: new Dictionary<string, string>
+            {
+                ["ws-a"] = "tab-info",
+                ["ws-b"] = "tab-rules"
+            }));
+        var client = new InProcessChummerClient(
+            new NoOpWorkspaceService(),
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            new ShellPreferencesService(preferencesStore),
+            new ShellSessionService(sessionStore));
+
+        ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
+
+        Assert.IsNotNull(snapshot.ActiveTabsByWorkspace);
+        Assert.AreEqual("tab-info", snapshot.ActiveTabsByWorkspace!["ws-a"]);
+        Assert.AreEqual("tab-rules", snapshot.ActiveTabsByWorkspace["ws-b"]);
+    }
+
     private sealed class StubRulesetPlugin : IRulesetPlugin
     {
         public StubRulesetPlugin(
@@ -292,7 +317,31 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
         public void Save(ShellSessionState session)
         {
-            _session = session;
+            _session = new ShellSessionState(
+                ActiveWorkspaceId: session.ActiveWorkspaceId,
+                ActiveTabId: session.ActiveTabId,
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace));
+        }
+
+        private static IReadOnlyDictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
+        {
+            if (rawMap is null || rawMap.Count == 0)
+            {
+                return null;
+            }
+
+            Dictionary<string, string> normalized = new(StringComparer.Ordinal);
+            foreach ((string workspaceId, string tabId) in rawMap)
+            {
+                if (!string.IsNullOrWhiteSpace(workspaceId) && !string.IsNullOrWhiteSpace(tabId))
+                {
+                    normalized[workspaceId.Trim()] = tabId.Trim();
+                }
+            }
+
+            return normalized.Count == 0
+                ? null
+                : normalized;
         }
     }
 

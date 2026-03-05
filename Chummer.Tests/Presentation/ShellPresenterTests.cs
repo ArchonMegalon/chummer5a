@@ -307,6 +307,55 @@ public class ShellPresenterTests
         Assert.AreEqual("tab-info", client.SavedSessions[^1].ActiveTabId);
     }
 
+    [TestMethod]
+    public async Task SelectTabAsync_persists_workspace_tab_map_for_active_workspace()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var client = new ShellClientStub
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-1", "Runner", "R1", now)
+            ]
+        };
+        var presenter = new ShellPresenter(client);
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        await presenter.SelectTabAsync("tab-rules", CancellationToken.None);
+
+        Assert.IsTrue(client.SavedSessions.Count > 0);
+        Assert.IsNotNull(client.SavedSessions[^1].ActiveTabsByWorkspace);
+        Assert.AreEqual("tab-rules", client.SavedSessions[^1].ActiveTabsByWorkspace!["ws-1"]);
+    }
+
+    [TestMethod]
+    public async Task SyncWorkspaceContextAsync_restores_workspace_specific_tab_when_switching_workspaces()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var client = new ShellClientStub
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-1", "One", "ONE", now.AddMinutes(-5)),
+                CreateWorkspace("ws-2", "Two", "TWO", now.AddMinutes(-1))
+            ],
+            Session = new ShellSessionState(
+                ActiveWorkspaceId: "ws-1",
+                ActiveTabId: "tab-info",
+                ActiveTabsByWorkspace: new Dictionary<string, string>
+                {
+                    ["ws-1"] = "tab-info",
+                    ["ws-2"] = "tab-rules"
+                })
+        };
+        var presenter = new ShellPresenter(client);
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        await presenter.SyncWorkspaceContextAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
+
+        Assert.AreEqual("tab-rules", presenter.State.ActiveTabId);
+    }
+
     private static WorkspaceListItem CreateWorkspace(
         string id,
         string name,
@@ -384,7 +433,8 @@ public class ShellPresenterTests
         {
             Session = new ShellSessionState(
                 ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
-                ActiveTabId: NormalizeTabId(session.ActiveTabId));
+                ActiveTabId: NormalizeTabId(session.ActiveTabId),
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace));
             SavedSessions.Add(Session);
             return Task.CompletedTask;
         }
@@ -412,7 +462,8 @@ public class ShellPresenterTests
                 PreferredRulesetId: preferredRulesetId,
                 ActiveRulesetId: activeRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId,
-                ActiveTabId: NormalizeTabId(Session.ActiveTabId));
+                ActiveTabId: NormalizeTabId(Session.ActiveTabId),
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(Session.ActiveTabsByWorkspace));
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();
@@ -457,6 +508,31 @@ public class ShellPresenterTests
             return string.IsNullOrWhiteSpace(tabId)
                 ? null
                 : tabId.Trim();
+        }
+
+        private static IReadOnlyDictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
+        {
+            if (rawMap is null || rawMap.Count == 0)
+            {
+                return null;
+            }
+
+            Dictionary<string, string> normalized = new(StringComparer.Ordinal);
+            foreach ((string workspaceId, string tabId) in rawMap)
+            {
+                string? normalizedWorkspaceId = NormalizeWorkspaceId(workspaceId);
+                string? normalizedTabId = NormalizeTabId(tabId);
+                if (normalizedWorkspaceId is null || normalizedTabId is null)
+                {
+                    continue;
+                }
+
+                normalized[normalizedWorkspaceId] = normalizedTabId;
+            }
+
+            return normalized.Count == 0
+                ? null
+                : normalized;
         }
 
         private static CharacterWorkspaceId? ResolveActiveWorkspaceId(

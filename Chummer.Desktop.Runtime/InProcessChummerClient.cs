@@ -82,7 +82,10 @@ public sealed class InProcessChummerClient : IChummerClient
     public Task SaveShellSessionAsync(ShellSessionState session, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        _shellSessionService.Save(session);
+        _shellSessionService.Save(new ShellSessionState(
+            ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
+            ActiveTabId: NormalizeTabId(session.ActiveTabId),
+            ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace)));
         return Task.CompletedTask;
     }
 
@@ -108,7 +111,8 @@ public sealed class InProcessChummerClient : IChummerClient
             PreferredRulesetId: preferredRulesetId,
             ActiveRulesetId: activeRulesetId,
             ActiveWorkspaceId: activeWorkspaceId,
-            ActiveTabId: session.ActiveTabId));
+            ActiveTabId: session.ActiveTabId,
+            ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace)));
     }
 
     public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
@@ -281,6 +285,45 @@ public sealed class InProcessChummerClient : IChummerClient
             : RulesetDefaults.Normalize(matchingWorkspace.RulesetId);
     }
 
+    private static string? NormalizeWorkspaceId(string? workspaceId)
+    {
+        return string.IsNullOrWhiteSpace(workspaceId)
+            ? null
+            : workspaceId.Trim();
+    }
+
+    private static string? NormalizeTabId(string? tabId)
+    {
+        return string.IsNullOrWhiteSpace(tabId)
+            ? null
+            : tabId.Trim();
+    }
+
+    private static IReadOnlyDictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
+    {
+        if (rawMap is null || rawMap.Count == 0)
+        {
+            return null;
+        }
+
+        Dictionary<string, string> normalized = new(StringComparer.Ordinal);
+        foreach (KeyValuePair<string, string> entry in rawMap)
+        {
+            string? workspaceId = NormalizeWorkspaceId(entry.Key);
+            string? tabId = NormalizeTabId(entry.Value);
+            if (workspaceId is null || tabId is null)
+            {
+                continue;
+            }
+
+            normalized[workspaceId] = tabId;
+        }
+
+        return normalized.Count == 0
+            ? null
+            : normalized;
+    }
+
     private sealed class InMemoryShellPreferencesStore : IShellPreferencesStore
     {
         private ShellPreferences _preferences = ShellPreferences.Default;
@@ -307,7 +350,10 @@ public sealed class InProcessChummerClient : IChummerClient
 
         public void Save(ShellSessionState session)
         {
-            _session = session;
+            _session = new ShellSessionState(
+                ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
+                ActiveTabId: NormalizeTabId(session.ActiveTabId),
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace));
         }
     }
 }

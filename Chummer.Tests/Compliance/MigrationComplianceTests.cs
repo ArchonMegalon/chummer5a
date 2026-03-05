@@ -818,6 +818,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(shellContractsText, "public sealed record ShellPreferences");
         StringAssert.Contains(shellContractsText, "public sealed record ShellSessionState");
         StringAssert.Contains(shellContractsText, "string? ActiveTabId");
+        StringAssert.Contains(shellContractsText, "IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace");
         Assert.IsFalse(shellContractsText.Contains("ShellUserPreferences", StringComparison.Ordinal));
 
         StringAssert.Contains(clientContractText, "GetShellPreferencesAsync");
@@ -830,10 +831,13 @@ public class MigrationComplianceTests
         StringAssert.Contains(shellEndpointsText, "IShellSessionService shellSessionService");
         StringAssert.Contains(shellEndpointsText, "shellSessionService.Load()");
         StringAssert.Contains(shellEndpointsText, "ActiveTabId: session.ActiveTabId");
+        StringAssert.Contains(shellEndpointsText, "ActiveTabsByWorkspace: session.ActiveTabsByWorkspace");
 
         StringAssert.Contains(shellPresenterText, "SaveShellPreferencesAsync");
         StringAssert.Contains(shellPresenterText, "SaveShellSessionAsync");
         StringAssert.Contains(shellPresenterText, "ActiveTabId = resolvedActiveTabId");
+        StringAssert.Contains(shellPresenterText, "_activeTabsByWorkspace");
+        StringAssert.Contains(shellPresenterText, "BuildUpdatedWorkspaceTabMap");
         Assert.IsFalse(shellPresenterText.Contains("new ShellUserPreferences", StringComparison.Ordinal));
 
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellPreferencesStore, SettingsShellPreferencesStore>();");

@@ -749,7 +749,8 @@ public class CharacterOverviewPresenterTests
         {
             _session = new ShellSessionState(
                 ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
-                ActiveTabId: NormalizeTabId(session.ActiveTabId));
+                ActiveTabId: NormalizeTabId(session.ActiveTabId),
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace));
             return Task.CompletedTask;
         }
 
@@ -775,7 +776,8 @@ public class CharacterOverviewPresenterTests
                 PreferredRulesetId: preferredRulesetId,
                 ActiveRulesetId: activeRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId,
-                ActiveTabId: NormalizeTabId(_session.ActiveTabId));
+                ActiveTabId: NormalizeTabId(_session.ActiveTabId),
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(_session.ActiveTabsByWorkspace));
         }
 
         public void SeedWorkspace(
@@ -1131,6 +1133,31 @@ public class CharacterOverviewPresenterTests
             return string.IsNullOrWhiteSpace(tabId)
                 ? null
                 : tabId.Trim();
+        }
+
+        private static IReadOnlyDictionary<string, string>? NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
+        {
+            if (rawMap is null || rawMap.Count == 0)
+            {
+                return null;
+            }
+
+            Dictionary<string, string> normalized = new(StringComparer.Ordinal);
+            foreach ((string workspaceId, string tabId) in rawMap)
+            {
+                string? normalizedWorkspaceId = NormalizeWorkspaceId(workspaceId);
+                string? normalizedTabId = NormalizeTabId(tabId);
+                if (normalizedWorkspaceId is null || normalizedTabId is null)
+                {
+                    continue;
+                }
+
+                normalized[normalizedWorkspaceId] = normalizedTabId;
+            }
+
+            return normalized.Count == 0
+                ? null
+                : normalized;
         }
 
         private static CharacterWorkspaceId? ResolveActiveWorkspaceId(

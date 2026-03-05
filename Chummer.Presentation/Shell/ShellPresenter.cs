@@ -9,6 +9,7 @@ public sealed class ShellPresenter : IShellPresenter
     private static readonly string[] MenuOrder = ["file", "edit", "special", "tools", "windows", "help"];
     private readonly IChummerClient _runtimeClient;
     private readonly IShellBootstrapDataProvider _bootstrapDataProvider;
+    private Dictionary<string, string> _activeTabsByWorkspace = new(StringComparer.Ordinal);
 
     public ShellPresenter(IChummerClient client, IShellBootstrapDataProvider? bootstrapDataProvider = null)
     {
@@ -56,10 +57,14 @@ public sealed class ShellPresenter : IShellPresenter
 
             IReadOnlyList<AppCommandDefinition> commands = bootstrap.Commands;
             IReadOnlyList<NavigationTabDefinition> tabs = bootstrap.NavigationTabs;
+            Dictionary<string, string> workspaceTabMap = NormalizeWorkspaceTabMap(bootstrap.ActiveTabsByWorkspace);
+            string? requestedActiveTabId = ResolveWorkspaceTab(workspaceTabMap, activeWorkspaceId) ?? bootstrap.ActiveTabId;
             string? resolvedActiveTabId = ResolveActiveTabId(
                 tabs,
-                requestedActiveTabId: bootstrap.ActiveTabId,
+                requestedActiveTabId: requestedActiveTabId,
                 currentActiveTabId: State.ActiveTabId);
+            SetWorkspaceTab(workspaceTabMap, activeWorkspaceId, resolvedActiveTabId);
+            _activeTabsByWorkspace = workspaceTabMap;
 
             AppCommandDefinition[] menuRoots = BuildMenuRoots(commands);
 
@@ -161,11 +166,14 @@ public sealed class ShellPresenter : IShellPresenter
             return;
         }
 
+        Dictionary<string, string> nextWorkspaceTabs = BuildUpdatedWorkspaceTabMap(State.ActiveWorkspaceId, tab.Id);
         await _runtimeClient.SaveShellSessionAsync(
             new ShellSessionState(
                 ActiveWorkspaceId: State.ActiveWorkspaceId?.Value,
-                ActiveTabId: tab.Id),
+                ActiveTabId: tab.Id,
+                ActiveTabsByWorkspace: nextWorkspaceTabs),
             ct);
+        _activeTabsByWorkspace = nextWorkspaceTabs;
 
         Publish(State with
         {
@@ -232,19 +240,24 @@ public sealed class ShellPresenter : IShellPresenter
                 PreferredRulesetId: preferredRulesetId),
             ct);
 
+        Dictionary<string, string> nextWorkspaceTabs = BuildUpdatedWorkspaceTabMap(State.ActiveWorkspaceId, State.ActiveTabId);
         string? resolvedActiveTabId = ResolveActiveTabId(
             tabs,
-            requestedActiveTabId: State.ActiveTabId,
+            requestedActiveTabId: ResolveWorkspaceTab(nextWorkspaceTabs, State.ActiveWorkspaceId) ?? State.ActiveTabId,
             currentActiveTabId: State.ActiveTabId);
+        SetWorkspaceTab(nextWorkspaceTabs, State.ActiveWorkspaceId, resolvedActiveTabId);
         bool activeTabChanged = !string.Equals(State.ActiveTabId, resolvedActiveTabId, StringComparison.Ordinal);
-        if (activeTabChanged)
+        bool workspaceTabMapChanged = !WorkspaceTabMapsEqual(_activeTabsByWorkspace, nextWorkspaceTabs);
+        if (activeTabChanged || workspaceTabMapChanged)
         {
             await _runtimeClient.SaveShellSessionAsync(
                 new ShellSessionState(
                     ActiveWorkspaceId: State.ActiveWorkspaceId?.Value,
-                    ActiveTabId: resolvedActiveTabId),
+                    ActiveTabId: resolvedActiveTabId,
+                    ActiveTabsByWorkspace: nextWorkspaceTabs),
                 ct);
         }
+        _activeTabsByWorkspace = nextWorkspaceTabs;
 
         Publish(State with
         {
@@ -279,20 +292,27 @@ public sealed class ShellPresenter : IShellPresenter
             tabs = bootstrap.NavigationTabs;
         }
 
+        Dictionary<string, string> nextWorkspaceTabs = BuildUpdatedWorkspaceTabMap(State.ActiveWorkspaceId, State.ActiveTabId);
+        string? requestedActiveTabId = ResolveWorkspaceTab(nextWorkspaceTabs, resolvedActiveWorkspace);
+        string? fallbackCurrentActiveTabId = activeWorkspaceChanged ? null : State.ActiveTabId;
         string? resolvedActiveTabId = ResolveActiveTabId(
             tabs,
-            requestedActiveTabId: State.ActiveTabId,
-            currentActiveTabId: State.ActiveTabId);
+            requestedActiveTabId: requestedActiveTabId,
+            currentActiveTabId: fallbackCurrentActiveTabId);
+        SetWorkspaceTab(nextWorkspaceTabs, resolvedActiveWorkspace, resolvedActiveTabId);
         bool activeTabChanged = !string.Equals(State.ActiveTabId, resolvedActiveTabId, StringComparison.Ordinal);
+        bool workspaceTabMapChanged = !WorkspaceTabMapsEqual(_activeTabsByWorkspace, nextWorkspaceTabs);
 
-        if (activeWorkspaceChanged || activeTabChanged)
+        if (activeWorkspaceChanged || activeTabChanged || workspaceTabMapChanged)
         {
             await _runtimeClient.SaveShellSessionAsync(
                 new ShellSessionState(
                     ActiveWorkspaceId: resolvedActiveWorkspace?.Value,
-                    ActiveTabId: resolvedActiveTabId),
+                    ActiveTabId: resolvedActiveTabId,
+                    ActiveTabsByWorkspace: nextWorkspaceTabs),
                 ct);
         }
+        _activeTabsByWorkspace = nextWorkspaceTabs;
 
         Publish(State with
         {
@@ -380,6 +400,113 @@ public sealed class ShellPresenter : IShellPresenter
         }
 
         return tabs.FirstOrDefault(tab => tab.EnabledByDefault)?.Id;
+    }
+
+    private static Dictionary<string, string> NormalizeWorkspaceTabMap(IReadOnlyDictionary<string, string>? rawMap)
+    {
+        Dictionary<string, string> normalized = new(StringComparer.Ordinal);
+        if (rawMap is null || rawMap.Count == 0)
+        {
+            return normalized;
+        }
+
+        foreach (KeyValuePair<string, string> entry in rawMap)
+        {
+            string? workspaceId = NormalizeWorkspaceId(entry.Key);
+            string? tabId = NormalizeTabId(entry.Value);
+            if (workspaceId is null || tabId is null)
+            {
+                continue;
+            }
+
+            normalized[workspaceId] = tabId;
+        }
+
+        return normalized;
+    }
+
+    private Dictionary<string, string> BuildUpdatedWorkspaceTabMap(CharacterWorkspaceId? workspaceId, string? tabId)
+    {
+        Dictionary<string, string> next = new(_activeTabsByWorkspace, StringComparer.Ordinal);
+        SetWorkspaceTab(next, workspaceId, tabId);
+        return next;
+    }
+
+    private static string? ResolveWorkspaceTab(IReadOnlyDictionary<string, string> tabsByWorkspace, CharacterWorkspaceId? workspaceId)
+    {
+        string? normalizedWorkspaceId = workspaceId is null
+            ? null
+            : NormalizeWorkspaceId(workspaceId.Value.Value);
+        if (normalizedWorkspaceId is null)
+        {
+            return null;
+        }
+
+        if (!tabsByWorkspace.TryGetValue(normalizedWorkspaceId, out string? mappedTabId))
+        {
+            return null;
+        }
+
+        return NormalizeTabId(mappedTabId);
+    }
+
+    private static void SetWorkspaceTab(Dictionary<string, string> tabsByWorkspace, CharacterWorkspaceId? workspaceId, string? tabId)
+    {
+        string? normalizedWorkspaceId = workspaceId is null
+            ? null
+            : NormalizeWorkspaceId(workspaceId.Value.Value);
+        if (normalizedWorkspaceId is null)
+        {
+            return;
+        }
+
+        string? normalizedTabId = NormalizeTabId(tabId);
+        if (normalizedTabId is null)
+        {
+            tabsByWorkspace.Remove(normalizedWorkspaceId);
+        }
+        else
+        {
+            tabsByWorkspace[normalizedWorkspaceId] = normalizedTabId;
+        }
+    }
+
+    private static bool WorkspaceTabMapsEqual(IReadOnlyDictionary<string, string> left, IReadOnlyDictionary<string, string> right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return true;
+        }
+
+        if (left.Count != right.Count)
+        {
+            return false;
+        }
+
+        foreach ((string workspaceId, string tabId) in left)
+        {
+            if (!right.TryGetValue(workspaceId, out string? rightTabId)
+                || !string.Equals(tabId, rightTabId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static string? NormalizeWorkspaceId(string? workspaceId)
+    {
+        return string.IsNullOrWhiteSpace(workspaceId)
+            ? null
+            : workspaceId.Trim();
+    }
+
+    private static string? NormalizeTabId(string? tabId)
+    {
+        return string.IsNullOrWhiteSpace(tabId)
+            ? null
+            : tabId.Trim();
     }
 
     private static int MenuSortIndex(string id)

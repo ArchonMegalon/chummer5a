@@ -33,7 +33,9 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-020 | done | P1 | Split shell preferences from shell session model. | agent | Completed 2026-03-05: shell preferences/session now persist through separate contracts (`ShellPreferences`, `ShellSessionState`), separate API endpoints (`/api/shell/preferences`, `/api/shell/session`), and separate presenter/client save paths. |
 | WL-021 | done | P1 | Move workspace behavior onto ruleset codec seam. | agent | Completed 2026-03-05: introduced ruleset workspace codec contracts/resolver, added SR5 codec implementation, and updated `WorkspaceService` to dispatch import/summary/section/validation/metadata through codec resolution. |
 | WL-022 | done | P1 | Persist active tab state in shell session snapshot. | agent | Completed 2026-03-05: active tab now persists via shell session contracts/store/endpoints and is restored through bootstrap + shell presenter initialization. |
-| WL-023 | in_progress | P2 | Persist last active tab per workspace. | agent | Add optional per-workspace tab map in shell session persistence so workspace switches restore contextual tabs without cross-workspace tab bleed. |
+| WL-023 | done | P2 | Persist last active tab per workspace. | agent | Completed 2026-03-05: shell session/bootstrap now persist `ActiveTabsByWorkspace`, presenter restores workspace-specific tabs on switch/initialize, and integration/presenter/compliance tests cover the new map flow. |
+| WL-024 | queued | P1 | Add macOS Intel desktop artifacts to downloads matrix. | agent | Extend workflow matrix with `osx-x64` for both desktop heads and ensure manifest validation still passes for both macOS architectures. |
+| WL-025 | queued | P2 | Keep `IChummerClient` interface pure by moving bootstrap helper to extension/helper layer. | agent | Remove default interface composition from contract surface and update callsites/tests to use helper without changing runtime behavior. |
 
 ## Intake Template
 Add new items at the bottom:
