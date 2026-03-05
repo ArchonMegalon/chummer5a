@@ -3,12 +3,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Chummer.Desktop.Runtime;
 using Chummer.Contracts.Presentation;
-using Chummer.Contracts.Rulesets;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Chummer.Avalonia;
 
@@ -50,9 +48,6 @@ public partial class App : global::Avalonia.Application
         services.AddSingleton<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
         services.AddSingleton<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
         services.AddSingleton<IShellPresenter, ShellPresenter>();
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
-        services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
-        services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
         services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
         services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
         services.AddSingleton<CharacterOverviewViewModelAdapter>();

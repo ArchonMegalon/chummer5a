@@ -73,7 +73,7 @@ public class ShellBootstrapDataProviderTests
 
         Assert.AreEqual(2, client.GetCommandsCalls);
         Assert.AreEqual(2, client.GetNavigationTabsCalls);
-        Assert.AreEqual(1, client.ListWorkspacesCalls);
+        Assert.AreEqual(2, client.ListWorkspacesCalls);
 
         CollectionAssert.AreEquivalent(
             new[] { "sr5", "sr6" },

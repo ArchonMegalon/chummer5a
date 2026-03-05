@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -79,6 +80,64 @@ public class WorkspaceStoreTests
                 Assert.IsTrue(found);
                 Assert.AreEqual("sr6", loaded.RulesetId);
             }
+        }
+        finally
+        {
+            Directory.Delete(stateDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void File_workspace_store_persists_internal_payload_envelope()
+    {
+        string stateDirectory = CreateTempStateDirectory();
+        try
+        {
+            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            CharacterWorkspaceId id = store.Create(new WorkspaceDocument(
+                "<character><name>Envelope</name></character>",
+                RulesetId: "SR6"));
+            string persistedPath = Path.Combine(stateDirectory, "workspaces", $"{id.Value}.json");
+
+            using JsonDocument json = JsonDocument.Parse(File.ReadAllText(persistedPath));
+            JsonElement root = json.RootElement;
+            Assert.IsTrue(root.TryGetProperty("Envelope", out JsonElement envelope));
+            Assert.AreEqual("sr6", envelope.GetProperty("RulesetId").GetString());
+            Assert.AreEqual(1, envelope.GetProperty("SchemaVersion").GetInt32());
+            Assert.AreEqual("workspace", envelope.GetProperty("PayloadKind").GetString());
+            StringAssert.Contains(envelope.GetProperty("Payload").GetString() ?? string.Empty, "<character>");
+        }
+        finally
+        {
+            Directory.Delete(stateDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void File_workspace_store_reads_legacy_payload_without_envelope()
+    {
+        string stateDirectory = CreateTempStateDirectory();
+        try
+        {
+            IWorkspaceStore store = new FileWorkspaceStore(stateDirectory);
+            CharacterWorkspaceId id = new("legacypayload");
+            string persistedPath = Path.Combine(stateDirectory, "workspaces", $"{id.Value}.json");
+            File.WriteAllText(
+                persistedPath,
+                """
+                {
+                  "Content": "<character><name>Legacy</name></character>",
+                  "Format": "Chum5Xml",
+                  "RulesetId": "SR6"
+                }
+                """);
+
+            bool found = store.TryGet(id, out WorkspaceDocument loaded);
+
+            Assert.IsTrue(found);
+            StringAssert.Contains(loaded.Content, "Legacy");
+            Assert.AreEqual(WorkspaceDocumentFormat.Chum5Xml, loaded.Format);
+            Assert.AreEqual("sr6", loaded.RulesetId);
         }
         finally
         {

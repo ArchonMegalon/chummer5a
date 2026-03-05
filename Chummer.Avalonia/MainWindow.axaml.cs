@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Chummer.Avalonia.Controls;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 
@@ -11,37 +12,15 @@ public partial class MainWindow : Window
     private readonly ICommandAvailabilityEvaluator _commandAvailabilityEvaluator;
     private readonly IShellSurfaceResolver _shellSurfaceResolver;
     private readonly CharacterOverviewViewModelAdapter _adapter;
-    private readonly TextBox _xmlInputBox;
-    private readonly TextBlock _statusText;
-    private readonly TextBlock _noticeText;
-    private readonly TextBlock _workspaceText;
-    private readonly TextBlock _nameValue;
-    private readonly TextBlock _aliasValue;
-    private readonly TextBlock _karmaValue;
-    private readonly TextBlock _skillsValue;
-    private readonly TextBlock _charStateText;
-    private readonly TextBlock _serviceStateText;
-    private readonly TextBlock _timeStateText;
-    private readonly TextBlock _complianceStateText;
-    private readonly ListBox _commandsList;
-    private readonly ListBox _openWorkspacesList;
-    private readonly ListBox _navigationTabsList;
-    private readonly ListBox _sectionActionsList;
-    private readonly ListBox _uiControlsList;
-    private readonly ListBox _sectionRowsList;
-    private readonly TextBox _sectionPreviewBox;
-    private readonly TextBlock _dialogTitleText;
-    private readonly TextBlock _dialogMessageText;
-    private readonly ListBox _dialogFieldsList;
-    private readonly ListBox _dialogActionsList;
-    private readonly Button[] _menuButtons;
+    private readonly ToolStripControl _toolStrip;
+    private readonly WorkspaceStripControl _workspaceStrip;
+    private readonly SummaryHeaderControl _summaryHeader;
+    private readonly ShellMenuBarControl _menuBar;
+    private readonly NavigatorPaneControl _navigatorPane;
+    private readonly SectionHostControl _sectionHost;
+    private readonly CommandDialogPaneControl _commandDialogPane;
+    private readonly StatusStripControl _statusStrip;
     private DesktopDialogWindow? _dialogWindow;
-    private bool _suppressCommandSelectionEvent;
-    private bool _suppressWorkspaceSelectionEvent;
-    private bool _suppressTabSelectionEvent;
-    private bool _suppressSectionActionSelectionEvent;
-    private bool _suppressUiControlSelectionEvent;
-    private bool _suppressDialogActionSelectionEvent;
     private long _lastDownloadVersionHandled;
 
     public MainWindow(
@@ -61,44 +40,25 @@ public partial class MainWindow : Window
         _adapter.Updated += (_, _) => RefreshState();
         _shellPresenter.StateChanged += ShellPresenter_OnStateChanged;
 
-        _xmlInputBox = XmlInputBox;
-        _statusText = StatusText;
-        _noticeText = NoticeText;
-        _workspaceText = WorkspaceText;
-        _nameValue = NameValue;
-        _aliasValue = AliasValue;
-        _karmaValue = KarmaValue;
-        _skillsValue = SkillsValue;
-        _charStateText = CharStateText;
-        _serviceStateText = ServiceStateText;
-        _timeStateText = TimeStateText;
-        _complianceStateText = ComplianceStateText;
-        _commandsList = CommandsList;
-        _commandsList.SelectionChanged += CommandsList_OnSelectionChanged;
-        _openWorkspacesList = OpenWorkspacesList;
-        _openWorkspacesList.SelectionChanged += OpenWorkspacesList_OnSelectionChanged;
-        _navigationTabsList = NavigationTabsList;
-        _navigationTabsList.SelectionChanged += NavigationTabsList_OnSelectionChanged;
-        _sectionActionsList = SectionActionsList;
-        _sectionActionsList.SelectionChanged += SectionActionsList_OnSelectionChanged;
-        _uiControlsList = UiControlsList;
-        _uiControlsList.SelectionChanged += UiControlsList_OnSelectionChanged;
-        _sectionRowsList = SectionRowsList;
-        _sectionPreviewBox = SectionPreviewBox;
-        _dialogTitleText = DialogTitleText;
-        _dialogMessageText = DialogMessageText;
-        _dialogFieldsList = DialogFieldsList;
-        _dialogActionsList = DialogActionsList;
-        _dialogActionsList.SelectionChanged += DialogActionsList_OnSelectionChanged;
-        _menuButtons =
-        [
-            MenuFileButton,
-            MenuEditButton,
-            MenuSpecialButton,
-            MenuToolsButton,
-            MenuWindowsButton,
-            MenuHelpButton
-        ];
+        _toolStrip = ToolStripControl;
+        _toolStrip.ImportFileRequested += ToolStrip_OnImportFileRequested;
+        _toolStrip.ImportRawRequested += ToolStrip_OnImportRawRequested;
+        _toolStrip.SaveRequested += ToolStrip_OnSaveRequested;
+        _toolStrip.CloseWorkspaceRequested += ToolStrip_OnCloseWorkspaceRequested;
+        _workspaceStrip = WorkspaceStripControl;
+        _menuBar = ShellMenuBarControl;
+        _menuBar.MenuSelected += MenuBar_OnMenuSelected;
+        _summaryHeader = SummaryHeaderControl;
+        _navigatorPane = NavigatorPaneControl;
+        _navigatorPane.WorkspaceSelected += NavigatorPane_OnWorkspaceSelected;
+        _navigatorPane.NavigationTabSelected += NavigatorPane_OnNavigationTabSelected;
+        _navigatorPane.SectionActionSelected += NavigatorPane_OnSectionActionSelected;
+        _navigatorPane.UiControlSelected += NavigatorPane_OnUiControlSelected;
+        _sectionHost = SectionHostControl;
+        _commandDialogPane = CommandDialogPaneControl;
+        _commandDialogPane.CommandSelected += CommandDialogPane_OnCommandSelected;
+        _commandDialogPane.DialogActionSelected += CommandDialogPane_OnDialogActionSelected;
+        _statusStrip = StatusStripControl;
 
         RefreshState();
         Opened += OnOpened;

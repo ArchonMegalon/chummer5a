@@ -7,6 +7,8 @@ namespace Chummer.Infrastructure.Workspaces;
 
 public sealed class FileWorkspaceStore : IWorkspaceStore
 {
+    private const int CurrentWorkspaceSchemaVersion = 1;
+    private const string WorkspacePayloadKind = "workspace";
     private readonly string _workspaceDirectory;
 
     public FileWorkspaceStore(string? stateDirectory = null)
@@ -77,9 +79,7 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
             return false;
         }
 
-        string? content = record.Content;
-        if (string.IsNullOrWhiteSpace(content))
-            content = record.Xml;
+        string? content = ResolveContent(record);
 
         if (string.IsNullOrWhiteSpace(content))
         {
@@ -88,7 +88,7 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         }
 
         WorkspaceDocumentFormat format = ParseFormat(record.Format);
-        string rulesetId = RulesetDefaults.Normalize(record.RulesetId);
+        string rulesetId = ResolveRulesetId(record);
         document = new WorkspaceDocument(content, format, rulesetId);
         return true;
     }
@@ -99,7 +99,19 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         if (path is null)
             throw new InvalidOperationException("Workspace id contains unsupported characters.");
 
-        PersistedWorkspaceRecord record = new(document.Content, document.Format.ToString(), document.RulesetId);
+        string normalizedRulesetId = RulesetDefaults.Normalize(document.RulesetId);
+        WorkspacePayloadEnvelope envelope = new(
+            RulesetId: normalizedRulesetId,
+            SchemaVersion: CurrentWorkspaceSchemaVersion,
+            PayloadKind: WorkspacePayloadKind,
+            Payload: document.Content);
+        PersistedWorkspaceRecord record = new(
+            Content: document.Content,
+            Format: document.Format.ToString(),
+            RulesetId: normalizedRulesetId)
+        {
+            Envelope = envelope
+        };
         string tempPath = $"{path}.tmp";
         File.WriteAllText(tempPath, JsonSerializer.Serialize(record));
         File.Move(tempPath, path, overwrite: true);
@@ -148,11 +160,38 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         return WorkspaceDocumentFormat.Chum5Xml;
     }
 
+    private static string? ResolveContent(PersistedWorkspaceRecord record)
+    {
+        if (!string.IsNullOrWhiteSpace(record.Envelope?.Payload))
+        {
+            return record.Envelope.Payload;
+        }
+
+        if (!string.IsNullOrWhiteSpace(record.Content))
+        {
+            return record.Content;
+        }
+
+        return record.Xml;
+    }
+
+    private static string ResolveRulesetId(PersistedWorkspaceRecord record)
+    {
+        if (!string.IsNullOrWhiteSpace(record.Envelope?.RulesetId))
+        {
+            return RulesetDefaults.Normalize(record.Envelope.RulesetId);
+        }
+
+        return RulesetDefaults.Normalize(record.RulesetId);
+    }
+
     private sealed record PersistedWorkspaceRecord(
         string Content,
         string Format,
         string RulesetId = RulesetDefaults.Sr5)
     {
+        public WorkspacePayloadEnvelope? Envelope { get; init; }
+
         // Backward compatibility for legacy persisted payloads.
         public string? Xml { get; init; }
     }

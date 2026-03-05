@@ -184,8 +184,10 @@ public class ShellPresenterTests
 
         Assert.AreEqual("sr6", presenter.State.PreferredRulesetId);
         Assert.AreEqual("sr6", presenter.State.ActiveRulesetId);
+        CollectionAssert.Contains(client.RequestedBootstrapRulesets, "sr6");
         CollectionAssert.Contains(client.RequestedCommandRulesets, "sr6");
         CollectionAssert.Contains(client.RequestedNavigationRulesets, "sr6");
+        Assert.AreEqual("sr6", client.Preferences.PreferredRulesetId);
     }
 
     [TestMethod]
@@ -206,8 +208,43 @@ public class ShellPresenterTests
 
         Assert.AreEqual("sr6", presenter.State.PreferredRulesetId);
         Assert.AreEqual("sr5", presenter.State.ActiveRulesetId);
+        CollectionAssert.AreEqual(new[] { "sr5" }, client.RequestedBootstrapRulesets);
         CollectionAssert.AreEqual(new string?[] { "sr5" }, client.RequestedCommandRulesets);
         CollectionAssert.AreEqual(new string?[] { "sr5" }, client.RequestedNavigationRulesets);
+        Assert.AreEqual("sr6", client.Preferences.PreferredRulesetId);
+    }
+
+    [TestMethod]
+    public async Task InitializeAsync_uses_saved_preferred_ruleset_when_no_workspace_is_open()
+    {
+        var client = new ShellClientStub
+        {
+            Workspaces = Array.Empty<WorkspaceListItem>(),
+            Preferences = new ShellUserPreferences("sr6")
+        };
+        var presenter = new ShellPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        Assert.AreEqual("sr6", presenter.State.PreferredRulesetId);
+        Assert.AreEqual("sr6", presenter.State.ActiveRulesetId);
+        CollectionAssert.AreEqual(new[] { "sr6" }, client.RequestedBootstrapRulesets);
+    }
+
+    [TestMethod]
+    public async Task SetPreferredRulesetAsync_persists_preference_via_runtime_client()
+    {
+        var client = new ShellClientStub
+        {
+            Workspaces = Array.Empty<WorkspaceListItem>()
+        };
+        var presenter = new ShellPresenter(client);
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        await presenter.SetPreferredRulesetAsync("sr6", CancellationToken.None);
+
+        Assert.AreEqual(1, client.SavedPreferences.Count);
+        Assert.AreEqual("sr6", client.SavedPreferences[0].PreferredRulesetId);
     }
 
     private static WorkspaceListItem CreateWorkspace(
@@ -241,9 +278,15 @@ public class ShellPresenterTests
 
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
 
+        public ShellUserPreferences Preferences { get; set; } = ShellUserPreferences.Default;
+
+        public List<ShellUserPreferences> SavedPreferences { get; } = new();
+
         public List<string?> RequestedCommandRulesets { get; } = new();
 
         public List<string?> RequestedNavigationRulesets { get; } = new();
+
+        public List<string?> RequestedBootstrapRulesets { get; } = new();
 
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
         {
@@ -259,6 +302,16 @@ public class ShellPresenterTests
 
         public Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct) => Task.FromResult(Workspaces);
 
+        public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+            => Task.FromResult(Preferences);
+
+        public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+        {
+            Preferences = new ShellUserPreferences(RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+            SavedPreferences.Add(Preferences);
+            return Task.CompletedTask;
+        }
+
         public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
         {
             string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
@@ -266,12 +319,27 @@ public class ShellPresenterTests
                     Workspaces
                         .OrderByDescending(workspace => workspace.LastUpdatedUtc)
                         .FirstOrDefault()
-                        ?.RulesetId)
+                        ?.RulesetId
+                    ?? Preferences.PreferredRulesetId)
                 : RulesetDefaults.Normalize(rulesetId);
+            RequestedBootstrapRulesets.Add(effectiveRulesetId);
             IReadOnlyList<AppCommandDefinition> commands = await GetCommandsAsync(effectiveRulesetId, ct);
             IReadOnlyList<NavigationTabDefinition> tabs = await GetNavigationTabsAsync(effectiveRulesetId, ct);
             IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
-            return new ShellBootstrapSnapshot(effectiveRulesetId, commands, tabs, workspaces);
+            string preferredRulesetId = RulesetDefaults.Normalize(Preferences.PreferredRulesetId);
+            string activeRulesetId = RulesetDefaults.Normalize(
+                workspaces
+                    .OrderByDescending(workspace => workspace.LastUpdatedUtc)
+                    .FirstOrDefault()
+                    ?.RulesetId
+                ?? preferredRulesetId);
+            return new ShellBootstrapSnapshot(
+                RulesetId: effectiveRulesetId,
+                Commands: commands,
+                NavigationTabs: tabs,
+                Workspaces: workspaces,
+                PreferredRulesetId: preferredRulesetId,
+                ActiveRulesetId: activeRulesetId);
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();

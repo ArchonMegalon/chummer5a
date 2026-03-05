@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using Chummer.Rulesets.Sr5;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;

@@ -44,10 +44,16 @@ public partial class DesktopShell : IDisposable
     private ShellState ShellState => ShellPresenter.State;
 
     private IEnumerable<AppCommandDefinition> HeadCommands =>
-        ShellState.Commands.Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
+        _shellSurfaceState.Commands.Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
 
     private IEnumerable<AppCommandDefinition> ToolStripCommands =>
         HeadCommands.Where(command => command.Group is "file" or "tools").Take(10);
+
+    private IReadOnlyList<AppCommandDefinition> MenuRoots =>
+        _shellSurfaceState.MenuRoots;
+
+    private IReadOnlyList<NavigationTabDefinition> NavigationTabs =>
+        _shellSurfaceState.NavigationTabs;
 
     private IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions =>
         _shellSurfaceState.WorkspaceActions;

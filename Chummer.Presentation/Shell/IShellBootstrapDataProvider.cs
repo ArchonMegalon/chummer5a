@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Shell;
@@ -7,7 +8,9 @@ public sealed record ShellBootstrapData(
     string RulesetId,
     IReadOnlyList<AppCommandDefinition> Commands,
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
-    IReadOnlyList<WorkspaceListItem> Workspaces);
+    IReadOnlyList<WorkspaceListItem> Workspaces,
+    string PreferredRulesetId = RulesetDefaults.Sr5,
+    string ActiveRulesetId = RulesetDefaults.Sr5);
 
 public interface IShellBootstrapDataProvider
 {

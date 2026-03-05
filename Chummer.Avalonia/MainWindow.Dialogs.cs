@@ -52,10 +52,11 @@ public partial class MainWindow
         }
         catch (Exception ex)
         {
-            _statusText.Text = $"State: error - {operationName} failed: {ex.Message}";
-            _noticeText.Text = $"Notice: {operationName} failed.";
-            _serviceStateText.Text = "Service: error";
-            _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
+            _toolStrip.SetStatusText($"State: error - {operationName} failed: {ex.Message}");
+            _sectionHost.SetNotice($"Notice: {operationName} failed.");
+            _statusStrip.SetServiceAndTime(
+                serviceState: "Service: error",
+                timeState: $"Time: {DateTimeOffset.UtcNow:u}");
         }
     }
 

@@ -1,6 +1,6 @@
 using System.Linq;
-using Avalonia.Controls;
 using Avalonia.Threading;
+using Chummer.Avalonia.Controls;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
@@ -18,13 +18,12 @@ public partial class MainWindow
     private void RefreshState()
     {
         CharacterOverviewState state = _adapter.State;
-        ShellState shellState = _shellPresenter.State;
-        ShellSurfaceState shellSurface = _shellSurfaceResolver.Resolve(state, shellState);
-        ActiveWorkspaceContext workspaceContext = ResolveActiveWorkspaceContext(state);
-        UpdateHeaderState(state, shellState, workspaceContext);
-        RefreshCommands(state, shellState);
-        RefreshOpenWorkspaces(state, workspaceContext.ActiveWorkspaceId);
-        RefreshNavigationTabs(state, shellState);
+        ShellSurfaceState shellSurface = _shellSurfaceResolver.Resolve(state, _shellPresenter.State);
+        ActiveWorkspaceContext workspaceContext = ResolveActiveWorkspaceContext(shellSurface, state);
+        UpdateHeaderState(state, shellSurface, workspaceContext);
+        RefreshCommands(state, shellSurface);
+        RefreshOpenWorkspaces(state, shellSurface);
+        RefreshNavigationTabs(state, shellSurface);
         RefreshSectionActions(state, shellSurface);
         RefreshUiControls(shellSurface);
         RefreshSectionPreview(state);
@@ -34,11 +33,11 @@ public partial class MainWindow
         DispatchPendingDownload(state);
     }
 
-    private static ActiveWorkspaceContext ResolveActiveWorkspaceContext(CharacterOverviewState state)
+    private static ActiveWorkspaceContext ResolveActiveWorkspaceContext(ShellSurfaceState shellSurface, CharacterOverviewState state)
     {
-        int openWorkspaceCount = state.Session.OpenWorkspaces.Count;
-        CharacterWorkspaceId? activeWorkspaceId = state.Session.ActiveWorkspaceId ?? state.WorkspaceId;
-        OpenWorkspaceState? activeWorkspace = state.Session.OpenWorkspaces
+        int openWorkspaceCount = shellSurface.OpenWorkspaces.Count;
+        CharacterWorkspaceId? activeWorkspaceId = shellSurface.ActiveWorkspaceId ?? state.WorkspaceId;
+        OpenWorkspaceState? activeWorkspace = shellSurface.OpenWorkspaces
             .FirstOrDefault(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId?.Value, StringComparison.Ordinal));
         string activeWorkspaceSaveStatus = activeWorkspace is null
             ? "n/a"
@@ -46,52 +45,55 @@ public partial class MainWindow
         return new ActiveWorkspaceContext(activeWorkspaceId, openWorkspaceCount, activeWorkspaceSaveStatus);
     }
 
-    private void UpdateHeaderState(CharacterOverviewState state, ShellState shellState, ActiveWorkspaceContext workspaceContext)
+    private void UpdateHeaderState(
+        CharacterOverviewState state,
+        ShellSurfaceState shellSurface,
+        ActiveWorkspaceContext workspaceContext)
     {
-        _statusText.Text = state.Error is null
+        string statusText = state.Error is null
             ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(workspaceContext.ActiveWorkspaceId?.Value ?? "none")}, open={workspaceContext.OpenWorkspaceCount}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}"
             : $"State: error - {state.Error}";
-        _noticeText.Text = $"Notice: {(state.Notice ?? "Ready.")}";
-        _workspaceText.Text = $"Workspace: {(workspaceContext.ActiveWorkspaceId?.Value ?? "none")} (open: {workspaceContext.OpenWorkspaceCount}, {workspaceContext.ActiveWorkspaceSaveStatus})";
+        _toolStrip.SetStatusText(statusText);
+        _sectionHost.SetNotice($"Notice: {(state.Notice ?? "Ready.")}");
+        _workspaceStrip.SetWorkspaceText($"Workspace: {(workspaceContext.ActiveWorkspaceId?.Value ?? "none")} (open: {workspaceContext.OpenWorkspaceCount}, {workspaceContext.ActiveWorkspaceSaveStatus})");
 
-        _nameValue.Text = state.Profile?.Name ?? "-";
-        _aliasValue.Text = state.Profile?.Alias ?? "-";
-        _karmaValue.Text = state.Progress?.Karma.ToString() ?? "-";
-        _skillsValue.Text = state.Skills?.Count.ToString() ?? "-";
+        _summaryHeader.SetValues(
+            name: state.Profile?.Name,
+            alias: state.Profile?.Alias,
+            karma: state.Progress?.Karma.ToString(),
+            skills: state.Skills?.Count.ToString());
 
-        _charStateText.Text = $"Character: {(workspaceContext.ActiveWorkspaceId is null ? "none" : "loaded")}";
-        _serviceStateText.Text = $"Service: {(state.Error is null ? "online" : "error")}";
-        _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
-        _complianceStateText.Text = $"Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}";
-        UpdateMenuButtonStates(shellState, state.IsBusy);
+        _statusStrip.SetValues(
+            characterState: $"Character: {(workspaceContext.ActiveWorkspaceId is null ? "none" : "loaded")}",
+            serviceState: $"Service: {(state.Error is null ? "online" : "error")}",
+            timeState: $"Time: {DateTimeOffset.UtcNow:u}",
+            complianceState: $"Ruleset: {shellSurface.ActiveRulesetId} | Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}");
+        UpdateMenuButtonStates(shellSurface, state.IsBusy);
     }
 
-    private void RefreshCommands(CharacterOverviewState state, ShellState shellState)
+    private void RefreshCommands(CharacterOverviewState state, ShellSurfaceState shellSurface)
     {
-        IEnumerable<AppCommandDefinition> visibleCommands = shellState.Commands
+        IEnumerable<AppCommandDefinition> visibleCommands = shellSurface.Commands
             .Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
-        if (!string.IsNullOrWhiteSpace(shellState.OpenMenuId))
+        if (!string.IsNullOrWhiteSpace(shellSurface.OpenMenuId))
         {
-            visibleCommands = visibleCommands.Where(command => string.Equals(command.Group, shellState.OpenMenuId, StringComparison.Ordinal));
+            visibleCommands = visibleCommands.Where(command => string.Equals(command.Group, shellSurface.OpenMenuId, StringComparison.Ordinal));
         }
 
-        CommandListItem[] commands = visibleCommands
-            .Select(command => new CommandListItem(
+        CommandPaletteItem[] commands = visibleCommands
+            .Select(command => new CommandPaletteItem(
                 command.Id,
                 command.Group,
                 _commandAvailabilityEvaluator.IsCommandEnabled(command, state)))
             .ToArray();
 
-        _suppressCommandSelectionEvent = true;
-        _commandsList.ItemsSource = commands;
-        _commandsList.SelectedItem = commands.FirstOrDefault(item => string.Equals(item.Id, state.LastCommandId, StringComparison.Ordinal));
-        _suppressCommandSelectionEvent = false;
+        _commandDialogPane.SetCommands(commands, state.LastCommandId);
     }
 
-    private void RefreshOpenWorkspaces(CharacterOverviewState state, CharacterWorkspaceId? activeWorkspaceId)
+    private void RefreshOpenWorkspaces(CharacterOverviewState state, ShellSurfaceState shellSurface)
     {
-        WorkspaceListItem[] openWorkspaces = state.Session.OpenWorkspaces
-            .Select(workspace => new WorkspaceListItem(
+        NavigatorWorkspaceItem[] openWorkspaces = shellSurface.OpenWorkspaces
+            .Select(workspace => new NavigatorWorkspaceItem(
                 workspace.Id.Value,
                 workspace.Name,
                 workspace.Alias,
@@ -99,17 +101,13 @@ public partial class MainWindow
                 Enabled: !state.IsBusy))
             .ToArray();
 
-        _suppressWorkspaceSelectionEvent = true;
-        _openWorkspacesList.ItemsSource = openWorkspaces;
-        _openWorkspacesList.SelectedItem = openWorkspaces.FirstOrDefault(item =>
-            string.Equals(item.Id, activeWorkspaceId?.Value, StringComparison.Ordinal));
-        _suppressWorkspaceSelectionEvent = false;
+        _navigatorPane.SetOpenWorkspaces(openWorkspaces, shellSurface.ActiveWorkspaceId?.Value);
     }
 
-    private void RefreshNavigationTabs(CharacterOverviewState state, ShellState shellState)
+    private void RefreshNavigationTabs(CharacterOverviewState state, ShellSurfaceState shellSurface)
     {
-        TabListItem[] tabs = shellState.NavigationTabs
-            .Select(tab => new TabListItem(
+        NavigatorTabItem[] tabs = shellSurface.NavigationTabs
+            .Select(tab => new NavigatorTabItem(
                 tab.Id,
                 tab.Label,
                 tab.SectionId,
@@ -117,161 +115,67 @@ public partial class MainWindow
                 _commandAvailabilityEvaluator.IsNavigationTabEnabled(tab, state)))
             .ToArray();
 
-        _suppressTabSelectionEvent = true;
-        _navigationTabsList.ItemsSource = tabs;
-        _navigationTabsList.SelectedItem = tabs.FirstOrDefault(item => string.Equals(item.Id, state.ActiveTabId, StringComparison.Ordinal));
-        _suppressTabSelectionEvent = false;
+        _navigatorPane.SetNavigationTabs(tabs, state.ActiveTabId);
     }
 
     private void RefreshSectionActions(CharacterOverviewState state, ShellSurfaceState shellSurface)
     {
-        WorkspaceSurfaceActionDefinition[] actions = shellSurface.WorkspaceActions.ToArray();
-        SectionActionListItem[] sectionActionItems = actions
-            .Select(action => new SectionActionListItem(action))
+        NavigatorSectionActionItem[] sectionActionItems = shellSurface.WorkspaceActions
+            .Select(action => new NavigatorSectionActionItem(
+                action.Id,
+                action.Label,
+                action.Kind))
             .ToArray();
-        _suppressSectionActionSelectionEvent = true;
-        _sectionActionsList.ItemsSource = sectionActionItems;
-        _sectionActionsList.SelectedItem = sectionActionItems.FirstOrDefault(item => string.Equals(item.Id, state.ActiveActionId, StringComparison.Ordinal));
-        _suppressSectionActionSelectionEvent = false;
+        _navigatorPane.SetSectionActions(sectionActionItems, state.ActiveActionId);
     }
 
     private void RefreshUiControls(ShellSurfaceState shellSurface)
     {
-        DesktopUiControlDefinition[] uiControls = shellSurface.DesktopUiControls.ToArray();
-        _suppressUiControlSelectionEvent = true;
-        _uiControlsList.ItemsSource = uiControls.Select(control => new UiControlListItem(control.Id, control.Label)).ToArray();
-        _uiControlsList.SelectedItem = null;
-        _suppressUiControlSelectionEvent = false;
+        NavigatorUiControlItem[] controls = shellSurface.DesktopUiControls
+            .Select(control => new NavigatorUiControlItem(control.Id, control.Label))
+            .ToArray();
+        _navigatorPane.SetUiControls(controls);
     }
 
     private void RefreshSectionPreview(CharacterOverviewState state)
     {
-        _sectionPreviewBox.Text = state.ActiveSectionJson ?? string.Empty;
-        _sectionRowsList.ItemsSource = state.ActiveSectionRows
-            .Select(row => new SectionRowListItem(row.Path, row.Value))
+        SectionRowDisplayItem[] rows = state.ActiveSectionRows
+            .Select(row => new SectionRowDisplayItem(row.Path, row.Value))
             .ToArray();
+        _sectionHost.SetSectionPreview(state.ActiveSectionJson ?? string.Empty, rows);
     }
 
     private void RefreshDialogState(CharacterOverviewState state)
     {
         if (state.ActiveDialog is null)
         {
-            _dialogTitleText.Text = "(none)";
-            _dialogMessageText.Text = "(none)";
-            _dialogFieldsList.ItemsSource = Array.Empty<DialogFieldListItem>();
-            _dialogActionsList.ItemsSource = Array.Empty<DialogActionListItem>();
+            _commandDialogPane.SetDialog(
+                title: null,
+                message: null,
+                fields: Array.Empty<DialogFieldDisplayItem>(),
+                actions: Array.Empty<DialogActionDisplayItem>());
             return;
         }
 
-        _dialogTitleText.Text = state.ActiveDialog.Title;
-        _dialogMessageText.Text = state.ActiveDialog.Message ?? "(none)";
-        _dialogFieldsList.ItemsSource = state.ActiveDialog.Fields
-            .Select(field => new DialogFieldListItem(field.Id, field.Label, field.Value))
+        DialogFieldDisplayItem[] fields = state.ActiveDialog.Fields
+            .Select(field => new DialogFieldDisplayItem(field.Id, field.Label, field.Value))
             .ToArray();
-        _suppressDialogActionSelectionEvent = true;
-        _dialogActionsList.ItemsSource = state.ActiveDialog.Actions
-            .Select(action => new DialogActionListItem(action.Id, action.Label, action.IsPrimary))
+        DialogActionDisplayItem[] actions = state.ActiveDialog.Actions
+            .Select(action => new DialogActionDisplayItem(action.Id, action.Label, action.IsPrimary))
             .ToArray();
-        _dialogActionsList.SelectedItem = null;
-        _suppressDialogActionSelectionEvent = false;
+        _commandDialogPane.SetDialog(
+            title: state.ActiveDialog.Title,
+            message: state.ActiveDialog.Message,
+            fields: fields,
+            actions: actions);
     }
 
-    private void UpdateMenuButtonStates(ShellState shellState, bool isBusy)
+    private void UpdateMenuButtonStates(ShellSurfaceState shellSurface, bool isBusy)
     {
-        HashSet<string> knownMenus = shellState.MenuRoots
-            .Select(menu => menu.Id)
-            .ToHashSet(StringComparer.Ordinal);
-
-        foreach (Button menuButton in _menuButtons)
-        {
-            string menuId = menuButton.Content?.ToString()?.Trim().ToLowerInvariant() ?? string.Empty;
-            bool known = knownMenus.Contains(menuId);
-            bool active = known && string.Equals(shellState.OpenMenuId, menuId, StringComparison.Ordinal);
-
-            menuButton.IsEnabled = known && !isBusy;
-            menuButton.Classes.Set("active-menu", active);
-        }
-    }
-
-    private sealed record WorkspaceListItem(
-        string Id,
-        string Name,
-        string Alias,
-        bool HasSavedWorkspace,
-        bool Enabled)
-    {
-        public override string ToString()
-        {
-            string label = string.IsNullOrWhiteSpace(Alias) ? Name : $"{Name} ({Alias})";
-            string saveTag = HasSavedWorkspace ? "saved" : "unsaved";
-            return $"{label} [{Id}] [{saveTag}] {(Enabled ? "enabled" : "disabled")}";
-        }
-    }
-
-    private sealed record TabListItem(
-        string Id,
-        string Label,
-        string SectionId,
-        string Group,
-        bool Enabled)
-    {
-        public override string ToString()
-        {
-            return $"{Label} ({Id}) -> {SectionId}";
-        }
-    }
-
-    private sealed record CommandListItem(
-        string Id,
-        string Group,
-        bool Enabled)
-    {
-        public override string ToString()
-        {
-            return $"{Id} [{Group}] {(Enabled ? "enabled" : "disabled")}";
-        }
-    }
-
-    private sealed record UiControlListItem(string Id, string Label)
-    {
-        public override string ToString()
-        {
-            return $"{Label} ({Id})";
-        }
-    }
-
-    private sealed record SectionActionListItem(WorkspaceSurfaceActionDefinition Action)
-    {
-        public string Id => Action.Id;
-
-        public override string ToString()
-        {
-            return $"{Action.Label} [{Action.Kind}]";
-        }
-    }
-
-    private sealed record DialogFieldListItem(string Id, string Label, string Value)
-    {
-        public override string ToString()
-        {
-            return $"{Label}: {Value}";
-        }
-    }
-
-    private sealed record SectionRowListItem(string Path, string Value)
-    {
-        public override string ToString()
-        {
-            return $"{Path} = {Value}";
-        }
-    }
-
-    private sealed record DialogActionListItem(string Id, string Label, bool IsPrimary)
-    {
-        public override string ToString()
-        {
-            return $"{Label} ({Id}){(IsPrimary ? " *" : string.Empty)}";
-        }
+        _menuBar.SetMenuState(
+            openMenuId: shellSurface.OpenMenuId,
+            knownMenuIds: shellSurface.MenuRoots.Select(menu => menu.Id),
+            isBusy: isBusy);
     }
 
     private sealed record ActiveWorkspaceContext(

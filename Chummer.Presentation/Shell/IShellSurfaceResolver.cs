@@ -1,13 +1,38 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 
 namespace Chummer.Presentation.Shell;
 
 public sealed record ShellSurfaceState(
+    IReadOnlyList<AppCommandDefinition> Commands,
+    IReadOnlyList<AppCommandDefinition> MenuRoots,
+    IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     IReadOnlyList<WorkspaceSurfaceActionDefinition> WorkspaceActions,
-    IReadOnlyList<DesktopUiControlDefinition> DesktopUiControls)
+    IReadOnlyList<DesktopUiControlDefinition> DesktopUiControls,
+    IReadOnlyList<OpenWorkspaceState> OpenWorkspaces,
+    string ActiveRulesetId,
+    string PreferredRulesetId,
+    CharacterWorkspaceId? ActiveWorkspaceId,
+    string? ActiveTabId)
 {
-    public static ShellSurfaceState Empty { get; } = new([], []);
+    public string? OpenMenuId { get; init; }
+
+    public string? Notice { get; init; }
+
+    public string? Error { get; init; }
+
+    public static ShellSurfaceState Empty { get; } = new(
+        Commands: [],
+        MenuRoots: [],
+        NavigationTabs: [],
+        WorkspaceActions: [],
+        DesktopUiControls: [],
+        OpenWorkspaces: [],
+        ActiveRulesetId: string.Empty,
+        PreferredRulesetId: string.Empty,
+        ActiveWorkspaceId: null,
+        ActiveTabId: null);
 }
 
 public interface IShellSurfaceResolver

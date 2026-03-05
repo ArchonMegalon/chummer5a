@@ -87,6 +87,17 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                     new DesktopDialogAction("save", "Save", true),
                     new DesktopDialogAction("cancel", "Cancel")
                 ]),
+            "switch_ruleset" => new DesktopDialogState(
+                "dialog.switch_ruleset",
+                "Switch Ruleset",
+                "Set the preferred ruleset used when no workspace is active.",
+                [
+                    new DesktopDialogField("preferredRulesetId", "Ruleset", RulesetDefaults.Sr5, RulesetDefaults.Sr5)
+                ],
+                [
+                    new DesktopDialogAction("apply_ruleset", "Apply", true),
+                    new DesktopDialogAction("cancel", "Cancel")
+                ]),
             "character_settings" => new DesktopDialogState(
                 "dialog.character_settings",
                 "Character Settings",

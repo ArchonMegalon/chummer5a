@@ -74,6 +74,12 @@ public sealed class DialogCoordinator : IDialogCoordinator
             return;
         }
 
+        if (string.Equals(dialog.Id, "dialog.switch_ruleset", StringComparison.Ordinal) && string.Equals(actionId, "apply_ruleset", StringComparison.Ordinal))
+        {
+            await ApplyPreferredRulesetAsync(dialog, context, ct);
+            return;
+        }
+
         if (string.Equals(dialog.Id, "dialog.character_settings", StringComparison.Ordinal) && string.Equals(actionId, "save", StringComparison.Ordinal))
         {
             ApplyCharacterSettings(dialog, context);
@@ -219,6 +225,32 @@ public sealed class DialogCoordinator : IDialogCoordinator
             Error = null,
             Notice = $"{dialog.Title}: action '{actionId}' executed."
         });
+    }
+
+    private static async Task ApplyPreferredRulesetAsync(
+        DesktopDialogState dialog,
+        DialogCoordinationContext context,
+        CancellationToken ct)
+    {
+        string rulesetId = RulesetDefaults.Normalize(DesktopDialogFieldValueParser.GetValue(dialog, "preferredRulesetId"));
+        if (context.SetPreferredRulesetAsync is null)
+        {
+            PublishDialogNotice(context, $"Preferred ruleset set to '{rulesetId}'.");
+            return;
+        }
+
+        await context.SetPreferredRulesetAsync(rulesetId, ct);
+
+        CharacterOverviewState stateAfterUpdate = context.GetState();
+        if (stateAfterUpdate.Error is null)
+        {
+            context.Publish(stateAfterUpdate with
+            {
+                ActiveDialog = null,
+                Error = null,
+                Notice = $"Preferred ruleset set to '{rulesetId}'."
+            });
+        }
     }
 
     private static async Task ImportCharacterDialogAsync(

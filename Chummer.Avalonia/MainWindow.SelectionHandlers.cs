@@ -1,107 +1,65 @@
-using Avalonia.Controls;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Avalonia;
 
 public partial class MainWindow
 {
-    private async void CommandsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private async void CommandDialogPane_OnCommandSelected(object? sender, string commandId)
     {
-        if (_suppressCommandSelectionEvent)
-            return;
-
-        if (_commandsList.SelectedItem is not CommandListItem command || !command.Enabled)
-            return;
-
         await RunUiActionAsync(
             async () =>
             {
-                await _shellPresenter.ExecuteCommandAsync(command.Id, CancellationToken.None);
-                await _adapter.ExecuteCommandAsync(command.Id, CancellationToken.None);
+                await _shellPresenter.ExecuteCommandAsync(commandId, CancellationToken.None);
+                await _adapter.ExecuteCommandAsync(commandId, CancellationToken.None);
             },
-            $"execute command '{command.Id}'");
-        ClearSelection(_commandsList, ref _suppressCommandSelectionEvent);
+            $"execute command '{commandId}'");
     }
 
-    private async void OpenWorkspacesList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private async void NavigatorPane_OnWorkspaceSelected(object? sender, string workspaceId)
     {
-        if (_suppressWorkspaceSelectionEvent)
-            return;
-
-        if (_openWorkspacesList.SelectedItem is not WorkspaceListItem workspace || !workspace.Enabled)
-            return;
-
         await RunUiActionAsync(
-            () => _adapter.SwitchWorkspaceAsync(new CharacterWorkspaceId(workspace.Id), CancellationToken.None),
-            $"switch workspace '{workspace.Id}'");
+            () => _adapter.SwitchWorkspaceAsync(new CharacterWorkspaceId(workspaceId), CancellationToken.None),
+            $"switch workspace '{workspaceId}'");
     }
 
-    private async void NavigationTabsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private async void NavigatorPane_OnNavigationTabSelected(object? sender, string tabId)
     {
-        if (_suppressTabSelectionEvent)
-            return;
-
-        if (_navigationTabsList.SelectedItem is not TabListItem tab || !tab.Enabled)
-            return;
-
         await RunUiActionAsync(
             async () =>
             {
-                await _shellPresenter.SelectTabAsync(tab.Id, CancellationToken.None);
-                if (!string.Equals(_shellPresenter.State.ActiveTabId, tab.Id, StringComparison.Ordinal))
+                await _shellPresenter.SelectTabAsync(tabId, CancellationToken.None);
+                if (!string.Equals(_shellPresenter.State.ActiveTabId, tabId, StringComparison.Ordinal))
                     return;
 
-                await _adapter.SelectTabAsync(tab.Id, CancellationToken.None);
+                await _adapter.SelectTabAsync(tabId, CancellationToken.None);
             },
-            $"select tab '{tab.Id}'");
+            $"select tab '{tabId}'");
     }
 
-    private async void SectionActionsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private async void NavigatorPane_OnSectionActionSelected(object? sender, string actionId)
     {
-        if (_suppressSectionActionSelectionEvent)
-            return;
-
-        if (_sectionActionsList.SelectedItem is not SectionActionListItem action)
+        var shellSurface = _shellSurfaceResolver.Resolve(_adapter.State, _shellPresenter.State);
+        var action = shellSurface.WorkspaceActions.FirstOrDefault(item =>
+            string.Equals(item.Id, actionId, StringComparison.Ordinal));
+        if (action is null)
             return;
 
         await RunUiActionAsync(
-            () => _adapter.ExecuteWorkspaceActionAsync(action.Action, CancellationToken.None),
-            $"execute workspace action '{action.Id}'");
-        ClearSelection(_sectionActionsList, ref _suppressSectionActionSelectionEvent);
+            () => _adapter.ExecuteWorkspaceActionAsync(action, CancellationToken.None),
+            $"execute workspace action '{actionId}'");
     }
 
-    private async void UiControlsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private async void NavigatorPane_OnUiControlSelected(object? sender, string controlId)
     {
-        if (_suppressUiControlSelectionEvent)
-            return;
-
-        if (_uiControlsList.SelectedItem is not UiControlListItem control)
-            return;
-
         await RunUiActionAsync(
-            () => _adapter.HandleUiControlAsync(control.Id, CancellationToken.None),
-            $"handle desktop control '{control.Id}'");
-        ClearSelection(_uiControlsList, ref _suppressUiControlSelectionEvent);
+            () => _adapter.HandleUiControlAsync(controlId, CancellationToken.None),
+            $"handle desktop control '{controlId}'");
     }
 
-    private async void DialogActionsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private async void CommandDialogPane_OnDialogActionSelected(object? sender, string actionId)
     {
-        if (_suppressDialogActionSelectionEvent)
-            return;
-
-        if (_dialogActionsList.SelectedItem is not DialogActionListItem action)
-            return;
-
         await RunUiActionAsync(
-            () => _adapter.ExecuteDialogActionAsync(action.Id, CancellationToken.None),
-            $"execute dialog action '{action.Id}'");
-        ClearSelection(_dialogActionsList, ref _suppressDialogActionSelectionEvent);
-    }
-
-    private static void ClearSelection(ListBox listBox, ref bool suppressSelectionEvent)
-    {
-        suppressSelectionEvent = true;
-        listBox.SelectedItem = null;
-        suppressSelectionEvent = false;
+            () => _adapter.ExecuteDialogActionAsync(actionId, CancellationToken.None),
+            $"execute dialog action '{actionId}'");
     }
 }

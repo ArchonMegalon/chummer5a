@@ -433,6 +433,7 @@
       <button class="tool-btn" data-command="paste">Paste</button>
       <button class="tool-btn" data-command="dice_roller">Dice Roller</button>
       <button class="tool-btn" data-command="global_settings">Global Settings</button>
+      <button class="tool-btn" data-command="switch_ruleset">Switch Ruleset</button>
       <button class="tool-btn" data-command="character_settings">Character Settings</button>
       <button class="tool-btn" data-command="translator">Translator</button>
       <button class="tool-btn" data-command="xml_editor">XML Editor</button>
@@ -787,6 +788,7 @@
       essence: "-",
       buildMethod: "-"
     };
+    let preferredRulesetId = "sr5";
 
     function closeDesktopDialog() {
       dialogBackdropEl.classList.add("hidden");
@@ -1004,6 +1006,7 @@
       tools: [
         ["dice_roller", "Dice Roller"],
         ["global_settings", "Global Settings"],
+        ["switch_ruleset", "Switch Ruleset"],
         ["character_settings", "Character Settings"],
         ["translator", "Translator"],
         ["hero_lab_importer", "Hero Lab Importer"],
@@ -1040,6 +1043,7 @@
       tools: () => renderCommandMenu("Tools", [
         ["dice_roller", "Dice Roller"],
         ["global_settings", "Global Settings"],
+        ["switch_ruleset", "Switch Ruleset"],
         ["character_settings", "Character Settings"],
         ["translator", "Translator"],
         ["hero_lab_importer", "Hero Lab Importer"],
@@ -1217,6 +1221,32 @@
             ]
           );
         })();
+      },
+      switch_ruleset: () => {
+        openDesktopDialog(
+          "Switch Ruleset",
+          `<label>Preferred Ruleset
+             <select id="preferredRulesetId">
+               <option value="sr5"${preferredRulesetId === "sr5" ? " selected" : ""}>SR5</option>
+               <option value="sr6"${preferredRulesetId === "sr6" ? " selected" : ""}>SR6</option>
+             </select>
+           </label>
+           <p class="note">Used for new shell flows when no active workspace ruleset is available.</p>`,
+          [
+            {
+              id: "apply_ruleset",
+              label: "Apply",
+              primary: true,
+              onClick: () => {
+                preferredRulesetId = byId("preferredRulesetId").value || "sr5";
+                closeDesktopDialog();
+                byId("complianceState").textContent = `preferred ruleset: ${preferredRulesetId}`;
+                showNote(`Preferred ruleset set to '${preferredRulesetId}'.`);
+              }
+            },
+            { id: "cancel", label: "Cancel", onClick: closeDesktopDialog }
+          ]
+        );
       },
       character_settings: () => {
         return (async () => {

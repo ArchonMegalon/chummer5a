@@ -1,4 +1,5 @@
 using Chummer.Contracts.Rulesets;
+using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 
 namespace Chummer.Presentation.Shell;
@@ -21,20 +22,65 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
         ArgumentNullException.ThrowIfNull(overviewState);
         ArgumentNullException.ThrowIfNull(shellState);
 
+        string preferredRulesetId = RulesetDefaults.Normalize(shellState.PreferredRulesetId);
+        string activeRulesetId = string.IsNullOrWhiteSpace(shellState.ActiveRulesetId)
+            ? preferredRulesetId
+            : RulesetDefaults.Normalize(shellState.ActiveRulesetId);
+        string? activeTabId = string.IsNullOrWhiteSpace(overviewState.ActiveTabId)
+            ? shellState.ActiveTabId
+            : overviewState.ActiveTabId;
+        CharacterWorkspaceId? activeWorkspaceId = shellState.ActiveWorkspaceId
+            ?? overviewState.Session.ActiveWorkspaceId
+            ?? overviewState.WorkspaceId;
+        IReadOnlyList<OpenWorkspaceState> openWorkspaces = ResolveOpenWorkspaces(overviewState, shellState);
+
         var workspaceActions = _catalogResolver.ResolveWorkspaceActionsForTab(
-                overviewState.ActiveTabId,
-                shellState.ActiveRulesetId)
+                activeTabId,
+                activeRulesetId)
             .Where(action => _availabilityEvaluator.IsWorkspaceActionEnabled(action, overviewState))
             .ToArray();
 
         var uiControls = _catalogResolver.ResolveDesktopUiControlsForTab(
-                overviewState.ActiveTabId,
-                shellState.ActiveRulesetId)
+                activeTabId,
+                activeRulesetId)
             .Where(control => _availabilityEvaluator.IsUiControlEnabled(control, overviewState))
             .ToArray();
 
-        return new ShellSurfaceState(
+        ShellSurfaceState state = new(
+            Commands: shellState.Commands,
+            MenuRoots: shellState.MenuRoots,
+            NavigationTabs: shellState.NavigationTabs,
             WorkspaceActions: workspaceActions,
-            DesktopUiControls: uiControls);
+            DesktopUiControls: uiControls,
+            OpenWorkspaces: openWorkspaces,
+            ActiveRulesetId: activeRulesetId,
+            PreferredRulesetId: preferredRulesetId,
+            ActiveWorkspaceId: activeWorkspaceId,
+            ActiveTabId: activeTabId);
+
+        return state with
+        {
+            OpenMenuId = shellState.OpenMenuId,
+            Notice = shellState.Notice ?? overviewState.Notice,
+            Error = shellState.Error ?? overviewState.Error
+        };
+    }
+
+    private static IReadOnlyList<OpenWorkspaceState> ResolveOpenWorkspaces(CharacterOverviewState overviewState, ShellState shellState)
+    {
+        if (overviewState.Session.OpenWorkspaces.Count > 0)
+        {
+            return overviewState.Session.OpenWorkspaces;
+        }
+
+        return shellState.OpenWorkspaces
+            .Select(workspace => new OpenWorkspaceState(
+                Id: workspace.Id,
+                Name: workspace.Name,
+                Alias: workspace.Alias,
+                LastOpenedUtc: workspace.LastOpenedUtc,
+                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
+                HasSavedWorkspace: false))
+            .ToArray();
     }
 }

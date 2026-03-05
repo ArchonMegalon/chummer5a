@@ -142,6 +142,23 @@ public class DesktopDialogFactoryTests
         Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "import", StringComparison.Ordinal)));
     }
 
+    [TestMethod]
+    public void CreateCommandDialog_switch_ruleset_uses_ruleset_selection_template()
+    {
+        DesktopDialogFactory factory = new();
+
+        DesktopDialogState dialog = factory.CreateCommandDialog(
+            "switch_ruleset",
+            profile: null,
+            DesktopPreferenceState.Default,
+            activeSectionJson: null,
+            currentWorkspace: null);
+
+        Assert.AreEqual("dialog.switch_ruleset", dialog.Id);
+        Assert.AreEqual(RulesetDefaults.Sr5, DesktopDialogFieldValueParser.GetValue(dialog, "preferredRulesetId"));
+        Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "apply_ruleset", StringComparison.Ordinal)));
+    }
+
     private static CharacterProfileSection CreateProfile(string name, string alias)
     {
         return new CharacterProfileSection(

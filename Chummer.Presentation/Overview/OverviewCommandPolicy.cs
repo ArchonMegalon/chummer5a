@@ -24,6 +24,7 @@ public static class OverviewCommandPolicy
         "print_character",
         "dice_roller",
         "global_settings",
+        "switch_ruleset",
         "character_settings",
         "translator",
         "xml_editor",

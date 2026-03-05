@@ -3,7 +3,6 @@ using System.Linq;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Shell;
@@ -12,12 +11,12 @@ namespace Chummer.Avalonia;
 
 public partial class MainWindow
 {
-    private async void ImportButton_OnClick(object? sender, RoutedEventArgs e)
+    private async void ToolStrip_OnImportRawRequested(object? sender, EventArgs e)
     {
-        string importText = _xmlInputBox.Text ?? string.Empty;
+        string importText = _sectionHost.XmlInputText;
         if (string.IsNullOrWhiteSpace(importText))
         {
-            _statusText.Text = "State: provide debug XML content before importing.";
+            _toolStrip.SetStatusText("State: provide debug XML content before importing.");
             return;
         }
 
@@ -26,11 +25,11 @@ public partial class MainWindow
             "import debug XML");
     }
 
-    private async void ImportFileButton_OnClick(object? sender, RoutedEventArgs e)
+    private async void ToolStrip_OnImportFileRequested(object? sender, EventArgs e)
     {
         if (!StorageProvider.CanOpen)
         {
-            _statusText.Text = "State: file picker unavailable on this platform.";
+            _toolStrip.SetStatusText("State: file picker unavailable on this platform.");
             return;
         }
 
@@ -71,19 +70,19 @@ public partial class MainWindow
             "initialize desktop shell");
     }
 
-    private async void SaveButton_OnClick(object? sender, RoutedEventArgs e)
+    private async void ToolStrip_OnSaveRequested(object? sender, EventArgs e)
     {
         await RunUiActionAsync(
             () => _presenter.SaveAsync(CancellationToken.None),
             "save workspace");
     }
 
-    private async void CloseWorkspaceButton_OnClick(object? sender, RoutedEventArgs e)
+    private async void ToolStrip_OnCloseWorkspaceRequested(object? sender, EventArgs e)
     {
         CharacterWorkspaceId? activeWorkspaceId = _adapter.State.Session.ActiveWorkspaceId ?? _adapter.State.WorkspaceId;
         if (activeWorkspaceId is null)
         {
-            _statusText.Text = "State: no active workspace to close.";
+            _toolStrip.SetStatusText("State: no active workspace to close.");
             return;
         }
 
@@ -92,12 +91,8 @@ public partial class MainWindow
             "close workspace");
     }
 
-    private async void MenuButton_OnClick(object? sender, RoutedEventArgs e)
+    private async void MenuBar_OnMenuSelected(object? sender, string menuId)
     {
-        if (sender is not Button button || button.Content is null)
-            return;
-
-        string menuId = button.Content.ToString()!.Trim().ToLowerInvariant();
         await RunUiActionAsync(
             () => _shellPresenter.ToggleMenuAsync(menuId, CancellationToken.None),
             $"toggle menu '{menuId}'");

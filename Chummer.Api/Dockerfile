@@ -4,6 +4,7 @@ WORKDIR /src
 COPY Chummer.Core/Chummer.Core.csproj Chummer.Core/
 COPY Chummer.Application/Chummer.Application.csproj Chummer.Application/
 COPY Chummer.Contracts/Chummer.Contracts.csproj Chummer.Contracts/
+COPY Chummer.Rulesets.Sr5/Chummer.Rulesets.Sr5.csproj Chummer.Rulesets.Sr5/
 COPY Chummer.Infrastructure/Chummer.Infrastructure.csproj Chummer.Infrastructure/
 COPY Chummer.Api/Chummer.Api.csproj Chummer.Api/
 RUN dotnet restore Chummer.Api/Chummer.Api.csproj
@@ -11,6 +12,7 @@ RUN dotnet restore Chummer.Api/Chummer.Api.csproj
 COPY Chummer.Core/ Chummer.Core/
 COPY Chummer.Application/ Chummer.Application/
 COPY Chummer.Contracts/ Chummer.Contracts/
+COPY Chummer.Rulesets.Sr5/ Chummer.Rulesets.Sr5/
 COPY Chummer.Infrastructure/ Chummer.Infrastructure/
 COPY Chummer.Api/ Chummer.Api/
 RUN dotnet publish Chummer.Api/Chummer.Api.csproj -c Release -o /out

@@ -4,8 +4,8 @@
      @ref="_shellRoot"
      tabindex="0"
      @onkeydown="OnShellKeyDown">
-    <MenuBar MenuRoots="@ShellState.MenuRoots.ToArray()"
-             OpenMenuId="@ShellState.OpenMenuId"
+    <MenuBar MenuRoots="@MenuRoots.ToArray()"
+             OpenMenuId="@_shellSurfaceState.OpenMenuId"
              IsBusy="@State.IsBusy"
              MenuCommands="@MenuCommands"
              IsCommandEnabled="@IsCommandEnabled"
@@ -18,15 +18,17 @@
                IsCommandEnabled="@IsCommandEnabled"
                ExecuteCommandRequested="@ExecuteCommandAsync" />
 
-    <MdiStrip OpenWorkspaces="@State.Session.OpenWorkspaces"
-              ActiveWorkspaceId="@State.Session.ActiveWorkspaceId"
+    <MdiStrip OpenWorkspaces="@_shellSurfaceState.OpenWorkspaces"
+              ActiveWorkspaceId="@_shellSurfaceState.ActiveWorkspaceId"
               IsBusy="@State.IsBusy"
               OpenWorkspaceRequested="@OpenWorkspaceAsync"
               CloseWorkspaceRequested="@CloseWorkspaceAsync" />
 
     <div class="workspace-layout">
         <WorkspaceLeftPane State="@State"
-                           NavigationTabs="@ShellState.NavigationTabs"
+                           OpenWorkspaces="@_shellSurfaceState.OpenWorkspaces"
+                           ActiveWorkspaceId="@_shellSurfaceState.ActiveWorkspaceId"
+                           NavigationTabs="@NavigationTabs"
                            ActiveWorkspaceActions="@ActiveWorkspaceActions"
                            ActiveUiControls="@ActiveUiControls"
                            IsNavigationTabEnabled="@IsNavigationTabEnabled"
@@ -68,8 +70,8 @@
         </aside>
     </div>
 
-    <StatusStrip WorkspaceId="@State.WorkspaceId"
-                 Error="@State.Error"
+    <StatusStrip WorkspaceId="@_shellSurfaceState.ActiveWorkspaceId"
+                 Error="@(_shellSurfaceState.Error ?? State.Error)"
                  LastUiUtc="@_lastUiUtc" />
 </div>
 

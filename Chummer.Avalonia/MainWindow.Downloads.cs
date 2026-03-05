@@ -27,7 +27,7 @@ public partial class MainWindow
 
         if (!StorageProvider.CanSave)
         {
-            _noticeText.Text = "Notice: save-as requested but file save is unavailable on this platform.";
+            _sectionHost.SetNotice("Notice: save-as requested but file save is unavailable on this platform.");
             return;
         }
 
@@ -50,7 +50,7 @@ public partial class MainWindow
 
         if (targetFile is null)
         {
-            _noticeText.Text = "Notice: save-as canceled.";
+            _sectionHost.SetNotice("Notice: save-as canceled.");
             return;
         }
 
@@ -61,6 +61,6 @@ public partial class MainWindow
 
         await output.WriteAsync(payloadBytes, CancellationToken.None);
         await output.FlushAsync(CancellationToken.None);
-        _noticeText.Text = $"Notice: downloaded {pendingDownload.FileName} to {targetFile.Name}.";
+        _sectionHost.SetNotice($"Notice: downloaded {pendingDownload.FileName} to {targetFile.Name}.");
     }
 }

@@ -19,6 +19,7 @@ on:
       - 'Chummer.Blazor/**'
       - 'Chummer.Core/**'
       - 'Chummer.Contracts/**'
+      - 'Chummer.Rulesets.Sr5/**'
       - 'Chummer.Desktop.Runtime/**'
       - 'Chummer.Infrastructure/**'
       - 'Chummer.Portal/**'

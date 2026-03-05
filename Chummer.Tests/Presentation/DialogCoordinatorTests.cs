@@ -216,6 +216,47 @@ public class DialogCoordinatorTests
     }
 
     [TestMethod]
+    public async Task CoordinateAsync_apply_ruleset_calls_delegate_and_closes_dialog_on_success()
+    {
+        DialogCoordinator coordinator = new();
+        CharacterOverviewState published = CharacterOverviewState.Empty with
+        {
+            ActiveDialog = new DesktopDialogState(
+                Id: "dialog.switch_ruleset",
+                Title: "Switch Ruleset",
+                Message: null,
+                Fields:
+                [
+                    new DesktopDialogField("preferredRulesetId", "Ruleset", " SR6 ", RulesetDefaults.Sr5)
+                ],
+                Actions:
+                [
+                    new DesktopDialogAction("apply_ruleset", "Apply", true)
+                ])
+        };
+
+        string? preferredRulesetId = null;
+        DialogCoordinationContext context = new(
+            State: published,
+            Publish: state => published = state,
+            ImportAsync: static (_, _) => Task.CompletedTask,
+            UpdateMetadataAsync: static (_, _) => Task.CompletedTask,
+            GetState: () => published,
+            SetPreferredRulesetAsync: (rulesetId, _) =>
+            {
+                preferredRulesetId = rulesetId;
+                published = published with { Error = null };
+                return Task.CompletedTask;
+            });
+
+        await coordinator.CoordinateAsync("apply_ruleset", context, CancellationToken.None);
+
+        Assert.AreEqual("sr6", preferredRulesetId);
+        Assert.IsNull(published.ActiveDialog);
+        Assert.AreEqual("Preferred ruleset set to 'sr6'.", published.Notice);
+    }
+
+    [TestMethod]
     public async Task CoordinateAsync_hero_lab_import_imports_workspace_and_sets_compat_notice()
     {
         DialogCoordinator coordinator = new();

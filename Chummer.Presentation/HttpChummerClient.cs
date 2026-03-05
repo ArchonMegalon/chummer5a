@@ -19,6 +19,30 @@ public sealed class HttpChummerClient : IChummerClient
         _httpClient = httpClient;
     }
 
+    public async Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+    {
+        SettingsScopeResponse response = await GetRequiredAsync<SettingsScopeResponse>("/api/tools/settings/global", ct);
+        string preferredRulesetId = RulesetDefaults.Normalize(
+            response.Settings?["preferredRulesetId"]?.GetValue<string>());
+        return new ShellUserPreferences(preferredRulesetId);
+    }
+
+    public async Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+    {
+        JsonObject settings = new()
+        {
+            ["preferredRulesetId"] = RulesetDefaults.Normalize(preferences.PreferredRulesetId)
+        };
+        using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
+            "/api/tools/settings/global",
+            settings,
+            ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"Saving shell preferences failed with HTTP {(int)response.StatusCode}.");
+        }
+    }
+
     public async Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
     {
         string contentBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(document.Content));
@@ -130,7 +154,9 @@ public sealed class HttpChummerClient : IChummerClient
             RulesetId: RulesetDefaults.Normalize(response.RulesetId),
             Commands: response.Commands,
             NavigationTabs: response.NavigationTabs,
-            Workspaces: workspaces);
+            Workspaces: workspaces,
+            PreferredRulesetId: RulesetDefaults.Normalize(response.PreferredRulesetId),
+            ActiveRulesetId: RulesetDefaults.Normalize(response.ActiveRulesetId));
     }
 
     public async Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
@@ -306,4 +332,8 @@ public sealed class HttpChummerClient : IChummerClient
 
         return data;
     }
+
+    private sealed record SettingsScopeResponse(
+        string Scope,
+        JsonObject Settings);
 }

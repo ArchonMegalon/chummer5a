@@ -109,7 +109,8 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
             context.CurrentWorkspace);
 
         string activeRulesetId = ResolveActiveRulesetId(context);
-        return SetFieldValue(dialog, "importRulesetId", activeRulesetId);
+        DesktopDialogState importSeeded = SetFieldValue(dialog, "importRulesetId", activeRulesetId);
+        return SetFieldValue(importSeeded, "preferredRulesetId", activeRulesetId);
     }
 
     private static string ResolveActiveRulesetId(OverviewCommandExecutionContext context)

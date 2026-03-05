@@ -17,6 +17,7 @@ public class ArchitectureGuardrailTests
         "Chummer.Application",
         "Chummer.Infrastructure",
         "Chummer.Presentation",
+        "Chummer.Rulesets.Sr5",
         "Chummer.Desktop.Runtime"
     };
 
@@ -206,12 +207,13 @@ public class ArchitectureGuardrailTests
             ["Chummer.Core"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
             ["Chummer.Application"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
             ["Chummer.Presentation"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
-            ["Chummer.Infrastructure"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts" },
+            ["Chummer.Rulesets.Sr5"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
+            ["Chummer.Infrastructure"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Rulesets.Sr5" },
             ["Chummer.Api"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure" },
             ["Chummer.Portal"] = new HashSet<string>(StringComparer.Ordinal),
             ["Chummer.Web"] = new HashSet<string>(StringComparer.Ordinal),
-            ["Chummer.Blazor"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation" },
-            ["Chummer.Desktop.Runtime"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure", "Chummer.Presentation" },
+            ["Chummer.Blazor"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation", "Chummer.Rulesets.Sr5" },
+            ["Chummer.Desktop.Runtime"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure", "Chummer.Presentation", "Chummer.Rulesets.Sr5" },
             ["Chummer.Blazor.Desktop"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Blazor", "Chummer.Contracts", "Chummer.Desktop.Runtime", "Chummer.Presentation" },
             ["Chummer.Avalonia"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Desktop.Runtime", "Chummer.Presentation" },
             ["Chummer.Avalonia.Browser"] = new HashSet<string>(StringComparer.Ordinal)

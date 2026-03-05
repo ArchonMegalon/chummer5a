@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
+using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
@@ -69,6 +71,36 @@ public sealed class InProcessChummerClientRulesetPluginTests
         Assert.AreEqual(NavigationTabCatalog.ForRuleset("sr5").Count, tabs.Count);
         Assert.IsTrue(commands.Any(command => string.Equals(command.Id, "file", StringComparison.Ordinal)));
         Assert.IsTrue(tabs.Any(tab => string.Equals(tab.Id, "tab-info", StringComparison.Ordinal)));
+    }
+
+    [TestMethod]
+    public async Task GetShellBootstrap_uses_saved_preferred_ruleset_when_no_workspaces_are_open()
+    {
+        var settingsStore = new InMemorySettingsStore();
+        settingsStore.Save("global", new JsonObject { ["preferredRulesetId"] = "sr6" });
+        var client = new InProcessChummerClient(
+            new NoOpWorkspaceService(),
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            settingsStore);
+
+        ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
+
+        Assert.AreEqual("sr6", snapshot.RulesetId);
+    }
+
+    [TestMethod]
+    public async Task SaveShellPreferences_persists_preferred_ruleset_in_global_settings()
+    {
+        var settingsStore = new InMemorySettingsStore();
+        var client = new InProcessChummerClient(
+            new NoOpWorkspaceService(),
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            settingsStore);
+
+        await client.SaveShellPreferencesAsync(new ShellUserPreferences("sr6"), CancellationToken.None);
+        ShellUserPreferences restored = await client.GetShellPreferencesAsync(CancellationToken.None);
+
+        Assert.AreEqual("sr6", restored.PreferredRulesetId);
     }
 
     private sealed class StubRulesetPlugin : IRulesetPlugin
@@ -172,11 +204,31 @@ public sealed class InProcessChummerClientRulesetPluginTests
         }
     }
 
+    private sealed class InMemorySettingsStore : ISettingsStore
+    {
+        private readonly Dictionary<string, JsonObject> _settingsByScope = new(StringComparer.Ordinal);
+
+        public JsonObject Load(string scope)
+        {
+            if (_settingsByScope.TryGetValue(scope, out JsonObject? settings))
+            {
+                return (JsonObject)settings.DeepClone();
+            }
+
+            return new JsonObject();
+        }
+
+        public void Save(string scope, JsonObject settings)
+        {
+            _settingsByScope[scope] = (JsonObject)settings.DeepClone();
+        }
+    }
+
     private sealed class NoOpWorkspaceService : IWorkspaceService
     {
         public WorkspaceImportResult Import(WorkspaceImportDocument document) => throw new NotSupportedException();
 
-        public IReadOnlyList<WorkspaceListItem> List(int? maxCount = null) => throw new NotSupportedException();
+        public IReadOnlyList<WorkspaceListItem> List(int? maxCount = null) => Array.Empty<WorkspaceListItem>();
 
         public bool Close(CharacterWorkspaceId id) => throw new NotSupportedException();
 

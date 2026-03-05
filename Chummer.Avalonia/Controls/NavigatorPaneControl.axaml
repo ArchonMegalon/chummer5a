@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Chummer.Avalonia.Controls.NavigatorPaneControl">
+  <Grid RowDefinitions="Auto,*,Auto,*,Auto,*,Auto,*" RowSpacing="6">
+    <TextBlock Grid.Row="0" Text="Open Characters" FontWeight="Bold" />
+    <ListBox Grid.Row="1" x:Name="OpenWorkspacesList" />
+    <TextBlock Grid.Row="2" Text="Navigation Tabs" FontWeight="Bold" />
+    <ListBox Grid.Row="3" x:Name="NavigationTabsList" />
+    <TextBlock Grid.Row="4" Text="Section Actions" FontWeight="Bold" />
+    <ListBox Grid.Row="5" x:Name="SectionActionsList" />
+    <TextBlock Grid.Row="6" Text="Desktop Controls" FontWeight="Bold" />
+    <ListBox Grid.Row="7" x:Name="UiControlsList" />
+  </Grid>
+</UserControl>

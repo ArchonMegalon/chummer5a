@@ -31,12 +31,17 @@ public sealed class ShellPresenter : IShellPresenter
         try
         {
             ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(ct);
+            string preferredRulesetId = RulesetDefaults.Normalize(bootstrap.PreferredRulesetId);
             ShellWorkspaceState[] openWorkspaces = MapWorkspaces(bootstrap.Workspaces);
-            string preferredRulesetId = RulesetDefaults.Normalize(State.PreferredRulesetId);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(
                 requestedActiveWorkspaceId: null,
                 openWorkspaces);
             string activeRulesetId = ResolveRulesetForActiveWorkspace(activeWorkspaceId, openWorkspaces, preferredRulesetId);
+            if (activeWorkspaceId is null)
+            {
+                activeRulesetId = RulesetDefaults.Normalize(bootstrap.ActiveRulesetId);
+            }
+
             if (!string.Equals(RulesetDefaults.Normalize(bootstrap.RulesetId), activeRulesetId, StringComparison.Ordinal))
             {
                 bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
@@ -201,12 +206,14 @@ public sealed class ShellPresenter : IShellPresenter
         IReadOnlyList<NavigationTabDefinition> tabs = State.NavigationTabs;
         if (requiresCatalogRefresh)
         {
-            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _runtimeClient.GetCommandsAsync(activeRulesetId, ct);
-            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _runtimeClient.GetNavigationTabsAsync(activeRulesetId, ct);
-            await Task.WhenAll(commandsTask, tabsTask);
-            commands = commandsTask.Result;
-            tabs = tabsTask.Result;
+            ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
+            commands = bootstrap.Commands;
+            tabs = bootstrap.NavigationTabs;
         }
+
+        await _runtimeClient.SaveShellPreferencesAsync(
+            new ShellUserPreferences(preferredRulesetId),
+            ct);
 
         Publish(State with
         {
@@ -235,11 +242,9 @@ public sealed class ShellPresenter : IShellPresenter
         IReadOnlyList<NavigationTabDefinition> tabs = State.NavigationTabs;
         if (rulesetChanged || commands.Count == 0 || tabs.Count == 0)
         {
-            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _runtimeClient.GetCommandsAsync(activeRulesetId, ct);
-            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _runtimeClient.GetNavigationTabsAsync(activeRulesetId, ct);
-            await Task.WhenAll(commandsTask, tabsTask);
-            commands = commandsTask.Result;
-            tabs = tabsTask.Result;
+            ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
+            commands = bootstrap.Commands;
+            tabs = bootstrap.NavigationTabs;
         }
 
         Publish(State with

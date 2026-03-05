@@ -7,6 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Chummer.Application\Chummer.Application.csproj" />
     <ProjectReference Include="..\Chummer.Contracts\Chummer.Contracts.csproj" />
+    <ProjectReference Include="..\Chummer.Rulesets.Sr5\Chummer.Rulesets.Sr5.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />

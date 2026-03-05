@@ -7,5 +7,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Chummer.Contracts\Chummer.Contracts.csproj" />
     <ProjectReference Include="..\Chummer.Presentation\Chummer.Presentation.csproj" />
+    <ProjectReference Include="..\Chummer.Rulesets.Sr5\Chummer.Rulesets.Sr5.csproj" />
   </ItemGroup>
 </Project>

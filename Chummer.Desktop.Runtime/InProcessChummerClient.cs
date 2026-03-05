@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
@@ -12,15 +13,20 @@ namespace Chummer.Desktop.Runtime;
 public sealed class InProcessChummerClient : IChummerClient
 {
     private static readonly JsonSerializerOptions SectionJsonOptions = new(JsonSerializerDefaults.Web);
+    private const string GlobalSettingsScope = "global";
+    private const string PreferredRulesetKey = "preferredRulesetId";
     private readonly IWorkspaceService _workspaceService;
     private readonly IRulesetShellCatalogResolver _shellCatalogResolver;
+    private readonly ISettingsStore _settingsStore;
 
     public InProcessChummerClient(
         IWorkspaceService workspaceService,
-        IRulesetShellCatalogResolver shellCatalogResolver)
+        IRulesetShellCatalogResolver shellCatalogResolver,
+        ISettingsStore? settingsStore = null)
     {
         _workspaceService = workspaceService;
         _shellCatalogResolver = shellCatalogResolver;
+        _settingsStore = settingsStore ?? new InMemorySettingsStore();
     }
 
     public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
@@ -53,20 +59,40 @@ public sealed class InProcessChummerClient : IChummerClient
         return Task.FromResult(_shellCatalogResolver.ResolveNavigationTabs(rulesetId));
     }
 
+    public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        JsonObject settings = _settingsStore.Load(GlobalSettingsScope);
+        string preferredRulesetId = RulesetDefaults.Normalize(settings[PreferredRulesetKey]?.GetValue<string>());
+        return Task.FromResult(new ShellUserPreferences(preferredRulesetId));
+    }
+
+    public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        JsonObject settings = _settingsStore.Load(GlobalSettingsScope);
+        settings[PreferredRulesetKey] = RulesetDefaults.Normalize(preferences.PreferredRulesetId);
+        _settingsStore.Save(GlobalSettingsScope, settings);
+        return Task.CompletedTask;
+    }
+
     public Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
         IReadOnlyList<WorkspaceListItem> workspaces = _workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
+        string preferredRulesetId = RulesetDefaults.Normalize(_settingsStore.Load(GlobalSettingsScope)[PreferredRulesetKey]?.GetValue<string>());
         string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
-            ? RulesetDefaults.Normalize(workspaces.FirstOrDefault()?.RulesetId)
+            ? RulesetDefaults.Normalize(workspaces.FirstOrDefault()?.RulesetId ?? preferredRulesetId)
             : RulesetDefaults.Normalize(rulesetId);
 
         return Task.FromResult(new ShellBootstrapSnapshot(
             RulesetId: effectiveRulesetId,
             Commands: _shellCatalogResolver.ResolveCommands(effectiveRulesetId),
             NavigationTabs: _shellCatalogResolver.ResolveNavigationTabs(effectiveRulesetId),
-            Workspaces: workspaces));
+            Workspaces: workspaces,
+            PreferredRulesetId: preferredRulesetId,
+            ActiveRulesetId: RulesetDefaults.Normalize(workspaces.FirstOrDefault()?.RulesetId ?? preferredRulesetId)));
     }
 
     public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
@@ -203,5 +229,25 @@ public sealed class InProcessChummerClient : IChummerClient
     {
         return payload
             ?? throw new InvalidOperationException($"{payloadName} was not found for workspace '{id.Value}'.");
+    }
+
+    private sealed class InMemorySettingsStore : ISettingsStore
+    {
+        private readonly Dictionary<string, JsonObject> _settingsByScope = new(StringComparer.Ordinal);
+
+        public JsonObject Load(string scope)
+        {
+            if (_settingsByScope.TryGetValue(scope, out JsonObject? existing))
+            {
+                return (JsonObject)existing.DeepClone();
+            }
+
+            return new JsonObject();
+        }
+
+        public void Save(string scope, JsonObject settings)
+        {
+            _settingsByScope[scope] = (JsonObject)settings.DeepClone();
+        }
     }
 }

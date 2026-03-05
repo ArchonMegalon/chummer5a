@@ -1,6 +1,7 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 
-namespace Chummer.Contracts.Rulesets;
+namespace Chummer.Rulesets.Sr5;
 
 public class Sr5RulesetPlugin : IRulesetPlugin
 {

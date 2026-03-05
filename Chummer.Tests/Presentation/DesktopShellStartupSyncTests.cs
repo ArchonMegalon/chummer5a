@@ -8,6 +8,7 @@ using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
+using Chummer.Rulesets.Sr5;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

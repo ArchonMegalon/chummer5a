@@ -169,6 +169,7 @@
     <ProjectReference Include="..\Chummer.Core\Chummer.Core.csproj" />
     <ProjectReference Include="..\Chummer.Infrastructure\Chummer.Infrastructure.csproj" />
     <ProjectReference Include="..\Chummer.Presentation\Chummer.Presentation.csproj" />
+    <ProjectReference Include="..\Chummer.Rulesets.Sr5\Chummer.Rulesets.Sr5.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Headless" Version="11.3.7" />

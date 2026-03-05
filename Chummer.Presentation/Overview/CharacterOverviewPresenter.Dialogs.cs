@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Overview;
@@ -54,7 +55,8 @@ public sealed partial class CharacterOverviewPresenter
             Publish: Publish,
             ImportAsync: ImportAsync,
             UpdateMetadataAsync: UpdateMetadataAsync,
-            GetState: () => State);
+            GetState: () => State,
+            SetPreferredRulesetAsync: SetPreferredRulesetAsync);
 
         await _dialogCoordinator.CoordinateAsync(actionId, context, ct);
     }
@@ -67,5 +69,20 @@ public sealed partial class CharacterOverviewPresenter
             Error = null
         });
         return Task.CompletedTask;
+    }
+
+    private async Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct)
+    {
+        if (_shellPresenter is null)
+            return;
+
+        string normalizedRulesetId = RulesetDefaults.Normalize(rulesetId);
+        await _shellPresenter.SetPreferredRulesetAsync(normalizedRulesetId, ct);
+        Publish(State with
+        {
+            Error = _shellPresenter.State.Error,
+            Commands = _shellPresenter.State.Commands,
+            NavigationTabs = _shellPresenter.State.NavigationTabs
+        });
     }
 }

@@ -2,12 +2,24 @@ using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using System.Linq;
 using System.Text.Json.Nodes;
 
 namespace Chummer.Presentation;
 
 public interface IChummerClient
 {
+    Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+    {
+        return Task.FromResult(ShellUserPreferences.Default);
+    }
+
+    Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.CompletedTask;
+    }
+
     Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct);
 
     Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct);
@@ -21,16 +33,21 @@ public interface IChummerClient
     async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
     {
         string normalizedRulesetId = RulesetDefaults.Normalize(rulesetId);
+        ShellUserPreferences preferences = await GetShellPreferencesAsync(ct);
+        string preferredRulesetId = RulesetDefaults.Normalize(preferences.PreferredRulesetId);
         Task<IReadOnlyList<AppCommandDefinition>> commandsTask = GetCommandsAsync(normalizedRulesetId, ct);
         Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = GetNavigationTabsAsync(normalizedRulesetId, ct);
         Task<IReadOnlyList<WorkspaceListItem>> workspacesTask = ListWorkspacesAsync(ct);
         await Task.WhenAll(commandsTask, tabsTask, workspacesTask);
+        string activeRulesetId = RulesetDefaults.Normalize(workspacesTask.Result.FirstOrDefault()?.RulesetId ?? preferredRulesetId);
 
         return new ShellBootstrapSnapshot(
             RulesetId: normalizedRulesetId,
             Commands: commandsTask.Result,
             NavigationTabs: tabsTask.Result,
-            Workspaces: workspacesTask.Result);
+            Workspaces: workspacesTask.Result,
+            PreferredRulesetId: preferredRulesetId,
+            ActiveRulesetId: activeRulesetId);
     }
 
     Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct);

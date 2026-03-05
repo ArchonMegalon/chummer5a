@@ -1,9 +1,8 @@
 using Chummer.Blazor.Components;
-using Chummer.Contracts.Rulesets;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Chummer.Rulesets.Sr5;
 
 var builder = WebApplication.CreateBuilder(args);
 string? configuredPathBase = builder.Configuration["Chummer:PathBase"];
@@ -36,9 +35,7 @@ builder.Services.AddHttpClient<IChummerClient, HttpChummerClient>((_, client) =>
 builder.Services.AddScoped<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
 builder.Services.AddScoped<IShellPresenter, ShellPresenter>();
 builder.Services.AddScoped<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
-builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
-builder.Services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
-builder.Services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
+builder.Services.AddChummerRulesets();
 builder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
 builder.Services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
 

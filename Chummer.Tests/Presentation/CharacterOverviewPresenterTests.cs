@@ -382,6 +382,18 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_switch_ruleset_opens_dialog()
+    {
+        var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+
+        await presenter.ExecuteCommandAsync("switch_ruleset", CancellationToken.None);
+
+        Assert.AreEqual("switch_ruleset", presenter.State.LastCommandId);
+        Assert.IsNotNull(presenter.State.ActiveDialog);
+        Assert.AreEqual("dialog.switch_ruleset", presenter.State.ActiveDialog?.Id);
+    }
+
+    [TestMethod]
     public async Task ExecuteCommandAsync_open_character_opens_import_dialog()
     {
         var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
@@ -427,6 +439,42 @@ public class CharacterOverviewPresenterTests
         await presenter.ExecuteCommandAsync("open_character", CancellationToken.None);
 
         Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(presenter.State.ActiveDialog!, "importRulesetId"));
+    }
+
+    [TestMethod]
+    public async Task ExecuteCommandAsync_switch_ruleset_prefills_ruleset_from_active_workspace()
+    {
+        var client = new FakeChummerClient();
+        client.SeedWorkspace("ws-sr6", "Ruleset Six", "RS6", rulesetId: "sr6");
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-sr6"), CancellationToken.None);
+        await presenter.ExecuteCommandAsync("switch_ruleset", CancellationToken.None);
+
+        Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(presenter.State.ActiveDialog!, "preferredRulesetId"));
+    }
+
+    [TestMethod]
+    public async Task ExecuteDialogActionAsync_apply_ruleset_calls_shell_presenter_and_closes_dialog()
+    {
+        var client = new FakeChummerClient();
+        var shellPresenter = new ShellPresenterStub(ShellState.Empty with
+        {
+            Commands = AppCommandCatalog.All,
+            NavigationTabs = NavigationTabCatalog.All
+        });
+        var presenter = new CharacterOverviewPresenter(
+            client,
+            shellPresenter: shellPresenter);
+
+        await presenter.ExecuteCommandAsync("switch_ruleset", CancellationToken.None);
+        await presenter.UpdateDialogFieldAsync("preferredRulesetId", " SR6 ", CancellationToken.None);
+        await presenter.ExecuteDialogActionAsync("apply_ruleset", CancellationToken.None);
+
+        Assert.AreEqual("sr6", shellPresenter.LastPreferredRulesetId);
+        Assert.IsNull(presenter.State.ActiveDialog);
+        Assert.AreEqual("Preferred ruleset set to 'sr6'.", presenter.State.Notice);
     }
 
     [TestMethod]
@@ -496,6 +544,7 @@ public class CharacterOverviewPresenterTests
             "print_character",
             "dice_roller",
             "global_settings",
+            "switch_ruleset",
             "character_settings",
             "translator",
             "xml_editor",
@@ -1023,7 +1072,8 @@ public class CharacterOverviewPresenterTests
             State = state;
         }
 
-        public ShellState State { get; }
+        public ShellState State { get; private set; }
+        public string? LastPreferredRulesetId { get; private set; }
 
         public event EventHandler? StateChanged;
 
@@ -1049,6 +1099,12 @@ public class CharacterOverviewPresenterTests
 
         public Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct)
         {
+            LastPreferredRulesetId = RulesetDefaults.Normalize(rulesetId);
+            State = State with
+            {
+                PreferredRulesetId = LastPreferredRulesetId,
+                ActiveRulesetId = LastPreferredRulesetId
+            };
             return Task.CompletedTask;
         }
 

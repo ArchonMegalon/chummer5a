@@ -27,6 +27,7 @@ public static class AppCommandCatalog
         new("paste", "command.paste", "edit", true, true),
         new("dice_roller", "command.dice_roller", "tools", false, true),
         new("global_settings", "command.global_settings", "tools", false, true),
+        new("switch_ruleset", "command.switch_ruleset", "tools", false, true),
         new("character_settings", "command.character_settings", "tools", true, true),
         new("translator", "command.translator", "tools", false, true),
         new("hero_lab_importer", "command.hero_lab_importer", "tools", false, true),
