@@ -1272,11 +1272,20 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "DOCKER_TESTS_SOFT_FAIL");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_PREFLIGHT_LOG");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file migration-loop-runbook");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-local-tests");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-desktop-build");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-amend-checksums");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-parity-checklist");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-manifest");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-sync");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-sync-s3");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-verify");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-smoke");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-ui-e2e");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-portal-e2e");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-docker-tests");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-docker-tests-preflight");
         StringAssert.Contains(runbookText, "downloads-smoke sync_status=");
         StringAssert.Contains(runbookText, "docker ps >\"$DOCKER_TESTS_PREFLIGHT_LOG\" 2>&1");
         StringAssert.Contains(runbookText, "permission denied while trying to connect to the docker API");
@@ -1293,6 +1302,18 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "skipping local-tests due NuGet preflight failure");
         StringAssert.Contains(runbookText, "NuGet preflight failed");
         Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-local-tests.log", StringComparison.Ordinal),
+            "local-tests should resolve logs through writable-path detection.");
+        Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-desktop-build.log", StringComparison.Ordinal),
+            "desktop-build should resolve logs through writable-path detection.");
+        Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-amend-checksums.log", StringComparison.Ordinal),
+            "amend-checksums should resolve logs through writable-path detection.");
+        Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-parity-checklist.log", StringComparison.Ordinal),
+            "parity-checklist should resolve logs through writable-path detection.");
+        Assert.IsFalse(
             runbookText.Contains("/tmp/chummer-downloads-sync.log", StringComparison.Ordinal),
             "downloads-sync should resolve logs through writable-path detection.");
         Assert.IsFalse(
@@ -1301,6 +1322,18 @@ public class MigrationComplianceTests
         Assert.IsFalse(
             runbookText.Contains("/tmp/chummer-downloads-verify.log", StringComparison.Ordinal),
             "downloads-verify should resolve logs through writable-path detection.");
+        Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-ui-e2e.log", StringComparison.Ordinal),
+            "ui-e2e should resolve logs through writable-path detection.");
+        Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-portal-e2e.log", StringComparison.Ordinal),
+            "portal-e2e should resolve logs through writable-path detection.");
+        Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-docker-tests.log", StringComparison.Ordinal),
+            "docker-tests should resolve logs through writable-path detection.");
+        Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-docker-tests-preflight.log", StringComparison.Ordinal),
+            "docker-tests preflight should resolve logs through writable-path detection.");
         StringAssert.Contains(strictHostGatesText, "RUNBOOK_MODE=local-tests");
         StringAssert.Contains(strictHostGatesText, "RUNBOOK_MODE=docker-tests");
         StringAssert.Contains(strictHostGatesText, "TEST_NUGET_SOFT_FAIL=0");

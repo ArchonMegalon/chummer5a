@@ -78,7 +78,8 @@ Purpose: keep a live, ordered queue of actionable work and execute items continu
 | WQ-065 | done | P2 | Add a checked-in env sample for self-hosted downloads publication. | agent | Completed 2026-03-05: added `docs/examples/self-hosted-downloads.env.example`, linked it from README and the self-hosted downloads runbook, and extended compliance guardrails to keep the sample current. |
 | WQ-066 | done | P2 | Route downloads runbook logs through writable-path resolution. | agent | Completed 2026-03-05: downloads manifest/sync/verify runbook modes now use `resolve_runbook_log_file` instead of hardcoded `/tmp` paths, and compliance guardrails prevent regression. |
 | WQ-067 | done | P2 | Add a repo-local downloads runbook smoke mode. | agent | Completed 2026-03-05: added `RUNBOOK_MODE=downloads-smoke`, exercised it through `bash scripts/runbook.sh`, and extended docs/compliance so the repo keeps a real local sync+verify smoke path. |
-| WQ-068 | in_progress | P2 | Move remaining runbook log defaults off hardcoded `/tmp` paths. | agent | Convert migration/local-tests/desktop-build/amend/parity/ui-e2e/portal-e2e/docker-test log defaults to `resolve_runbook_log_file`, update compliance coverage, and rerun a focused smoke where practical. |
+| WQ-068 | done | P2 | Move remaining runbook log defaults off hardcoded `/tmp` paths. | agent | Completed 2026-03-05: normalized migration/local-tests/desktop-build/amend/parity/ui-e2e/portal-e2e/docker-test logs onto `resolve_runbook_log_file`, kept compliance coverage in sync, and revalidated with targeted tests plus `RUNBOOK_MODE=downloads-smoke`. |
+| WQ-069 | in_progress | P2 | Move local-test `DOTNET_CLI_HOME` off the hardcoded `/tmp` fallback. | agent | Resolve `DOTNET_CLI_HOME` through a writable repo/user cache path for unattended host runs, extend compliance coverage, and rerun focused local-tests validation. |
 
 ## Intake Template
 Append new items at bottom:

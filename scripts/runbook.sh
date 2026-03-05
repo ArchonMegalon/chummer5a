@@ -54,7 +54,7 @@ resolve_runbook_log_file() {
 
 if [[ "$RUNBOOK_MODE" == "migration" ]]; then
   LOOPS="${MIGRATION_LOOPS:-1}"
-  LOG_FILE="${RUNBOOK_LOG_FILE:-/tmp/migration-loop-runbook.log}"
+  LOG_FILE="${RUNBOOK_LOG_FILE:-$(resolve_runbook_log_file migration-loop-runbook)}"
   set +e
   bash scripts/migration-loop.sh "$LOOPS" 2>&1 | tee "$LOG_FILE"
   status=${PIPESTATUS[0]}
@@ -77,7 +77,7 @@ if [[ "$RUNBOOK_MODE" == "local-tests" ]]; then
   TEST_NUGET_PREFLIGHT="${TEST_NUGET_PREFLIGHT:-1}"
   TEST_NUGET_SOFT_FAIL="${TEST_NUGET_SOFT_FAIL:-}"
   TEST_NUGET_ENDPOINT="${TEST_NUGET_ENDPOINT:-api.nuget.org:443}"
-  TEST_LOG_FILE="${TEST_LOG_FILE:-/tmp/chummer-local-tests.log}"
+  TEST_LOG_FILE="${TEST_LOG_FILE:-$(resolve_runbook_log_file chummer-local-tests)}"
   export DOTNET_CLI_HOME="${DOTNET_CLI_HOME:-/tmp}"
   export DOTNET_SKIP_FIRST_TIME_EXPERIENCE="${DOTNET_SKIP_FIRST_TIME_EXPERIENCE:-1}"
   export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER="${DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER:-1}"
@@ -278,7 +278,7 @@ fi
 if [[ "$RUNBOOK_MODE" == "desktop-build" ]]; then
   DESKTOP_PROJECT="${DESKTOP_PROJECT:-${RUNBOOK_ARG_FRAMEWORK:-Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj}}"
   DESKTOP_FRAMEWORK="${DESKTOP_FRAMEWORK:-${RUNBOOK_ARG_FILTER:-net10.0}}"
-  DESKTOP_LOG_FILE="${DESKTOP_LOG_FILE:-/tmp/chummer-desktop-build.log}"
+  DESKTOP_LOG_FILE="${DESKTOP_LOG_FILE:-$(resolve_runbook_log_file chummer-desktop-build)}"
   set +e
   docker compose run --build --rm chummer-tests sh -lc \
     "cd /src && dotnet build '$DESKTOP_PROJECT' -c Release -f '$DESKTOP_FRAMEWORK' --nologo" \
@@ -293,7 +293,7 @@ fi
 
 if [[ "$RUNBOOK_MODE" == "amend-checksums" ]]; then
   AMEND_TARGET="${AMEND_TARGET:-${RUNBOOK_ARG_FRAMEWORK:-Docker/Amends}}"
-  AMEND_CHECKSUM_LOG_FILE="${AMEND_CHECKSUM_LOG_FILE:-/tmp/chummer-amend-checksums.log}"
+  AMEND_CHECKSUM_LOG_FILE="${AMEND_CHECKSUM_LOG_FILE:-$(resolve_runbook_log_file chummer-amend-checksums)}"
   set +e
   bash scripts/validate-amend-manifests.sh "$AMEND_TARGET" 2>&1 | tee "$AMEND_CHECKSUM_LOG_FILE"
   status=${PIPESTATUS[0]}
@@ -305,7 +305,7 @@ if [[ "$RUNBOOK_MODE" == "amend-checksums" ]]; then
 fi
 
 if [[ "$RUNBOOK_MODE" == "parity-checklist" ]]; then
-  PARITY_CHECKLIST_LOG_FILE="${PARITY_CHECKLIST_LOG_FILE:-/tmp/chummer-parity-checklist.log}"
+  PARITY_CHECKLIST_LOG_FILE="${PARITY_CHECKLIST_LOG_FILE:-$(resolve_runbook_log_file chummer-parity-checklist)}"
   set +e
   bash scripts/generate-parity-checklist.sh 2>&1 | tee "$PARITY_CHECKLIST_LOG_FILE"
   status=${PIPESTATUS[0]}
@@ -469,7 +469,7 @@ JSON
 fi
 
 if [[ "$RUNBOOK_MODE" == "ui-e2e" ]]; then
-  UI_E2E_LOG_FILE="${UI_E2E_LOG_FILE:-/tmp/chummer-ui-e2e.log}"
+  UI_E2E_LOG_FILE="${UI_E2E_LOG_FILE:-$(resolve_runbook_log_file chummer-ui-e2e)}"
   export CHUMMER_UI_PLAYWRIGHT=1
   set +e
   bash scripts/e2e-ui.sh 2>&1 | tee "$UI_E2E_LOG_FILE"
@@ -482,7 +482,7 @@ if [[ "$RUNBOOK_MODE" == "ui-e2e" ]]; then
 fi
 
 if [[ "$RUNBOOK_MODE" == "portal-e2e" ]]; then
-  PORTAL_E2E_LOG_FILE="${PORTAL_E2E_LOG_FILE:-/tmp/chummer-portal-e2e.log}"
+  PORTAL_E2E_LOG_FILE="${PORTAL_E2E_LOG_FILE:-$(resolve_runbook_log_file chummer-portal-e2e)}"
   export CHUMMER_PORTAL_PLAYWRIGHT=1
   set +e
   bash scripts/e2e-portal.sh 2>&1 | tee "$PORTAL_E2E_LOG_FILE"
@@ -498,10 +498,10 @@ if [[ "$RUNBOOK_MODE" == "docker-tests" ]]; then
   TEST_PROJECT="${TEST_PROJECT:-Chummer.Tests/Chummer.Tests.csproj}"
   TEST_FRAMEWORK="${TEST_FRAMEWORK:-${RUNBOOK_ARG_FRAMEWORK:-net10.0}}"
   TEST_FILTER="${TEST_FILTER:-$RUNBOOK_ARG_FILTER}"
-  TEST_LOG_FILE="${TEST_LOG_FILE:-/tmp/chummer-docker-tests.log}"
+  TEST_LOG_FILE="${TEST_LOG_FILE:-$(resolve_runbook_log_file chummer-docker-tests)}"
   DOCKER_TESTS_BUILD="${DOCKER_TESTS_BUILD:-1}"
   DOCKER_TESTS_SOFT_FAIL="${DOCKER_TESTS_SOFT_FAIL:-}"
-  DOCKER_TESTS_PREFLIGHT_LOG="${DOCKER_TESTS_PREFLIGHT_LOG:-/tmp/chummer-docker-tests-preflight.log}"
+  DOCKER_TESTS_PREFLIGHT_LOG="${DOCKER_TESTS_PREFLIGHT_LOG:-$(resolve_runbook_log_file chummer-docker-tests-preflight)}"
   framework_arg=""
   filter_arg=""
   build_arg=""
