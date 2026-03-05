@@ -87,8 +87,8 @@ public class ApiIntegrationTests
 
         Assert.IsInstanceOfType<JsonObject>(info["content"]);
         JsonObject content = (JsonObject)info["content"]!;
-        Assert.IsTrue(content["baseDataPath"] is not null);
-        Assert.IsTrue(content["baseLanguagePath"] is not null);
+        Assert.IsNotNull(content["baseDataPath"]);
+        Assert.IsNotNull(content["baseLanguagePath"]);
         Assert.IsInstanceOfType<JsonArray>(content["overlays"]);
     }
 
@@ -98,8 +98,8 @@ public class ApiIntegrationTests
         using var client = CreateClient();
 
         JsonObject overlays = await GetRequiredJsonObject(client, "/api/content/overlays");
-        Assert.IsTrue(overlays["baseDataPath"] is not null);
-        Assert.IsTrue(overlays["baseLanguagePath"] is not null);
+        Assert.IsNotNull(overlays["baseDataPath"]);
+        Assert.IsNotNull(overlays["baseLanguagePath"]);
         Assert.IsInstanceOfType<JsonArray>(overlays["overlays"]);
 
         if (!string.IsNullOrWhiteSpace(ExpectedAmendId))
@@ -361,7 +361,7 @@ public class ApiIntegrationTests
 
         JsonObject response = await PostRequiredJsonObject(client, "/api/tools/dice/roll", body);
         Assert.AreEqual(8, response["rolls"]?.AsArray().Count);
-        Assert.IsTrue(response["total"]?.GetValue<int>() >= 10);
+        Assert.IsGreaterThanOrEqualTo(10, response["total"]?.GetValue<int>() ?? 0);
     }
 
     [TestMethod]
@@ -387,7 +387,7 @@ public class ApiIntegrationTests
         using var client = CreateClient();
 
         JsonObject response = await GetRequiredJsonObject(client, "/api/tools/master-index");
-        Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) > 0);
+        Assert.IsGreaterThan(0, response["count"]?.GetValue<int>() ?? 0);
         Assert.IsTrue(response["files"] is JsonArray);
     }
 
@@ -397,7 +397,7 @@ public class ApiIntegrationTests
         using var client = CreateClient();
 
         JsonObject response = await GetRequiredJsonObject(client, "/api/tools/translator/languages");
-        Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) > 0);
+        Assert.IsGreaterThan(0, response["count"]?.GetValue<int>() ?? 0);
         Assert.IsTrue(response["languages"] is JsonArray);
     }
 
@@ -433,7 +433,7 @@ public class ApiIntegrationTests
         };
 
         JsonObject response = await PostRequiredJsonObject(client, "/api/tools/roster", body);
-        Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) > 0);
+        Assert.IsGreaterThan(0, response["count"]?.GetValue<int>() ?? 0);
         Assert.IsTrue(response["entries"] is JsonArray);
     }
 
@@ -444,7 +444,8 @@ public class ApiIntegrationTests
 
         JsonNode stages = await client.GetFromJsonAsync<JsonNode>("/api/lifemodules/stages");
         Assert.IsNotNull(stages);
-        Assert.IsTrue(stages is JsonArray array && array.Count > 0);
+        Assert.IsInstanceOfType<JsonArray>(stages);
+        Assert.IsGreaterThan(0, ((JsonArray)stages).Count);
     }
 
     [TestMethod]
@@ -455,7 +456,7 @@ public class ApiIntegrationTests
         JsonObject response = await GetRequiredJsonObject(client, "/api/commands?ruleset=sr5");
         JsonObject defaultResponse = await GetRequiredJsonObject(client, "/api/commands");
 
-        Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) > 0);
+        Assert.IsGreaterThan(0, response["count"]?.GetValue<int>() ?? 0);
         Assert.IsTrue(response["commands"] is JsonArray);
         Assert.AreEqual(response.ToJsonString(), defaultResponse.ToJsonString());
     }
@@ -479,7 +480,7 @@ public class ApiIntegrationTests
         JsonObject response = await GetRequiredJsonObject(client, "/api/navigation-tabs?ruleset=sr5");
         JsonObject defaultResponse = await GetRequiredJsonObject(client, "/api/navigation-tabs");
 
-        Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) >= 16);
+        Assert.IsGreaterThanOrEqualTo(16, response["count"]?.GetValue<int>() ?? 0);
         Assert.IsTrue(response["tabs"] is JsonArray);
         Assert.IsTrue((response["tabs"] as JsonArray)?.Any(node => string.Equals(node?["id"]?.GetValue<string>(), "tab-info", StringComparison.Ordinal)) ?? false);
         Assert.IsTrue((response["tabs"] as JsonArray)?.All(node => !string.IsNullOrWhiteSpace(node?["sectionId"]?.GetValue<string>())) ?? false);
@@ -590,7 +591,7 @@ public class ApiIntegrationTests
         Assert.AreEqual("Apex", profile["alias"]?.GetValue<string>());
 
         JsonObject skills = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/skills");
-        Assert.IsTrue((skills["count"]?.GetValue<int>() ?? 0) > 0);
+        Assert.IsGreaterThan(0, skills["count"]?.GetValue<int>() ?? 0);
 
         JsonObject rules = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/rules");
         Assert.IsFalse(string.IsNullOrWhiteSpace(rules["gameEdition"]?.GetValue<string>()));
@@ -616,7 +617,7 @@ public class ApiIntegrationTests
 
         JsonObject saveResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/save", new JsonObject());
         Assert.AreEqual(workspaceId, saveResponse["id"]?.GetValue<string>());
-        Assert.IsTrue((saveResponse["documentLength"]?.GetValue<int>() ?? 0) > 0);
+        Assert.IsGreaterThan(0, saveResponse["documentLength"]?.GetValue<int>() ?? 0);
         Assert.AreEqual("sr5", (saveResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
 
         JsonObject downloadResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/download", new JsonObject());
@@ -626,7 +627,7 @@ public class ApiIntegrationTests
         Assert.IsTrue((downloadResponse["fileName"]?.GetValue<string>() ?? string.Empty).EndsWith(".chum5", StringComparison.Ordinal));
         string contentBase64 = downloadResponse["contentBase64"]?.GetValue<string>() ?? string.Empty;
         Assert.IsFalse(string.IsNullOrWhiteSpace(contentBase64));
-        Assert.IsTrue(Convert.FromBase64String(contentBase64).Length > 0);
+        Assert.IsGreaterThan(0, Convert.FromBase64String(contentBase64).Length);
     }
 
     [TestMethod]
@@ -674,7 +675,7 @@ public class ApiIntegrationTests
             .Select(node => node as JsonObject)
             .FirstOrDefault(node => string.Equals(node?["id"]?.GetValue<string>(), workspaceId, StringComparison.Ordinal))
             ?? new JsonObject();
-        Assert.IsTrue(listedItem.Count > 0, "Expected workspace list entry for imported workspace.");
+        Assert.IsGreaterThan(0, listedItem.Count, "Expected workspace list entry for imported workspace.");
         Assert.AreEqual("sr6", (listedItem["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
 
         JsonObject saveResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/save", new JsonObject());
@@ -702,7 +703,7 @@ public class ApiIntegrationTests
         Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceB));
 
         JsonObject listed = await GetRequiredJsonObject(client, "/api/workspaces");
-        Assert.IsTrue((listed["count"]?.GetValue<int>() ?? 0) >= 2);
+        Assert.IsGreaterThanOrEqualTo(2, listed["count"]?.GetValue<int>() ?? 0);
         JsonArray listedWorkspaces = listed["workspaces"]?.AsArray() ?? [];
         CollectionAssert.IsSubsetOf(
             new[] { workspaceA, workspaceB },

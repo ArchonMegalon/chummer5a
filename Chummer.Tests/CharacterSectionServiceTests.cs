@@ -79,9 +79,9 @@ public class CharacterSectionServiceTests
 
         CharacterProgressSection section = service.ParseProgress(xml);
 
-        Assert.IsTrue(section.Nuyen > 0m);
-        Assert.IsTrue(section.Karma >= 0m);
-        Assert.IsTrue(section.TotalEssence > 0m);
+        Assert.IsGreaterThan(0m, section.Nuyen);
+        Assert.IsGreaterThanOrEqualTo(0m, section.Karma);
+        Assert.IsGreaterThan(0m, section.TotalEssence);
     }
 
     [TestMethod]
