@@ -37,7 +37,8 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-024 | done | P1 | Add macOS Intel desktop artifacts to downloads matrix. | agent | Completed 2026-03-05: workflow matrix now publishes both macOS architectures, manifest generation + portal fallback labels include `osx-x64`, and runbook desktop gate enforces the new matrix/manifest coverage. |
 | WL-025 | done | P2 | Keep `IChummerClient` interface pure by moving bootstrap helper to extension/helper layer. | agent | Completed 2026-03-05: contract remains method-signature-only and new compliance/runbook guardrails block default shell-bootstrap method bodies from reappearing on the interface. |
 | WL-026 | done | P2 | Harden preapproved `runbook local-tests` for unattended sandbox execution. | agent | Completed 2026-03-05: added first-run/IPC-safe env defaults, single-process/build-server toggles, and optional no-restore/no-build switches for preapproved-script local test runs. |
-| WL-027 | in_progress | P3 | Add fast-fail NuGet preflight for `runbook local-tests`. | agent | Detect unreachable `api.nuget.org` early in restore-enabled local test runs to avoid long unattended retry loops in restricted environments. |
+| WL-027 | done | P3 | Add fast-fail NuGet preflight for `runbook local-tests`. | agent | Completed 2026-03-05: restore-enabled local-tests now perform a quick NuGet endpoint preflight and fail fast with explicit offline guidance when connectivity is blocked. |
+| WL-028 | in_progress | P2 | Add optional object-storage publish path for desktop downloads bundles. | agent | Extend workflow/scripts with an opt-in S3/R2-compatible publish target and verification while keeping deploy-dir mode as default. |
 
 ## Intake Template
 Add new items at the bottom:

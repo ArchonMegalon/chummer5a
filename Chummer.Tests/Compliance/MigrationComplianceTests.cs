@@ -1094,6 +1094,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER");
         StringAssert.Contains(runbookText, "--disable-build-servers");
         StringAssert.Contains(runbookText, "MSBUILDDISABLENODEREUSE");
+        StringAssert.Contains(runbookText, "TEST_NUGET_PREFLIGHT");
+        StringAssert.Contains(runbookText, "TEST_NUGET_ENDPOINT");
+        StringAssert.Contains(runbookText, "NuGet preflight failed");
 
         StringAssert.Contains(generatorText, "Docker/Downloads/releases.json");
         StringAssert.Contains(generatorText, "Chummer.Portal/downloads/releases.json");

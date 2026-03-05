@@ -42,6 +42,8 @@ if [[ "$RUNBOOK_MODE" == "local-tests" ]]; then
   TEST_DISABLE_BUILD_SERVERS="${TEST_DISABLE_BUILD_SERVERS:-1}"
   TEST_NO_RESTORE="${TEST_NO_RESTORE:-0}"
   TEST_NO_BUILD="${TEST_NO_BUILD:-0}"
+  TEST_NUGET_PREFLIGHT="${TEST_NUGET_PREFLIGHT:-1}"
+  TEST_NUGET_ENDPOINT="${TEST_NUGET_ENDPOINT:-api.nuget.org:443}"
   TEST_LOG_FILE="${TEST_LOG_FILE:-/tmp/chummer-local-tests.log}"
   export DOTNET_CLI_HOME="${DOTNET_CLI_HOME:-/tmp}"
   export DOTNET_SKIP_FIRST_TIME_EXPERIENCE="${DOTNET_SKIP_FIRST_TIME_EXPERIENCE:-1}"
@@ -70,6 +72,32 @@ if [[ "$RUNBOOK_MODE" == "local-tests" ]]; then
   fi
   if [[ "$TEST_NO_BUILD" == "1" || "$TEST_NO_BUILD" == "true" || "$TEST_NO_BUILD" == "TRUE" ]]; then
     build_args=(--no-build)
+  fi
+  if [[ "$TEST_NO_RESTORE" != "1" && "$TEST_NO_RESTORE" != "true" && "$TEST_NO_RESTORE" != "TRUE" ]]; then
+    if [[ "$TEST_NUGET_PREFLIGHT" == "1" || "$TEST_NUGET_PREFLIGHT" == "true" || "$TEST_NUGET_PREFLIGHT" == "TRUE" ]]; then
+      host="${TEST_NUGET_ENDPOINT%:*}"
+      port="${TEST_NUGET_ENDPOINT##*:}"
+      if [[ -z "$host" || -z "$port" || "$host" == "$port" ]]; then
+        echo "Invalid TEST_NUGET_ENDPOINT value: '$TEST_NUGET_ENDPOINT' (expected host:port)." >&2
+        exit 1
+      fi
+      set +e
+      python3 - "$host" "$port" <<'PY' >/dev/null 2>&1
+import socket
+import sys
+
+host = sys.argv[1]
+port = int(sys.argv[2])
+with socket.create_connection((host, port), timeout=3):
+    pass
+PY
+      preflight_status=$?
+      set -e
+      if [[ "$preflight_status" -ne 0 ]]; then
+        echo "NuGet preflight failed for $TEST_NUGET_ENDPOINT; set TEST_NO_RESTORE=1 for offline assets or enable outbound network." >&2
+        exit 1
+      fi
+    fi
   fi
   set +e
   dotnet test "$TEST_PROJECT" -c "$TEST_CONFIGURATION" "${framework_args[@]}" "${filter_args[@]}" "${cpu_args[@]}" "${server_args[@]}" "${restore_args[@]}" "${build_args[@]}" --logger "console;verbosity=normal" 2>&1 | tee "$TEST_LOG_FILE"
