@@ -15,6 +15,7 @@ Purpose: keep a live, ordered queue of actionable work and execute items continu
 | WQ-002 | done | P1 | Commit CA1861 cleanup once tests are green. | agent | Completed 2026-03-05 in commit `2b60aedb1` (`chore: add work queue and clear CA1861 test warnings`). |
 | WQ-003 | in_progress | P2 | Continue zero-risk warning reduction from dominant buckets. | agent | 2026-03-05 progress: cleared `CA1875` and `MSTEST0001`, fully eliminated `CS8632` through nullable-annotations context updates, and reduced `MSTEST0037` via targeted assertion conversions. Latest `docker-tests` run passed (`390/390`) with `147 Warning(s)`, `0 Error(s)`; dominant residual bucket is `MSTEST0037`. |
 | WQ-004 | blocked | P1 | Push `Docker` branch updates to `origin`. | user/background | Commit-only handoff remains active; user can push in background. |
+| WQ-005 | queued | P2 | Continue `MSTEST0037` reduction batch 2 in top warning files. | agent | Convert safe `Assert.AreEqual`/`Assert.IsTrue` patterns to analyzer-preferred forms in `ApiIntegrationTests`, `BlazorShellComponentTests`, `CharacterSectionServiceTests`, then run `bash scripts/runbook.sh docker-tests`. |
 
 ## Intake Template
 Append new items at bottom:
