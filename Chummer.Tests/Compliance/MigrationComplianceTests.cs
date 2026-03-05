@@ -562,6 +562,7 @@ public class MigrationComplianceTests
         string playwrightScriptText = File.ReadAllText(playwrightScriptPath);
 
         StringAssert.Contains(uiE2eText, "CHUMMER_UI_PLAYWRIGHT");
+        StringAssert.Contains(uiE2eText, "CHUMMER_E2E_PLAYWRIGHT_SOFT_FAIL");
         StringAssert.Contains(uiE2eText, "CHUMMER_E2E_DOCKER_FALLBACK");
         StringAssert.Contains(uiE2eText, "CHUMMER_E2E_HOST_PROBE_ATTEMPTS");
         StringAssert.Contains(uiE2eText, "CHUMMER_E2E_DOCKER_PROBE_ATTEMPTS");
@@ -584,6 +585,8 @@ public class MigrationComplianceTests
         string portalScriptPath = FindPath("scripts", "e2e-portal.sh");
         string portalScriptText = File.ReadAllText(portalScriptPath);
 
+        StringAssert.Contains(portalScriptText, "CHUMMER_E2E_PLAYWRIGHT_SOFT_FAIL");
+        StringAssert.Contains(portalScriptText, "skipping portal e2e: docker daemon permission denied in this environment.");
         StringAssert.Contains(portalScriptText, "chummer-playwright-portal");
         StringAssert.Contains(portalScriptText, "docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-avalonia-browser chummer-portal");
     }

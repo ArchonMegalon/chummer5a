@@ -15,6 +15,13 @@ elif [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
 else
   RUN_PLAYWRIGHT="0"
 fi
+if [[ -n "${CHUMMER_E2E_PLAYWRIGHT_SOFT_FAIL:-}" ]]; then
+  PLAYWRIGHT_SOFT_FAIL="$CHUMMER_E2E_PLAYWRIGHT_SOFT_FAIL"
+elif [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  PLAYWRIGHT_SOFT_FAIL="0"
+else
+  PLAYWRIGHT_SOFT_FAIL="1"
+fi
 if [[ -n "${CHUMMER_E2E_DOCKER_FALLBACK:-}" ]]; then
   USE_DOCKER_FALLBACK="$CHUMMER_E2E_DOCKER_FALLBACK"
 elif [[ "$RUN_PLAYWRIGHT" == "1" ]]; then
@@ -22,6 +29,34 @@ elif [[ "$RUN_PLAYWRIGHT" == "1" ]]; then
 else
   USE_DOCKER_FALLBACK="0"
 fi
+DOCKER_FALLBACK_AVAILABLE="1"
+DOCKER_DAEMON_PERMISSION_DENIED="0"
+SKIP_REASON=""
+
+is_docker_permission_error_text() {
+  local source_file="$1"
+  grep -Eqi "permission denied while trying to connect to the Docker daemon socket|operation not permitted|got permission denied while trying to connect to the docker daemon socket" "$source_file"
+}
+
+probe_docker_fallback_access() {
+  local probe_log
+  probe_log="$(mktemp)"
+  set +e
+  docker compose --profile test ps >"$probe_log" 2>&1
+  local status=$?
+  set -e
+  if [[ "$status" -eq 0 ]]; then
+    rm -f "$probe_log"
+    return 0
+  fi
+
+  DOCKER_FALLBACK_AVAILABLE="0"
+  if is_docker_permission_error_text "$probe_log"; then
+    DOCKER_DAEMON_PERMISSION_DENIED="1"
+  fi
+  rm -f "$probe_log"
+  return 0
+}
 
 curl_with_retries() {
   local max_attempts="${1:-$MAX_CURL_ATTEMPTS}"
@@ -86,6 +121,7 @@ wait_for_url() {
   local max_attempts="${2:-45}"
   local sleep_seconds="${3:-1}"
   local attempt
+  local docker_probe_log
   local host_attempts="$max_attempts"
   local docker_attempts="$max_attempts"
 
@@ -102,20 +138,56 @@ wait_for_url() {
   done
 
   if [[ "$USE_DOCKER_FALLBACK" == "1" ]]; then
-    for ((attempt = 1; attempt <= docker_attempts; attempt++)); do
-      if docker_fetch_with_key "$url" "$API_KEY" >/dev/null 2>&1; then
-        return 0
-      fi
-      sleep "$sleep_seconds"
-    done
+    if [[ "$DOCKER_FALLBACK_AVAILABLE" == "1" ]]; then
+      for ((attempt = 1; attempt <= docker_attempts; attempt++)); do
+        docker_probe_log="$(mktemp)"
+        if docker_fetch_with_key "$url" "$API_KEY" > /dev/null 2>"$docker_probe_log"; then
+          rm -f "$docker_probe_log"
+          return 0
+        fi
+        if is_docker_permission_error_text "$docker_probe_log"; then
+          DOCKER_DAEMON_PERMISSION_DENIED="1"
+          rm -f "$docker_probe_log"
+          if [[ "$PLAYWRIGHT_SOFT_FAIL" == "1" ]]; then
+            SKIP_REASON="docker daemon permission denied while probing $url"
+            return 2
+          fi
+        else
+          rm -f "$docker_probe_log"
+        fi
+        sleep "$sleep_seconds"
+      done
+    elif [[ "$PLAYWRIGHT_SOFT_FAIL" == "1" && "$DOCKER_DAEMON_PERMISSION_DENIED" == "1" ]]; then
+      SKIP_REASON="docker daemon permission denied while probing $url"
+      return 2
+    fi
   fi
 
   echo "Timed out waiting for $url" >&2
   return 1
 }
 
-wait_for_url "$API_URL/api/health"
-wait_for_url "$UI_URL/health"
+if [[ "$USE_DOCKER_FALLBACK" == "1" ]]; then
+  probe_docker_fallback_access
+fi
+
+wait_for_url "$API_URL/api/health" || wait_status=$?
+if [[ "${wait_status:-0}" -eq 2 ]]; then
+  echo "skipping ui e2e: $SKIP_REASON"
+  exit 0
+elif [[ "${wait_status:-0}" -ne 0 ]]; then
+  exit "${wait_status:-1}"
+fi
+unset wait_status
+
+wait_for_url "$UI_URL/health" || wait_status=$?
+if [[ "${wait_status:-0}" -eq 2 ]]; then
+  echo "skipping ui e2e: $SKIP_REASON"
+  exit 0
+elif [[ "${wait_status:-0}" -ne 0 ]]; then
+  exit "${wait_status:-1}"
+fi
+unset wait_status
 
 api_health=$(curl_with_key "$API_URL/api/health" "api-health")
 ui_health=$(curl_with_key "$UI_URL/health" "blazor-health")
@@ -143,11 +215,31 @@ fi
 
 PLAYWRIGHT_TIMEOUT_SECONDS="${CHUMMER_UI_PLAYWRIGHT_TIMEOUT_SECONDS:-240}"
 if [[ "$RUN_PLAYWRIGHT" == "1" ]]; then
-  echo "running playwright ui e2e against ${PLAYWRIGHT_UI_URL} (timeout: ${PLAYWRIGHT_TIMEOUT_SECONDS}s)"
-  if ! CHUMMER_API_KEY="$API_KEY" CHUMMER_UI_PLAYWRIGHT_BASE_URL="$PLAYWRIGHT_UI_URL" timeout "${PLAYWRIGHT_TIMEOUT_SECONDS}"s docker compose --profile test run --build --rm -T chummer-playwright; then
-    echo "playwright ui e2e failed or timed out after ${PLAYWRIGHT_TIMEOUT_SECONDS}s" >&2
-    exit 1
+  if [[ "$PLAYWRIGHT_SOFT_FAIL" == "1" && "$DOCKER_DAEMON_PERMISSION_DENIED" == "1" ]]; then
+    echo "skipping playwright ui e2e: docker daemon permission denied in this environment."
+    exit 0
   fi
+
+  echo "running playwright ui e2e against ${PLAYWRIGHT_UI_URL} (timeout: ${PLAYWRIGHT_TIMEOUT_SECONDS}s)"
+  playwright_log="$(mktemp)"
+  set +e
+  CHUMMER_API_KEY="$API_KEY" CHUMMER_UI_PLAYWRIGHT_BASE_URL="$PLAYWRIGHT_UI_URL" \
+    timeout "${PLAYWRIGHT_TIMEOUT_SECONDS}"s docker compose --profile test run --build --rm -T chummer-playwright \
+    2>&1 | tee "$playwright_log"
+  playwright_status=${PIPESTATUS[0]}
+  set -e
+  if [[ "$playwright_status" -ne 0 ]]; then
+    if [[ "$PLAYWRIGHT_SOFT_FAIL" == "1" ]] && is_docker_permission_error_text "$playwright_log"; then
+      echo "skipping playwright ui e2e: docker daemon permission denied in this environment."
+      rm -f "$playwright_log"
+      exit 0
+    fi
+
+    rm -f "$playwright_log"
+    echo "playwright ui e2e failed or timed out after ${PLAYWRIGHT_TIMEOUT_SECONDS}s" >&2
+    exit "$playwright_status"
+  fi
+  rm -f "$playwright_log"
 else
   echo "skipping playwright ui e2e (set CHUMMER_UI_PLAYWRIGHT=1 to enable)"
 fi

@@ -29,6 +29,8 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-016 | blocked | P1 | Post-milestone UI/portal regression rerun. | agent | Blocked by sandbox Docker-socket permission errors during portal/ui Playwright container execution in this environment. |
 | WL-017 | done | P1 | UI e2e script resilience hardening for non-host-reachable runtimes. | agent | Completed 2026-03-05: added bounded Docker fallback probe controls to `scripts/e2e-ui.sh` and guardrail assertions in compliance tests; host-local validation in this sandbox is limited to script syntax due Docker/`dotnet` constraints. |
 | WL-018 | done | P2 | Improve runbook e2e blocker visibility. | agent | Completed 2026-03-05: runbook summary extraction for `ui-e2e` and `portal-e2e` now surfaces Docker daemon permission-denied errors explicitly. |
+| WL-019 | done | P1 | Non-CI e2e soft-fail for Docker daemon permission blockers. | agent | Completed 2026-03-05: UI/portal e2e scripts now downgrade daemon-permission-denied failures to explicit skip outside CI, keep CI strict, and surface skip reasons in runbook summaries. |
+| WL-020 | in_progress | P1 | Split shell preferences from shell session model. | agent | Separate preference persistence (`PreferredRulesetId`) from session persistence (`ActiveWorkspaceId`, active tab state) across contracts/endpoints/clients/presenter/bootstrap. |
 
 ## Intake Template
 Add new items at the bottom:

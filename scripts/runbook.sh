@@ -227,7 +227,7 @@ if [[ "$RUNBOOK_MODE" == "ui-e2e" ]]; then
   set -e
   echo
   echo "== ui e2e summary =="
-  rg -n "running playwright ui e2e|playwright ui e2e failed|ui E2E completed|Timed out waiting|request failed|permission denied while trying to connect to the Docker daemon socket|operation not permitted" "$UI_E2E_LOG_FILE" | tail -n 200 || true
+  rg -n "running playwright ui e2e|playwright ui e2e failed|ui E2E completed|Timed out waiting|request failed|skipping ui e2e|skipping playwright ui e2e|permission denied while trying to connect to the Docker daemon socket|operation not permitted" "$UI_E2E_LOG_FILE" | tail -n 200 || true
   exit "$status"
 fi
 
@@ -240,7 +240,7 @@ if [[ "$RUNBOOK_MODE" == "portal-e2e" ]]; then
   set -e
   echo
   echo "== portal e2e summary =="
-  rg -n "running portal playwright e2e|portal playwright e2e failed|portal e2e completed|permission denied while trying to connect to the Docker daemon socket|operation not permitted" "$PORTAL_E2E_LOG_FILE" | tail -n 200 || true
+  rg -n "running portal playwright e2e|portal playwright e2e failed|portal e2e completed|skipping portal e2e|skipping portal playwright e2e|permission denied while trying to connect to the Docker daemon socket|operation not permitted" "$PORTAL_E2E_LOG_FILE" | tail -n 200 || true
   exit "$status"
 fi
 
