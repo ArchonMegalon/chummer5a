@@ -49,12 +49,13 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-036 | done | P1 | Add optional per-artifact verification to downloads manifest checks. | agent | Completed 2026-03-05: manifest verifier now supports opt-in artifact URL/file checks and deployment/runbook/docs/guardrails were updated to enforce and expose the stricter validation path. |
 | WL-037 | done | P2 | Add strict host gate wrapper script. | agent | Completed 2026-03-05: added `scripts/runbook-strict-host-gates.sh` with strict local+docker sequencing and wired documentation/guardrails for operator usage. |
 | WL-038 | done | P2 | Commit verification hardening and strict-gate wrapper batch. | agent | Completed 2026-03-05 in commit `564953e39` with artifact-link verification, workflow/runbook wiring, docs updates, and strict host-gate wrapper script. |
-| WL-039 | blocked | P1 | Execute strict host-gate wrapper in this sandbox. | agent | Strict wrapper intentionally fails on blocked NuGet preflight (`api.nuget.org:443`) in this environment; requires host/network access for full execution. |
+| WL-039 | done | P1 | Execute strict host-gate wrapper in this sandbox. | agent | Completed 2026-03-05 with host-level access: strict prerequisites and strict local/docker gates now execute successfully through preapproved script path. |
 | WL-040 | done | P2 | Add host prerequisite checker for strict gate readiness. | agent | Completed 2026-03-05: added `scripts/check-host-gate-prereqs.sh` and `runbook` mode `host-prereqs` with summarized PASS/FAIL output for Docker+NuGet readiness. |
 | WL-041 | done | P2 | Commit prerequisite checker and verifier hardening batch. | agent | Completed 2026-03-05 in commit `8205d6a81` with host-prereq runbook mode, stricter verifier flow wiring, and documentation/compliance updates. |
 | WL-042 | done | P1 | Fix host-prereqs logging path reliability for non-sudo runs. | agent | Completed 2026-03-05: runbook/prereq scripts now choose per-user writable log files, so host-prereqs reports accurate PASS/FAIL summaries without `/tmp` permission collisions. |
 | WL-043 | done | P2 | Add strict-wrapper prerequisite phase. | agent | Completed 2026-03-05: strict host-gate wrapper now runs prerequisite probe first (`check-host-gate-prereqs.sh`) before strict local/docker tests, with guardrail coverage updated. |
-| WL-044 | blocked | P1 | Run strict host gates and capture output for next remediation chain. | user/operator | Execute `sudo bash scripts/runbook-strict-host-gates.sh` on host; provide output so failures (if any) can be queued and fixed immediately. |
+| WL-044 | done | P1 | Run strict host gates and capture output for next remediation chain. | agent | Completed 2026-03-05: strict host gates pass with `Total tests: 408, Passed: 408` after regression fixes and script-default hardening. |
+| WL-045 | done | P2 | Add strict-host worktree drift guard for unattended execution. | agent | Completed 2026-03-05: strict wrapper now compares tracked `git` state pre/post run and fails on unexpected drift unless explicitly overridden (`STRICT_ALLOW_WORKTREE_DRIFT=1`). |
 
 ## Intake Template
 Add new items at the bottom:
