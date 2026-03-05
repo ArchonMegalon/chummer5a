@@ -7,6 +7,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BUNDLE_DIR="${1:-$REPO_ROOT/dist}"
 DEPLOY_DIR="${2:-$REPO_ROOT/Docker/Downloads}"
 PORTAL_MANIFEST_PATH="${PORTAL_MANIFEST_PATH:-}"
+PORTAL_DOWNLOADS_DIR="${PORTAL_DOWNLOADS_DIR:-}"
 MANIFEST_SOURCE="$BUNDLE_DIR/releases.json"
 FILES_SOURCE="$BUNDLE_DIR/files"
 
@@ -16,6 +17,10 @@ if [[ -z "$PORTAL_MANIFEST_PATH" ]]; then
   else
     PORTAL_MANIFEST_PATH="$DEPLOY_DIR/releases.json"
   fi
+fi
+
+if [[ -z "$PORTAL_DOWNLOADS_DIR" ]]; then
+  PORTAL_DOWNLOADS_DIR="$(dirname "$PORTAL_MANIFEST_PATH")"
 fi
 
 if [[ ! -d "$BUNDLE_DIR" ]]; then
@@ -81,6 +86,7 @@ fi
 DOWNLOADS_DIR="$DEPLOY_DIR/files" \
 MANIFEST_PATH="$DEPLOY_DIR/releases.json" \
 PORTAL_MANIFEST_PATH="$PORTAL_MANIFEST_PATH" \
+PORTAL_DOWNLOADS_DIR="$PORTAL_DOWNLOADS_DIR" \
 RELEASE_VERSION="$release_version" \
 RELEASE_CHANNEL="$release_channel" \
 RELEASE_PUBLISHED_AT="$release_published_at" \

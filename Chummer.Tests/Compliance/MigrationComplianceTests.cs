@@ -886,6 +886,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(publisherText, "Expected desktop-download-bundle layout");
         StringAssert.Contains(publisherText, "generate-releases-manifest.sh");
         StringAssert.Contains(publisherText, "verify-releases-manifest.sh");
+        StringAssert.Contains(publisherText, "PORTAL_DOWNLOADS_DIR");
         StringAssert.Contains(publisherText, "Published ${#artifacts[@]} desktop artifact(s)");
 
         string verifierPath = FindPath("scripts", "verify-releases-manifest.sh");
