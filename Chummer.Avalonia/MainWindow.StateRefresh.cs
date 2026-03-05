@@ -50,11 +50,11 @@ public partial class MainWindow
         ShellSurfaceState shellSurface,
         ActiveWorkspaceContext workspaceContext)
     {
-        string statusText = state.Error is null
-            ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(workspaceContext.ActiveWorkspaceId?.Value ?? "none")}, open={workspaceContext.OpenWorkspaceCount}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}"
-            : $"State: error - {state.Error}";
+        string statusText = shellSurface.Error is null
+            ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(workspaceContext.ActiveWorkspaceId?.Value ?? "none")}, open={workspaceContext.OpenWorkspaceCount}, saved={state.HasSavedWorkspace}, last-command={(shellSurface.LastCommandId ?? "none")}"
+            : $"State: error - {shellSurface.Error}";
         _toolStrip.SetStatusText(statusText);
-        _sectionHost.SetNotice($"Notice: {(state.Notice ?? "Ready.")}");
+        _sectionHost.SetNotice($"Notice: {(shellSurface.Notice ?? "Ready.")}");
         _workspaceStrip.SetWorkspaceText($"Workspace: {(workspaceContext.ActiveWorkspaceId?.Value ?? "none")} (open: {workspaceContext.OpenWorkspaceCount}, {workspaceContext.ActiveWorkspaceSaveStatus})");
 
         _summaryHeader.SetValues(
@@ -65,7 +65,7 @@ public partial class MainWindow
 
         _statusStrip.SetValues(
             characterState: $"Character: {(workspaceContext.ActiveWorkspaceId is null ? "none" : "loaded")}",
-            serviceState: $"Service: {(state.Error is null ? "online" : "error")}",
+            serviceState: $"Service: {(shellSurface.Error is null ? "online" : "error")}",
             timeState: $"Time: {DateTimeOffset.UtcNow:u}",
             complianceState: $"Ruleset: {shellSurface.ActiveRulesetId} | Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}");
         UpdateMenuButtonStates(shellSurface, state.IsBusy);
@@ -87,7 +87,7 @@ public partial class MainWindow
                 _commandAvailabilityEvaluator.IsCommandEnabled(command, state)))
             .ToArray();
 
-        _commandDialogPane.SetCommands(commands, state.LastCommandId);
+        _commandDialogPane.SetCommands(commands, shellSurface.LastCommandId);
     }
 
     private void RefreshOpenWorkspaces(CharacterOverviewState state, ShellSurfaceState shellSurface)
@@ -115,7 +115,7 @@ public partial class MainWindow
                 _commandAvailabilityEvaluator.IsNavigationTabEnabled(tab, state)))
             .ToArray();
 
-        _navigatorPane.SetNavigationTabs(tabs, state.ActiveTabId);
+        _navigatorPane.SetNavigationTabs(tabs, shellSurface.ActiveTabId);
     }
 
     private void RefreshSectionActions(CharacterOverviewState state, ShellSurfaceState shellSurface)

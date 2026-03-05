@@ -27,7 +27,8 @@ public sealed class ShellSurfaceResolverTests
             Commands = [fileMenu, saveCommand],
             MenuRoots = [fileMenu],
             NavigationTabs = [profileTab],
-            ActiveTabId = profileTab.Id
+            ActiveTabId = profileTab.Id,
+            LastCommandId = saveCommand.Id
         };
 
         var workspaceAction = new WorkspaceSurfaceActionDefinition(
@@ -78,6 +79,7 @@ public sealed class ShellSurfaceResolverTests
         CollectionAssert.AreEqual(shellState.NavigationTabs.ToArray(), surface.NavigationTabs.ToArray());
         Assert.AreEqual("sr6", surface.ActiveRulesetId);
         Assert.AreEqual(profileTab.Id, surface.ActiveTabId);
+        Assert.AreEqual(saveCommand.Id, surface.LastCommandId);
         Assert.AreEqual("sr5", surface.PreferredRulesetId);
         Assert.AreEqual("ws-1", surface.ActiveWorkspaceId?.Value);
         Assert.HasCount(1, surface.OpenWorkspaces);
@@ -134,7 +136,11 @@ public sealed class ShellSurfaceResolverTests
             blockedControlIds: ["ui.blocked"]);
         var resolver = new ShellSurfaceResolver(catalogResolver, availability);
 
-        ShellSurfaceState surface = resolver.Resolve(CharacterOverviewState.Empty, shellState);
+        CharacterOverviewState overviewState = CharacterOverviewState.Empty with
+        {
+            LastCommandId = "overview-command"
+        };
+        ShellSurfaceState surface = resolver.Resolve(overviewState, shellState);
 
         Assert.AreEqual("sr6", surface.ActiveRulesetId);
         Assert.AreEqual("sr6", surface.PreferredRulesetId);
@@ -142,6 +148,7 @@ public sealed class ShellSurfaceResolverTests
         Assert.AreEqual("file", surface.OpenMenuId);
         Assert.AreEqual("surface-notice", surface.Notice);
         Assert.AreEqual("surface-error", surface.Error);
+        Assert.AreEqual("overview-command", surface.LastCommandId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastWorkspaceActionTabId);
         Assert.AreEqual("sr6", catalogResolver.LastWorkspaceActionRulesetId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastUiControlTabId);

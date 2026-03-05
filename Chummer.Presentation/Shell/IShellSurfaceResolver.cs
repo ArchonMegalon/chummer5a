@@ -14,7 +14,8 @@ public sealed record ShellSurfaceState(
     string ActiveRulesetId,
     string PreferredRulesetId,
     CharacterWorkspaceId? ActiveWorkspaceId,
-    string? ActiveTabId)
+    string? ActiveTabId,
+    string? LastCommandId)
 {
     public string? OpenMenuId { get; init; }
 
@@ -32,7 +33,8 @@ public sealed record ShellSurfaceState(
         ActiveRulesetId: string.Empty,
         PreferredRulesetId: string.Empty,
         ActiveWorkspaceId: null,
-        ActiveTabId: null);
+        ActiveTabId: null,
+        LastCommandId: null);
 }
 
 public interface IShellSurfaceResolver

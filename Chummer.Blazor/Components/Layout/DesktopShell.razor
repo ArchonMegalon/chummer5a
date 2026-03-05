@@ -13,7 +13,7 @@
              ExecuteCommandRequested="@ExecuteCommandAsync" />
 
     <ToolStrip Commands="@ToolStripCommands.ToArray()"
-               LastCommandId="@State.LastCommandId"
+               LastCommandId="@(_shellSurfaceState.LastCommandId ?? State.LastCommandId)"
                IsBusy="@State.IsBusy"
                IsCommandEnabled="@IsCommandEnabled"
                ExecuteCommandRequested="@ExecuteCommandAsync" />
@@ -28,6 +28,7 @@
         <WorkspaceLeftPane State="@State"
                            OpenWorkspaces="@_shellSurfaceState.OpenWorkspaces"
                            ActiveWorkspaceId="@_shellSurfaceState.ActiveWorkspaceId"
+                           ActiveTabId="@_shellSurfaceState.ActiveTabId"
                            NavigationTabs="@NavigationTabs"
                            ActiveWorkspaceActions="@ActiveWorkspaceActions"
                            ActiveUiControls="@ActiveUiControls"
@@ -71,7 +72,7 @@
     </div>
 
     <StatusStrip WorkspaceId="@_shellSurfaceState.ActiveWorkspaceId"
-                 Error="@(_shellSurfaceState.Error ?? State.Error)"
+                 Error="@_shellSurfaceState.Error"
                  LastUiUtc="@_lastUiUtc" />
 </div>
 

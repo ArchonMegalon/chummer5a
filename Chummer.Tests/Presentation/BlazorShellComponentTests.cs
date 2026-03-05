@@ -171,6 +171,7 @@ public sealed class BlazorShellComponentTests
             .Add(component => component.State, state)
             .Add(component => component.OpenWorkspaces, [openWorkspace])
             .Add(component => component.ActiveWorkspaceId, workspaceId)
+            .Add(component => component.ActiveTabId, "tab-info")
             .Add(component => component.NavigationTabs,
             [
                 new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true),

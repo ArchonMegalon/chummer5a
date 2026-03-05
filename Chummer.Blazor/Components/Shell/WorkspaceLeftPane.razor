@@ -14,7 +14,7 @@
             @foreach (NavigationTabDefinition tab in NavigationTabs)
             {
                 bool enabled = IsNavigationTabEnabled(tab);
-                <button class="tab-btn @(State.ActiveTabId == tab.Id ? "active" : string.Empty)"
+                <button class="tab-btn @(ActiveTabId == tab.Id ? "active" : string.Empty)"
                         id="@tab.Id"
                         disabled="@(!enabled || State.IsBusy)"
                         @onclick="() => SelectTabRequested.InvokeAsync(tab.Id)">
@@ -63,6 +63,9 @@
 
     [Parameter]
     public CharacterWorkspaceId? ActiveWorkspaceId { get; set; }
+
+    [Parameter]
+    public string? ActiveTabId { get; set; }
 
     [Parameter]
     public IReadOnlyList<NavigationTabDefinition> NavigationTabs { get; set; } = [];

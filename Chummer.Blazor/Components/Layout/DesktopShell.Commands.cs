@@ -49,7 +49,8 @@ public partial class DesktopShell
             return;
 
         await ShellPresenter.SelectTabAsync(tabId, CancellationToken.None);
-        if (!string.Equals(ShellState.ActiveTabId, tabId, StringComparison.Ordinal))
+        RefreshShellSurfaceState();
+        if (!string.Equals(_shellSurfaceState.ActiveTabId, tabId, StringComparison.Ordinal))
             return;
 
         await _bridge.SelectTabAsync(tabId, CancellationToken.None);
