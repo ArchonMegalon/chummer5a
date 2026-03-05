@@ -10,7 +10,9 @@ internal static class PortalDownloadsService
 
     public static DownloadReleaseManifest LoadReleaseManifest(string manifestPath, string releaseFilesPath, string fallbackDownloadsUrl)
     {
-        DownloadReleaseManifest? parsedManifest = TryParseManifest(manifestPath);
+        bool hasFallbackSource = HasConfiguredFallbackSource(fallbackDownloadsUrl);
+        ManifestLoadState manifestState = TryLoadManifest(manifestPath, hasFallbackSource);
+        DownloadReleaseManifest? parsedManifest = manifestState.Manifest;
         if (parsedManifest is not null && parsedManifest.Downloads.Count > 0)
         {
             return parsedManifest;
@@ -29,7 +31,11 @@ internal static class PortalDownloadsService
                 Version: version,
                 Channel: parsedManifest?.Channel ?? "docker",
                 PublishedAt: parsedManifest?.PublishedAt ?? DateTimeOffset.UtcNow,
-                Downloads: discoveredDownloads);
+                Downloads: discoveredDownloads,
+                Source: "local-files",
+                Status: "published",
+                Message: "Using locally discovered desktop artifacts from portal storage.",
+                HasFallbackSource: hasFallbackSource);
         }
 
         if (parsedManifest is not null)
@@ -37,7 +43,17 @@ internal static class PortalDownloadsService
             return parsedManifest;
         }
 
-        return BuildFallbackManifest(fallbackDownloadsUrl);
+        if (manifestState.Exists && !manifestState.ParseSucceeded)
+        {
+            return BuildManifestErrorManifest(hasFallbackSource);
+        }
+
+        if (hasFallbackSource)
+        {
+            return BuildFallbackManifest(fallbackDownloadsUrl);
+        }
+
+        return BuildMissingManifest();
     }
 
     public static string ResolveManifestPath(string configuredPath)
@@ -127,17 +143,47 @@ internal static class PortalDownloadsService
         }
 
         return new DownloadReleaseManifest(
-            Version: "nightly",
+            Version: "unpublished",
             Channel: "docker",
             PublishedAt: DateTimeOffset.UtcNow,
-            Downloads: downloads);
+            Downloads: downloads,
+            Source: "fallback",
+            Status: "fallback-source",
+            Message: "Portal is using the configured fallback downloads source because no self-hosted manifest or local artifacts were found.",
+            HasFallbackSource: true);
     }
 
-    private static DownloadReleaseManifest? TryParseManifest(string manifestPath)
+    private static DownloadReleaseManifest BuildMissingManifest()
+    {
+        return new DownloadReleaseManifest(
+            Version: "unpublished",
+            Channel: "docker",
+            PublishedAt: DateTimeOffset.UtcNow,
+            Downloads: Array.Empty<DownloadArtifact>(),
+            Source: "manifest",
+            Status: "manifest-missing",
+            Message: "Release manifest is missing and no local artifacts were discovered. Verify the portal downloads mount or proxy target.",
+            HasFallbackSource: false);
+    }
+
+    private static DownloadReleaseManifest BuildManifestErrorManifest(bool hasFallbackSource)
+    {
+        return new DownloadReleaseManifest(
+            Version: "unpublished",
+            Channel: "docker",
+            PublishedAt: DateTimeOffset.UtcNow,
+            Downloads: Array.Empty<DownloadArtifact>(),
+            Source: "manifest",
+            Status: "manifest-error",
+            Message: "Release manifest exists but could not be parsed. Verify the deployed releases.json payload.",
+            HasFallbackSource: hasFallbackSource);
+    }
+
+    private static ManifestLoadState TryLoadManifest(string manifestPath, bool hasFallbackSource)
     {
         if (!File.Exists(manifestPath))
         {
-            return null;
+            return new ManifestLoadState(null, Exists: false, ParseSucceeded: false);
         }
 
         try
@@ -151,18 +197,50 @@ internal static class PortalDownloadsService
             DownloadReleaseManifest? manifest = JsonSerializer.Deserialize<DownloadReleaseManifest>(json, options);
             if (manifest is null || string.IsNullOrWhiteSpace(manifest.Version))
             {
-                return null;
+                return new ManifestLoadState(null, Exists: true, ParseSucceeded: false);
             }
 
-            return manifest with
+            DownloadReleaseManifest normalizedManifest = manifest with
             {
-                Downloads = manifest.Downloads ?? Array.Empty<DownloadArtifact>()
+                Downloads = manifest.Downloads ?? Array.Empty<DownloadArtifact>(),
+                Source = "manifest",
+                Status = ResolveManifestStatus(manifest),
+                Message = BuildManifestMessage(manifest),
+                HasFallbackSource = hasFallbackSource
             };
+            return new ManifestLoadState(normalizedManifest, Exists: true, ParseSucceeded: true);
         }
         catch
         {
+            return new ManifestLoadState(null, Exists: true, ParseSucceeded: false);
+        }
+    }
+
+    private static string ResolveManifestStatus(DownloadReleaseManifest manifest)
+    {
+        if (manifest.Downloads.Count > 0)
+        {
+            return "published";
+        }
+
+        return string.Equals(manifest.Version, "unpublished", StringComparison.OrdinalIgnoreCase)
+            ? "unpublished"
+            : "manifest-empty";
+    }
+
+    private static string? BuildManifestMessage(DownloadReleaseManifest manifest)
+    {
+        if (manifest.Downloads.Count > 0)
+        {
             return null;
         }
+
+        if (string.Equals(manifest.Version, "unpublished", StringComparison.OrdinalIgnoreCase))
+        {
+            return "No published desktop builds yet. Run desktop-downloads workflow and deploy the generated bundle.";
+        }
+
+        return "Release manifest is present but contains no downloadable artifacts. Verify the deployment bundle and manifest generation step.";
     }
 
     private static IReadOnlyList<DownloadArtifact> DiscoverLocalArtifacts(string releaseFilesPath)
@@ -245,4 +323,9 @@ internal static class PortalDownloadsService
         byte[] hash = SHA256.HashData(stream);
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
+
+    private sealed record ManifestLoadState(
+        DownloadReleaseManifest? Manifest,
+        bool Exists,
+        bool ParseSucceeded);
 }

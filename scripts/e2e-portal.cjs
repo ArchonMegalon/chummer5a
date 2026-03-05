@@ -83,7 +83,10 @@ const checks = [
     url: 'http://chummer-portal:8080/downloads/releases.json',
     assert: text => {
       const payload = JSON.parse(text);
-      return typeof payload?.version === 'string' && Array.isArray(payload?.downloads);
+      return typeof payload?.version === 'string'
+        && typeof payload?.status === 'string'
+        && typeof payload?.source === 'string'
+        && Array.isArray(payload?.downloads);
     }
   },
   {

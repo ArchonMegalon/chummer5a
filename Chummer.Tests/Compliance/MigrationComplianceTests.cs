@@ -684,8 +684,16 @@ public class MigrationComplianceTests
     {
         string portalPageBuilderPath = FindPath("Chummer.Portal", "PortalPageBuilder.cs");
         string portalPageBuilderText = File.ReadAllText(portalPageBuilderPath);
+        string portalProgramPath = FindPath("Chummer.Portal", "Program.cs");
+        string portalProgramText = File.ReadAllText(portalProgramPath);
 
-        StringAssert.Contains(portalPageBuilderText, "version === 'unpublished'");
+        StringAssert.Contains(portalProgramText, "string Status = \"published\"");
+        StringAssert.Contains(portalProgramText, "string Source = \"manifest\"");
+        StringAssert.Contains(portalPageBuilderText, "case 'unpublished'");
+        StringAssert.Contains(portalPageBuilderText, "case 'manifest-empty'");
+        StringAssert.Contains(portalPageBuilderText, "case 'manifest-missing'");
+        StringAssert.Contains(portalPageBuilderText, "case 'manifest-error'");
+        StringAssert.Contains(portalPageBuilderText, "case 'fallback-source'");
         StringAssert.Contains(portalPageBuilderText, "No published desktop builds yet");
         StringAssert.Contains(portalPageBuilderText, "Run desktop-downloads workflow and deploy the generated bundle.");
     }
@@ -707,7 +715,26 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalDownloadsServiceText, "\"osx-x64\" => \"macOS x64\"");
         StringAssert.Contains(portalDownloadsServiceText, "if (parsedManifest is not null && parsedManifest.Downloads.Count > 0)");
         StringAssert.Contains(portalDownloadsServiceText, "return new DownloadReleaseManifest(");
+        StringAssert.Contains(portalDownloadsServiceText, "Status: \"fallback-source\"");
+        StringAssert.Contains(portalDownloadsServiceText, "Status: \"manifest-missing\"");
+        StringAssert.Contains(portalDownloadsServiceText, "Status: \"manifest-error\"");
+        StringAssert.Contains(portalDownloadsServiceText, "Status = ResolveManifestStatus");
+        StringAssert.Contains(portalDownloadsServiceText, "Message = BuildManifestMessage");
         StringAssert.Contains(portalDownloadsServiceText, "Url: $\"/downloads/{relativePath}\"");
+    }
+
+    [TestMethod]
+    public void Self_hosted_downloads_runbook_documents_portal_status_meanings()
+    {
+        string runbookPath = FindPath("docs", "SELF_HOSTED_DOWNLOADS_RUNBOOK.md");
+        string runbookText = File.ReadAllText(runbookPath);
+
+        StringAssert.Contains(runbookText, "Portal Status Meanings");
+        StringAssert.Contains(runbookText, "`manifest-empty`");
+        StringAssert.Contains(runbookText, "`manifest-missing`");
+        StringAssert.Contains(runbookText, "`manifest-error`");
+        StringAssert.Contains(runbookText, "`fallback-source`");
+        StringAssert.Contains(runbookText, "Production/self-hosted deploys should end in `published`.");
     }
 
     [TestMethod]

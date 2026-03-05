@@ -7,9 +7,9 @@ internal static class PortalPageBuilder
         string escapedFallbackUrl = HtmlEncode(fallbackDownloadsUrl);
         string escapedScriptFallbackUrl = JavaScriptStringEncode(fallbackDownloadsUrl);
         string fallbackLinkHiddenAttribute = hasFallbackSource ? string.Empty : " hidden";
-        string fallbackUnavailableText = hasFallbackSource
-            ? "Manifest unavailable; showing configured fallback source when available."
-            : "Manifest unavailable and no fallback source is configured.";
+        string endpointFailureText = hasFallbackSource
+            ? "Release manifest request failed; use the configured fallback source while the portal downloads endpoint is unavailable."
+            : "Release manifest request failed and no fallback source is configured.";
         return $$"""
 <!doctype html>
 <html lang="en">
@@ -66,19 +66,49 @@ internal static class PortalPageBuilder
           const channel = typeof manifest.channel === 'string' ? manifest.channel : 'unknown';
           const published = manifest.publishedAt ? new Date(manifest.publishedAt).toISOString() : 'unknown';
           const downloads = Array.isArray(manifest.downloads) ? manifest.downloads : [];
+          const status = typeof manifest.status === 'string' ? manifest.status : 'published';
+          const source = typeof manifest.source === 'string' ? manifest.source : 'manifest';
+          const message = typeof manifest.message === 'string' ? manifest.message : '';
+          const manifestHasFallbackSource = manifest.hasFallbackSource === true;
           if (downloads.length === 0) {
-            const isUnpublished = version === 'unpublished';
-            meta.textContent = isUnpublished
-              ? `No published desktop builds yet (${channel}).`
-              : `Version ${version} (${channel}) has no downloadable artifacts.`;
-            empty.textContent = isUnpublished
-              ? 'No published desktop builds yet. Run desktop-downloads workflow and deploy the generated bundle.'
-              : 'Manifest has no platform artifacts.';
+            switch (status) {
+              case 'unpublished':
+                meta.textContent = `No published desktop builds yet (${channel}).`;
+                empty.textContent = message || 'No published desktop builds yet. Run desktop-downloads workflow and deploy the generated bundle.';
+                break;
+              case 'manifest-empty':
+                meta.textContent = `Release manifest is present but empty (${channel}).`;
+                empty.textContent = message || 'Release manifest is present but has no platform artifacts.';
+                break;
+              case 'manifest-missing':
+                meta.textContent = 'Release manifest is missing from this portal.';
+                empty.textContent = message || 'Self-hosted downloads are not mounted or published on this portal.';
+                break;
+              case 'manifest-error':
+                meta.textContent = 'Release manifest is invalid on this portal.';
+                empty.textContent = message || 'Release manifest exists but could not be parsed.';
+                break;
+              case 'fallback-source':
+                meta.textContent = 'Portal is using a configured fallback downloads source.';
+                empty.textContent = message || 'Open the configured fallback source while self-hosted downloads are unavailable.';
+                break;
+              default:
+                meta.textContent = `Version ${version} (${channel}) has no downloadable artifacts.`;
+                empty.textContent = message || 'Manifest has no platform artifacts.';
+                break;
+            }
+
+            if (!manifestHasFallbackSource) {
+              fallbackLink.hidden = true;
+            }
+
             empty.hidden = false;
             return;
           }
 
-          meta.textContent = `Version ${version} (${channel}) published ${published}`;
+          meta.textContent = source === 'local-files'
+            ? `Version ${version} (${channel}) available from locally discovered portal artifacts (${published}).`
+            : `Version ${version} (${channel}) published ${published}`;
 
           for (const item of downloads) {
             const row = document.createElement('li');
@@ -102,7 +132,8 @@ internal static class PortalPageBuilder
             list.appendChild(row);
           }
         } catch (error) {
-          meta.textContent = '{{fallbackUnavailableText}}';
+          meta.textContent = '{{endpointFailureText}}';
+          empty.textContent = '{{endpointFailureText}}';
           empty.hidden = false;
         }
       })();

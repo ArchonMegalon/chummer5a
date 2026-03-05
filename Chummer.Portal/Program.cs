@@ -228,7 +228,11 @@ public sealed record DownloadReleaseManifest(
     string Version,
     string Channel,
     DateTimeOffset PublishedAt,
-    IReadOnlyList<DownloadArtifact> Downloads);
+    IReadOnlyList<DownloadArtifact> Downloads,
+    string Source = "manifest",
+    string Status = "published",
+    string? Message = null,
+    bool HasFallbackSource = false);
 
 public sealed record DownloadArtifact(
     string Id,

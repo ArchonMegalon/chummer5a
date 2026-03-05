@@ -73,3 +73,20 @@ Docker tests:
 2. `version` is not `"unpublished"` in deployment mode.
 3. When `CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS=true` (or `DOWNLOADS_VERIFY_LINKS=1`), each artifact URL/file in manifest verification is reachable.
 4. Portal `/downloads/` renders artifact links that return HTTP 200.
+
+## Portal Status Meanings
+
+The portal manifest/page now distinguishes operator states explicitly:
+
+1. `published`: real self-hosted artifacts are available.
+2. `unpublished`: manifest is intentionally empty; no builds have been published yet.
+3. `manifest-empty`: manifest exists but lists zero artifacts; treat this as a deployment/manifest generation problem.
+4. `manifest-missing`: portal cannot find the self-hosted manifest or local artifacts.
+5. `manifest-error`: portal found `releases.json` but could not parse it.
+6. `fallback-source`: portal is using `CHUMMER_PORTAL_DOWNLOADS_FALLBACK_URL` instead of self-hosted artifacts.
+
+Operational expectation:
+
+1. Production/self-hosted deploys should end in `published`.
+2. `unpublished` is acceptable only before the first release.
+3. `manifest-empty`, `manifest-missing`, and `manifest-error` should be treated as operator failures, not user-facing “normal empty state”.
