@@ -79,7 +79,8 @@ Purpose: keep a live, ordered queue of actionable work and execute items continu
 | WQ-066 | done | P2 | Route downloads runbook logs through writable-path resolution. | agent | Completed 2026-03-05: downloads manifest/sync/verify runbook modes now use `resolve_runbook_log_file` instead of hardcoded `/tmp` paths, and compliance guardrails prevent regression. |
 | WQ-067 | done | P2 | Add a repo-local downloads runbook smoke mode. | agent | Completed 2026-03-05: added `RUNBOOK_MODE=downloads-smoke`, exercised it through `bash scripts/runbook.sh`, and extended docs/compliance so the repo keeps a real local sync+verify smoke path. |
 | WQ-068 | done | P2 | Move remaining runbook log defaults off hardcoded `/tmp` paths. | agent | Completed 2026-03-05: normalized migration/local-tests/desktop-build/amend/parity/ui-e2e/portal-e2e/docker-test logs onto `resolve_runbook_log_file`, kept compliance coverage in sync, and revalidated with targeted tests plus `RUNBOOK_MODE=downloads-smoke`. |
-| WQ-069 | in_progress | P2 | Move local-test `DOTNET_CLI_HOME` off the hardcoded `/tmp` fallback. | agent | Resolve `DOTNET_CLI_HOME` through a writable repo/user cache path for unattended host runs, extend compliance coverage, and rerun focused local-tests validation. |
+| WQ-069 | done | P2 | Move local-test `DOTNET_CLI_HOME` off the hardcoded `/tmp` fallback. | agent | Completed 2026-03-05: local-tests now resolve `DOTNET_CLI_HOME` through a writable state directory, suppress first-run dotnet banner noise, opt out of Avalonia build telemetry for unattended runs, and keep the path guarded by compliance coverage. |
+| WQ-070 | in_progress | P2 | Document runbook log/state override variables for unattended host runs. | agent | Add `RUNBOOK_LOG_DIR` and `RUNBOOK_STATE_DIR` guidance to README/self-hosted runbook, cover it in compliance, and keep the operator path explicit. |
 
 ## Intake Template
 Append new items at bottom:

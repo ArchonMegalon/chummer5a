@@ -1272,6 +1272,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "DOCKER_TESTS_SOFT_FAIL");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_PREFLIGHT_LOG");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file");
+        StringAssert.Contains(runbookText, "resolve_runbook_dir");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file migration-loop-runbook");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-local-tests");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-desktop-build");
@@ -1294,6 +1295,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "TEST_DISABLE_BUILD_SERVERS");
         StringAssert.Contains(runbookText, "TEST_NO_RESTORE");
         StringAssert.Contains(runbookText, "TEST_NUGET_SOFT_FAIL");
+        StringAssert.Contains(runbookText, "DOTNET_CLI_HOME");
+        StringAssert.Contains(runbookText, "resolve_runbook_dir dotnet-cli-home");
+        StringAssert.Contains(runbookText, "DOTNET_NOLOGO");
+        StringAssert.Contains(runbookText, "DOTNET_CLI_TELEMETRY_OPTOUT");
+        StringAssert.Contains(runbookText, "AVALONIA_TELEMETRY_OPTOUT");
         StringAssert.Contains(runbookText, "DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER");
         StringAssert.Contains(runbookText, "--disable-build-servers");
         StringAssert.Contains(runbookText, "MSBUILDDISABLENODEREUSE");
@@ -1301,6 +1307,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "TEST_NUGET_ENDPOINT");
         StringAssert.Contains(runbookText, "skipping local-tests due NuGet preflight failure");
         StringAssert.Contains(runbookText, "NuGet preflight failed");
+        Assert.IsFalse(
+            runbookText.Contains("DOTNET_CLI_HOME:-/tmp", StringComparison.Ordinal),
+            "local-tests should not hardcode DOTNET_CLI_HOME to /tmp.");
         Assert.IsFalse(
             runbookText.Contains("/tmp/chummer-local-tests.log", StringComparison.Ordinal),
             "local-tests should resolve logs through writable-path detection.");

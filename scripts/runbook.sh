@@ -34,10 +34,10 @@ resolve_runbook_log_file() {
   if [[ -n "${TMPDIR:-}" ]]; then
     candidates+=("${TMPDIR}/${base_name}.${uid_suffix}.log")
   fi
+  candidates+=("$REPO_ROOT/.tmp/${base_name}.${uid_suffix}.log")
   if [[ -n "${HOME:-}" ]]; then
     candidates+=("${HOME}/.cache/chummer/${base_name}.${uid_suffix}.log")
   fi
-  candidates+=("$REPO_ROOT/.tmp/${base_name}.${uid_suffix}.log")
   candidates+=("$REPO_ROOT/${base_name}.${uid_suffix}.log")
 
   for candidate in "${candidates[@]}"; do
@@ -50,6 +50,33 @@ resolve_runbook_log_file() {
   done
 
   echo "/dev/null"
+}
+
+resolve_runbook_dir() {
+  local base_name="$1"
+  local candidates=()
+  if [[ -n "${RUNBOOK_STATE_DIR:-}" ]]; then
+    candidates+=("${RUNBOOK_STATE_DIR}/${base_name}")
+  fi
+  if [[ -n "${XDG_STATE_HOME:-}" ]]; then
+    candidates+=("${XDG_STATE_HOME}/chummer/${base_name}")
+  fi
+  if [[ -n "${XDG_CACHE_HOME:-}" ]]; then
+    candidates+=("${XDG_CACHE_HOME}/chummer/${base_name}")
+  fi
+  candidates+=("$REPO_ROOT/.tmp/${base_name}")
+  if [[ -n "${HOME:-}" ]]; then
+    candidates+=("${HOME}/.cache/chummer/${base_name}")
+  fi
+
+  for candidate in "${candidates[@]}"; do
+    if mkdir -p "$candidate" 2>/dev/null && [[ -w "$candidate" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+
+  echo "$REPO_ROOT/.tmp/${base_name}"
 }
 
 if [[ "$RUNBOOK_MODE" == "migration" ]]; then
@@ -78,8 +105,11 @@ if [[ "$RUNBOOK_MODE" == "local-tests" ]]; then
   TEST_NUGET_SOFT_FAIL="${TEST_NUGET_SOFT_FAIL:-}"
   TEST_NUGET_ENDPOINT="${TEST_NUGET_ENDPOINT:-api.nuget.org:443}"
   TEST_LOG_FILE="${TEST_LOG_FILE:-$(resolve_runbook_log_file chummer-local-tests)}"
-  export DOTNET_CLI_HOME="${DOTNET_CLI_HOME:-/tmp}"
+  export DOTNET_CLI_HOME="${DOTNET_CLI_HOME:-$(resolve_runbook_dir dotnet-cli-home)}"
+  export DOTNET_NOLOGO="${DOTNET_NOLOGO:-1}"
   export DOTNET_SKIP_FIRST_TIME_EXPERIENCE="${DOTNET_SKIP_FIRST_TIME_EXPERIENCE:-1}"
+  export DOTNET_CLI_TELEMETRY_OPTOUT="${DOTNET_CLI_TELEMETRY_OPTOUT:-1}"
+  export AVALONIA_TELEMETRY_OPTOUT="${AVALONIA_TELEMETRY_OPTOUT:-1}"
   export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER="${DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER:-1}"
   export MSBUILDDISABLENODEREUSE="${MSBUILDDISABLENODEREUSE:-1}"
   framework_args=()
