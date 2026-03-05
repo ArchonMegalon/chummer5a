@@ -13,10 +13,16 @@ public sealed class InProcessChummerClient : IChummerClient
 {
     private static readonly JsonSerializerOptions SectionJsonOptions = new(JsonSerializerDefaults.Web);
     private readonly IWorkspaceService _workspaceService;
+    private readonly IReadOnlyDictionary<string, IRulesetPlugin> _pluginsByRuleset;
 
-    public InProcessChummerClient(IWorkspaceService workspaceService)
+    public InProcessChummerClient(
+        IWorkspaceService workspaceService,
+        IEnumerable<IRulesetPlugin>? plugins = null)
     {
         _workspaceService = workspaceService;
+        _pluginsByRuleset = (plugins ?? Array.Empty<IRulesetPlugin>())
+            .GroupBy(plugin => RulesetDefaults.Normalize(plugin.Id.Value), StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Last(), StringComparer.Ordinal);
     }
 
     public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
@@ -40,12 +46,24 @@ public sealed class InProcessChummerClient : IChummerClient
     public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
+        IRulesetPlugin? plugin = TryResolvePlugin(rulesetId);
+        if (plugin is not null)
+        {
+            return Task.FromResult(plugin.ShellDefinitions.GetCommands());
+        }
+
         return Task.FromResult<IReadOnlyList<AppCommandDefinition>>(AppCommandCatalog.ForRuleset(RulesetDefaults.Normalize(rulesetId)));
     }
 
     public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
+        IRulesetPlugin? plugin = TryResolvePlugin(rulesetId);
+        if (plugin is not null)
+        {
+            return Task.FromResult(plugin.ShellDefinitions.GetNavigationTabs());
+        }
+
         return Task.FromResult<IReadOnlyList<NavigationTabDefinition>>(NavigationTabCatalog.ForRuleset(RulesetDefaults.Normalize(rulesetId)));
     }
 
@@ -183,5 +201,11 @@ public sealed class InProcessChummerClient : IChummerClient
     {
         return payload
             ?? throw new InvalidOperationException($"{payloadName} was not found for workspace '{id.Value}'.");
+    }
+
+    private IRulesetPlugin? TryResolvePlugin(string? rulesetId)
+    {
+        string normalizedRuleset = RulesetDefaults.Normalize(rulesetId);
+        return _pluginsByRuleset.GetValueOrDefault(normalizedRuleset);
     }
 }
