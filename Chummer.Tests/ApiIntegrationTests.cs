@@ -450,10 +450,12 @@ public class ApiIntegrationTests
     {
         using var client = CreateClient();
 
-        JsonObject response = await GetRequiredJsonObject(client, "/api/commands");
+        JsonObject response = await GetRequiredJsonObject(client, "/api/commands?ruleset=sr5");
+        JsonObject defaultResponse = await GetRequiredJsonObject(client, "/api/commands");
 
         Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) > 0);
         Assert.IsTrue(response["commands"] is JsonArray);
+        Assert.AreEqual(response.ToJsonString(), defaultResponse.ToJsonString());
     }
 
     [TestMethod]
@@ -461,12 +463,14 @@ public class ApiIntegrationTests
     {
         using var client = CreateClient();
 
-        JsonObject response = await GetRequiredJsonObject(client, "/api/navigation-tabs");
+        JsonObject response = await GetRequiredJsonObject(client, "/api/navigation-tabs?ruleset=sr5");
+        JsonObject defaultResponse = await GetRequiredJsonObject(client, "/api/navigation-tabs");
 
         Assert.IsTrue((response["count"]?.GetValue<int>() ?? 0) >= 16);
         Assert.IsTrue(response["tabs"] is JsonArray);
         Assert.IsTrue((response["tabs"] as JsonArray)?.Any(node => string.Equals(node?["id"]?.GetValue<string>(), "tab-info", StringComparison.Ordinal)) ?? false);
         Assert.IsTrue((response["tabs"] as JsonArray)?.All(node => !string.IsNullOrWhiteSpace(node?["sectionId"]?.GetValue<string>())) ?? false);
+        Assert.AreEqual(response.ToJsonString(), defaultResponse.ToJsonString());
     }
 
     [TestMethod]

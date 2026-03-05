@@ -65,18 +65,24 @@ public sealed class HttpChummerClient : IChummerClient
         return true;
     }
 
-    public async Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
     {
-        AppCommandCatalogResponse? response = await _httpClient.GetFromJsonAsync<AppCommandCatalogResponse>("/api/commands", ct);
+        string normalizedRuleset = RulesetDefaults.Normalize(rulesetId);
+        AppCommandCatalogResponse? response = await _httpClient.GetFromJsonAsync<AppCommandCatalogResponse>(
+            $"/api/commands?ruleset={Uri.EscapeDataString(normalizedRuleset)}",
+            ct);
         if (response is null)
             throw new InvalidOperationException("Command catalog response was empty.");
 
         return response.Commands;
     }
 
-    public async Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct)
+    public async Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
     {
-        NavigationTabCatalogResponse? response = await _httpClient.GetFromJsonAsync<NavigationTabCatalogResponse>("/api/navigation-tabs", ct);
+        string normalizedRuleset = RulesetDefaults.Normalize(rulesetId);
+        NavigationTabCatalogResponse? response = await _httpClient.GetFromJsonAsync<NavigationTabCatalogResponse>(
+            $"/api/navigation-tabs?ruleset={Uri.EscapeDataString(normalizedRuleset)}",
+            ct);
         if (response is null)
             throw new InvalidOperationException("Navigation tab catalog response was empty.");
 

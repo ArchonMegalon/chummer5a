@@ -652,12 +652,12 @@ public class CharacterOverviewPresenterTests
             return Task.FromResult(removed);
         }
 
-        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct)
+        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
         {
             return Task.FromResult(Commands);
         }
 
-        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct)
+        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
         {
             return Task.FromResult(Tabs);
         }

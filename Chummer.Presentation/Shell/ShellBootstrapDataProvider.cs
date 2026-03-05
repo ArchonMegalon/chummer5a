@@ -32,8 +32,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
                 return cached;
             }
 
-            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _client.GetCommandsAsync(ct);
-            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _client.GetNavigationTabsAsync(ct);
+            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _client.GetCommandsAsync(rulesetId: null, ct);
+            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _client.GetNavigationTabsAsync(rulesetId: null, ct);
             Task<IReadOnlyList<WorkspaceListItem>> workspacesTask = _client.ListWorkspacesAsync(ct);
             await Task.WhenAll(commandsTask, tabsTask, workspacesTask);
 

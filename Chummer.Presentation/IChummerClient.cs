@@ -13,9 +13,9 @@ public interface IChummerClient
 
     Task<bool> CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct);
 
-    Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct);
+    Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct);
 
-    Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct);
+    Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct);
 
     Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct);
 

@@ -27,8 +27,8 @@ for ((iter = 1; iter <= MAX_ITERS; iter++)); do
     continue
   fi
 
-  echo "[debug] dumping chummer-api logs after failed iteration"
-  docker compose logs --tail 200 chummer-api || true
+  echo "[debug] dumping service logs after failed iteration"
+  docker compose logs --tail 200 chummer-api chummer-blazor chummer-portal || true
   echo "iteration $iter failed; continuing to next loop"
   FAILED=$((FAILED + 1))
 done

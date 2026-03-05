@@ -159,9 +159,9 @@ public class WorkspacePersistenceServiceTests
                 12),
             null);
 
-        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct) => throw new NotImplementedException();
+        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct) => throw new NotImplementedException();
 
-        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct) => throw new NotImplementedException();
+        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct) => throw new NotImplementedException();
 
         public Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct) => throw new NotImplementedException();
 

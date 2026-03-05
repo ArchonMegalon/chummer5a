@@ -5,10 +5,12 @@ API_URL="${CHUMMER_API_BASE_URL:-${CHUMMER_WEB_BASE_URL:-http://127.0.0.1:${CHUM
 UI_URL="${CHUMMER_BLAZOR_BASE_URL:-http://127.0.0.1:${CHUMMER_BLAZOR_PORT:-8089}}"
 PLAYWRIGHT_UI_URL="${CHUMMER_UI_PLAYWRIGHT_BASE_URL:-http://127.0.0.1:${CHUMMER_BLAZOR_PORT:-8089}}"
 API_KEY="${CHUMMER_API_KEY:-}"
-CURL_ARGS=(--connect-timeout 3 --max-time 20)
+MAX_CURL_ATTEMPTS="${CHUMMER_E2E_CURL_ATTEMPTS:-5}"
+MAX_CURL_SECONDS="${CHUMMER_E2E_CURL_MAX_SECONDS:-30}"
+CURL_ARGS=(--connect-timeout 5 --max-time "$MAX_CURL_SECONDS")
 
 curl_with_retries() {
-  local max_attempts="${1:-3}"
+  local max_attempts="${1:-$MAX_CURL_ATTEMPTS}"
   shift
 
   local attempt
@@ -16,7 +18,9 @@ curl_with_retries() {
     if curl "$@"; then
       return 0
     fi
-    sleep 1
+    if (( attempt < max_attempts )); then
+      sleep 2
+    fi
   done
 
   return 1
@@ -24,16 +28,26 @@ curl_with_retries() {
 
 curl_with_key() {
   local url="$1"
+  local context="${2:-$url}"
+  local response
   if [[ -n "$API_KEY" ]]; then
-    curl_with_retries 3 -fsS "${CURL_ARGS[@]}" -H "X-Api-Key: $API_KEY" "$url"
+    if ! response=$(curl_with_retries "$MAX_CURL_ATTEMPTS" -fsS "${CURL_ARGS[@]}" -H "X-Api-Key: $API_KEY" "$url"); then
+      echo "request failed for $context after ${MAX_CURL_ATTEMPTS} attempts: $url" >&2
+      return 1
+    fi
   else
-    curl_with_retries 3 -fsS "${CURL_ARGS[@]}" "$url"
+    if ! response=$(curl_with_retries "$MAX_CURL_ATTEMPTS" -fsS "${CURL_ARGS[@]}" "$url"); then
+      echo "request failed for $context after ${MAX_CURL_ATTEMPTS} attempts: $url" >&2
+      return 1
+    fi
   fi
+
+  printf '%s' "$response"
 }
 
 wait_for_url() {
   local url="$1"
-  local max_attempts="${2:-25}"
+  local max_attempts="${2:-45}"
   local sleep_seconds="${3:-1}"
 
   for ((attempt = 1; attempt <= max_attempts; attempt++)); do
@@ -50,9 +64,9 @@ wait_for_url() {
 wait_for_url "$API_URL/api/health"
 wait_for_url "$UI_URL/health"
 
-api_health=$(curl_with_key "$API_URL/api/health")
-ui_health=$(curl_with_key "$UI_URL/health")
-ui_html=$(curl_with_key "$UI_URL/")
+api_health=$(curl_with_key "$API_URL/api/health" "api-health")
+ui_health=$(curl_with_key "$UI_URL/health" "blazor-health")
+ui_html=$(curl_with_key "$UI_URL/" "blazor-root-html")
 
 if ! grep -q '"ok":true' <<<"$api_health"; then
   echo "API health response did not contain ok=true: $api_health" >&2

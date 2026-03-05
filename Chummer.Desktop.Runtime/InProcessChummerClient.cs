@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 
@@ -36,16 +37,16 @@ public sealed class InProcessChummerClient : IChummerClient
         return Task.FromResult(_workspaceService.Close(id));
     }
 
-    public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct)
+    public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        return Task.FromResult<IReadOnlyList<AppCommandDefinition>>(AppCommandCatalog.All);
+        return Task.FromResult<IReadOnlyList<AppCommandDefinition>>(AppCommandCatalog.ForRuleset(RulesetDefaults.Normalize(rulesetId)));
     }
 
-    public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct)
+    public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        return Task.FromResult<IReadOnlyList<NavigationTabDefinition>>(NavigationTabCatalog.All);
+        return Task.FromResult<IReadOnlyList<NavigationTabDefinition>>(NavigationTabCatalog.ForRuleset(RulesetDefaults.Normalize(rulesetId)));
     }
 
     public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)

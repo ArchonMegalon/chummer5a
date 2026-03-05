@@ -127,9 +127,9 @@ public class ShellPresenterTests
 
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
 
-        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct) => Task.FromResult(Commands);
+        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct) => Task.FromResult(Commands);
 
-        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct) => Task.FromResult(NavigationTabs);
+        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct) => Task.FromResult(NavigationTabs);
 
         public Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct) => Task.FromResult(Workspaces);
 

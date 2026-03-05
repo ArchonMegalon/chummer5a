@@ -52,13 +52,13 @@ public class ShellBootstrapDataProviderTests
         public int GetNavigationTabsCalls { get; private set; }
         public int ListWorkspacesCalls { get; private set; }
 
-        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(CancellationToken ct)
+        public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
         {
             GetCommandsCalls++;
             return Task.FromResult<IReadOnlyList<AppCommandDefinition>>(AppCommandCatalog.All);
         }
 
-        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(CancellationToken ct)
+        public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
         {
             GetNavigationTabsCalls++;
             return Task.FromResult<IReadOnlyList<NavigationTabDefinition>>(NavigationTabCatalog.All);
