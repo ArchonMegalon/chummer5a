@@ -63,6 +63,7 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-050 | done | P2 | Add CI guardrails for compose config validity and portal program formatting checks. | agent | Completed 2026-03-05: added `compose-config-validation` and `portal-format-guardrail` jobs to `.github/workflows/docker-architecture-guardrails.yml`, then added compliance coverage in `MigrationComplianceTests`. Targeted compliance suite passed (`44/44`). |
 | WL-051 | done | P2 | Add generated parity checklist automation and runbook mode. | agent | Completed 2026-03-05: added `scripts/generate-parity-checklist.sh`, `RUNBOOK_MODE=parity-checklist` wiring, generated `docs/PARITY_CHECKLIST.md` from legacy-shell/catalog coverage, and documented the command in README with compliance guardrails. |
 | WL-052 | done | P2 | Add CI freshness gate for generated parity checklist artifact. | agent | Completed 2026-03-05: `.github/workflows/docker-architecture-guardrails.yml` now runs `parity-checklist-sync` (`RUNBOOK_MODE=parity-checklist`) and fails if `docs/PARITY_CHECKLIST.md` is out of date; compliance tests remain green (`44/44`). |
+| WL-053 | done | P2 | Tighten portal downloads E2E checks for explicit no-build/fallback UX strings. | agent | Completed 2026-03-05: portal E2E script now validates unpublished-state and fallback-link copy on `/downloads/`, and compliance guardrails enforce the expectation (`44/44` targeted suite). |
 
 ## Intake Template
 Add new items at the bottom:

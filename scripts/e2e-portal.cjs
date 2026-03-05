@@ -88,7 +88,11 @@ const checks = [
   },
   {
     url: 'http://chummer-portal:8080/downloads/',
-    assert: text => text.includes('Desktop Downloads') && text.includes('/downloads/releases.json')
+    assert: text =>
+      text.includes('Desktop Downloads') &&
+      text.includes('/downloads/releases.json') &&
+      text.includes('No published desktop builds yet') &&
+      text.includes('fallback-link')
   }
 ];
 

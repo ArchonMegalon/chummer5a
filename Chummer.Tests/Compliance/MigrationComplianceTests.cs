@@ -598,6 +598,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalPlaywrightText, "'/downloads/'");
         StringAssert.Contains(portalPlaywrightText, "'/docs/'");
         StringAssert.Contains(portalPlaywrightText, "'/api/health'");
+        StringAssert.Contains(portalPlaywrightText, "No published desktop builds yet");
+        StringAssert.Contains(portalPlaywrightText, "fallback-link");
     }
 
     [TestMethod]
