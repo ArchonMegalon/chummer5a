@@ -707,6 +707,7 @@ public class CharacterOverviewPresenterTests
         private string _alias = "BLUE";
         private readonly Dictionary<string, WorkspaceListItem> _workspaces = new(StringComparer.Ordinal);
         private int _clock;
+        private ShellUserPreferences _preferences = ShellUserPreferences.Default;
         public bool ThrowOnCloseWorkspace { get; set; }
         public int DownloadCalls { get; private set; }
         public int GetCommandsCalls { get; private set; }
@@ -725,6 +726,46 @@ public class CharacterOverviewPresenterTests
             new("tab-info", "Info", "profile", "character", true, true),
             new("tab-gear", "Gear", "gear", "character", true, true)
         ];
+
+        public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+        {
+            return Task.FromResult(_preferences);
+        }
+
+        public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+        {
+            _preferences = new ShellUserPreferences(RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+            return Task.CompletedTask;
+        }
+
+        public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
+        {
+            string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
+                ? RulesetDefaults.Normalize(
+                    _workspaces.Values
+                        .OrderByDescending(workspace => workspace.LastUpdatedUtc)
+                        .FirstOrDefault()
+                        ?.RulesetId
+                    ?? _preferences.PreferredRulesetId)
+                : RulesetDefaults.Normalize(rulesetId);
+            IReadOnlyList<AppCommandDefinition> commands = await GetCommandsAsync(effectiveRulesetId, ct);
+            IReadOnlyList<NavigationTabDefinition> tabs = await GetNavigationTabsAsync(effectiveRulesetId, ct);
+            IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
+            string preferredRulesetId = RulesetDefaults.Normalize(_preferences.PreferredRulesetId);
+            string activeRulesetId = RulesetDefaults.Normalize(
+                workspaces
+                    .OrderByDescending(workspace => workspace.LastUpdatedUtc)
+                    .FirstOrDefault()
+                    ?.RulesetId
+                ?? preferredRulesetId);
+            return new ShellBootstrapSnapshot(
+                RulesetId: effectiveRulesetId,
+                Commands: commands,
+                NavigationTabs: tabs,
+                Workspaces: workspaces,
+                PreferredRulesetId: preferredRulesetId,
+                ActiveRulesetId: activeRulesetId);
+        }
 
         public void SeedWorkspace(
             string workspaceId,

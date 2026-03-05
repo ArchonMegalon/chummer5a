@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -92,6 +93,18 @@ public class ShellBootstrapDataProviderTests
         public int GetNavigationTabsCalls { get; private set; }
         public int ListWorkspacesCalls { get; private set; }
         public List<string> CommandRulesets { get; } = new();
+        public ShellUserPreferences Preferences { get; set; } = ShellUserPreferences.Default;
+
+        public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct)
+        {
+            return Task.FromResult(Preferences);
+        }
+
+        public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct)
+        {
+            Preferences = new ShellUserPreferences(RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+            return Task.CompletedTask;
+        }
 
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
         {

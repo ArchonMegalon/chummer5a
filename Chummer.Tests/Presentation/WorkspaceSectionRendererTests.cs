@@ -96,6 +96,12 @@ public class WorkspaceSectionRendererTests
 
     private sealed class SectionRendererClientStub : IChummerClient
     {
+        public Task<ShellUserPreferences> GetShellPreferencesAsync(CancellationToken ct) => throw new NotImplementedException();
+
+        public Task SaveShellPreferencesAsync(ShellUserPreferences preferences, CancellationToken ct) => throw new NotImplementedException();
+
+        public Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct) => throw new NotImplementedException();
+
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct) => throw new NotImplementedException();
 
         public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct) => throw new NotImplementedException();
