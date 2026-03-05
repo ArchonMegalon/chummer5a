@@ -532,6 +532,8 @@ public class MigrationComplianceTests
     {
         string testPath = FindPath("Chummer.Tests", "Presentation", "BlazorShellComponentTests.cs");
         string testText = File.ReadAllText(testPath);
+        string desktopShellRulesetPath = FindPath("Chummer.Tests", "Presentation", "DesktopShellRulesetCatalogTests.cs");
+        string desktopShellRulesetText = File.ReadAllText(desktopShellRulesetPath);
 
         StringAssert.Contains(testText, "MenuBar_renders_open_menu_items_and_applies_enablement_state");
         StringAssert.Contains(testText, "MenuBar_invokes_toggle_and_execute_callbacks");
@@ -539,6 +541,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(testText, "WorkspaceLeftPane_renders_shell_controls_and_invokes_callbacks");
         StringAssert.Contains(testText, "SectionPane_switches_between_placeholder_and_section_payload");
         StringAssert.Contains(testText, "DialogHost_renders_dialog_and_emits_events");
+        StringAssert.Contains(desktopShellRulesetText, "DesktopShell_uses_active_ruleset_plugin_catalogs_for_actions_and_controls");
     }
 
     [TestMethod]
