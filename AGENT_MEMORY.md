@@ -20,3 +20,5 @@ Persistent user preferences:
    - Execute via approved prefixes/commands to stay unattended whenever possible.
 6. Always edit preapproved scripts beforehand and execute them to avoid permission escalation; run unattended by default.
    - Keep work flowing without handing control back while actionable work remains.
+7. Prefer commit-only handoff when push credentials are unavailable or when requested.
+   - Commit changes and let the user push in the background instead of treating push as a blocker.
