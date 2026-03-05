@@ -989,6 +989,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "bash scripts/publish-download-bundle.sh");
         StringAssert.Contains(runbookText, "bash scripts/verify-releases-manifest.sh");
         StringAssert.Contains(runbookText, "bash scripts/validate-amend-manifests.sh");
+        StringAssert.Contains(runbookText, "permission denied while trying to connect to the Docker daemon socket");
         StringAssert.Contains(runbookText, "DOWNLOADS_SYNC_DEPLOY_MODE");
         StringAssert.Contains(runbookText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED=true");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_BUILD");

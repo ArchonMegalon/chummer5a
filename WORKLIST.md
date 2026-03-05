@@ -28,6 +28,7 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-015 | done | P1 | Milestone 9 platform cleanup: maintain Avalonia shell composition parity. | agent | Completed 2026-03-05: Avalonia now projects shell frame state through `MainWindowShellFrameProjector`, keeps `MainWindow` as composition/apply glue, and dispatches workspace actions via precomputed lookup instead of ad-hoc shell-surface reinterpretation. |
 | WL-016 | blocked | P1 | Post-milestone UI/portal regression rerun. | agent | Blocked by sandbox Docker-socket permission errors during portal/ui Playwright container execution in this environment. |
 | WL-017 | done | P1 | UI e2e script resilience hardening for non-host-reachable runtimes. | agent | Completed 2026-03-05: added bounded Docker fallback probe controls to `scripts/e2e-ui.sh` and guardrail assertions in compliance tests; host-local validation in this sandbox is limited to script syntax due Docker/`dotnet` constraints. |
+| WL-018 | done | P2 | Improve runbook e2e blocker visibility. | agent | Completed 2026-03-05: runbook summary extraction for `ui-e2e` and `portal-e2e` now surfaces Docker daemon permission-denied errors explicitly. |
 
 ## Intake Template
 Add new items at the bottom:
