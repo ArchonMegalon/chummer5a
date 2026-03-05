@@ -317,7 +317,7 @@ if [[ "$RUNBOOK_MODE" == "parity-checklist" ]]; then
 fi
 
 if [[ "$RUNBOOK_MODE" == "downloads-manifest" ]]; then
-  MANIFEST_LOG_FILE="${MANIFEST_LOG_FILE:-/tmp/chummer-downloads-manifest.log}"
+  MANIFEST_LOG_FILE="${MANIFEST_LOG_FILE:-$(resolve_runbook_log_file chummer-downloads-manifest)}"
   set +e
   bash scripts/generate-releases-manifest.sh 2>&1 | tee "$MANIFEST_LOG_FILE"
   status=${PIPESTATUS[0]}
@@ -338,7 +338,7 @@ if [[ "$RUNBOOK_MODE" == "downloads-sync" ]]; then
   DOWNLOADS_SYNC_DEPLOY_MODE="${DOWNLOADS_SYNC_DEPLOY_MODE:-0}"
   DOWNLOADS_SYNC_VERIFY_LINKS="${DOWNLOADS_SYNC_VERIFY_LINKS:-}"
   DOWNLOADS_SYNC_VERIFY_TARGET="${DOWNLOADS_SYNC_VERIFY_TARGET:-${CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL:-}}"
-  SYNC_LOG_FILE="${SYNC_LOG_FILE:-/tmp/chummer-downloads-sync.log}"
+  SYNC_LOG_FILE="${SYNC_LOG_FILE:-$(resolve_runbook_log_file chummer-downloads-sync)}"
   if [[ -z "$DOWNLOADS_SYNC_VERIFY_LINKS" ]]; then
     if [[ "$DOWNLOADS_SYNC_DEPLOY_MODE" == "1" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "true" || "$DOWNLOADS_SYNC_DEPLOY_MODE" == "TRUE" ]]; then
       DOWNLOADS_SYNC_VERIFY_LINKS=true
@@ -382,7 +382,7 @@ fi
 if [[ "$RUNBOOK_MODE" == "downloads-sync-s3" ]]; then
   DOWNLOAD_BUNDLE_DIR="${DOWNLOAD_BUNDLE_DIR:-${RUNBOOK_ARG_FRAMEWORK:-$REPO_ROOT/dist}}"
   DOWNLOADS_SYNC_S3_VERIFY_LINKS="${DOWNLOADS_SYNC_S3_VERIFY_LINKS:-true}"
-  SYNC_S3_LOG_FILE="${SYNC_S3_LOG_FILE:-/tmp/chummer-downloads-sync-s3.log}"
+  SYNC_S3_LOG_FILE="${SYNC_S3_LOG_FILE:-$(resolve_runbook_log_file chummer-downloads-sync-s3)}"
   if [[ "$DOWNLOADS_SYNC_S3_VERIFY_LINKS" == "1" || "$DOWNLOADS_SYNC_S3_VERIFY_LINKS" == "true" || "$DOWNLOADS_SYNC_S3_VERIFY_LINKS" == "TRUE" ]]; then
     export CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS=true
   else
@@ -401,7 +401,7 @@ fi
 if [[ "$RUNBOOK_MODE" == "downloads-verify" ]]; then
   DOWNLOADS_VERIFY_TARGET="${DOWNLOADS_VERIFY_TARGET:-${RUNBOOK_ARG_FRAMEWORK:-${CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL:-}}}"
   DOWNLOADS_VERIFY_LINKS="${DOWNLOADS_VERIFY_LINKS:-0}"
-  VERIFY_LOG_FILE="${VERIFY_LOG_FILE:-/tmp/chummer-downloads-verify.log}"
+  VERIFY_LOG_FILE="${VERIFY_LOG_FILE:-$(resolve_runbook_log_file chummer-downloads-verify)}"
   if [[ -z "$DOWNLOADS_VERIFY_TARGET" ]]; then
     echo "Set DOWNLOADS_VERIFY_TARGET, CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL, or pass a URL/path as arg #2." >&2
     exit 1

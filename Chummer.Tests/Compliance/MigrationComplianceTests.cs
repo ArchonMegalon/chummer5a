@@ -1269,6 +1269,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "DOCKER_TESTS_SOFT_FAIL");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_PREFLIGHT_LOG");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-manifest");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-sync");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-sync-s3");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-verify");
         StringAssert.Contains(runbookText, "docker ps >\"$DOCKER_TESTS_PREFLIGHT_LOG\" 2>&1");
         StringAssert.Contains(runbookText, "permission denied while trying to connect to the docker API");
         StringAssert.Contains(runbookText, "skipping docker-tests due docker daemon permissions");
@@ -1283,6 +1287,15 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "TEST_NUGET_ENDPOINT");
         StringAssert.Contains(runbookText, "skipping local-tests due NuGet preflight failure");
         StringAssert.Contains(runbookText, "NuGet preflight failed");
+        Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-downloads-sync.log", StringComparison.Ordinal),
+            "downloads-sync should resolve logs through writable-path detection.");
+        Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-downloads-sync-s3.log", StringComparison.Ordinal),
+            "downloads-sync-s3 should resolve logs through writable-path detection.");
+        Assert.IsFalse(
+            runbookText.Contains("/tmp/chummer-downloads-verify.log", StringComparison.Ordinal),
+            "downloads-verify should resolve logs through writable-path detection.");
         StringAssert.Contains(strictHostGatesText, "RUNBOOK_MODE=local-tests");
         StringAssert.Contains(strictHostGatesText, "RUNBOOK_MODE=docker-tests");
         StringAssert.Contains(strictHostGatesText, "TEST_NUGET_SOFT_FAIL=0");
