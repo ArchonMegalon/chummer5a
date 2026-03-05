@@ -685,6 +685,8 @@ public class MigrationComplianceTests
         string workflowText = File.ReadAllText(workflowPath);
         string manifestScriptPath = FindPath("scripts", "generate-releases-manifest.sh");
         string manifestScriptText = File.ReadAllText(manifestScriptPath);
+        string verifyScriptPath = FindPath("scripts", "verify-releases-manifest.sh");
+        string verifyScriptText = File.ReadAllText(verifyScriptPath);
 
         StringAssert.Contains(workflowText, "project: Chummer.Avalonia/Chummer.Avalonia.csproj");
         StringAssert.Contains(workflowText, "project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj");
@@ -700,6 +702,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "deploy-downloads");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY");
+        StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(workflowText, "Validate live verify configuration");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY=true requires CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL.");
         StringAssert.Contains(workflowText, "Verify deployed manifest has artifacts");
@@ -710,6 +713,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(manifestScriptText, "chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>[^.]+)\\.(?P<ext>zip|tar\\.gz)");
         StringAssert.Contains(manifestScriptText, "\"id\": f\"{app}-{rid}\"");
         StringAssert.Contains(manifestScriptText, "\"url\": f\"/downloads/files/{artifact.name}\"");
+        StringAssert.Contains(verifyScriptText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
+        StringAssert.Contains(verifyScriptText, "version.lower() == \"unpublished\"");
     }
 
     [TestMethod]
@@ -729,6 +734,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         Assert.IsFalse(
             readmeText.Contains("two UI heads (`Chummer.Blazor`, `Chummer.Avalonia`)", StringComparison.Ordinal),
             "README summary regressed to outdated two-head architecture language.");

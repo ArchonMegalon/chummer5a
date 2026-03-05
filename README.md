@@ -174,6 +174,7 @@ Desktop artifact workflow:
 * `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` is resolved on the workflow runner filesystem; automatic deployment requires a runner that can write to the portal downloads storage (for example, self-hosted runner with shared mount/network volume).
 * Optional live deployment smoke: set repository variable `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` (portal base URL or direct `.../downloads/releases.json`) to additionally verify the live portal endpoint after local deploy verification passes.
 * To hard-gate live verification, set repository variable `CHUMMER_PORTAL_DOWNLOADS_REQUIRE_LIVE_VERIFY=true`; deployment then fails unless `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` is configured and verified.
+* Deploy verification enforces published manifests (`CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION=true`) so `version: "unpublished"` cannot pass deployment gates.
 * Local verification helper: `bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
 * Manual deployment remains available through workflow dispatch with `deploy_portal_downloads=true`.
 
