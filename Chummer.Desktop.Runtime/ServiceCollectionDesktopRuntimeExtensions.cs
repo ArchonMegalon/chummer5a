@@ -1,7 +1,6 @@
 using Chummer.Contracts.Rulesets;
 using Chummer.Infrastructure.DependencyInjection;
 using Chummer.Presentation;
-using Chummer.Presentation.Rulesets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 

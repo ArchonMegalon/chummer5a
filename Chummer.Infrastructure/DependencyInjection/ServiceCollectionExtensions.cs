@@ -3,10 +3,12 @@ using Chummer.Application.Content;
 using Chummer.Application.LifeModules;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Rulesets;
 using Chummer.Infrastructure.Files;
 using Chummer.Infrastructure.Workspaces;
 using Chummer.Infrastructure.Xml;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Chummer.Infrastructure.DependencyInjection;
 
@@ -34,6 +36,7 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<ICharacterFileService, CharacterFileService>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
         services.AddSingleton<ICharacterSectionService, CharacterSectionService>();
         services.AddSingleton<ICharacterFileQueries, XmlCharacterFileQueries>();
         services.AddSingleton<ICharacterMetadataCommands, XmlCharacterMetadataCommands>();

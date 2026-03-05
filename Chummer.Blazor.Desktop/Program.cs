@@ -1,6 +1,5 @@
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
-using Chummer.Presentation.Rulesets;
 using Chummer.Presentation.Shell;
 using Chummer.Desktop.Runtime;
 using Chummer.Contracts.Rulesets;

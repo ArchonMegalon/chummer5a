@@ -1,9 +1,8 @@
 using Chummer.Contracts.Presentation;
-using Chummer.Contracts.Rulesets;
 
-namespace Chummer.Presentation.Rulesets;
+namespace Chummer.Contracts.Rulesets;
 
-public sealed class Sr5RulesetPlugin : IRulesetPlugin
+public class Sr5RulesetPlugin : IRulesetPlugin
 {
     public RulesetId Id { get; } = new(RulesetDefaults.Sr5);
 
@@ -20,7 +19,7 @@ public sealed class Sr5RulesetPlugin : IRulesetPlugin
     public IRulesetScriptHost Scripts { get; } = new NoOpRulesetScriptHost();
 }
 
-public sealed class Sr5RulesetSerializer : IRulesetSerializer
+public class Sr5RulesetSerializer : IRulesetSerializer
 {
     public RulesetId RulesetId { get; } = new(RulesetDefaults.Sr5);
 
@@ -41,7 +40,7 @@ public sealed class Sr5RulesetSerializer : IRulesetSerializer
     }
 }
 
-public sealed class Sr5RulesetShellDefinitionProvider : IRulesetShellDefinitionProvider
+public class Sr5RulesetShellDefinitionProvider : IRulesetShellDefinitionProvider
 {
     public IReadOnlyList<AppCommandDefinition> GetCommands()
     {
@@ -54,7 +53,7 @@ public sealed class Sr5RulesetShellDefinitionProvider : IRulesetShellDefinitionP
     }
 }
 
-public sealed class Sr5RulesetCatalogProvider : IRulesetCatalogProvider
+public class Sr5RulesetCatalogProvider : IRulesetCatalogProvider
 {
     public IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions()
     {
@@ -67,7 +66,7 @@ public sealed class Sr5RulesetCatalogProvider : IRulesetCatalogProvider
     }
 }
 
-public sealed class NoOpRulesetRuleHost : IRulesetRuleHost
+public class NoOpRulesetRuleHost : IRulesetRuleHost
 {
     private static readonly IReadOnlyList<string> Messages = ["Rule host not configured; no-op evaluation applied."];
 
@@ -81,7 +80,7 @@ public sealed class NoOpRulesetRuleHost : IRulesetRuleHost
     }
 }
 
-public sealed class NoOpRulesetScriptHost : IRulesetScriptHost
+public class NoOpRulesetScriptHost : IRulesetScriptHost
 {
     public ValueTask<RulesetScriptExecutionResult> ExecuteAsync(RulesetScriptExecutionRequest request, CancellationToken ct)
     {

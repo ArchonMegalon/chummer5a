@@ -2,7 +2,6 @@ using Chummer.Blazor.Components;
 using Chummer.Contracts.Rulesets;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
-using Chummer.Presentation.Rulesets;
 using Chummer.Presentation.Shell;
 
 var builder = WebApplication.CreateBuilder(args);

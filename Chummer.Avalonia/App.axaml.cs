@@ -6,7 +6,6 @@ using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
-using Chummer.Presentation.Rulesets;
 using Chummer.Presentation.Shell;
 using Microsoft.Extensions.DependencyInjection;
 
