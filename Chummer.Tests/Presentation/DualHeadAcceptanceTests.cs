@@ -635,6 +635,82 @@ public class DualHeadAcceptanceTests
     }
 
     [TestMethod]
+    public async Task Avalonia_and_Blazor_magic_family_workspace_actions_render_matching_sections()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+        string[] actionIds =
+        [
+            "tab-magician.spirits",
+            "tab-magician.metamagics",
+            "tab-adept.powers",
+            "tab-technomancer.complexforms",
+            "tab-technomancer.aiprograms"
+        ];
+
+        var expectedSections = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["tab-magician.spirits"] = "spirits",
+            ["tab-magician.metamagics"] = "metamagics",
+            ["tab-adept.powers"] = "powers",
+            ["tab-technomancer.complexforms"] = "complexforms",
+            ["tab-technomancer.aiprograms"] = "aiprograms"
+        };
+
+        var avaloniaSnapshots = new Dictionary<string, (string? ActionId, string? SectionId, string? Json, int RowCount)>(StringComparer.Ordinal);
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+            await adapter.InitializeAsync(CancellationToken.None);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
+
+            foreach (string actionId in actionIds)
+            {
+                WorkspaceSurfaceActionDefinition action = WorkspaceSurfaceActionCatalog.All
+                    .First(item => string.Equals(item.Id, actionId, StringComparison.Ordinal));
+                await adapter.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+                CharacterOverviewState state = adapter.State;
+                avaloniaSnapshots[actionId] = (state.ActiveActionId, state.ActiveSectionId, state.ActiveSectionJson, state.ActiveSectionRows.Count);
+            }
+        }
+
+        var blazorSnapshots = new Dictionary<string, (string? ActionId, string? SectionId, string? Json, int RowCount)>(StringComparer.Ordinal);
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            CharacterOverviewState Snapshot() => callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+
+            await bridge.InitializeAsync(CancellationToken.None);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
+
+            foreach (string actionId in actionIds)
+            {
+                WorkspaceSurfaceActionDefinition action = WorkspaceSurfaceActionCatalog.All
+                    .First(item => string.Equals(item.Id, actionId, StringComparison.Ordinal));
+                await bridge.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+                CharacterOverviewState state = Snapshot();
+                blazorSnapshots[actionId] = (state.ActiveActionId, state.ActiveSectionId, state.ActiveSectionJson, state.ActiveSectionRows.Count);
+            }
+        }
+
+        foreach (string actionId in actionIds)
+        {
+            Assert.IsTrue(avaloniaSnapshots.TryGetValue(actionId, out var avalonia), $"Missing Avalonia snapshot for action '{actionId}'.");
+            Assert.IsTrue(blazorSnapshots.TryGetValue(actionId, out var blazor), $"Missing Blazor snapshot for action '{actionId}'.");
+
+            Assert.AreEqual(actionId, avalonia.ActionId);
+            Assert.AreEqual(actionId, blazor.ActionId);
+            Assert.AreEqual(expectedSections[actionId], avalonia.SectionId);
+            Assert.AreEqual(expectedSections[actionId], blazor.SectionId);
+            Assert.AreEqual(avalonia.Json, blazor.Json);
+            Assert.AreEqual(avalonia.RowCount, blazor.RowCount);
+        }
+    }
+
+    [TestMethod]
     public async Task Avalonia_and_Blazor_shell_surfaces_expose_identical_ids()
     {
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
