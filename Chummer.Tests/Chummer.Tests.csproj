@@ -13,6 +13,7 @@
     <AssemblyAttribute Include="System.Runtime.InteropServices.Guid">
       <_Parameter1>8c20e7fa-9c93-42a9-a969-c3f5bdf093ea</_Parameter1>
     </AssemblyAttribute>
+    <AssemblyAttribute Include="Microsoft.VisualStudio.TestTools.UnitTesting.DoNotParallelizeAttribute" />
   </ItemGroup>
   <PropertyGroup>
     <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>

@@ -31,7 +31,7 @@ public class XmlBoundaryGuardrailTests
             if (!interfaceMatch.Success)
                 continue;
 
-            int xmlParameterCount = XmlParameterRegex.Matches(text).Count;
+            int xmlParameterCount = XmlParameterRegex.Count(text);
             if (xmlParameterCount <= 0)
                 continue;
 
