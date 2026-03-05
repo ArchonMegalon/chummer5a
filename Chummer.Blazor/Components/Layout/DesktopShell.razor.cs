@@ -73,7 +73,10 @@ public partial class DesktopShell : IDisposable
             _ = InvokeAsync(StateHasChanged);
         });
         await _bridge.InitializeAsync(CancellationToken.None);
-        await SyncShellWorkspaceContextAsync();
+        if (ShouldSyncShellWorkspaceContext(State, ShellState))
+        {
+            await SyncShellWorkspaceContextAsync();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -131,5 +134,35 @@ public partial class DesktopShell : IDisposable
     {
         CharacterWorkspaceId? activeWorkspaceId = State.Session.ActiveWorkspaceId ?? State.WorkspaceId;
         return ShellPresenter.SyncWorkspaceContextAsync(activeWorkspaceId, CancellationToken.None);
+    }
+
+    internal static bool ShouldSyncShellWorkspaceContext(CharacterOverviewState overviewState, ShellState shellState)
+    {
+        CharacterWorkspaceId? activeWorkspaceId = overviewState.Session.ActiveWorkspaceId ?? overviewState.WorkspaceId;
+        if (!WorkspaceIdsEqual(activeWorkspaceId, shellState.ActiveWorkspaceId))
+        {
+            return true;
+        }
+
+        IReadOnlyList<OpenWorkspaceState> sessionWorkspaces = overviewState.Session.OpenWorkspaces;
+        if (sessionWorkspaces.Count != shellState.OpenWorkspaces.Count)
+        {
+            return true;
+        }
+
+        HashSet<string> shellWorkspaceIds = shellState.OpenWorkspaces
+            .Select(workspace => workspace.Id.Value)
+            .ToHashSet(StringComparer.Ordinal);
+        return sessionWorkspaces.Any(workspace => !shellWorkspaceIds.Contains(workspace.Id.Value));
+    }
+
+    private static bool WorkspaceIdsEqual(CharacterWorkspaceId? left, CharacterWorkspaceId? right)
+    {
+        if (left is null && right is null)
+            return true;
+        if (left is null || right is null)
+            return false;
+
+        return string.Equals(left.Value.Value, right.Value.Value, StringComparison.Ordinal);
     }
 }
