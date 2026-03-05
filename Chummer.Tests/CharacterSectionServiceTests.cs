@@ -18,7 +18,7 @@ public class CharacterSectionServiceTests
 
         CharacterAttributesSection section = service.ParseAttributes(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Attributes.Any(attribute => attribute.Name == "BOD"));
         Assert.IsTrue(section.Attributes.Any(attribute => attribute.Name == "AGI"));
         Assert.IsTrue(section.Attributes.All(attribute => attribute.TotalValue >= 0));
@@ -32,7 +32,7 @@ public class CharacterSectionServiceTests
 
         CharacterAttributeDetailsSection section = service.ParseAttributeDetails(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Attributes.Any(attribute => attribute.Name == "BOD"));
         Assert.IsTrue(section.Attributes.All(attribute => attribute.MetatypeMax >= attribute.MetatypeMin));
     }
@@ -45,11 +45,11 @@ public class CharacterSectionServiceTests
 
         CharacterInventorySection section = service.ParseInventory(xml);
 
-        Assert.IsTrue(section.GearCount >= 0);
-        Assert.IsTrue(section.WeaponCount >= 0);
-        Assert.IsTrue(section.ArmorCount >= 0);
-        Assert.IsTrue(section.CyberwareCount >= 0);
-        Assert.IsTrue(section.VehicleCount >= 0);
+        Assert.IsGreaterThanOrEqualTo(0, section.GearCount);
+        Assert.IsGreaterThanOrEqualTo(0, section.WeaponCount);
+        Assert.IsGreaterThanOrEqualTo(0, section.ArmorCount);
+        Assert.IsGreaterThanOrEqualTo(0, section.CyberwareCount);
+        Assert.IsGreaterThanOrEqualTo(0, section.VehicleCount);
         Assert.AreEqual(section.GearCount, section.GearNames.Count);
         Assert.AreEqual(section.WeaponCount, section.WeaponNames.Count);
         Assert.AreEqual(section.ArmorCount, section.ArmorNames.Count);
@@ -94,7 +94,7 @@ public class CharacterSectionServiceTests
 
         Assert.AreEqual("SR5", section.GameEdition);
         Assert.AreEqual("default.xml", section.Settings);
-        Assert.IsTrue(section.BannedWareGrades.Count > 0);
+        Assert.IsGreaterThan(0, section.BannedWareGrades.Count);
     }
 
     [TestMethod]
@@ -107,7 +107,7 @@ public class CharacterSectionServiceTests
 
         Assert.AreEqual("SumtoTen", section.BuildMethod);
         Assert.AreEqual("C,2", section.PriorityMetatype);
-        Assert.IsTrue(section.TotalAttributes > 0);
+        Assert.IsGreaterThan(0, section.TotalAttributes);
     }
 
     [TestMethod]
@@ -120,7 +120,7 @@ public class CharacterSectionServiceTests
 
         Assert.AreEqual("2/1/0", section.Walk);
         Assert.AreEqual("4/0/0", section.Run);
-        Assert.IsTrue(section.PhysicalCmFilled >= 0);
+        Assert.IsGreaterThanOrEqualTo(0, section.PhysicalCmFilled);
     }
 
     [TestMethod]
@@ -145,7 +145,7 @@ public class CharacterSectionServiceTests
 
         CharacterGearSection section = service.ParseGear(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Gear.Any(item => !string.IsNullOrWhiteSpace(item.Name)));
     }
 
@@ -157,7 +157,7 @@ public class CharacterSectionServiceTests
 
         CharacterWeaponsSection section = service.ParseWeapons(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Weapons.Any(item => !string.IsNullOrWhiteSpace(item.Name)));
         Assert.IsTrue(section.Weapons.Any(item => !string.IsNullOrWhiteSpace(item.Damage)));
     }
@@ -170,7 +170,7 @@ public class CharacterSectionServiceTests
 
         CharacterWeaponAccessoriesSection section = service.ParseWeaponAccessories(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Accessories.Any(item => !string.IsNullOrWhiteSpace(item.WeaponName)));
     }
 
@@ -182,7 +182,7 @@ public class CharacterSectionServiceTests
 
         CharacterArmorsSection section = service.ParseArmors(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Armors.Any(item => !string.IsNullOrWhiteSpace(item.Name)));
     }
 
@@ -194,7 +194,7 @@ public class CharacterSectionServiceTests
 
         CharacterArmorModsSection section = service.ParseArmorMods(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.ArmorMods.Any(item => !string.IsNullOrWhiteSpace(item.ArmorName)));
     }
 
@@ -206,7 +206,7 @@ public class CharacterSectionServiceTests
 
         CharacterCyberwaresSection section = service.ParseCyberwares(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Cyberwares.Any(item => !string.IsNullOrWhiteSpace(item.Name)));
         Assert.IsTrue(section.Cyberwares.Any(item => !string.IsNullOrWhiteSpace(item.Essence)));
     }
@@ -219,7 +219,7 @@ public class CharacterSectionServiceTests
 
         CharacterVehiclesSection section = service.ParseVehicles(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Vehicles.Any(item => !string.IsNullOrWhiteSpace(item.Name)));
     }
 
@@ -231,7 +231,7 @@ public class CharacterSectionServiceTests
 
         CharacterVehicleModsSection section = service.ParseVehicleMods(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.VehicleMods.Any(item => !string.IsNullOrWhiteSpace(item.VehicleName)));
     }
 
@@ -243,8 +243,8 @@ public class CharacterSectionServiceTests
 
         CharacterSkillsSection section = service.ParseSkills(xml);
 
-        Assert.IsTrue(section.Count > 0);
-        Assert.IsTrue(section.KnowledgeCount >= 0);
+        Assert.IsGreaterThan(0, section.Count);
+        Assert.IsGreaterThanOrEqualTo(0, section.KnowledgeCount);
         Assert.IsTrue(section.Skills.Any(skill => !string.IsNullOrWhiteSpace(skill.Suid) || !string.IsNullOrWhiteSpace(skill.Guid)));
         Assert.IsTrue(section.Skills.Any(skill => skill.Specializations.Count >= 0));
     }
@@ -257,7 +257,7 @@ public class CharacterSectionServiceTests
 
         CharacterQualitiesSection section = service.ParseQualities(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Qualities.Any(quality => !string.IsNullOrWhiteSpace(quality.Name)));
         Assert.AreEqual(section.Count, section.Qualities.Count);
     }
@@ -270,7 +270,7 @@ public class CharacterSectionServiceTests
 
         CharacterContactsSection section = service.ParseContacts(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Contacts.Any(contact => !string.IsNullOrWhiteSpace(contact.Name)));
     }
 
@@ -282,7 +282,7 @@ public class CharacterSectionServiceTests
 
         CharacterSpellsSection section = service.ParseSpells(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Spells.Any(spell => !string.IsNullOrWhiteSpace(spell.Name)));
     }
 
@@ -294,7 +294,7 @@ public class CharacterSectionServiceTests
 
         CharacterPowersSection section = service.ParsePowers(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Powers.Any(power => !string.IsNullOrWhiteSpace(power.Name)));
     }
 
@@ -306,7 +306,7 @@ public class CharacterSectionServiceTests
 
         CharacterComplexFormsSection section = service.ParseComplexForms(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.ComplexForms.Any(form => !string.IsNullOrWhiteSpace(form.Name)));
     }
 
@@ -318,7 +318,7 @@ public class CharacterSectionServiceTests
 
         CharacterSpiritsSection section = service.ParseSpirits(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Spirits.Any(spirit => !string.IsNullOrWhiteSpace(spirit.Name)));
     }
 
@@ -330,7 +330,7 @@ public class CharacterSectionServiceTests
 
         CharacterFociSection section = service.ParseFoci(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Foci.Any(focus => !string.IsNullOrWhiteSpace(focus.Guid)));
     }
 
@@ -342,7 +342,7 @@ public class CharacterSectionServiceTests
 
         CharacterAiProgramsSection section = service.ParseAiPrograms(xml);
 
-        Assert.IsTrue(section.Count >= 0);
+        Assert.IsGreaterThanOrEqualTo(0, section.Count);
         Assert.AreEqual(section.Count, section.AiPrograms.Count);
     }
 
@@ -354,7 +354,7 @@ public class CharacterSectionServiceTests
 
         CharacterMartialArtsSection section = service.ParseMartialArts(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.MartialArts.Any(art => !string.IsNullOrWhiteSpace(art.Name)));
     }
 
@@ -366,7 +366,7 @@ public class CharacterSectionServiceTests
 
         CharacterLimitModifiersSection section = service.ParseLimitModifiers(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.LimitModifiers.Any(modifier => !string.IsNullOrWhiteSpace(modifier.Name)));
     }
 
@@ -378,7 +378,7 @@ public class CharacterSectionServiceTests
 
         CharacterLifestylesSection section = service.ParseLifestyles(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Lifestyles.Any(lifestyle => !string.IsNullOrWhiteSpace(lifestyle.Name)));
     }
 
@@ -390,7 +390,7 @@ public class CharacterSectionServiceTests
 
         CharacterMetamagicsSection section = service.ParseMetamagics(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Metamagics.Any(metamagic => !string.IsNullOrWhiteSpace(metamagic.Name)));
     }
 
@@ -402,7 +402,7 @@ public class CharacterSectionServiceTests
 
         CharacterArtsSection section = service.ParseArts(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Arts.Any(art => !string.IsNullOrWhiteSpace(art.Name)));
     }
 
@@ -414,7 +414,7 @@ public class CharacterSectionServiceTests
 
         CharacterInitiationGradesSection section = service.ParseInitiationGrades(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.InitiationGrades.Any(grade => grade.Grade >= 0));
     }
 
@@ -426,7 +426,7 @@ public class CharacterSectionServiceTests
 
         CharacterCritterPowersSection section = service.ParseCritterPowers(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.CritterPowers.Any(power => !string.IsNullOrWhiteSpace(power.Name)));
     }
 
@@ -438,7 +438,7 @@ public class CharacterSectionServiceTests
 
         CharacterMentorSpiritsSection section = service.ParseMentorSpirits(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.MentorSpirits.Any(spirit => !string.IsNullOrWhiteSpace(spirit.Name)));
     }
 
@@ -450,9 +450,9 @@ public class CharacterSectionServiceTests
 
         CharacterExpensesSection section = service.ParseExpenses(xml);
 
-        Assert.IsTrue(section.Count > 0);
-        Assert.IsTrue(section.TotalKarma >= 0);
-        Assert.IsTrue(section.TotalNuyen >= 0);
+        Assert.IsGreaterThan(0, section.Count);
+        Assert.IsGreaterThanOrEqualTo(0, section.TotalKarma);
+        Assert.IsGreaterThanOrEqualTo(0, section.TotalNuyen);
         Assert.AreEqual(section.Count, section.Expenses.Count);
     }
 
@@ -464,7 +464,7 @@ public class CharacterSectionServiceTests
 
         CharacterSourcesSection section = service.ParseSources(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Sources.Any(source => !string.IsNullOrWhiteSpace(source)));
     }
 
@@ -476,7 +476,7 @@ public class CharacterSectionServiceTests
 
         CharacterLocationsSection section = service.ParseGearLocations(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Locations.Any(location => !string.IsNullOrWhiteSpace(location.Name)));
     }
 
@@ -488,7 +488,7 @@ public class CharacterSectionServiceTests
 
         CharacterLocationsSection section = service.ParseArmorLocations(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Locations.Any(location => !string.IsNullOrWhiteSpace(location.Name)));
     }
 
@@ -500,7 +500,7 @@ public class CharacterSectionServiceTests
 
         CharacterLocationsSection section = service.ParseWeaponLocations(xml);
 
-        Assert.IsTrue(section.Count >= 0);
+        Assert.IsGreaterThanOrEqualTo(0, section.Count);
         Assert.AreEqual(section.Count, section.Locations.Count);
     }
 
@@ -512,7 +512,7 @@ public class CharacterSectionServiceTests
 
         CharacterLocationsSection section = service.ParseVehicleLocations(xml);
 
-        Assert.IsTrue(section.Count >= 0);
+        Assert.IsGreaterThanOrEqualTo(0, section.Count);
         Assert.AreEqual(section.Count, section.Locations.Count);
     }
 
@@ -524,7 +524,7 @@ public class CharacterSectionServiceTests
 
         CharacterCalendarSection section = service.ParseCalendar(xml);
 
-        Assert.IsTrue(section.Count >= 0);
+        Assert.IsGreaterThanOrEqualTo(0, section.Count);
         Assert.AreEqual(section.Count, section.Entries.Count);
     }
 
@@ -536,8 +536,8 @@ public class CharacterSectionServiceTests
 
         CharacterImprovementsSection section = service.ParseImprovements(xml);
 
-        Assert.IsTrue(section.Count > 0);
-        Assert.IsTrue(section.EnabledCount >= 0);
+        Assert.IsGreaterThan(0, section.Count);
+        Assert.IsGreaterThanOrEqualTo(0, section.EnabledCount);
         Assert.AreEqual(section.Count, section.Improvements.Count);
     }
 
@@ -549,7 +549,7 @@ public class CharacterSectionServiceTests
 
         CharacterCustomDataDirectoryNamesSection section = service.ParseCustomDataDirectoryNames(xml);
 
-        Assert.IsTrue(section.Count > 0);
+        Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.DirectoryNames.Any(name => !string.IsNullOrWhiteSpace(name)));
     }
 

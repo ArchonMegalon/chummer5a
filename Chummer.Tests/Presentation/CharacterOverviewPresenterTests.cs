@@ -30,9 +30,9 @@ public class CharacterOverviewPresenterTests
 
         Assert.IsFalse(presenter.State.IsBusy);
         Assert.IsNull(presenter.State.Error);
-        Assert.IsTrue(presenter.State.Commands.Count > 0);
+        Assert.IsGreaterThan(0, presenter.State.Commands.Count);
         Assert.AreEqual("new_character", presenter.State.Commands[0].Id);
-        Assert.IsTrue(presenter.State.NavigationTabs.Count > 0);
+        Assert.IsGreaterThan(0, presenter.State.NavigationTabs.Count);
         Assert.AreEqual("tab-info", presenter.State.NavigationTabs[0].Id);
     }
 
@@ -588,7 +588,7 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual("summary", presenter.State.ActiveSectionId);
         Assert.AreEqual("tab-info.summary", presenter.State.ActiveActionId);
         StringAssert.Contains(presenter.State.ActiveSectionJson ?? string.Empty, "\"Name\": \"Troy Simmons\"");
-        Assert.IsTrue(presenter.State.ActiveSectionRows.Count > 0);
+        Assert.IsGreaterThan(0, presenter.State.ActiveSectionRows.Count);
     }
 
     [TestMethod]
@@ -698,7 +698,7 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual("tab-info", presenter.State.ActiveTabId);
         Assert.AreEqual("profile", presenter.State.ActiveSectionId);
         StringAssert.Contains(presenter.State.ActiveSectionJson ?? string.Empty, "\"sectionId\": \"profile\"");
-        Assert.IsTrue(presenter.State.ActiveSectionRows.Count > 0);
+        Assert.IsGreaterThan(0, presenter.State.ActiveSectionRows.Count);
     }
 
     private sealed class FakeChummerClient : IChummerClient

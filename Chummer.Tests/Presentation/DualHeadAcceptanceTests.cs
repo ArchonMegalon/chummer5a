@@ -338,10 +338,10 @@ public class DualHeadAcceptanceTests
         AssertShellRegionsEqual(avaloniaDialogOpen, blazorDialogOpen, "dialog-open");
         AssertShellRegionsEqual(avaloniaAfterDialogSave, blazorAfterDialogSave, "after-dialog-save");
 
-        Assert.IsTrue(avaloniaBeforeDialog.OpenWorkspaceCount >= 1);
+        Assert.IsGreaterThanOrEqualTo(1, avaloniaBeforeDialog.OpenWorkspaceCount);
         Assert.AreEqual(avaloniaBeforeDialog.OpenWorkspaceCount, avaloniaDialogOpen.OpenWorkspaceCount);
         Assert.AreEqual(avaloniaDialogOpen.OpenWorkspaceCount, avaloniaAfterDialogSave.OpenWorkspaceCount);
-        Assert.IsTrue(blazorBeforeDialog.OpenWorkspaceCount >= 1);
+        Assert.IsGreaterThanOrEqualTo(1, blazorBeforeDialog.OpenWorkspaceCount);
         Assert.AreEqual(blazorBeforeDialog.OpenWorkspaceCount, blazorDialogOpen.OpenWorkspaceCount);
         Assert.AreEqual(blazorDialogOpen.OpenWorkspaceCount, blazorAfterDialogSave.OpenWorkspaceCount);
 
@@ -482,8 +482,8 @@ public class DualHeadAcceptanceTests
             Assert.AreEqual(expectedSections[actionId], avalonia.SectionId);
             Assert.AreEqual(expectedSections[actionId], blazor.SectionId);
             Assert.AreEqual(avalonia.Json, blazor.Json);
-            Assert.IsTrue(avalonia.RowCount > 0);
-            Assert.IsTrue(blazor.RowCount > 0);
+            Assert.IsGreaterThan(0, avalonia.RowCount);
+            Assert.IsGreaterThan(0, blazor.RowCount);
             Assert.AreEqual(avalonia.RowCount, blazor.RowCount);
         }
     }
@@ -1019,8 +1019,8 @@ public class DualHeadAcceptanceTests
         Assert.AreNotEqual(avaloniaFirstWorkspace.Value, avaloniaSecondWorkspace.Value);
         Assert.AreNotEqual(blazorFirstWorkspace.Value, blazorSecondWorkspace.Value);
 
-        Assert.IsTrue(avaloniaAfterSwitchToFirst.Session.OpenWorkspaces.Count >= 2);
-        Assert.IsTrue(blazorAfterSwitchToFirst.Session.OpenWorkspaces.Count >= 2);
+        Assert.IsGreaterThanOrEqualTo(2, avaloniaAfterSwitchToFirst.Session.OpenWorkspaces.Count);
+        Assert.IsGreaterThanOrEqualTo(2, blazorAfterSwitchToFirst.Session.OpenWorkspaces.Count);
         CollectionAssert.IsSubsetOf(
             new[] { avaloniaFirstWorkspace.Value, avaloniaSecondWorkspace.Value },
             avaloniaAfterSwitchToFirst.Session.OpenWorkspaces.Select(workspace => workspace.Id.Value).ToArray());

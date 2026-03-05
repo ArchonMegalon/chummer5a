@@ -58,10 +58,10 @@ public class RulesetSeamContractsTests
         IReadOnlyList<WorkspaceSurfaceActionDefinition> sr5Actions = WorkspaceSurfaceActionCatalog.ForRuleset(string.Empty);
         IReadOnlyList<DesktopUiControlDefinition> sr5Controls = DesktopUiControlCatalog.ForRuleset("SR5");
 
-        Assert.IsTrue(sr5Commands.Count > 0);
-        Assert.IsTrue(sr5Tabs.Count > 0);
-        Assert.IsTrue(sr5Actions.Count > 0);
-        Assert.IsTrue(sr5Controls.Count > 0);
+        Assert.IsGreaterThan(0, sr5Commands.Count);
+        Assert.IsGreaterThan(0, sr5Tabs.Count);
+        Assert.IsGreaterThan(0, sr5Actions.Count);
+        Assert.IsGreaterThan(0, sr5Controls.Count);
 
         Assert.AreEqual(0, AppCommandCatalog.ForRuleset("sr6").Count);
         Assert.AreEqual(0, NavigationTabCatalog.ForRuleset("sr6").Count);

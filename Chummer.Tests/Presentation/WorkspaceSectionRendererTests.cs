@@ -37,7 +37,7 @@ public class WorkspaceSectionRendererTests
         Assert.AreEqual("tab-info.profile", result.ActiveActionId);
         Assert.AreEqual("profile", result.ActiveSectionId);
         StringAssert.Contains(result.ActiveSectionJson, "\"sectionId\": \"profile\"");
-        Assert.IsTrue(result.ActiveSectionRows.Count > 0);
+        Assert.IsGreaterThan(0, result.ActiveSectionRows.Count);
     }
 
     [TestMethod]
@@ -64,7 +64,7 @@ public class WorkspaceSectionRendererTests
         Assert.AreEqual("tab-info.summary", result.ActiveActionId);
         Assert.AreEqual("summary", result.ActiveSectionId);
         StringAssert.Contains(result.ActiveSectionJson, "\"Name\": \"Summary Neo\"");
-        Assert.IsTrue(result.ActiveSectionRows.Count > 0);
+        Assert.IsGreaterThan(0, result.ActiveSectionRows.Count);
     }
 
     [TestMethod]
@@ -91,7 +91,7 @@ public class WorkspaceSectionRendererTests
         Assert.AreEqual("tab-info.validate", result.ActiveActionId);
         Assert.AreEqual("validate", result.ActiveSectionId);
         StringAssert.Contains(result.ActiveSectionJson, "\"IsValid\": true");
-        Assert.IsTrue(result.ActiveSectionRows.Count > 0);
+        Assert.IsGreaterThan(0, result.ActiveSectionRows.Count);
     }
 
     private sealed class SectionRendererClientStub : IChummerClient
