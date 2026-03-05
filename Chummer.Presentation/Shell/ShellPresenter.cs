@@ -30,21 +30,16 @@ public sealed class ShellPresenter : IShellPresenter
 
         try
         {
-            ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(ct);
-            ShellWorkspaceState[] openWorkspaces = MapWorkspaces(bootstrap.Workspaces);
+            IReadOnlyList<WorkspaceListItem> workspaceList = await _bootstrapDataProvider.GetWorkspacesAsync(ct);
+            ShellWorkspaceState[] openWorkspaces = MapWorkspaces(workspaceList);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(
                 requestedActiveWorkspaceId: null,
                 openWorkspaces);
             string activeRulesetId = ResolveRulesetForActiveWorkspace(activeWorkspaceId, openWorkspaces);
 
+            ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
             IReadOnlyList<AppCommandDefinition> commands = bootstrap.Commands;
             IReadOnlyList<NavigationTabDefinition> tabs = bootstrap.NavigationTabs;
-            if (!string.Equals(activeRulesetId, RulesetDefaults.Sr5, StringComparison.Ordinal))
-            {
-                ShellBootstrapData rulesetBootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
-                commands = rulesetBootstrap.Commands;
-                tabs = rulesetBootstrap.NavigationTabs;
-            }
 
             AppCommandDefinition[] menuRoots = BuildMenuRoots(commands);
 

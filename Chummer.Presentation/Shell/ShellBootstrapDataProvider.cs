@@ -23,66 +23,60 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
         return await GetAsync(rulesetId: null, ct);
     }
 
-    public async Task<ShellBootstrapData> GetAsync(string? rulesetId, CancellationToken ct)
+    public async Task<IReadOnlyList<WorkspaceListItem>> GetWorkspacesAsync(CancellationToken ct)
     {
-        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
-        if (TryGetCachedCatalog(effectiveRulesetId, out CachedCatalogData? cachedCatalog)
-            && TryGetCachedWorkspaces(out CachedWorkspaceData? cachedWorkspaces))
+        if (TryGetCachedWorkspaces(out CachedWorkspaceData? cached))
         {
-            return new ShellBootstrapData(cachedCatalog.Commands, cachedCatalog.NavigationTabs, cachedWorkspaces.Workspaces);
+            return cached.Workspaces;
         }
 
         await _sync.WaitAsync(ct);
         try
         {
-            if (TryGetCachedCatalog(effectiveRulesetId, out cachedCatalog)
-                && TryGetCachedWorkspaces(out cachedWorkspaces))
+            if (TryGetCachedWorkspaces(out cached))
             {
-                return new ShellBootstrapData(cachedCatalog.Commands, cachedCatalog.NavigationTabs, cachedWorkspaces.Workspaces);
+                return cached.Workspaces;
             }
 
-            Task<IReadOnlyList<AppCommandDefinition>>? commandsTask = null;
-            Task<IReadOnlyList<NavigationTabDefinition>>? tabsTask = null;
-            Task<IReadOnlyList<WorkspaceListItem>>? workspacesTask = null;
-            List<Task> pendingTasks = [];
+            IReadOnlyList<WorkspaceListItem> workspaces = await _client.ListWorkspacesAsync(ct);
+            _cachedWorkspaces = new CachedWorkspaceData(workspaces, DateTimeOffset.UtcNow);
+            return workspaces;
+        }
+        finally
+        {
+            _sync.Release();
+        }
+    }
 
-            if (!TryGetCachedCatalog(effectiveRulesetId, out cachedCatalog))
+    public async Task<ShellBootstrapData> GetAsync(string? rulesetId, CancellationToken ct)
+    {
+        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
+        IReadOnlyList<WorkspaceListItem> workspaces = await GetWorkspacesAsync(ct);
+        if (TryGetCachedCatalog(effectiveRulesetId, out CachedCatalogData? cachedCatalog))
+        {
+            return new ShellBootstrapData(cachedCatalog.Commands, cachedCatalog.NavigationTabs, workspaces);
+        }
+
+        await _sync.WaitAsync(ct);
+        try
+        {
+            if (TryGetCachedCatalog(effectiveRulesetId, out cachedCatalog))
             {
-                commandsTask = _client.GetCommandsAsync(effectiveRulesetId, ct);
-                tabsTask = _client.GetNavigationTabsAsync(effectiveRulesetId, ct);
-                pendingTasks.Add(commandsTask);
-                pendingTasks.Add(tabsTask);
+                return new ShellBootstrapData(cachedCatalog.Commands, cachedCatalog.NavigationTabs, workspaces);
             }
 
-            if (!TryGetCachedWorkspaces(out cachedWorkspaces))
-            {
-                workspacesTask = _client.ListWorkspacesAsync(ct);
-                pendingTasks.Add(workspacesTask);
-            }
+            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _client.GetCommandsAsync(effectiveRulesetId, ct);
+            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _client.GetNavigationTabsAsync(effectiveRulesetId, ct);
+            await Task.WhenAll(commandsTask, tabsTask);
+            cachedCatalog = new CachedCatalogData(commandsTask.Result, tabsTask.Result, DateTimeOffset.UtcNow);
+            _cachedCatalogsByRuleset[effectiveRulesetId] = cachedCatalog;
 
-            if (pendingTasks.Count > 0)
-            {
-                await Task.WhenAll(pendingTasks);
-            }
-
-            if (commandsTask is not null && tabsTask is not null)
-            {
-                cachedCatalog = new CachedCatalogData(commandsTask.Result, tabsTask.Result, DateTimeOffset.UtcNow);
-                _cachedCatalogsByRuleset[effectiveRulesetId] = cachedCatalog;
-            }
-
-            if (workspacesTask is not null)
-            {
-                cachedWorkspaces = new CachedWorkspaceData(workspacesTask.Result, DateTimeOffset.UtcNow);
-                _cachedWorkspaces = cachedWorkspaces;
-            }
-
-            if (cachedCatalog is null || cachedWorkspaces is null)
+            if (cachedCatalog is null)
             {
                 throw new InvalidOperationException("Shell bootstrap cache could not be resolved.");
             }
 
-            return new ShellBootstrapData(cachedCatalog.Commands, cachedCatalog.NavigationTabs, cachedWorkspaces.Workspaces);
+            return new ShellBootstrapData(cachedCatalog.Commands, cachedCatalog.NavigationTabs, workspaces);
         }
         finally
         {

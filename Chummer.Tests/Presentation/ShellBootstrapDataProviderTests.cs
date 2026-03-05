@@ -32,6 +32,20 @@ public class ShellBootstrapDataProviderTests
     }
 
     [TestMethod]
+    public async Task GetWorkspacesAsync_caches_workspace_payload_without_catalog_requests()
+    {
+        var client = new BootstrapClientStub();
+        var provider = new ShellBootstrapDataProvider(client);
+
+        await provider.GetWorkspacesAsync(CancellationToken.None);
+        await provider.GetWorkspacesAsync(CancellationToken.None);
+
+        Assert.AreEqual(0, client.GetCommandsCalls);
+        Assert.AreEqual(0, client.GetNavigationTabsCalls);
+        Assert.AreEqual(1, client.ListWorkspacesCalls);
+    }
+
+    [TestMethod]
     public async Task Shared_provider_avoids_duplicate_startup_fetches_between_shell_and_overview()
     {
         var client = new BootstrapClientStub();

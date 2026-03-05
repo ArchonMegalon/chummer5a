@@ -64,6 +64,26 @@ public class ShellPresenterTests
     }
 
     [TestMethod]
+    public async Task InitializeAsync_requests_catalogs_only_for_active_ruleset()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var client = new ShellClientStub
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-sr5", "SR5 Character", "SR5", now.AddMinutes(-25), RulesetDefaults.Sr5),
+                CreateWorkspace("ws-sr6", "SR6 Character", "SR6", now.AddMinutes(-5), "sr6")
+            ]
+        };
+        var presenter = new ShellPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        CollectionAssert.AreEqual(new string?[] { "sr6" }, client.RequestedCommandRulesets);
+        CollectionAssert.AreEqual(new string?[] { "sr6" }, client.RequestedNavigationRulesets);
+    }
+
+    [TestMethod]
     public async Task SyncWorkspaceContextAsync_switches_ruleset_when_active_workspace_changes()
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;

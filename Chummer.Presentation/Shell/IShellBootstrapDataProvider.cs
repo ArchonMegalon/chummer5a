@@ -10,6 +10,12 @@ public sealed record ShellBootstrapData(
 
 public interface IShellBootstrapDataProvider
 {
+    async Task<IReadOnlyList<WorkspaceListItem>> GetWorkspacesAsync(CancellationToken ct)
+    {
+        ShellBootstrapData bootstrap = await GetAsync(ct);
+        return bootstrap.Workspaces;
+    }
+
     Task<ShellBootstrapData> GetAsync(CancellationToken ct);
 
     Task<ShellBootstrapData> GetAsync(string? rulesetId, CancellationToken ct)
