@@ -7,6 +7,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DOWNLOADS_DIR="${DOWNLOADS_DIR:-$REPO_ROOT/Docker/Downloads/files}"
 MANIFEST_PATH="${MANIFEST_PATH:-$REPO_ROOT/Docker/Downloads/releases.json}"
 PORTAL_MANIFEST_PATH="${PORTAL_MANIFEST_PATH:-$REPO_ROOT/Chummer.Portal/downloads/releases.json}"
+PORTAL_DOWNLOADS_DIR="${PORTAL_DOWNLOADS_DIR:-$REPO_ROOT/Chummer.Portal/downloads}"
 RELEASE_VERSION="${RELEASE_VERSION:-unpublished}"
 RELEASE_CHANNEL="${RELEASE_CHANNEL:-docker}"
 RELEASE_PUBLISHED_AT="${RELEASE_PUBLISHED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
@@ -86,4 +87,15 @@ if [[ "$resolved_manifest_path" == "$resolved_portal_manifest_path" ]]; then
 else
   cp "$MANIFEST_PATH" "$PORTAL_MANIFEST_PATH"
   echo "synced portal manifest -> $PORTAL_MANIFEST_PATH"
+
+  portal_files_dir="$PORTAL_DOWNLOADS_DIR/files"
+  mkdir -p "$portal_files_dir"
+  mapfile -t portal_artifacts < <(find "$DOWNLOADS_DIR" -maxdepth 1 -type f \( -name "chummer-*.zip" -o -name "chummer-*.tar.gz" \) | sort)
+  if [[ "${#portal_artifacts[@]}" -gt 0 ]]; then
+    rm -f "$portal_files_dir"/chummer-*.zip "$portal_files_dir"/chummer-*.tar.gz
+    cp "${portal_artifacts[@]}" "$portal_files_dir"/
+    echo "synced ${#portal_artifacts[@]} local portal artifact(s) -> $portal_files_dir"
+  else
+    echo "no local desktop artifacts found in $DOWNLOADS_DIR for portal file sync"
+  fi
 fi

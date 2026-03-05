@@ -879,6 +879,8 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(generatorText, "Docker/Downloads/releases.json");
         StringAssert.Contains(generatorText, "Chummer.Portal/downloads/releases.json");
+        StringAssert.Contains(generatorText, "PORTAL_DOWNLOADS_DIR");
+        StringAssert.Contains(generatorText, "synced ${#portal_artifacts[@]} local portal artifact(s)");
         StringAssert.Contains(generatorText, "/downloads/files/");
 
         StringAssert.Contains(publisherText, "Expected desktop-download-bundle layout");
