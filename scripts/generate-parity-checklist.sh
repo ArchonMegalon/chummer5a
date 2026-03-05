@@ -8,7 +8,6 @@ OUTPUT_PATH="${PARITY_CHECKLIST_OUTPUT:-$REPO_ROOT/docs/PARITY_CHECKLIST.md}"
 python3 - "$REPO_ROOT" "$OUTPUT_PATH" <<'PY'
 from __future__ import annotations
 
-import datetime as dt
 import pathlib
 import re
 import sys
@@ -91,14 +90,12 @@ covered_tabs, missing_tabs, catalog_only_tabs = partition_coverage(legacy_tabs, 
 covered_actions, missing_actions, catalog_only_actions = partition_coverage(legacy_actions, catalog_actions)
 covered_controls, missing_controls, catalog_only_controls = partition_coverage(legacy_controls, catalog_controls)
 
-generated_utc = dt.datetime.now(tz=dt.timezone.utc).replace(microsecond=0).isoformat()
-
 output_lines: list[str] = [
     "# UI Parity Checklist",
     "",
     "Generated automatically from the legacy shell contract and current contracts catalogs.",
     "",
-    f"- Generated UTC: `{generated_utc}`",
+    "- Regenerate command: `RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh`",
     f"- Legacy shell source: `{legacy_shell_path.relative_to(repo_root)}`",
     f"- Tab catalog source: `{navigation_catalog_path.relative_to(repo_root)}`",
     f"- Action catalog source: `{action_catalog_path.relative_to(repo_root)}`",

@@ -2,7 +2,7 @@
 
 Generated automatically from the legacy shell contract and current contracts catalogs.
 
-- Generated UTC: `2026-03-05T20:58:07+00:00`
+- Regenerate command: `RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh`
 - Legacy shell source: `Chummer.Web/wwwroot/index.html`
 - Tab catalog source: `Chummer.Contracts/Presentation/NavigationTabCatalog.cs`
 - Action catalog source: `Chummer.Contracts/Presentation/WorkspaceSurfaceActionCatalog.cs`
