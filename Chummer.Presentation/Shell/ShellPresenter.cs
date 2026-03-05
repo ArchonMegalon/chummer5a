@@ -32,10 +32,11 @@ public sealed class ShellPresenter : IShellPresenter
         {
             IReadOnlyList<WorkspaceListItem> workspaceList = await _bootstrapDataProvider.GetWorkspacesAsync(ct);
             ShellWorkspaceState[] openWorkspaces = MapWorkspaces(workspaceList);
+            string preferredRulesetId = RulesetDefaults.Normalize(State.PreferredRulesetId);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(
                 requestedActiveWorkspaceId: null,
                 openWorkspaces);
-            string activeRulesetId = ResolveRulesetForActiveWorkspace(activeWorkspaceId, openWorkspaces);
+            string activeRulesetId = ResolveRulesetForActiveWorkspace(activeWorkspaceId, openWorkspaces, preferredRulesetId);
 
             ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
             IReadOnlyList<AppCommandDefinition> commands = bootstrap.Commands;
@@ -49,6 +50,7 @@ public sealed class ShellPresenter : IShellPresenter
                 Error = null,
                 Notice = openWorkspaces.Length == 0 ? "Shell initialized." : $"Restored {openWorkspaces.Length} workspace(s).",
                 ActiveRulesetId = activeRulesetId,
+                PreferredRulesetId = preferredRulesetId,
                 ActiveWorkspaceId = activeWorkspaceId,
                 OpenWorkspaces = openWorkspaces,
                 Commands = commands,
@@ -181,12 +183,49 @@ public sealed class ShellPresenter : IShellPresenter
         return Task.CompletedTask;
     }
 
+    public async Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct)
+    {
+        string preferredRulesetId = RulesetDefaults.Normalize(rulesetId);
+        string activeRulesetId = State.ActiveWorkspaceId is null
+            ? preferredRulesetId
+            : State.ActiveRulesetId;
+        bool activeRulesetChanged = !string.Equals(State.ActiveRulesetId, activeRulesetId, StringComparison.Ordinal);
+        bool requiresCatalogRefresh = activeRulesetChanged
+            || State.Commands.Count == 0
+            || State.NavigationTabs.Count == 0;
+
+        IReadOnlyList<AppCommandDefinition> commands = State.Commands;
+        IReadOnlyList<NavigationTabDefinition> tabs = State.NavigationTabs;
+        if (requiresCatalogRefresh)
+        {
+            Task<IReadOnlyList<AppCommandDefinition>> commandsTask = _runtimeClient.GetCommandsAsync(activeRulesetId, ct);
+            Task<IReadOnlyList<NavigationTabDefinition>> tabsTask = _runtimeClient.GetNavigationTabsAsync(activeRulesetId, ct);
+            await Task.WhenAll(commandsTask, tabsTask);
+            commands = commandsTask.Result;
+            tabs = tabsTask.Result;
+        }
+
+        Publish(State with
+        {
+            Error = null,
+            PreferredRulesetId = preferredRulesetId,
+            ActiveRulesetId = activeRulesetId,
+            Commands = commands,
+            MenuRoots = BuildMenuRoots(commands),
+            NavigationTabs = tabs,
+            ActiveTabId = ResolveActiveTabId(tabs, State.ActiveTabId),
+            OpenMenuId = null,
+            Notice = $"Preferred ruleset set to '{preferredRulesetId}'."
+        });
+    }
+
     public async Task SyncWorkspaceContextAsync(CharacterWorkspaceId? activeWorkspaceId, CancellationToken ct)
     {
         IReadOnlyList<WorkspaceListItem> workspaces = await _runtimeClient.ListWorkspacesAsync(ct);
         ShellWorkspaceState[] openWorkspaces = MapWorkspaces(workspaces);
+        string preferredRulesetId = RulesetDefaults.Normalize(State.PreferredRulesetId);
         CharacterWorkspaceId? resolvedActiveWorkspace = ResolveActiveWorkspaceId(activeWorkspaceId, openWorkspaces);
-        string activeRulesetId = ResolveRulesetForActiveWorkspace(resolvedActiveWorkspace, openWorkspaces);
+        string activeRulesetId = ResolveRulesetForActiveWorkspace(resolvedActiveWorkspace, openWorkspaces, preferredRulesetId);
         bool rulesetChanged = !string.Equals(State.ActiveRulesetId, activeRulesetId, StringComparison.Ordinal);
 
         IReadOnlyList<AppCommandDefinition> commands = State.Commands;
@@ -203,6 +242,7 @@ public sealed class ShellPresenter : IShellPresenter
         Publish(State with
         {
             ActiveRulesetId = activeRulesetId,
+            PreferredRulesetId = preferredRulesetId,
             ActiveWorkspaceId = resolvedActiveWorkspace,
             OpenWorkspaces = openWorkspaces,
             Commands = commands,
@@ -255,14 +295,15 @@ public sealed class ShellPresenter : IShellPresenter
 
     private static string ResolveRulesetForActiveWorkspace(
         CharacterWorkspaceId? activeWorkspaceId,
-        IReadOnlyList<ShellWorkspaceState> openWorkspaces)
+        IReadOnlyList<ShellWorkspaceState> openWorkspaces,
+        string preferredRulesetId)
     {
         if (activeWorkspaceId is null)
-            return RulesetDefaults.Sr5;
+            return RulesetDefaults.Normalize(preferredRulesetId);
 
         ShellWorkspaceState? workspace = openWorkspaces.FirstOrDefault(candidate => WorkspaceIdsEqual(candidate.Id, activeWorkspaceId.Value));
         return workspace is null
-            ? RulesetDefaults.Sr5
+            ? RulesetDefaults.Normalize(preferredRulesetId)
             : RulesetDefaults.Normalize(workspace.RulesetId);
     }
 

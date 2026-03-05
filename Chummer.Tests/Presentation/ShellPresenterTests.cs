@@ -169,6 +169,46 @@ public class ShellPresenterTests
         Assert.IsNull(presenter.State.Error);
     }
 
+    [TestMethod]
+    public async Task SetPreferredRulesetAsync_updates_active_ruleset_when_no_workspace_is_open()
+    {
+        var client = new ShellClientStub
+        {
+            Workspaces = Array.Empty<WorkspaceListItem>()
+        };
+        var presenter = new ShellPresenter(client);
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        await presenter.SetPreferredRulesetAsync("sr6", CancellationToken.None);
+
+        Assert.AreEqual("sr6", presenter.State.PreferredRulesetId);
+        Assert.AreEqual("sr6", presenter.State.ActiveRulesetId);
+        CollectionAssert.Contains(client.RequestedCommandRulesets, "sr6");
+        CollectionAssert.Contains(client.RequestedNavigationRulesets, "sr6");
+    }
+
+    [TestMethod]
+    public async Task SetPreferredRulesetAsync_does_not_override_active_workspace_ruleset()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var client = new ShellClientStub
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-sr5", "SR5 Character", "SR5", now, RulesetDefaults.Sr5)
+            ]
+        };
+        var presenter = new ShellPresenter(client);
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        await presenter.SetPreferredRulesetAsync("sr6", CancellationToken.None);
+
+        Assert.AreEqual("sr6", presenter.State.PreferredRulesetId);
+        Assert.AreEqual("sr5", presenter.State.ActiveRulesetId);
+        CollectionAssert.AreEqual(new string?[] { "sr5" }, client.RequestedCommandRulesets);
+        CollectionAssert.AreEqual(new string?[] { "sr5" }, client.RequestedNavigationRulesets);
+    }
+
     private static WorkspaceListItem CreateWorkspace(
         string id,
         string name,

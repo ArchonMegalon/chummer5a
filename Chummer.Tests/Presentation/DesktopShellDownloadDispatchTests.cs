@@ -127,6 +127,11 @@ public sealed class DesktopShellDownloadDispatchTests
             return Task.CompletedTask;
         }
 
+        public Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct)
+        {
+            return Task.CompletedTask;
+        }
+
         public Task SyncWorkspaceContextAsync(CharacterWorkspaceId? activeWorkspaceId, CancellationToken ct)
         {
             State = State with { ActiveWorkspaceId = activeWorkspaceId };

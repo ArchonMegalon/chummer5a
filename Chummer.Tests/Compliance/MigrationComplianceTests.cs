@@ -833,6 +833,12 @@ public class MigrationComplianceTests
         string blazorShellText = File.ReadAllText(blazorShellPath);
         string avaloniaMainWindowPath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
         string avaloniaMainWindowText = File.ReadAllText(avaloniaMainWindowPath);
+        string shellStatePath = FindPath("Chummer.Presentation", "Shell", "ShellState.cs");
+        string shellStateText = File.ReadAllText(shellStatePath);
+        string shellPresenterPath = FindPath("Chummer.Presentation", "Shell", "ShellPresenter.cs");
+        string shellPresenterText = File.ReadAllText(shellPresenterPath);
+        string shellPresenterContractPath = FindPath("Chummer.Presentation", "Shell", "IShellPresenter.cs");
+        string shellPresenterContractText = File.ReadAllText(shellPresenterContractPath);
 
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetPluginRegistry");
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetShellCatalogResolver");
@@ -853,6 +859,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(blazorShellText, "public IRulesetShellCatalogResolver ShellCatalogResolver { get; set; } = default!;");
         Assert.IsFalse(blazorShellText.Contains("IEnumerable<IRulesetPlugin> RulesetPlugins", StringComparison.Ordinal));
         StringAssert.Contains(avaloniaMainWindowText, "private readonly IRulesetShellCatalogResolver _shellCatalogResolver;");
+        StringAssert.Contains(shellStateText, "string PreferredRulesetId");
+        StringAssert.Contains(shellPresenterContractText, "Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct);");
+        StringAssert.Contains(shellPresenterText, "State.PreferredRulesetId");
     }
 
     [TestMethod]

@@ -124,6 +124,7 @@ public sealed class DesktopShellRulesetCatalogTests
         public Task ExecuteCommandAsync(string commandId, CancellationToken ct) => Task.CompletedTask;
         public Task SelectTabAsync(string tabId, CancellationToken ct) => Task.CompletedTask;
         public Task ToggleMenuAsync(string menuId, CancellationToken ct) => Task.CompletedTask;
+        public Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct) => Task.CompletedTask;
 
         public Task SyncWorkspaceContextAsync(CharacterWorkspaceId? activeWorkspaceId, CancellationToken ct)
         {

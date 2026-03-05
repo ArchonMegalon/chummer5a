@@ -14,5 +14,7 @@ public interface IShellPresenter
 
     Task ToggleMenuAsync(string menuId, CancellationToken ct);
 
+    Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct);
+
     Task SyncWorkspaceContextAsync(Chummer.Contracts.Workspaces.CharacterWorkspaceId? activeWorkspaceId, CancellationToken ct);
 }
