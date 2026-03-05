@@ -19,12 +19,13 @@ LOG_DIR="${LOG_DIR:-/var/log/chummer-host-gates/$STAMP}"
 mkdir -p "$LOG_DIR"
 
 TEST_FILTER_VALUE="${TEST_FILTER:-${2:-}}"
-TEST_FRAMEWORK_VALUE="${TEST_FRAMEWORK:-${3:-}}"
+TEST_FRAMEWORK_VALUE="${TEST_FRAMEWORK:-${3:-net10.0}}"
 
 echo "== chummer root host gate run =="
 echo "repo: $REPO_ROOT"
 echo "logs: $LOG_DIR"
 echo "timestamp: $STAMP"
+echo "framework: $TEST_FRAMEWORK_VALUE"
 echo
 
 echo "== quick diagnostics =="

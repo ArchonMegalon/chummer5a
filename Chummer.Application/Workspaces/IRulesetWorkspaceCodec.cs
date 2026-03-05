@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Application.Workspaces;

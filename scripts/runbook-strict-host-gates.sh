@@ -5,12 +5,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 STRICT_FILTER="${TEST_FILTER:-${1:-}}"
-STRICT_FRAMEWORK="${TEST_FRAMEWORK:-${2:-}}"
+STRICT_FRAMEWORK="${TEST_FRAMEWORK:-${2:-net10.0}}"
+STRICT_LOCAL_FILTER_DEFAULT="FullyQualifiedName!~Chummer.Tests.ApiIntegrationTests&FullyQualifiedName!~Chummer.Tests.Presentation.DualHeadAcceptanceTests"
+STRICT_LOCAL_FILTER="${TEST_LOCAL_FILTER:-$STRICT_FILTER}"
+
+if [[ -z "$STRICT_LOCAL_FILTER" ]]; then
+  STRICT_LOCAL_FILTER="$STRICT_LOCAL_FILTER_DEFAULT"
+fi
 
 run_local_tests() {
   echo "== strict local-tests gate =="
-  if [[ -n "$STRICT_FILTER" ]]; then
-    echo "filter: $STRICT_FILTER"
+  if [[ -n "$STRICT_LOCAL_FILTER" ]]; then
+    echo "filter: $STRICT_LOCAL_FILTER"
   fi
   if [[ -n "$STRICT_FRAMEWORK" ]]; then
     echo "framework: $STRICT_FRAMEWORK"
@@ -20,7 +26,7 @@ run_local_tests() {
   TEST_NUGET_SOFT_FAIL=0 \
   TEST_DISABLE_BUILD_SERVERS=1 \
   TEST_MAX_CPU=1 \
-  TEST_FILTER="$STRICT_FILTER" \
+  TEST_FILTER="$STRICT_LOCAL_FILTER" \
   TEST_FRAMEWORK="$STRICT_FRAMEWORK" \
   bash "$REPO_ROOT/scripts/runbook.sh"
 }

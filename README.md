@@ -186,7 +186,8 @@ Desktop artifact workflow:
 * Local verification helper: `bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
 * Optional local strict artifact check: `DOWNLOADS_VERIFY_LINKS=1 bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
 * Host readiness probe for strict gates: `RUNBOOK_MODE=host-prereqs bash scripts/runbook.sh`.
-* Strict host-side gate wrapper (no soft-skips): `bash scripts/runbook-strict-host-gates.sh [optionalTestFilter] [optionalFramework]`.
+* Strict host-side gate wrapper (no soft-skips, defaults to `net10.0`): `bash scripts/runbook-strict-host-gates.sh [optionalTestFilter] [optionalFramework]`.
+* Strict wrapper local stage default excludes API-parity classes (`ApiIntegrationTests`, `DualHeadAcceptanceTests`) so environment-free local checks run first; docker stage still runs full filter scope.
 * Manual deployment remains available through workflow dispatch with `deploy_portal_downloads=true`.
 * Operator checklist for self-hosted publish/verify and strict host-side test gates: `docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md`.
 
