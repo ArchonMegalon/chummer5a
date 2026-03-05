@@ -37,6 +37,8 @@ builder.Services.AddScoped<ICharacterOverviewPresenter, CharacterOverviewPresent
 builder.Services.AddScoped<IShellPresenter, ShellPresenter>();
 builder.Services.AddScoped<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
 builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
+builder.Services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
+builder.Services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
 builder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
 
 var app = builder.Build();

@@ -62,6 +62,8 @@ public sealed class DesktopShellStartupSyncTests
         context.Services.AddSingleton(shellPresenter);
         context.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
         context.Services.AddSingleton<IRulesetPlugin, Sr5RulesetPlugin>();
+        context.Services.AddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
+        context.Services.AddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
     }
 
     private static CharacterOverviewState CreateOverviewState(CharacterWorkspaceId workspaceId)

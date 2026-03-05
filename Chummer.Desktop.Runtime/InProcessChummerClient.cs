@@ -13,14 +13,14 @@ public sealed class InProcessChummerClient : IChummerClient
 {
     private static readonly JsonSerializerOptions SectionJsonOptions = new(JsonSerializerDefaults.Web);
     private readonly IWorkspaceService _workspaceService;
-    private readonly IReadOnlyList<IRulesetPlugin> _rulesetPlugins;
+    private readonly IRulesetShellCatalogResolver _shellCatalogResolver;
 
     public InProcessChummerClient(
         IWorkspaceService workspaceService,
-        IEnumerable<IRulesetPlugin>? plugins = null)
+        IRulesetShellCatalogResolver shellCatalogResolver)
     {
         _workspaceService = workspaceService;
-        _rulesetPlugins = plugins?.ToArray() ?? Array.Empty<IRulesetPlugin>();
+        _shellCatalogResolver = shellCatalogResolver;
     }
 
     public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
@@ -44,13 +44,13 @@ public sealed class InProcessChummerClient : IChummerClient
     public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        return Task.FromResult(RulesetShellCatalogResolver.ResolveCommands(rulesetId, _rulesetPlugins));
+        return Task.FromResult(_shellCatalogResolver.ResolveCommands(rulesetId));
     }
 
     public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        return Task.FromResult(RulesetShellCatalogResolver.ResolveNavigationTabs(rulesetId, _rulesetPlugins));
+        return Task.FromResult(_shellCatalogResolver.ResolveNavigationTabs(rulesetId));
     }
 
     public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)

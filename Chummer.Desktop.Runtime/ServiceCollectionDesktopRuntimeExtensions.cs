@@ -21,6 +21,8 @@ public static class ServiceCollectionDesktopRuntimeExtensions
         ArgumentNullException.ThrowIfNull(services);
         services.RemoveAll<IChummerClient>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
+        services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
+        services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
 
         if (UseHttpClientMode())
         {

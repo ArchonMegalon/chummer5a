@@ -22,6 +22,8 @@ internal static class Program
         appBuilder.Services.AddSingleton<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
         appBuilder.Services.AddSingleton<IShellPresenter, ShellPresenter>();
         appBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
+        appBuilder.Services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
+        appBuilder.Services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
         appBuilder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
         appBuilder.Services.AddSingleton<Chummer.Blazor.CharacterOverviewStateBridge>();
 

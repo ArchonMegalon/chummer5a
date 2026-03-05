@@ -72,6 +72,8 @@ public class RulesetSeamContractsTests
     public void Ruleset_plugin_contracts_are_declared_for_serializer_shell_catalog_rule_and_script_hosts()
     {
         Assert.IsTrue(typeof(IRulesetPlugin).IsInterface);
+        Assert.IsTrue(typeof(IRulesetPluginRegistry).IsInterface);
+        Assert.IsTrue(typeof(IRulesetShellCatalogResolver).IsInterface);
         Assert.IsTrue(typeof(IRulesetSerializer).IsInterface);
         Assert.IsTrue(typeof(IRulesetShellDefinitionProvider).IsInterface);
         Assert.IsTrue(typeof(IRulesetCatalogProvider).IsInterface);

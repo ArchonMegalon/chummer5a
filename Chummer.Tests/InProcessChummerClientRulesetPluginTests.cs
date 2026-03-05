@@ -43,7 +43,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
-            [new StubRulesetPlugin("sr6", pluginCommands, pluginTabs)]);
+            new RulesetShellCatalogResolverService(
+                new RulesetPluginRegistry([new StubRulesetPlugin("sr6", pluginCommands, pluginTabs)])));
 
         IReadOnlyList<AppCommandDefinition> commands = await client.GetCommandsAsync("SR6", CancellationToken.None);
         IReadOnlyList<NavigationTabDefinition> tabs = await client.GetNavigationTabsAsync("sr6", CancellationToken.None);
@@ -57,7 +58,9 @@ public sealed class InProcessChummerClientRulesetPluginTests
     [TestMethod]
     public async Task GetCommands_and_tabs_fallback_to_catalog_when_plugin_is_missing()
     {
-        var client = new InProcessChummerClient(new NoOpWorkspaceService(), Array.Empty<IRulesetPlugin>());
+        var client = new InProcessChummerClient(
+            new NoOpWorkspaceService(),
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())));
 
         IReadOnlyList<AppCommandDefinition> commands = await client.GetCommandsAsync("sr5", CancellationToken.None);
         IReadOnlyList<NavigationTabDefinition> tabs = await client.GetNavigationTabsAsync("sr5", CancellationToken.None);

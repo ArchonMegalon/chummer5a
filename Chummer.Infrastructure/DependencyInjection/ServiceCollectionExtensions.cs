@@ -37,6 +37,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<ICharacterFileService, CharacterFileService>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
+        services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
+        services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
         services.AddSingleton<ICharacterSectionService, CharacterSectionService>();
         services.AddSingleton<ICharacterFileQueries, XmlCharacterFileQueries>();
         services.AddSingleton<ICharacterMetadataCommands, XmlCharacterMetadataCommands>();

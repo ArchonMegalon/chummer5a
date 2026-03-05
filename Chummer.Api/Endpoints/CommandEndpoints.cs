@@ -7,9 +7,9 @@ public static class CommandEndpoints
 {
     public static IEndpointRouteBuilder MapCommandEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/commands", (string? ruleset, IEnumerable<IRulesetPlugin> rulesetPlugins) =>
+        app.MapGet("/api/commands", (string? ruleset, IRulesetShellCatalogResolver shellCatalogResolver) =>
         {
-            IReadOnlyList<AppCommandDefinition> commands = RulesetShellCatalogResolver.ResolveCommands(ruleset, rulesetPlugins);
+            IReadOnlyList<AppCommandDefinition> commands = shellCatalogResolver.ResolveCommands(ruleset);
             return Results.Ok(new AppCommandCatalogResponse(
                 Count: commands.Count,
                 Commands: commands));

@@ -2,7 +2,6 @@ using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Chummer.Contracts.Presentation;
-using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
@@ -125,7 +124,7 @@ public partial class MainWindow
 
     private void RefreshSectionActions(CharacterOverviewState state, ShellState shellState)
     {
-        WorkspaceSurfaceActionDefinition[] actions = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(state.ActiveTabId, shellState.ActiveRulesetId, _rulesetPlugins)
+        WorkspaceSurfaceActionDefinition[] actions = _shellCatalogResolver.ResolveWorkspaceActionsForTab(state.ActiveTabId, shellState.ActiveRulesetId)
             .Where(action => _commandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, state))
             .ToArray();
         SectionActionListItem[] sectionActionItems = actions
@@ -139,7 +138,7 @@ public partial class MainWindow
 
     private void RefreshUiControls(CharacterOverviewState state, ShellState shellState)
     {
-        DesktopUiControlDefinition[] uiControls = RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(state.ActiveTabId, shellState.ActiveRulesetId, _rulesetPlugins)
+        DesktopUiControlDefinition[] uiControls = _shellCatalogResolver.ResolveDesktopUiControlsForTab(state.ActiveTabId, shellState.ActiveRulesetId)
             .Where(control => _commandAvailabilityEvaluator.IsUiControlEnabled(control, state))
             .ToArray();
         _suppressUiControlSelectionEvent = true;

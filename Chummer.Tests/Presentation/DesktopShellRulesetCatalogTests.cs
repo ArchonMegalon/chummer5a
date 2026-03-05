@@ -64,6 +64,8 @@ public sealed class DesktopShellRulesetCatalogTests
         context.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
         context.Services.AddSingleton<IRulesetPlugin, Sr5RulesetPlugin>();
         context.Services.AddSingleton<IRulesetPlugin, Sr6CatalogPlugin>();
+        context.Services.AddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
+        context.Services.AddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
 
         IRenderedComponent<DesktopShell> cut = context.Render<DesktopShell>();
 

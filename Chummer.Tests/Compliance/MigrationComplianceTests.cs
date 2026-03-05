@@ -801,16 +801,58 @@ public class MigrationComplianceTests
         string dualHeadAcceptancePath = FindPath("Chummer.Tests", "Presentation", "DualHeadAcceptanceTests.cs");
         string dualHeadAcceptanceText = File.ReadAllText(dualHeadAcceptancePath);
 
-        StringAssert.Contains(blazorShellCodeText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(State.ActiveTabId, ShellState.ActiveRulesetId, RulesetPlugins)");
-        StringAssert.Contains(blazorShellCodeText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(State.ActiveTabId, ShellState.ActiveRulesetId, RulesetPlugins)");
+        StringAssert.Contains(blazorShellCodeText, "public IRulesetShellCatalogResolver ShellCatalogResolver { get; set; } = default!;");
+        StringAssert.Contains(blazorShellCodeText, "ShellCatalogResolver.ResolveWorkspaceActionsForTab(State.ActiveTabId, ShellState.ActiveRulesetId)");
+        StringAssert.Contains(blazorShellCodeText, "ShellCatalogResolver.ResolveDesktopUiControlsForTab(State.ActiveTabId, ShellState.ActiveRulesetId)");
 
-        StringAssert.Contains(avaloniaStateText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(state.ActiveTabId, shellState.ActiveRulesetId, _rulesetPlugins)");
-        StringAssert.Contains(avaloniaStateText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(state.ActiveTabId, shellState.ActiveRulesetId, _rulesetPlugins)");
+        StringAssert.Contains(avaloniaStateText, "_shellCatalogResolver.ResolveWorkspaceActionsForTab(state.ActiveTabId, shellState.ActiveRulesetId)");
+        StringAssert.Contains(avaloniaStateText, "_shellCatalogResolver.ResolveDesktopUiControlsForTab(state.ActiveTabId, shellState.ActiveRulesetId)");
 
         StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(");
         StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(");
         Assert.IsFalse(dualHeadAcceptanceText.Contains("WorkspaceSurfaceActionCatalog.ForTab(avaloniaState.ActiveTabId", StringComparison.Ordinal));
         Assert.IsFalse(dualHeadAcceptanceText.Contains("DesktopUiControlCatalog.ForTab(avaloniaState.ActiveTabId", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void Ruleset_shell_catalog_resolver_service_is_registered_and_consumed_without_raw_plugin_injection()
+    {
+        string rulesetServicesPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetShellServices.cs");
+        string rulesetServicesText = File.ReadAllText(rulesetServicesPath);
+        string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string infrastructureDiText = File.ReadAllText(infrastructureDiPath);
+        string desktopRuntimeDiPath = FindPath("Chummer.Desktop.Runtime", "ServiceCollectionDesktopRuntimeExtensions.cs");
+        string desktopRuntimeDiText = File.ReadAllText(desktopRuntimeDiPath);
+        string blazorProgramPath = FindPath("Chummer.Blazor", "Program.cs");
+        string blazorProgramText = File.ReadAllText(blazorProgramPath);
+        string commandEndpointsPath = FindPath("Chummer.Api", "Endpoints", "CommandEndpoints.cs");
+        string commandEndpointsText = File.ReadAllText(commandEndpointsPath);
+        string navigationEndpointsPath = FindPath("Chummer.Api", "Endpoints", "NavigationEndpoints.cs");
+        string navigationEndpointsText = File.ReadAllText(navigationEndpointsPath);
+        string blazorShellPath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor.cs");
+        string blazorShellText = File.ReadAllText(blazorShellPath);
+        string avaloniaMainWindowPath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
+        string avaloniaMainWindowText = File.ReadAllText(avaloniaMainWindowPath);
+
+        StringAssert.Contains(rulesetServicesText, "public interface IRulesetPluginRegistry");
+        StringAssert.Contains(rulesetServicesText, "public interface IRulesetShellCatalogResolver");
+        StringAssert.Contains(rulesetServicesText, "public sealed class RulesetShellCatalogResolverService");
+
+        StringAssert.Contains(infrastructureDiText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
+        StringAssert.Contains(infrastructureDiText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
+        StringAssert.Contains(desktopRuntimeDiText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
+        StringAssert.Contains(desktopRuntimeDiText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
+        StringAssert.Contains(blazorProgramText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
+        StringAssert.Contains(blazorProgramText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
+
+        StringAssert.Contains(commandEndpointsText, "IRulesetShellCatalogResolver shellCatalogResolver");
+        StringAssert.Contains(commandEndpointsText, "shellCatalogResolver.ResolveCommands(ruleset)");
+        StringAssert.Contains(navigationEndpointsText, "IRulesetShellCatalogResolver shellCatalogResolver");
+        StringAssert.Contains(navigationEndpointsText, "shellCatalogResolver.ResolveNavigationTabs(ruleset)");
+
+        StringAssert.Contains(blazorShellText, "public IRulesetShellCatalogResolver ShellCatalogResolver { get; set; } = default!;");
+        Assert.IsFalse(blazorShellText.Contains("IEnumerable<IRulesetPlugin> RulesetPlugins", StringComparison.Ordinal));
+        StringAssert.Contains(avaloniaMainWindowText, "private readonly IRulesetShellCatalogResolver _shellCatalogResolver;");
     }
 
     [TestMethod]
@@ -848,6 +890,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetCatalogProvider");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetRuleHost");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetScriptHost");
+
+        string rulesetServicesPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetShellServices.cs");
+        string rulesetServicesText = File.ReadAllText(rulesetServicesPath);
+        StringAssert.Contains(rulesetServicesText, "public interface IRulesetPluginRegistry");
+        StringAssert.Contains(rulesetServicesText, "public interface IRulesetShellCatalogResolver");
 
         StringAssert.Contains(workspaceModelsText, "string RulesetId = RulesetDefaults.Sr5");
         StringAssert.Contains(workspaceApiModelsText, "string RulesetId = RulesetDefaults.Sr5");

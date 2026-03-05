@@ -51,6 +51,8 @@ public partial class App : global::Avalonia.Application
         services.AddSingleton<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
         services.AddSingleton<IShellPresenter, ShellPresenter>();
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Sr5RulesetPlugin>());
+        services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
+        services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
         services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
         services.AddSingleton<CharacterOverviewViewModelAdapter>();
         services.AddSingleton<MainWindow>();

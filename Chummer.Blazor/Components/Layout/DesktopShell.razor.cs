@@ -27,7 +27,7 @@ public partial class DesktopShell : IDisposable
     public IJSRuntime JsRuntime { get; set; } = default!;
 
     [Inject]
-    public IEnumerable<IRulesetPlugin> RulesetPlugins { get; set; } = Array.Empty<IRulesetPlugin>();
+    public IRulesetShellCatalogResolver ShellCatalogResolver { get; set; } = default!;
 
     private string RawImportXml { get; set; } = "<character><name>Demo</name><alias>Sample</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><created>True</created></character>";
     private string? ImportedFileName { get; set; }
@@ -50,12 +50,12 @@ public partial class DesktopShell : IDisposable
         HeadCommands.Where(command => command.Group is "file" or "tools").Take(10);
 
     private IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions =>
-        RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(State.ActiveTabId, ShellState.ActiveRulesetId, RulesetPlugins)
+        ShellCatalogResolver.ResolveWorkspaceActionsForTab(State.ActiveTabId, ShellState.ActiveRulesetId)
             .Where(action => AvailabilityEvaluator.IsWorkspaceActionEnabled(action, State))
             .ToArray();
 
     private IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls =>
-        RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(State.ActiveTabId, ShellState.ActiveRulesetId, RulesetPlugins)
+        ShellCatalogResolver.ResolveDesktopUiControlsForTab(State.ActiveTabId, ShellState.ActiveRulesetId)
             .Where(control => AvailabilityEvaluator.IsUiControlEnabled(control, State))
             .ToArray();
 
