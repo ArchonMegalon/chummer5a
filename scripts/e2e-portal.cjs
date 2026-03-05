@@ -1,10 +1,20 @@
 #!/usr/bin/env node
 'use strict';
 
+const requiredLandingLinks = [
+  '/blazor/',
+  '/avalonia/',
+  '/downloads/',
+  '/docs/',
+  '/api/health'
+];
+
 const checks = [
   {
     url: 'http://chummer-portal:8080/',
-    assert: text => text.includes('Chummer Portal') && text.includes('/blazor/')
+    assert: text =>
+      text.includes('Chummer Portal') &&
+      requiredLandingLinks.every(link => text.includes(link))
   },
   {
     url: 'http://chummer-portal:8080/blazor/health',

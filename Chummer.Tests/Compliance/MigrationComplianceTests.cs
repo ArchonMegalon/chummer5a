@@ -584,11 +584,20 @@ public class MigrationComplianceTests
     {
         string portalScriptPath = FindPath("scripts", "e2e-portal.sh");
         string portalScriptText = File.ReadAllText(portalScriptPath);
+        string portalPlaywrightPath = FindPath("scripts", "e2e-portal.cjs");
+        string portalPlaywrightText = File.ReadAllText(portalPlaywrightPath);
 
         StringAssert.Contains(portalScriptText, "CHUMMER_E2E_PLAYWRIGHT_SOFT_FAIL");
         StringAssert.Contains(portalScriptText, "skipping portal e2e: docker daemon permission denied in this environment.");
         StringAssert.Contains(portalScriptText, "chummer-playwright-portal");
         StringAssert.Contains(portalScriptText, "docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-avalonia-browser chummer-portal");
+        StringAssert.Contains(portalPlaywrightText, "requiredLandingLinks");
+        StringAssert.Contains(portalPlaywrightText, "requiredLandingLinks.every(link => text.includes(link))");
+        StringAssert.Contains(portalPlaywrightText, "'/blazor/'");
+        StringAssert.Contains(portalPlaywrightText, "'/avalonia/'");
+        StringAssert.Contains(portalPlaywrightText, "'/downloads/'");
+        StringAssert.Contains(portalPlaywrightText, "'/docs/'");
+        StringAssert.Contains(portalPlaywrightText, "'/api/health'");
     }
 
     [TestMethod]
