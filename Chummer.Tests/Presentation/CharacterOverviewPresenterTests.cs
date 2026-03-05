@@ -357,6 +357,9 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
         Assert.IsNull(presenter.State.ActiveDialog);
         Assert.AreEqual("Character imported.", presenter.State.Notice);
+
+        await presenter.ExecuteCommandAsync("open_character", CancellationToken.None);
+        Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(presenter.State.ActiveDialog!, "importRulesetId"));
     }
 
     [TestMethod]
