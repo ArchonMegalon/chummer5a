@@ -297,6 +297,12 @@ jobs:
           set -euo pipefail
           bash scripts/publish-download-bundle.sh dist "$CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR"
 
+      - name: Verify deployed manifest has artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/verify-releases-manifest.sh "$CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR"
+
       - name: Verify deployed portal manifest has artifacts (optional)
         if: ${{ vars.CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL != '' }}
         shell: bash

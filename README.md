@@ -169,8 +169,9 @@ Desktop artifact workflow:
 * Desktop heads default to in-process runtime (`CHUMMER_CLIENT_MODE=inprocess` by default). Set `CHUMMER_CLIENT_MODE=http` only when intentionally running as a thin API client, and provide `CHUMMER_API_BASE_URL` (required) plus `CHUMMER_API_KEY` (optional). Legacy alias `CHUMMER_DESKTOP_CLIENT_MODE` remains supported.
 * Push trigger coverage includes shared runtime/presentation layers and portal/download publication paths (`Chummer.Application/**`, `Chummer.Core/**`, `Chummer.Contracts/**`, `Chummer.Desktop.Runtime/**`, `Chummer.Infrastructure/**`, `Chummer.Presentation/**`, `Chummer.Portal/**`, `scripts/generate-releases-manifest.sh`, `scripts/publish-download-bundle.sh`, `scripts/verify-releases-manifest.sh`, `scripts/validate-amend-manifests.sh`) so desktop and download-surface changes run the same artifact pipeline.
 * Automatic deployment: set repository variable `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` and Docker-branch pushes will publish the bundle using `scripts/publish-download-bundle.sh`.
+* Deploy job hard-gate: after publish, deployment now verifies `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR/releases.json` contains at least one artifact and fails otherwise.
 * `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR` is resolved on the workflow runner filesystem; automatic deployment requires a runner that can write to the portal downloads storage (for example, self-hosted runner with shared mount/network volume).
-* Optional live deployment smoke: set repository variable `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` (portal base URL or direct `.../downloads/releases.json`) to have the deploy job verify the published manifest contains at least one artifact.
+* Optional live deployment smoke: set repository variable `CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL` (portal base URL or direct `.../downloads/releases.json`) to additionally verify the live portal endpoint after local deploy verification passes.
 * Local verification helper: `bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
 * Manual deployment remains available through workflow dispatch with `deploy_portal_downloads=true`.
 

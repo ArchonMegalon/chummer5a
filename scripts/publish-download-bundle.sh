@@ -86,4 +86,6 @@ RELEASE_CHANNEL="$release_channel" \
 RELEASE_PUBLISHED_AT="$release_published_at" \
 bash "$SCRIPT_DIR/generate-releases-manifest.sh"
 
+bash "$SCRIPT_DIR/verify-releases-manifest.sh" "$DEPLOY_DIR/releases.json"
+
 echo "Published ${#artifacts[@]} desktop artifact(s) into $DEPLOY_DIR"
