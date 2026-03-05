@@ -21,7 +21,8 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-008 | done | P1 | Milestone 1: enforce strict `IChummerClient` shell/bootstrap contract semantics. | agent | Completed 2026-03-05: interface defaults removed; all client stubs now explicitly define shell semantics; full docker gate passed (`390/390`). |
 | WL-009 | done | P1 | Milestone 3 platform cleanup: richer bootstrap session snapshot. | agent | Completed 2026-03-05: active workspace session state now flows through shell preferences, bootstrap contracts, API/runtime clients, bootstrap cache, shell presenter initialization, and overview session restore. |
 | WL-010 | done | P1 | Milestone 6: eliminate bootstrap workspace-cache preferred-ruleset drift. | agent | Completed 2026-03-05 with cache seeding from explicit shell preferences and regression coverage in `ShellBootstrapDataProviderTests`; docker gate passed (`391/391`). |
-| WL-011 | in_progress | P1 | Milestone 4 platform cleanup: neutralize ruleset hosting infrastructure ownership. | agent | Move shared `IRulesetPluginRegistry`/`IRulesetShellCatalogResolver` infrastructure and DI wiring out of SR5 module; keep SR5 registration SR5-specific. |
+| WL-011 | done | P1 | Milestone 4 platform cleanup: neutralize ruleset hosting infrastructure ownership. | agent | Completed 2026-03-05: neutral `Chummer.Rulesets.Hosting` extension now registers generic ruleset infrastructure; SR5 extension is plugin-only; startup paths call both explicitly. |
+| WL-012 | in_progress | P1 | Milestone 5 platform cleanup: renderer-facing shell surface normalization. | agent | Continue removing renderer-side shell interpretation so Blazor and Avalonia consume fully resolved `ShellSurfaceState` only. |
 
 ## Intake Template
 Add new items at the bottom:

@@ -829,6 +829,8 @@ public class MigrationComplianceTests
         string rulesetServicesText = File.ReadAllText(rulesetServicesPath);
         string rulesetDiExtensionsPath = FindPath("Chummer.Rulesets.Sr5", "ServiceCollectionRulesetExtensions.cs");
         string rulesetDiExtensionsText = File.ReadAllText(rulesetDiExtensionsPath);
+        string rulesetHostingDiExtensionsPath = FindPath("Chummer.Rulesets.Hosting", "ServiceCollectionRulesetHostingExtensions.cs");
+        string rulesetHostingDiExtensionsText = File.ReadAllText(rulesetHostingDiExtensionsPath);
         string sr5RulesetPluginPath = FindPath("Chummer.Rulesets.Sr5", "Sr5RulesetPlugin.cs");
         string sr5RulesetPluginText = File.ReadAllText(sr5RulesetPluginPath);
         string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
@@ -857,14 +859,18 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetServicesText, "public sealed class RulesetShellCatalogResolverService");
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Rulesets", "Sr5RulesetPlugin.cs"));
 
-        StringAssert.Contains(rulesetDiExtensionsText, "AddChummerRulesets(this IServiceCollection services)");
+        StringAssert.Contains(rulesetDiExtensionsText, "AddSr5Ruleset(this IServiceCollection services)");
         StringAssert.Contains(rulesetDiExtensionsText, "Chummer.Rulesets.Sr5.Sr5RulesetPlugin");
         StringAssert.Contains(sr5RulesetPluginText, "public class Sr5RulesetPlugin");
-        StringAssert.Contains(rulesetDiExtensionsText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
-        StringAssert.Contains(rulesetDiExtensionsText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
-        StringAssert.Contains(infrastructureDiText, "services.AddChummerRulesets();");
-        StringAssert.Contains(desktopRuntimeDiText, "services.AddChummerRulesets();");
-        StringAssert.Contains(blazorProgramText, "builder.Services.AddChummerRulesets();");
+        StringAssert.Contains(rulesetHostingDiExtensionsText, "AddRulesetInfrastructure(this IServiceCollection services)");
+        StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
+        StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
+        StringAssert.Contains(infrastructureDiText, "services.AddRulesetInfrastructure();");
+        StringAssert.Contains(infrastructureDiText, "services.AddSr5Ruleset();");
+        StringAssert.Contains(desktopRuntimeDiText, "services.AddRulesetInfrastructure();");
+        StringAssert.Contains(desktopRuntimeDiText, "services.AddSr5Ruleset();");
+        StringAssert.Contains(blazorProgramText, "builder.Services.AddRulesetInfrastructure();");
+        StringAssert.Contains(blazorProgramText, "builder.Services.AddSr5Ruleset();");
         StringAssert.Contains(blazorProgramText, "AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();");
 
         StringAssert.Contains(commandEndpointsText, "IRulesetShellCatalogResolver shellCatalogResolver");

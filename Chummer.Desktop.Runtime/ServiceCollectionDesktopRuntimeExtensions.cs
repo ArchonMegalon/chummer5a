@@ -1,5 +1,6 @@
 using Chummer.Infrastructure.DependencyInjection;
 using Chummer.Presentation;
+using Chummer.Rulesets.Hosting;
 using Chummer.Rulesets.Sr5;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -23,7 +24,8 @@ public static class ServiceCollectionDesktopRuntimeExtensions
 
         if (UseHttpClientMode())
         {
-            services.AddChummerRulesets();
+            services.AddRulesetInfrastructure();
+            services.AddSr5Ruleset();
             services.TryAddSingleton(CreateApiHttpClient());
             services.TryAddSingleton<IChummerClient, HttpChummerClient>();
             return services;

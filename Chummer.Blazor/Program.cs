@@ -2,6 +2,7 @@ using Chummer.Blazor.Components;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
+using Chummer.Rulesets.Hosting;
 using Chummer.Rulesets.Sr5;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,7 +36,8 @@ builder.Services.AddHttpClient<IChummerClient, HttpChummerClient>((_, client) =>
 builder.Services.AddScoped<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
 builder.Services.AddScoped<IShellPresenter, ShellPresenter>();
 builder.Services.AddScoped<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
-builder.Services.AddChummerRulesets();
+builder.Services.AddRulesetInfrastructure();
+builder.Services.AddSr5Ruleset();
 builder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
 builder.Services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
 

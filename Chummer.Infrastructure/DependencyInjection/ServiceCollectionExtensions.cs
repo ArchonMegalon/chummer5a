@@ -6,6 +6,7 @@ using Chummer.Application.Workspaces;
 using Chummer.Infrastructure.Files;
 using Chummer.Infrastructure.Workspaces;
 using Chummer.Infrastructure.Xml;
+using Chummer.Rulesets.Hosting;
 using Chummer.Rulesets.Sr5;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -35,7 +36,8 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<ICharacterFileService, CharacterFileService>();
-        services.AddChummerRulesets();
+        services.AddRulesetInfrastructure();
+        services.AddSr5Ruleset();
         services.AddSingleton<ICharacterSectionService, CharacterSectionService>();
         services.AddSingleton<ICharacterFileQueries, XmlCharacterFileQueries>();
         services.AddSingleton<ICharacterMetadataCommands, XmlCharacterMetadataCommands>();

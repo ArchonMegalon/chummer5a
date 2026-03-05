@@ -6,13 +6,11 @@ namespace Chummer.Rulesets.Sr5;
 
 public static class ServiceCollectionRulesetExtensions
 {
-    public static IServiceCollection AddChummerRulesets(this IServiceCollection services)
+    public static IServiceCollection AddSr5Ruleset(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Chummer.Rulesets.Sr5.Sr5RulesetPlugin>());
-        services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
-        services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
         return services;
     }
 }
