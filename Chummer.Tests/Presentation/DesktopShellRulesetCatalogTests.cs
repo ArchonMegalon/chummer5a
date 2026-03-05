@@ -93,7 +93,11 @@ public sealed class DesktopShellRulesetCatalogTests
 
         public CharacterOverviewState State { get; private set; }
 
-        public event EventHandler? StateChanged;
+        public event EventHandler? StateChanged
+        {
+            add { }
+            remove { }
+        }
 
         public Task InitializeAsync(CancellationToken ct) => Task.CompletedTask;
         public Task ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => Task.CompletedTask;

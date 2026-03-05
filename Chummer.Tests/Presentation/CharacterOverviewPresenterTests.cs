@@ -1075,7 +1075,11 @@ public class CharacterOverviewPresenterTests
         public ShellState State { get; private set; }
         public string? LastPreferredRulesetId { get; private set; }
 
-        public event EventHandler? StateChanged;
+        public event EventHandler? StateChanged
+        {
+            add { }
+            remove { }
+        }
 
         public Task InitializeAsync(CancellationToken ct)
         {
