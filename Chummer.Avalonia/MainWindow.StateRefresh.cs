@@ -21,6 +21,22 @@ public partial class MainWindow
     {
         CharacterOverviewState state = _adapter.State;
         ShellState shellState = _shellPresenter.State;
+        ActiveWorkspaceContext workspaceContext = ResolveActiveWorkspaceContext(state);
+        UpdateHeaderState(state, shellState, workspaceContext);
+        RefreshCommands(state, shellState);
+        RefreshOpenWorkspaces(state, workspaceContext.ActiveWorkspaceId);
+        RefreshNavigationTabs(state, shellState);
+        RefreshSectionActions(state);
+        RefreshUiControls(state);
+        RefreshSectionPreview(state);
+        RefreshDialogState(state);
+
+        SyncDialogWindow(state);
+        DispatchPendingDownload(state);
+    }
+
+    private static ActiveWorkspaceContext ResolveActiveWorkspaceContext(CharacterOverviewState state)
+    {
         int openWorkspaceCount = state.Session.OpenWorkspaces.Count;
         CharacterWorkspaceId? activeWorkspaceId = state.Session.ActiveWorkspaceId ?? state.WorkspaceId;
         OpenWorkspaceState? activeWorkspace = state.Session.OpenWorkspaces
@@ -28,24 +44,31 @@ public partial class MainWindow
         string activeWorkspaceSaveStatus = activeWorkspace is null
             ? "n/a"
             : activeWorkspace.HasSavedWorkspace ? "saved" : "unsaved";
+        return new ActiveWorkspaceContext(activeWorkspaceId, openWorkspaceCount, activeWorkspaceSaveStatus);
+    }
 
+    private void UpdateHeaderState(CharacterOverviewState state, ShellState shellState, ActiveWorkspaceContext workspaceContext)
+    {
         _statusText.Text = state.Error is null
-            ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(activeWorkspaceId?.Value ?? "none")}, open={openWorkspaceCount}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}" 
+            ? $"State: {(state.IsBusy ? "busy" : "ready")}, workspace={(workspaceContext.ActiveWorkspaceId?.Value ?? "none")}, open={workspaceContext.OpenWorkspaceCount}, saved={state.HasSavedWorkspace}, last-command={(state.LastCommandId ?? "none")}"
             : $"State: error - {state.Error}";
         _noticeText.Text = $"Notice: {(state.Notice ?? "Ready.")}";
-        _workspaceText.Text = $"Workspace: {(activeWorkspaceId?.Value ?? "none")} (open: {openWorkspaceCount}, {activeWorkspaceSaveStatus})";
+        _workspaceText.Text = $"Workspace: {(workspaceContext.ActiveWorkspaceId?.Value ?? "none")} (open: {workspaceContext.OpenWorkspaceCount}, {workspaceContext.ActiveWorkspaceSaveStatus})";
 
         _nameValue.Text = state.Profile?.Name ?? "-";
         _aliasValue.Text = state.Profile?.Alias ?? "-";
         _karmaValue.Text = state.Progress?.Karma.ToString() ?? "-";
         _skillsValue.Text = state.Skills?.Count.ToString() ?? "-";
 
-        _charStateText.Text = $"Character: {(activeWorkspaceId is null ? "none" : "loaded")}";
+        _charStateText.Text = $"Character: {(workspaceContext.ActiveWorkspaceId is null ? "none" : "loaded")}";
         _serviceStateText.Text = $"Service: {(state.Error is null ? "online" : "error")}";
         _timeStateText.Text = $"Time: {DateTimeOffset.UtcNow:u}";
         _complianceStateText.Text = $"Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}";
         UpdateMenuButtonStates(shellState, state.IsBusy);
+    }
 
+    private void RefreshCommands(CharacterOverviewState state, ShellState shellState)
+    {
         IEnumerable<AppCommandDefinition> visibleCommands = shellState.Commands
             .Where(command => !string.Equals(command.Group, "menu", StringComparison.Ordinal));
         if (!string.IsNullOrWhiteSpace(shellState.OpenMenuId))
@@ -64,7 +87,10 @@ public partial class MainWindow
         _commandsList.ItemsSource = commands;
         _commandsList.SelectedItem = commands.FirstOrDefault(item => string.Equals(item.Id, state.LastCommandId, StringComparison.Ordinal));
         _suppressCommandSelectionEvent = false;
+    }
 
+    private void RefreshOpenWorkspaces(CharacterOverviewState state, CharacterWorkspaceId? activeWorkspaceId)
+    {
         WorkspaceListItem[] openWorkspaces = state.Session.OpenWorkspaces
             .Select(workspace => new WorkspaceListItem(
                 workspace.Id.Value,
@@ -79,7 +105,10 @@ public partial class MainWindow
         _openWorkspacesList.SelectedItem = openWorkspaces.FirstOrDefault(item =>
             string.Equals(item.Id, activeWorkspaceId?.Value, StringComparison.Ordinal));
         _suppressWorkspaceSelectionEvent = false;
+    }
 
+    private void RefreshNavigationTabs(CharacterOverviewState state, ShellState shellState)
+    {
         TabListItem[] tabs = shellState.NavigationTabs
             .Select(tab => new TabListItem(
                 tab.Id,
@@ -93,7 +122,10 @@ public partial class MainWindow
         _navigationTabsList.ItemsSource = tabs;
         _navigationTabsList.SelectedItem = tabs.FirstOrDefault(item => string.Equals(item.Id, state.ActiveTabId, StringComparison.Ordinal));
         _suppressTabSelectionEvent = false;
+    }
 
+    private void RefreshSectionActions(CharacterOverviewState state)
+    {
         WorkspaceSurfaceActionDefinition[] actions = WorkspaceSurfaceActionCatalog.ForTab(state.ActiveTabId)
             .Where(action => _commandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, state))
             .ToArray();
@@ -104,7 +136,10 @@ public partial class MainWindow
         _sectionActionsList.ItemsSource = sectionActionItems;
         _sectionActionsList.SelectedItem = sectionActionItems.FirstOrDefault(item => string.Equals(item.Id, state.ActiveActionId, StringComparison.Ordinal));
         _suppressSectionActionSelectionEvent = false;
+    }
 
+    private void RefreshUiControls(CharacterOverviewState state)
+    {
         DesktopUiControlDefinition[] uiControls = DesktopUiControlCatalog.ForTab(state.ActiveTabId)
             .Where(control => _commandAvailabilityEvaluator.IsUiControlEnabled(control, state))
             .ToArray();
@@ -112,36 +147,38 @@ public partial class MainWindow
         _uiControlsList.ItemsSource = uiControls.Select(control => new UiControlListItem(control.Id, control.Label)).ToArray();
         _uiControlsList.SelectedItem = null;
         _suppressUiControlSelectionEvent = false;
+    }
 
+    private void RefreshSectionPreview(CharacterOverviewState state)
+    {
         _sectionPreviewBox.Text = state.ActiveSectionJson ?? string.Empty;
         _sectionRowsList.ItemsSource = state.ActiveSectionRows
             .Select(row => new SectionRowListItem(row.Path, row.Value))
             .ToArray();
+    }
 
+    private void RefreshDialogState(CharacterOverviewState state)
+    {
         if (state.ActiveDialog is null)
         {
             _dialogTitleText.Text = "(none)";
             _dialogMessageText.Text = "(none)";
             _dialogFieldsList.ItemsSource = Array.Empty<DialogFieldListItem>();
             _dialogActionsList.ItemsSource = Array.Empty<DialogActionListItem>();
-        }
-        else
-        {
-            _dialogTitleText.Text = state.ActiveDialog.Title;
-            _dialogMessageText.Text = state.ActiveDialog.Message ?? "(none)";
-            _dialogFieldsList.ItemsSource = state.ActiveDialog.Fields
-                .Select(field => new DialogFieldListItem(field.Id, field.Label, field.Value))
-                .ToArray();
-            _suppressDialogActionSelectionEvent = true;
-            _dialogActionsList.ItemsSource = state.ActiveDialog.Actions
-                .Select(action => new DialogActionListItem(action.Id, action.Label, action.IsPrimary))
-                .ToArray();
-            _dialogActionsList.SelectedItem = null;
-            _suppressDialogActionSelectionEvent = false;
+            return;
         }
 
-        SyncDialogWindow(state);
-        DispatchPendingDownload(state);
+        _dialogTitleText.Text = state.ActiveDialog.Title;
+        _dialogMessageText.Text = state.ActiveDialog.Message ?? "(none)";
+        _dialogFieldsList.ItemsSource = state.ActiveDialog.Fields
+            .Select(field => new DialogFieldListItem(field.Id, field.Label, field.Value))
+            .ToArray();
+        _suppressDialogActionSelectionEvent = true;
+        _dialogActionsList.ItemsSource = state.ActiveDialog.Actions
+            .Select(action => new DialogActionListItem(action.Id, action.Label, action.IsPrimary))
+            .ToArray();
+        _dialogActionsList.SelectedItem = null;
+        _suppressDialogActionSelectionEvent = false;
     }
 
     private void DispatchPendingDownload(CharacterOverviewState state)
@@ -298,4 +335,9 @@ public partial class MainWindow
             return $"{Label} ({Id}){(IsPrimary ? " *" : string.Empty)}";
         }
     }
+
+    private sealed record ActiveWorkspaceContext(
+        CharacterWorkspaceId? ActiveWorkspaceId,
+        int OpenWorkspaceCount,
+        string ActiveWorkspaceSaveStatus);
 }
