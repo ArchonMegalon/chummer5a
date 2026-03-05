@@ -169,6 +169,23 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task SwitchWorkspaceAsync_does_not_reload_when_target_workspace_is_already_active()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        int getProfileCalls = client.GetProfileCalls;
+
+        await presenter.SwitchWorkspaceAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+
+        Assert.AreEqual(getProfileCalls, client.GetProfileCalls);
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
+        Assert.AreEqual("Workspace 'ws-1' is already active.", presenter.State.Notice);
+    }
+
+    [TestMethod]
     public async Task CloseWorkspaceAsync_closes_active_workspace_and_switches_to_recent_workspace()
     {
         var client = new FakeChummerClient();
@@ -643,6 +660,7 @@ public class CharacterOverviewPresenterTests
         public int GetCommandsCalls { get; private set; }
         public int GetNavigationTabsCalls { get; private set; }
         public int ListWorkspacesCalls { get; private set; }
+        public int GetProfileCalls { get; private set; }
         public UpdateWorkspaceMetadata? LastUpdateMetadata { get; private set; }
         public WorkspaceImportDocument? LastImportedDocument { get; private set; }
         public static IReadOnlyList<AppCommandDefinition> Commands { get; } =
@@ -771,6 +789,7 @@ public class CharacterOverviewPresenterTests
 
         public Task<CharacterProfileSection> GetProfileAsync(CharacterWorkspaceId id, CancellationToken ct)
         {
+            GetProfileCalls++;
             SeedWorkspace(id.Value, _name, _alias);
             CharacterProfileSection profile = new(
                 Name: _name,

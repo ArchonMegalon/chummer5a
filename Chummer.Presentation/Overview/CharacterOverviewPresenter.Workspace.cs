@@ -58,6 +58,17 @@ public sealed partial class CharacterOverviewPresenter
             return;
         }
 
+        if (_currentWorkspace is { } activeWorkspace
+            && string.Equals(activeWorkspace.Value, id.Value, StringComparison.Ordinal))
+        {
+            Publish(State with
+            {
+                Error = null,
+                Notice = $"Workspace '{id.Value}' is already active."
+            });
+            return;
+        }
+
         if (!_workspaceSessionPresenter.Contains(id))
         {
             await LoadAsync(id, ct);
