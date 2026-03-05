@@ -1,3 +1,4 @@
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Workspaces;
 
@@ -36,4 +37,6 @@ public interface IWorkspaceService
     CommandResult<WorkspaceSaveReceipt> Save(CharacterWorkspaceId id);
 
     CommandResult<WorkspaceDownloadReceipt> Download(CharacterWorkspaceId id);
+
+    CommandResult<DataExportBundle> Export(CharacterWorkspaceId id);
 }

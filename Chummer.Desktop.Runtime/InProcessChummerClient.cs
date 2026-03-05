@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
@@ -239,6 +240,18 @@ public sealed class InProcessChummerClient : IChummerClient
     {
         ct.ThrowIfCancellationRequested();
         return Task.FromResult(_workspaceService.Download(id));
+    }
+
+    public Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        CommandResult<DataExportBundle> result = _workspaceService.Export(id);
+        if (!result.Success || result.Value is null)
+        {
+            throw new InvalidOperationException(result.Error ?? $"Workspace '{id.Value}' was not found.");
+        }
+
+        return Task.FromResult(result.Value);
     }
 
     private static TPayload RequireWorkspacePayload<TPayload>(

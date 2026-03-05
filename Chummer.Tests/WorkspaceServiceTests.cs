@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Chummer.Contracts.Api;
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
@@ -180,6 +181,29 @@ public class WorkspaceServiceTests
         Assert.AreEqual(16, result.Value.DocumentLength);
     }
 
+    [TestMethod]
+    public void Export_builds_bundle_from_ruleset_codec_sections()
+    {
+        InMemoryWorkspaceStore store = new();
+        CharacterWorkspaceId id = store.Create(new WorkspaceDocument(
+            Content: "<codec-export/>",
+            Format: WorkspaceDocumentFormat.Chum5Xml,
+            RulesetId: "sr6",
+            PayloadEnvelope: null));
+        RecordingWorkspaceCodec codec = new();
+        WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
+
+        CommandResult<DataExportBundle> result = workspaceService.Export(id);
+
+        Assert.IsTrue(result.Success);
+        Assert.IsNotNull(result.Value);
+        Assert.AreEqual("Codec Runner", result.Value.Summary.Name);
+        Assert.IsNotNull(result.Value.Attributes);
+        Assert.AreEqual("Reaction", result.Value.Attributes!.Attributes[0].Name);
+        Assert.IsNotNull(result.Value.Contacts);
+        Assert.AreEqual("Fixer", result.Value.Contacts!.Contacts[0].Name);
+    }
+
     private sealed class TrackingWorkspaceStore : IWorkspaceStore
     {
         public int CreateCallCount { get; private set; }
@@ -294,7 +318,43 @@ public class WorkspaceServiceTests
 
         public object ParseSection(string sectionId, WorkspacePayloadEnvelope envelope)
         {
-            throw new NotSupportedException();
+            return sectionId switch
+            {
+                "profile" => new CharacterProfileSection(
+                    Name: "Codec Runner",
+                    Alias: "SR6",
+                    PlayerName: string.Empty,
+                    Metatype: "Human",
+                    Metavariant: string.Empty,
+                    Sex: string.Empty,
+                    Age: string.Empty,
+                    Height: string.Empty,
+                    Weight: string.Empty,
+                    Hair: string.Empty,
+                    Eyes: string.Empty,
+                    Skin: string.Empty,
+                    Concept: string.Empty,
+                    Description: string.Empty,
+                    Background: string.Empty,
+                    CreatedVersion: string.Empty,
+                    AppVersion: string.Empty,
+                    BuildMethod: "Priority",
+                    GameplayOption: string.Empty,
+                    Created: true,
+                    Adept: false,
+                    Magician: false,
+                    Technomancer: false,
+                    AI: false,
+                    MainMugshotIndex: 0,
+                    MugshotCount: 0),
+                "progress" => new CharacterProgressSection(0m, 0m, 0m, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6m, 0, 0, false, false, false),
+                "attributes" => new CharacterAttributesSection(1, [new CharacterAttributeSummary("Reaction", 5, 7)]),
+                "skills" => new CharacterSkillsSection(1, 0, [new CharacterSkillSummary("skill-1", string.Empty, "Combat", false, 6, 0, ["Pistols"])]),
+                "inventory" => new CharacterInventorySection(1, 0, 0, 0, 0, ["Medkit"], [], [], [], []),
+                "qualities" => new CharacterQualitiesSection(1, [new CharacterQualitySummary("First Impression", "Core", 11)]),
+                "contacts" => new CharacterContactsSection(1, [new CharacterContactSummary("Fixer", "Broker", "Seattle", 4, 3)]),
+                _ => throw new NotSupportedException()
+            };
         }
 
         public CharacterValidationResult Validate(WorkspacePayloadEnvelope envelope)

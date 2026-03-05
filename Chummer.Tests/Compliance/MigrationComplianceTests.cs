@@ -143,6 +143,8 @@ public class MigrationComplianceTests
     {
         string workspaceEndpointsPath = FindPath("Chummer.Api", "Endpoints", "WorkspaceEndpoints.cs");
         string workspaceEndpointsText = File.ReadAllText(workspaceEndpointsPath);
+        string clientContractPath = FindPath("Chummer.Presentation", "IChummerClient.cs");
+        string clientContractText = File.ReadAllText(clientContractPath);
 
         StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/sections/{sectionId}");
         StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSection(workspaceId, sectionId)");
@@ -150,6 +152,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSummary(workspaceId)");
         StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/validate");
         StringAssert.Contains(workspaceEndpointsText, "workspaceService.Validate(workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/export");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Export(workspaceId)");
+        StringAssert.Contains(clientContractText, "Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct);");
     }
 
     [TestMethod]

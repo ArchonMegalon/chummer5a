@@ -1,3 +1,4 @@
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
@@ -55,4 +56,6 @@ public interface IChummerClient
     Task<CommandResult<WorkspaceSaveReceipt>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct);
 
     Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct);
+
+    Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct);
 }

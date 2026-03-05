@@ -2,6 +2,7 @@ using System.Text;
 using System.Xml;
 using System.Linq;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -177,6 +178,16 @@ public static class WorkspaceEndpoints
                 FileName: result.Value.FileName,
                 DocumentLength: result.Value.DocumentLength,
                 RulesetId: result.Value.RulesetId));
+        });
+
+        app.MapGet("/api/workspaces/{id}/export", (string id, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            CommandResult<DataExportBundle> result = workspaceService.Export(workspaceId);
+            if (!result.Success || result.Value is null)
+                return Results.NotFound(new { error = result.Error ?? "Workspace not found." });
+
+            return Results.Ok(result.Value);
         });
 
         return app;

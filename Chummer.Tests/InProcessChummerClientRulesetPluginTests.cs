@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
@@ -216,6 +217,35 @@ public sealed class InProcessChummerClientRulesetPluginTests
         Assert.AreEqual("tab-rules", snapshot.ActiveTabsByWorkspace["ws-b"]);
     }
 
+    [TestMethod]
+    public async Task ExportAsync_returns_workspace_bundle_from_workspace_service()
+    {
+        NoOpWorkspaceService workspaceService = new()
+        {
+            ExportResult = new CommandResult<DataExportBundle>(
+                Success: true,
+                Value: new DataExportBundle(
+                    Summary: new CharacterFileSummary("Runner", "Alias", "Human", "Priority", "5", "5", 3m, 100m, true),
+                    Profile: null,
+                    Progress: null,
+                    Attributes: new CharacterAttributesSection(1, [new CharacterAttributeSummary("REA", 4, 5)]),
+                    Skills: null,
+                    Inventory: null,
+                    Qualities: null,
+                    Contacts: null),
+                Error: null)
+        };
+        InProcessChummerClient client = new(
+            workspaceService,
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())));
+
+        DataExportBundle bundle = await client.ExportAsync(new CharacterWorkspaceId("ws-export"), CancellationToken.None);
+
+        Assert.AreEqual("Runner", bundle.Summary.Name);
+        Assert.IsNotNull(bundle.Attributes);
+        Assert.AreEqual("REA", bundle.Attributes.Attributes[0].Name);
+    }
+
     private sealed class StubRulesetPlugin : IRulesetPlugin
     {
         public StubRulesetPlugin(
@@ -414,6 +444,10 @@ public sealed class InProcessChummerClientRulesetPluginTests
         public CommandResult<WorkspaceSaveReceipt> Save(CharacterWorkspaceId id) => throw new NotSupportedException();
 
         public CommandResult<WorkspaceDownloadReceipt> Download(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<DataExportBundle> ExportResult { get; init; } = new(false, null, "Export not configured.");
+
+        public CommandResult<DataExportBundle> Export(CharacterWorkspaceId id) => ExportResult;
     }
 
     private static WorkspaceListItem CreateWorkspace(

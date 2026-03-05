@@ -1,3 +1,4 @@
+using Chummer.Contracts.Api;
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
@@ -246,10 +247,54 @@ public sealed class WorkspaceService : IWorkspaceService
             Error: null);
     }
 
+    public CommandResult<DataExportBundle> Export(CharacterWorkspaceId id)
+    {
+        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+        {
+            return new CommandResult<DataExportBundle>(
+                Success: false,
+                Value: null,
+                Error: "Workspace not found.");
+        }
+
+        WorkspacePayloadEnvelope envelope = ResolveEnvelope(document);
+        IRulesetWorkspaceCodec codec = _workspaceCodecResolver.Resolve(envelope.RulesetId);
+        DataExportBundle bundle = new(
+            Summary: codec.ParseSummary(envelope),
+            Profile: TryParseExportSection<CharacterProfileSection>(codec, envelope, "profile"),
+            Progress: TryParseExportSection<CharacterProgressSection>(codec, envelope, "progress"),
+            Attributes: TryParseExportSection<CharacterAttributesSection>(codec, envelope, "attributes"),
+            Skills: TryParseExportSection<CharacterSkillsSection>(codec, envelope, "skills"),
+            Inventory: TryParseExportSection<CharacterInventorySection>(codec, envelope, "inventory"),
+            Qualities: TryParseExportSection<CharacterQualitiesSection>(codec, envelope, "qualities"),
+            Contacts: TryParseExportSection<CharacterContactsSection>(codec, envelope, "contacts"));
+
+        return new CommandResult<DataExportBundle>(
+            Success: true,
+            Value: bundle,
+            Error: null);
+    }
+
     private TSection? TryParseSection<TSection>(CharacterWorkspaceId id, string sectionId)
         where TSection : class
     {
         return GetSection(id, sectionId) as TSection;
+    }
+
+    private static TSection? TryParseExportSection<TSection>(
+        IRulesetWorkspaceCodec codec,
+        WorkspacePayloadEnvelope envelope,
+        string sectionId)
+        where TSection : class
+    {
+        try
+        {
+            return codec.ParseSection(sectionId, envelope) as TSection;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private bool TryResolveEnvelope(CharacterWorkspaceId id, out WorkspacePayloadEnvelope envelope)

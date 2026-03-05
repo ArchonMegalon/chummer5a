@@ -1,3 +1,8 @@
+using System.IO;
+using System.Text;
+using System.Text.Json;
+using Chummer.Contracts.Api;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Overview;
@@ -166,5 +171,92 @@ public sealed partial class CharacterOverviewPresenter
                 PendingDownload = null
             });
         }
+    }
+
+    public async Task ExportAsync(CancellationToken ct)
+    {
+        if (_currentWorkspace is null)
+        {
+            Publish(State with
+            {
+                Error = "No workspace loaded."
+            });
+            return;
+        }
+
+        Publish(State with
+        {
+            IsBusy = true,
+            Error = null,
+            PendingDownload = null
+        });
+
+        try
+        {
+            CharacterWorkspaceId workspaceId = _currentWorkspace.Value;
+            DataExportBundle bundle = await _client.ExportAsync(workspaceId, ct);
+            WorkspaceDownloadReceipt receipt = BuildExportDownloadReceipt(workspaceId, bundle);
+
+            Publish(State with
+            {
+                ActiveDialog = null,
+                IsBusy = false,
+                Error = null,
+                Notice = $"Export bundle prepared: {receipt.FileName} ({receipt.DocumentLength} bytes).",
+                PendingDownload = receipt,
+                PendingDownloadVersion = State.PendingDownloadVersion + 1
+            });
+        }
+        catch (Exception ex)
+        {
+            Publish(State with
+            {
+                IsBusy = false,
+                Error = ex.Message,
+                PendingDownload = null
+            });
+        }
+    }
+
+    private WorkspaceDownloadReceipt BuildExportDownloadReceipt(CharacterWorkspaceId workspaceId, DataExportBundle bundle)
+    {
+        string json = JsonSerializer.Serialize(bundle, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+        byte[] bytes = Encoding.UTF8.GetBytes(json);
+        string rulesetId = ResolveWorkspaceRulesetId(workspaceId);
+        string baseFileName = string.IsNullOrWhiteSpace(bundle.Summary.Name)
+            ? workspaceId.Value
+            : bundle.Summary.Name;
+        string sanitizedFileName = SanitizeFileName(baseFileName);
+
+        return new WorkspaceDownloadReceipt(
+            Id: workspaceId,
+            Format: WorkspaceDocumentFormat.Json,
+            ContentBase64: Convert.ToBase64String(bytes),
+            FileName: $"{sanitizedFileName}-export.json",
+            DocumentLength: bytes.Length,
+            RulesetId: rulesetId);
+    }
+
+    private string ResolveWorkspaceRulesetId(CharacterWorkspaceId workspaceId)
+    {
+        OpenWorkspaceState? workspace = State.OpenWorkspaces.FirstOrDefault(
+            candidate => string.Equals(candidate.Id.Value, workspaceId.Value, StringComparison.Ordinal));
+        return workspace is null
+            ? RulesetDefaults.Sr5
+            : RulesetDefaults.Normalize(workspace.RulesetId);
+    }
+
+    private static string SanitizeFileName(string value)
+    {
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+        var builder = new StringBuilder(value.Length);
+        foreach (char character in value)
+            builder.Append(invalidChars.Contains(character) ? '_' : character);
+
+        string sanitized = builder.ToString().Trim();
+        return string.IsNullOrWhiteSpace(sanitized) ? "workspace" : sanitized;
     }
 }

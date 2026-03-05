@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json.Nodes;
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
@@ -166,5 +167,7 @@ public class WorkspaceSectionRendererTests
         public Task<CommandResult<WorkspaceSaveReceipt>> SaveAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
 
         public Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
+
+        public Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
     }
 }

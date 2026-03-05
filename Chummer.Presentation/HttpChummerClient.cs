@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Linq;
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
@@ -357,6 +358,11 @@ public sealed class HttpChummerClient : IChummerClient
                 DocumentLength: payload.DocumentLength,
                 RulesetId: RulesetDefaults.Normalize(payload.RulesetId)),
             Error: null);
+    }
+
+    public Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        return GetRequiredAsync<DataExportBundle>($"/api/workspaces/{id.Value}/export", ct);
     }
 
     private static string? NormalizeWorkspaceId(string? workspaceId)

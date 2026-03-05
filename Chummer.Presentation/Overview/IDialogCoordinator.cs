@@ -13,4 +13,5 @@ public sealed record DialogCoordinationContext(
     Func<WorkspaceImportDocument, CancellationToken, Task> ImportAsync,
     Func<UpdateWorkspaceMetadata, CancellationToken, Task> UpdateMetadataAsync,
     Func<CharacterOverviewState> GetState,
+    Func<CancellationToken, Task>? ExportAsync = null,
     Func<string, CancellationToken, Task>? SetPreferredRulesetAsync = null);

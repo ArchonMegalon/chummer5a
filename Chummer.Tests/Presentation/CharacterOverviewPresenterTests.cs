@@ -7,6 +7,7 @@ using System.Linq;
 using System;
 using System.Text;
 using System.Text.Json.Nodes;
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
@@ -351,6 +352,7 @@ public class CharacterOverviewPresenterTests
 
         await presenter.ExecuteDialogActionAsync("download", CancellationToken.None);
 
+        Assert.AreEqual(1, client.ExportCalls);
         Assert.IsNull(presenter.State.ActiveDialog);
         Assert.IsNull(presenter.State.Error);
         Assert.IsNotNull(presenter.State.PendingDownload);
@@ -361,6 +363,8 @@ public class CharacterOverviewPresenterTests
         StringAssert.Contains(payload, "\"Summary\"");
         StringAssert.Contains(payload, "\"Profile\"");
         StringAssert.Contains(payload, "\"Progress\"");
+        StringAssert.Contains(payload, "\"Reaction\"");
+        StringAssert.Contains(payload, "\"Fixer\"");
     }
 
     [TestMethod]
@@ -741,6 +745,7 @@ public class CharacterOverviewPresenterTests
         public int GetNavigationTabsCalls { get; private set; }
         public int ListWorkspacesCalls { get; private set; }
         public int GetProfileCalls { get; private set; }
+        public int ExportCalls { get; private set; }
         public UpdateWorkspaceMetadata? LastUpdateMetadata { get; private set; }
         public WorkspaceImportDocument? LastImportedDocument { get; private set; }
         public static IReadOnlyList<AppCommandDefinition> Commands { get; } =
@@ -1145,6 +1150,108 @@ public class CharacterOverviewPresenterTests
                     FileName: $"{id.Value}.chum5",
                     DocumentLength: 41),
                 Error: null));
+        }
+
+        public Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            ExportCalls++;
+            SeedWorkspace(id.Value, _name, _alias);
+
+            DataExportBundle bundle = new(
+                Summary: new CharacterFileSummary(
+                    Name: _name,
+                    Alias: _alias,
+                    Metatype: "Ork",
+                    BuildMethod: "SumtoTen",
+                    CreatedVersion: "1.0",
+                    AppVersion: "1.0",
+                    Karma: 12m,
+                    Nuyen: 5000m,
+                    Created: true),
+                Profile: new CharacterProfileSection(
+                    Name: _name,
+                    Alias: _alias,
+                    PlayerName: string.Empty,
+                    Metatype: "Ork",
+                    Metavariant: string.Empty,
+                    Sex: string.Empty,
+                    Age: string.Empty,
+                    Height: string.Empty,
+                    Weight: string.Empty,
+                    Hair: string.Empty,
+                    Eyes: string.Empty,
+                    Skin: string.Empty,
+                    Concept: string.Empty,
+                    Description: string.Empty,
+                    Background: string.Empty,
+                    CreatedVersion: string.Empty,
+                    AppVersion: string.Empty,
+                    BuildMethod: "SumtoTen",
+                    GameplayOption: string.Empty,
+                    Created: true,
+                    Adept: false,
+                    Magician: false,
+                    Technomancer: false,
+                    AI: false,
+                    MainMugshotIndex: 0,
+                    MugshotCount: 0),
+                Progress: new CharacterProgressSection(
+                    Karma: 12m,
+                    Nuyen: 5000m,
+                    StartingNuyen: 0m,
+                    StreetCred: 1,
+                    Notoriety: 0,
+                    PublicAwareness: 0,
+                    BurntStreetCred: 0,
+                    BuildKarma: 0,
+                    TotalAttributes: 0,
+                    TotalSpecial: 0,
+                    PhysicalCmFilled: 0,
+                    StunCmFilled: 0,
+                    TotalEssence: 6m,
+                    InitiateGrade: 0,
+                    SubmersionGrade: 0,
+                    MagEnabled: false,
+                    ResEnabled: false,
+                    DepEnabled: false),
+                Attributes: new CharacterAttributesSection(
+                    Count: 1,
+                    Attributes:
+                    [
+                        new CharacterAttributeSummary("Reaction", 5, 7)
+                    ]),
+                Skills: new CharacterSkillsSection(
+                    Count: 1,
+                    KnowledgeCount: 0,
+                    Skills:
+                    [
+                        new CharacterSkillSummary("1", string.Empty, "Combat", false, 6, 0, ["Semi-Automatics"])
+                    ]),
+                Inventory: new CharacterInventorySection(
+                    GearCount: 1,
+                    WeaponCount: 0,
+                    ArmorCount: 0,
+                    CyberwareCount: 0,
+                    VehicleCount: 0,
+                    GearNames: ["Medkit"],
+                    WeaponNames: [],
+                    ArmorNames: [],
+                    CyberwareNames: [],
+                    VehicleNames: []),
+                Qualities: new CharacterQualitiesSection(
+                    Count: 1,
+                    Qualities:
+                    [
+                        new CharacterQualitySummary("First Impression", "Core", 11)
+                    ]),
+                Contacts: new CharacterContactsSection(
+                    Count: 1,
+                    Contacts:
+                    [
+                        new CharacterContactSummary("Fixer", "Broker", "Seattle", 4, 3)
+                    ]));
+
+            return Task.FromResult(bundle);
         }
 
         private static string? NormalizeWorkspaceId(string? workspaceId)
