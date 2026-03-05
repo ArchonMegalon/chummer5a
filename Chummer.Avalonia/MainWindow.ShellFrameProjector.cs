@@ -18,7 +18,6 @@ internal static class MainWindowShellFrameProjector
 
         return new MainWindowShellFrame(
             ToolStripStatusText: BuildToolStripStatusText(state, shellSurface, workspaceContext),
-            NoticeText: $"Notice: {(shellSurface.Notice ?? "Ready.")}",
             ChromeState: new MainWindowChromeState(
                 WorkspaceStrip: new WorkspaceStripState(
                     $"Workspace: {(workspaceContext.ActiveWorkspaceId?.Value ?? "none")} (open: {workspaceContext.OpenWorkspaceCount}, {workspaceContext.ActiveWorkspaceSaveStatus})"),
@@ -32,6 +31,12 @@ internal static class MainWindowShellFrameProjector
                     ServiceState: $"Service: {(shellSurface.Error is null ? "online" : "error")}",
                     TimeState: $"Time: {DateTimeOffset.UtcNow:u}",
                     ComplianceState: $"Ruleset: {shellSurface.ActiveRulesetId} | Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}")),
+            SectionHostState: new SectionHostState(
+                Notice: $"Notice: {(shellSurface.Notice ?? "Ready.")}",
+                PreviewJson: state.ActiveSectionJson ?? string.Empty,
+                Rows: state.ActiveSectionRows
+                    .Select(row => new SectionRowDisplayItem(row.Path, row.Value))
+                    .ToArray()),
             KnownMenuIds: shellSurface.MenuRoots.Select(menu => menu.Id).ToArray(),
             OpenMenuId: shellSurface.OpenMenuId,
             IsBusy: state.IsBusy,
@@ -45,10 +50,6 @@ internal static class MainWindowShellFrameProjector
                 SectionActions: ProjectSectionActions(shellSurface),
                 ActiveActionId: state.ActiveActionId,
                 UiControls: ProjectUiControls(shellSurface)),
-            SectionPreviewJson: state.ActiveSectionJson ?? string.Empty,
-            SectionRows: state.ActiveSectionRows
-                .Select(row => new SectionRowDisplayItem(row.Path, row.Value))
-                .ToArray(),
             WorkspaceActionsById: workspaceActionsById);
     }
 
@@ -161,16 +162,14 @@ internal static class MainWindowShellFrameProjector
 
 internal sealed record MainWindowShellFrame(
     string ToolStripStatusText,
-    string NoticeText,
     MainWindowChromeState ChromeState,
+    SectionHostState SectionHostState,
     IReadOnlyList<string> KnownMenuIds,
     string? OpenMenuId,
     bool IsBusy,
     CommandPaletteItem[] Commands,
     string? LastCommandId,
     NavigatorPaneState NavigatorPaneState,
-    string SectionPreviewJson,
-    SectionRowDisplayItem[] SectionRows,
     IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> WorkspaceActionsById);
 
 internal sealed record MainWindowChromeState(

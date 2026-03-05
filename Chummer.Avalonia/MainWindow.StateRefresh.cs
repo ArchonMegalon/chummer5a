@@ -33,7 +33,6 @@ public partial class MainWindow
         _workspaceActionsById = shellFrame.WorkspaceActionsById;
 
         _toolStrip.SetStatusText(shellFrame.ToolStripStatusText);
-        _sectionHost.SetNotice(shellFrame.NoticeText);
         ApplyChromeState(shellFrame.ChromeState);
 
         _menuBar.SetMenuState(
@@ -43,7 +42,7 @@ public partial class MainWindow
 
         _commandDialogPane.SetState(commandDialogState);
         _navigatorPane.SetState(shellFrame.NavigatorPaneState);
-        _sectionHost.SetSectionPreview(shellFrame.SectionPreviewJson, shellFrame.SectionRows);
+        _sectionHost.SetState(shellFrame.SectionHostState);
     }
 
     private void ApplyChromeState(MainWindowChromeState chromeState)

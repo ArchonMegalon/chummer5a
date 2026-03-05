@@ -1526,6 +1526,8 @@ public class MigrationComplianceTests
         string summaryHeaderCodeText = File.ReadAllText(summaryHeaderCodePath);
         string statusStripCodePath = FindPath("Chummer.Avalonia", "Controls", "StatusStripControl.axaml.cs");
         string statusStripCodeText = File.ReadAllText(statusStripCodePath);
+        string sectionHostCodePath = FindPath("Chummer.Avalonia", "Controls", "SectionHostControl.axaml.cs");
+        string sectionHostCodeText = File.ReadAllText(sectionHostCodePath);
 
         Assert.IsFalse(codeText.Contains("FindControl<", StringComparison.Ordinal));
         StringAssert.Contains(codeText, "public MainWindow(");
@@ -1550,8 +1552,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(stateText, "_menuBar.SetMenuState(");
         StringAssert.Contains(stateText, "_navigatorPane.SetState(shellFrame.NavigatorPaneState);");
         StringAssert.Contains(stateText, "_commandDialogPane.SetState(commandDialogState);");
-        StringAssert.Contains(stateText, "_sectionHost.SetNotice(");
-        StringAssert.Contains(stateText, "_sectionHost.SetSectionPreview(");
+        StringAssert.Contains(stateText, "_sectionHost.SetState(shellFrame.SectionHostState);");
         StringAssert.Contains(stateText, "_toolStrip.SetStatusText(");
         StringAssert.Contains(stateText, "ApplyChromeState(shellFrame.ChromeState);");
         StringAssert.Contains(stateText, "_workspaceStrip.SetState(chromeState.WorkspaceStrip);");
@@ -1573,12 +1574,16 @@ public class MigrationComplianceTests
         StringAssert.Contains(summaryHeaderCodeText, "SetValues(state.Name, state.Alias, state.Karma, state.Skills);");
         StringAssert.Contains(statusStripCodeText, "public void SetState(StatusStripState state)");
         StringAssert.Contains(statusStripCodeText, "SetValues(");
+        StringAssert.Contains(sectionHostCodeText, "public void SetState(SectionHostState state)");
+        StringAssert.Contains(sectionHostCodeText, "SetNotice(state.Notice);");
+        StringAssert.Contains(sectionHostCodeText, "SetSectionPreview(state.PreviewJson, state.Rows);");
         StringAssert.Contains(projectorText, "BuildWorkspaceActionLookup");
         StringAssert.Contains(projectorText, "WorkspaceActionsById");
         StringAssert.Contains(projectorText, "ChromeState: new MainWindowChromeState(");
         StringAssert.Contains(projectorText, "WorkspaceStrip: new WorkspaceStripState(");
         StringAssert.Contains(projectorText, "SummaryHeader: new SummaryHeaderState(");
         StringAssert.Contains(projectorText, "StatusStrip: new StatusStripState(");
+        StringAssert.Contains(projectorText, "SectionHostState: new SectionHostState(");
         StringAssert.Contains(projectorText, "NavigatorPaneState: new NavigatorPaneState(");
         StringAssert.Contains(projectorText, "shellSurface.Commands");
         StringAssert.Contains(projectorText, "shellSurface.NavigationTabs");

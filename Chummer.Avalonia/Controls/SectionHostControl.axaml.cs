@@ -11,6 +11,12 @@ public partial class SectionHostControl : UserControl
 
     public string XmlInputText => XmlInputBox.Text ?? string.Empty;
 
+    public void SetState(SectionHostState state)
+    {
+        SetNotice(state.Notice);
+        SetSectionPreview(state.PreviewJson, state.Rows);
+    }
+
     public void SetNotice(string notice)
     {
         NoticeText.Text = notice;
@@ -22,6 +28,11 @@ public partial class SectionHostControl : UserControl
         SectionRowsList.ItemsSource = rows.ToArray();
     }
 }
+
+public sealed record SectionHostState(
+    string Notice,
+    string PreviewJson,
+    SectionRowDisplayItem[] Rows);
 
 public sealed record SectionRowDisplayItem(string Path, string Value)
 {
