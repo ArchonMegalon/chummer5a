@@ -69,12 +69,6 @@ public sealed partial class CharacterOverviewPresenter
             return;
         }
 
-        if (!_workspaceSessionPresenter.Contains(id))
-        {
-            await LoadAsync(id, ct);
-            return;
-        }
-
         await LoadAsync(id, ct);
     }
 
