@@ -89,7 +89,12 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
 
         WorkspaceDocumentFormat format = ParseFormat(record.Format);
         string rulesetId = ResolveRulesetId(record);
-        document = new WorkspaceDocument(content, format, rulesetId);
+        WorkspacePayloadEnvelope envelope = ResolveEnvelope(record, content, rulesetId);
+        document = new WorkspaceDocument(
+            Content: content,
+            Format: format,
+            RulesetId: rulesetId,
+            PayloadEnvelope: envelope);
         return true;
     }
 
@@ -99,16 +104,11 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         if (path is null)
             throw new InvalidOperationException("Workspace id contains unsupported characters.");
 
-        string normalizedRulesetId = RulesetDefaults.Normalize(document.RulesetId);
-        WorkspacePayloadEnvelope envelope = new(
-            RulesetId: normalizedRulesetId,
-            SchemaVersion: CurrentWorkspaceSchemaVersion,
-            PayloadKind: WorkspacePayloadKind,
-            Payload: document.Content);
+        WorkspacePayloadEnvelope envelope = ResolveEnvelope(document);
         PersistedWorkspaceRecord record = new(
-            Content: document.Content,
+            Content: envelope.Payload,
             Format: document.Format.ToString(),
-            RulesetId: normalizedRulesetId)
+            RulesetId: envelope.RulesetId)
         {
             Envelope = envelope
         };
@@ -183,6 +183,47 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         }
 
         return RulesetDefaults.Normalize(record.RulesetId);
+    }
+
+    private static WorkspacePayloadEnvelope ResolveEnvelope(
+        WorkspaceDocument document)
+    {
+        WorkspacePayloadEnvelope? existingEnvelope = document.PayloadEnvelope;
+        string normalizedRulesetId = RulesetDefaults.Normalize(
+            existingEnvelope?.RulesetId ?? document.RulesetId);
+        int schemaVersion = existingEnvelope?.SchemaVersion is > 0
+            ? existingEnvelope.SchemaVersion
+            : CurrentWorkspaceSchemaVersion;
+        string payloadKind = string.IsNullOrWhiteSpace(existingEnvelope?.PayloadKind)
+            ? WorkspacePayloadKind
+            : existingEnvelope.PayloadKind;
+        string payload = existingEnvelope?.Payload ?? document.Content;
+        return new WorkspacePayloadEnvelope(
+            RulesetId: normalizedRulesetId,
+            SchemaVersion: schemaVersion,
+            PayloadKind: payloadKind,
+            Payload: payload);
+    }
+
+    private static WorkspacePayloadEnvelope ResolveEnvelope(
+        PersistedWorkspaceRecord record,
+        string content,
+        string fallbackRulesetId)
+    {
+        WorkspacePayloadEnvelope? envelope = record.Envelope;
+        string normalizedRulesetId = RulesetDefaults.Normalize(envelope?.RulesetId ?? fallbackRulesetId);
+        int schemaVersion = envelope?.SchemaVersion is > 0
+            ? envelope.SchemaVersion
+            : CurrentWorkspaceSchemaVersion;
+        string payloadKind = string.IsNullOrWhiteSpace(envelope?.PayloadKind)
+            ? WorkspacePayloadKind
+            : envelope.PayloadKind;
+        string payload = envelope?.Payload ?? content;
+        return new WorkspacePayloadEnvelope(
+            RulesetId: normalizedRulesetId,
+            SchemaVersion: schemaVersion,
+            PayloadKind: payloadKind,
+            Payload: payload);
     }
 
     private sealed record PersistedWorkspaceRecord(

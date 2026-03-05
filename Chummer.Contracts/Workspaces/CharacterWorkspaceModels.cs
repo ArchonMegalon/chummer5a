@@ -17,7 +17,8 @@ public enum WorkspaceDocumentFormat
 public sealed record WorkspaceDocument(
     string Content,
     WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.Chum5Xml,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId = RulesetDefaults.Sr5,
+    WorkspacePayloadEnvelope? PayloadEnvelope = null);
 
 public sealed record WorkspaceImportDocument(
     string Content,

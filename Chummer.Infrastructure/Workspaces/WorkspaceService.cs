@@ -9,6 +9,8 @@ namespace Chummer.Infrastructure.Workspaces;
 
 public sealed class WorkspaceService : IWorkspaceService
 {
+    private const int DefaultEnvelopeSchemaVersion = 1;
+    private const string DefaultEnvelopePayloadKind = "workspace";
     private readonly IWorkspaceStore _workspaceStore;
     private readonly ICharacterFileQueries _characterFileQueries;
     private readonly ICharacterSectionQueries _characterSectionQueries;
@@ -31,7 +33,16 @@ public sealed class WorkspaceService : IWorkspaceService
         string rulesetId = RulesetDefaults.Normalize(document.RulesetId);
         string xml = ToXmlContent(document.Content, document.Format);
         CharacterFileSummary summary = _characterFileQueries.ParseSummary(new CharacterDocument(xml));
-        CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(xml, document.Format, rulesetId));
+        WorkspacePayloadEnvelope envelope = new(
+            RulesetId: rulesetId,
+            SchemaVersion: DefaultEnvelopeSchemaVersion,
+            PayloadKind: DefaultEnvelopePayloadKind,
+            Payload: xml);
+        CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(
+            Content: xml,
+            Format: document.Format,
+            RulesetId: rulesetId,
+            PayloadEnvelope: envelope));
         return new WorkspaceImportResult(id, summary, rulesetId);
     }
 
@@ -52,7 +63,7 @@ public sealed class WorkspaceService : IWorkspaceService
             CharacterFileSummary summary;
             try
             {
-                summary = _characterFileQueries.ParseSummary(new CharacterDocument(ToXmlContent(document.Content, document.Format)));
+                summary = _characterFileQueries.ParseSummary(new CharacterDocument(ResolveXmlPayload(document)));
             }
             catch
             {
@@ -72,7 +83,7 @@ public sealed class WorkspaceService : IWorkspaceService
                 Id: id,
                 Summary: summary,
                 LastUpdatedUtc: entry.LastUpdatedUtc,
-                RulesetId: document.RulesetId));
+                RulesetId: ResolveEnvelope(document).RulesetId));
         }
 
         return workspaces;
@@ -88,7 +99,7 @@ public sealed class WorkspaceService : IWorkspaceService
         if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
             return null;
 
-        string xml = ToXmlContent(document.Content, document.Format);
+        string xml = ResolveXmlPayload(document);
         return _characterSectionQueries.ParseSection(sectionId, new CharacterDocument(xml));
     }
 
@@ -97,7 +108,7 @@ public sealed class WorkspaceService : IWorkspaceService
         if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
             return null;
 
-        string xml = ToXmlContent(document.Content, document.Format);
+        string xml = ResolveXmlPayload(document);
         return _characterFileQueries.ParseSummary(new CharacterDocument(xml));
     }
 
@@ -106,7 +117,7 @@ public sealed class WorkspaceService : IWorkspaceService
         if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
             return null;
 
-        string xml = ToXmlContent(document.Content, document.Format);
+        string xml = ResolveXmlPayload(document);
         return _characterFileQueries.Validate(new CharacterDocument(xml));
     }
 
@@ -156,13 +167,13 @@ public sealed class WorkspaceService : IWorkspaceService
         }
 
         UpdateCharacterMetadataResult result = _characterMetadataCommands.UpdateMetadata(new UpdateCharacterMetadataCommand(
-            Document: new CharacterDocument(ToXmlContent(document.Content, document.Format)),
+            Document: new CharacterDocument(ResolveXmlPayload(document)),
             Update: new CharacterMetadataUpdate(
                 Name: command.Name,
                 Alias: command.Alias,
                 Notes: command.Notes)));
 
-        _workspaceStore.Save(id, new WorkspaceDocument(result.UpdatedDocument.Content, document.Format, document.RulesetId));
+        _workspaceStore.Save(id, CreateUpdatedDocument(document, result.UpdatedDocument.Content));
         CharacterProfileSection profile = (CharacterProfileSection)_characterSectionQueries.ParseSection(
             "profile",
             new CharacterDocument(result.UpdatedDocument.Content));
@@ -182,12 +193,13 @@ public sealed class WorkspaceService : IWorkspaceService
                 Error: "Workspace not found.");
         }
 
+        WorkspacePayloadEnvelope envelope = ResolveEnvelope(document);
         return new CommandResult<WorkspaceSaveReceipt>(
                 Success: true,
                 Value: new WorkspaceSaveReceipt(
                     Id: id,
-                    DocumentLength: document.Content.Length,
-                    RulesetId: document.RulesetId),
+                    DocumentLength: envelope.Payload.Length,
+                    RulesetId: envelope.RulesetId),
                 Error: null);
     }
 
@@ -201,7 +213,8 @@ public sealed class WorkspaceService : IWorkspaceService
                 Error: "Workspace not found.");
         }
 
-        byte[] contentBytes = Encoding.UTF8.GetBytes(document.Content);
+        WorkspacePayloadEnvelope envelope = ResolveEnvelope(document);
+        byte[] contentBytes = Encoding.UTF8.GetBytes(envelope.Payload);
         string contentBase64 = Convert.ToBase64String(contentBytes);
         string fileExtension = document.Format switch
         {
@@ -216,8 +229,8 @@ public sealed class WorkspaceService : IWorkspaceService
                 Format: document.Format,
                 ContentBase64: contentBase64,
                 FileName: $"{id.Value}{fileExtension}",
-                DocumentLength: document.Content.Length,
-                RulesetId: document.RulesetId),
+                DocumentLength: envelope.Payload.Length,
+                RulesetId: envelope.RulesetId),
             Error: null);
     }
 
@@ -236,5 +249,44 @@ public sealed class WorkspaceService : IWorkspaceService
         where TSection : class
     {
         return GetSection(id, sectionId) as TSection;
+    }
+
+    private static string ResolveXmlPayload(WorkspaceDocument document)
+    {
+        WorkspacePayloadEnvelope envelope = ResolveEnvelope(document);
+        return ToXmlContent(envelope.Payload, document.Format);
+    }
+
+    private static WorkspacePayloadEnvelope ResolveEnvelope(WorkspaceDocument document)
+    {
+        WorkspacePayloadEnvelope? existing = document.PayloadEnvelope;
+        string normalizedRulesetId = RulesetDefaults.Normalize(
+            existing?.RulesetId ?? document.RulesetId);
+        int schemaVersion = existing?.SchemaVersion is > 0
+            ? existing.SchemaVersion
+            : DefaultEnvelopeSchemaVersion;
+        string payloadKind = string.IsNullOrWhiteSpace(existing?.PayloadKind)
+            ? DefaultEnvelopePayloadKind
+            : existing.PayloadKind;
+        string payload = existing?.Payload ?? document.Content;
+        return new WorkspacePayloadEnvelope(
+            RulesetId: normalizedRulesetId,
+            SchemaVersion: schemaVersion,
+            PayloadKind: payloadKind,
+            Payload: payload);
+    }
+
+    private static WorkspaceDocument CreateUpdatedDocument(WorkspaceDocument current, string payload)
+    {
+        WorkspacePayloadEnvelope existingEnvelope = ResolveEnvelope(current);
+        WorkspacePayloadEnvelope updatedEnvelope = existingEnvelope with
+        {
+            Payload = payload
+        };
+        return new WorkspaceDocument(
+            Content: payload,
+            Format: current.Format,
+            RulesetId: updatedEnvelope.RulesetId,
+            PayloadEnvelope: updatedEnvelope);
     }
 }
