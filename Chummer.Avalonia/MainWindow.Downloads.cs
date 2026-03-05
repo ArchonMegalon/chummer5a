@@ -16,18 +16,18 @@ public partial class MainWindow
         long pendingVersion = state.PendingDownloadVersion;
         _lastDownloadVersionHandled = pendingVersion;
         _ = RunUiActionAsync(
-            () => SavePendingDownloadAsync(pendingDownload, pendingVersion),
-            "save-as download");
+            () => HandlePendingDownloadAsync(pendingDownload, pendingVersion),
+            "pending download");
     }
 
-    private async Task SavePendingDownloadAsync(WorkspaceDownloadReceipt pendingDownload, long pendingVersion)
+    private async Task HandlePendingDownloadAsync(WorkspaceDownloadReceipt pendingDownload, long pendingVersion)
     {
         if (pendingVersion < _lastDownloadVersionHandled)
             return;
 
         if (!StorageProvider.CanSave)
         {
-            _sectionHost.SetNotice("Notice: save-as requested but file save is unavailable on this platform.");
+            _sectionHost.SetNotice("Notice: download requested but file save is unavailable on this platform.");
             return;
         }
 
@@ -50,7 +50,7 @@ public partial class MainWindow
 
         if (targetFile is null)
         {
-            _sectionHost.SetNotice("Notice: save-as canceled.");
+            _sectionHost.SetNotice("Notice: download canceled.");
             return;
         }
 

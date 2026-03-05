@@ -116,7 +116,7 @@ public sealed partial class CharacterOverviewPresenter
         }
     }
 
-    public async Task SaveAsAsync(CancellationToken ct)
+    public async Task DownloadAsync(CancellationToken ct)
     {
         if (_currentWorkspace is null)
         {

@@ -25,7 +25,7 @@ public sealed partial class CharacterOverviewPresenter
             DialogFactory: _dialogFactory,
             Publish: Publish,
             SaveAsync: SaveAsync,
-            SaveAsAsync: SaveAsAsync,
+            DownloadAsync: DownloadAsync,
             LoadAsync: LoadAsync,
             CreateResetState: CreateWorkspaceResetState,
             CloseAllAsync: CloseAllWorkspacesAsync,
