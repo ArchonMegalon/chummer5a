@@ -1,3 +1,4 @@
+using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Shell;
@@ -20,6 +21,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
     private readonly IWorkspaceSessionActivationService _workspaceSessionActivationService;
     private readonly IWorkspaceOverviewStateFactory _workspaceOverviewStateFactory;
     private readonly IShellBootstrapDataProvider _bootstrapDataProvider;
+    private readonly IShellPresenter? _shellPresenter;
     private CharacterWorkspaceId? _currentWorkspace;
 
     public CharacterOverviewPresenter(
@@ -37,7 +39,8 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         IWorkspaceRemoteCloseService? workspaceRemoteCloseService = null,
         IWorkspaceSessionActivationService? workspaceSessionActivationService = null,
         IWorkspaceOverviewStateFactory? workspaceOverviewStateFactory = null,
-        IShellBootstrapDataProvider? bootstrapDataProvider = null)
+        IShellBootstrapDataProvider? bootstrapDataProvider = null,
+        IShellPresenter? shellPresenter = null)
     {
         _client = client;
         IWorkspaceSessionManager manager = workspaceSessionManager ?? new WorkspaceSessionManager();
@@ -54,6 +57,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         _workspaceSessionActivationService = workspaceSessionActivationService ?? new WorkspaceSessionActivationService();
         _workspaceOverviewStateFactory = workspaceOverviewStateFactory ?? new WorkspaceOverviewStateFactory();
         _bootstrapDataProvider = bootstrapDataProvider ?? new ShellBootstrapDataProvider(client);
+        _shellPresenter = shellPresenter;
     }
 
     public CharacterOverviewState State { get; private set; } = CharacterOverviewState.Empty;
@@ -70,7 +74,9 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
 
         try
         {
-            ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(ct);
+            ShellBootstrapData bootstrap = TryCreateBootstrapFromShellState(out ShellBootstrapData shellBootstrap)
+                ? shellBootstrap
+                : await _bootstrapDataProvider.GetAsync(ct);
             WorkspaceSessionState session = _workspaceSessionPresenter.Restore(bootstrap.Workspaces);
 
             Publish(State with
@@ -100,5 +106,36 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
     {
         State = state;
         StateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private bool TryCreateBootstrapFromShellState(out ShellBootstrapData bootstrap)
+    {
+        bootstrap = default!;
+        if (_shellPresenter is null)
+            return false;
+
+        ShellState shellState = _shellPresenter.State;
+        if (shellState.Commands.Count == 0 || shellState.NavigationTabs.Count == 0)
+            return false;
+
+        WorkspaceListItem[] workspaces = shellState.OpenWorkspaces
+            .Select(workspace => new WorkspaceListItem(
+                workspace.Id,
+                new CharacterFileSummary(
+                    Name: workspace.Name,
+                    Alias: workspace.Alias,
+                    Metatype: string.Empty,
+                    BuildMethod: string.Empty,
+                    CreatedVersion: string.Empty,
+                    AppVersion: string.Empty,
+                    Karma: 0m,
+                    Nuyen: 0m,
+                    Created: false),
+                workspace.LastOpenedUtc,
+                workspace.RulesetId))
+            .ToArray();
+
+        bootstrap = new ShellBootstrapData(shellState.Commands, shellState.NavigationTabs, workspaces);
+        return true;
     }
 }

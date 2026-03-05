@@ -10,6 +10,7 @@ using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
+using Chummer.Presentation.Shell;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests.Presentation;
@@ -47,6 +48,41 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual("ws-legacy-2", presenter.State.OpenWorkspaces[0].Id.Value);
         Assert.AreEqual("ws-legacy-1", presenter.State.OpenWorkspaces[1].Id.Value);
         StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Restored 2 workspace(s)");
+    }
+
+    [TestMethod]
+    public async Task InitializeAsync_reuses_initialized_shell_state_without_refetching_bootstrap()
+    {
+        var client = new FakeChummerClient();
+        var shellState = ShellState.Empty with
+        {
+            Commands = FakeChummerClient.Commands,
+            NavigationTabs = FakeChummerClient.Tabs,
+            OpenWorkspaces =
+            [
+                new ShellWorkspaceState(
+                    Id: new CharacterWorkspaceId("ws-shell-1"),
+                    Name: "Shell Workspace",
+                    Alias: "SHELL",
+                    LastOpenedUtc: DateTimeOffset.UtcNow,
+                    RulesetId: "sr6")
+            ],
+            ActiveRulesetId = "sr6",
+            ActiveWorkspaceId = new CharacterWorkspaceId("ws-shell-1")
+        };
+
+        var presenter = new CharacterOverviewPresenter(
+            client,
+            shellPresenter: new ShellPresenterStub(shellState));
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        Assert.AreEqual(0, client.GetCommandsCalls);
+        Assert.AreEqual(0, client.GetNavigationTabsCalls);
+        Assert.AreEqual(0, client.ListWorkspacesCalls);
+        Assert.AreEqual(1, presenter.State.OpenWorkspaces.Count);
+        Assert.AreEqual("ws-shell-1", presenter.State.OpenWorkspaces[0].Id.Value);
+        Assert.AreEqual("sr6", presenter.State.OpenWorkspaces[0].RulesetId);
     }
 
     [TestMethod]
@@ -604,14 +640,17 @@ public class CharacterOverviewPresenterTests
         private int _clock;
         public bool ThrowOnCloseWorkspace { get; set; }
         public int DownloadCalls { get; private set; }
+        public int GetCommandsCalls { get; private set; }
+        public int GetNavigationTabsCalls { get; private set; }
+        public int ListWorkspacesCalls { get; private set; }
         public UpdateWorkspaceMetadata? LastUpdateMetadata { get; private set; }
         public WorkspaceImportDocument? LastImportedDocument { get; private set; }
-        private static readonly IReadOnlyList<AppCommandDefinition> Commands =
+        public static IReadOnlyList<AppCommandDefinition> Commands { get; } =
         [
             new("new_character", "command.new_character", "file", false, true),
             new("save_character", "command.save_character", "file", true, true)
         ];
-        private static readonly IReadOnlyList<NavigationTabDefinition> Tabs =
+        public static IReadOnlyList<NavigationTabDefinition> Tabs { get; } =
         [
             new("tab-info", "Info", "profile", "character", true, true),
             new("tab-gear", "Gear", "gear", "character", true, true)
@@ -668,6 +707,7 @@ public class CharacterOverviewPresenterTests
 
         public Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct)
         {
+            ListWorkspacesCalls++;
             IReadOnlyList<WorkspaceListItem> workspaces = _workspaces.Values
                 .OrderByDescending(workspace => workspace.LastUpdatedUtc)
                 .ToArray();
@@ -687,11 +727,13 @@ public class CharacterOverviewPresenterTests
 
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
         {
+            GetCommandsCalls++;
             return Task.FromResult(Commands);
         }
 
         public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
         {
+            GetNavigationTabsCalls++;
             return Task.FromResult(Tabs);
         }
 
@@ -952,6 +994,43 @@ public class CharacterOverviewPresenterTests
                     FileName: $"{id.Value}.chum5",
                     DocumentLength: 41),
                 Error: null));
+        }
+    }
+
+    private sealed class ShellPresenterStub : IShellPresenter
+    {
+        public ShellPresenterStub(ShellState state)
+        {
+            State = state;
+        }
+
+        public ShellState State { get; }
+
+        public event EventHandler? StateChanged;
+
+        public Task InitializeAsync(CancellationToken ct)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task ExecuteCommandAsync(string commandId, CancellationToken ct)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SelectTabAsync(string tabId, CancellationToken ct)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task ToggleMenuAsync(string menuId, CancellationToken ct)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SyncWorkspaceContextAsync(CharacterWorkspaceId? activeWorkspaceId, CancellationToken ct)
+        {
+            return Task.CompletedTask;
         }
     }
 }
