@@ -43,7 +43,7 @@ resolve_runbook_log_file() {
   for candidate in "${candidates[@]}"; do
     local dir
     dir="$(dirname "$candidate")"
-    if mkdir -p "$dir" 2>/dev/null && : > "$candidate" 2>/dev/null; then
+    if mkdir -p "$dir" 2>/dev/null && touch "$candidate" 2>/dev/null; then
       echo "$candidate"
       return 0
     fi
@@ -418,6 +418,53 @@ if [[ "$RUNBOOK_MODE" == "downloads-verify" ]]; then
   echo
   echo "== manifest verification summary =="
   rg -n "Verified manifest|Verified artifact links/files|has no downloads|failed artifact verification|not found|empty" "$VERIFY_LOG_FILE" | tail -n 200 || true
+  exit "$status"
+fi
+
+if [[ "$RUNBOOK_MODE" == "downloads-smoke" ]]; then
+  DOWNLOADS_SMOKE_ROOT="${DOWNLOADS_SMOKE_ROOT:-$REPO_ROOT/.tmp/downloads-smoke}"
+  DOWNLOADS_SMOKE_RUN_DIR="${DOWNLOADS_SMOKE_RUN_DIR:-$DOWNLOADS_SMOKE_ROOT/run-$$}"
+  DOWNLOADS_SMOKE_BUNDLE_DIR="${DOWNLOADS_SMOKE_BUNDLE_DIR:-$DOWNLOADS_SMOKE_RUN_DIR/bundle}"
+  DOWNLOADS_SMOKE_DEPLOY_DIR="${DOWNLOADS_SMOKE_DEPLOY_DIR:-$DOWNLOADS_SMOKE_RUN_DIR/deploy}"
+  DOWNLOADS_SMOKE_LOG_FILE="${DOWNLOADS_SMOKE_LOG_FILE:-$(resolve_runbook_log_file chummer-downloads-smoke)}"
+  DOWNLOADS_SMOKE_VERSION="${DOWNLOADS_SMOKE_VERSION:-smoke-0001}"
+  mkdir -p "$DOWNLOADS_SMOKE_BUNDLE_DIR/files" "$DOWNLOADS_SMOKE_DEPLOY_DIR"
+
+  artifact_path="$DOWNLOADS_SMOKE_BUNDLE_DIR/files/chummer-avalonia-linux-x64.zip"
+  printf 'downloads smoke artifact\n' > "$artifact_path"
+  cat > "$DOWNLOADS_SMOKE_BUNDLE_DIR/releases.json" <<JSON
+{
+  "version": "$DOWNLOADS_SMOKE_VERSION",
+  "channel": "smoke",
+  "publishedAt": "2026-03-05T00:00:00Z",
+  "downloads": []
+}
+JSON
+
+  set +e
+  {
+    echo "== downloads smoke fixture =="
+    echo "bundle: $DOWNLOADS_SMOKE_BUNDLE_DIR"
+    echo "deploy: $DOWNLOADS_SMOKE_DEPLOY_DIR"
+    RUNBOOK_MODE=downloads-sync \
+      DOWNLOAD_BUNDLE_DIR="$DOWNLOADS_SMOKE_BUNDLE_DIR" \
+      DOWNLOAD_DEPLOY_DIR="$DOWNLOADS_SMOKE_DEPLOY_DIR" \
+      DOWNLOADS_SYNC_VERIFY_LINKS=1 \
+      bash "$SCRIPT_DIR/runbook.sh"
+    sync_status=$?
+    RUNBOOK_MODE=downloads-verify \
+      DOWNLOADS_VERIFY_TARGET="$DOWNLOADS_SMOKE_DEPLOY_DIR/releases.json" \
+      DOWNLOADS_VERIFY_LINKS=1 \
+      bash "$SCRIPT_DIR/runbook.sh"
+    verify_status=$?
+    echo "downloads-smoke sync_status=$sync_status verify_status=$verify_status"
+    exit $(( sync_status != 0 || verify_status != 0 ))
+  } 2>&1 | tee "$DOWNLOADS_SMOKE_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  echo
+  echo "== downloads smoke summary =="
+  rg -n "downloads-smoke sync_status|Verified manifest|Verified artifact links/files|failed artifact verification" "$DOWNLOADS_SMOKE_LOG_FILE" | tail -n 200 || true
   exit "$status"
 fi
 

@@ -741,6 +741,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "Default recommendation: use `CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR`");
         StringAssert.Contains(runbookText, "Treat object storage as the alternate topology");
         StringAssert.Contains(runbookText, "docs/examples/self-hosted-downloads.env.example");
+        StringAssert.Contains(runbookText, "RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh");
 
         StringAssert.Contains(envExampleText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED=true");
         StringAssert.Contains(envExampleText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR=/srv/chummer/portal-downloads");
@@ -840,6 +841,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "Alternate object-storage deployment");
         StringAssert.Contains(readmeText, "Treat object storage as the alternate topology, not the default");
         StringAssert.Contains(readmeText, "docs/examples/self-hosted-downloads.env.example");
+        StringAssert.Contains(readmeText, "RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh");
         StringAssert.Contains(portalSettingsText, "\"DownloadsBaseUrl\": \"/downloads/\"");
         StringAssert.Contains(portalSettingsText, "\"DownloadsFallbackUrl\": \"\"");
         Assert.IsFalse(
@@ -1250,6 +1252,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-sync-s3\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-verify\"");
+        StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"downloads-smoke\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"parity-checklist\"");
         StringAssert.Contains(runbookText, "RUNBOOK_MODE\" == \"amend-checksums\"");
         StringAssert.Contains(runbookText, "docs/SELF_HOSTED_DOWNLOADS_RUNBOOK.md");
@@ -1273,6 +1276,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-sync");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-sync-s3");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-verify");
+        StringAssert.Contains(runbookText, "resolve_runbook_log_file chummer-downloads-smoke");
+        StringAssert.Contains(runbookText, "downloads-smoke sync_status=");
         StringAssert.Contains(runbookText, "docker ps >\"$DOCKER_TESTS_PREFLIGHT_LOG\" 2>&1");
         StringAssert.Contains(runbookText, "permission denied while trying to connect to the docker API");
         StringAssert.Contains(runbookText, "skipping docker-tests due docker daemon permissions");

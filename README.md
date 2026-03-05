@@ -189,6 +189,7 @@ Desktop artifact workflow:
 * Example operator configuration: [`docs/examples/self-hosted-downloads.env.example`](docs/examples/self-hosted-downloads.env.example).
 * Local verification helper: `bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
 * Optional local strict artifact check: `DOWNLOADS_VERIFY_LINKS=1 bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
+* Repo-local smoke helper for downloads sync + verify flow: `RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh`.
 * Parity checklist generator: `RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh` (writes `docs/PARITY_CHECKLIST.md`).
 * Host readiness probe for strict gates: `RUNBOOK_MODE=host-prereqs bash scripts/runbook.sh`.
 * Strict host-side gate wrapper (no soft-skips, defaults to `net10.0`): `bash scripts/runbook-strict-host-gates.sh [optionalTestFilter] [optionalFramework]`.
