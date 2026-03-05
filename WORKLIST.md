@@ -35,7 +35,8 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-022 | done | P1 | Persist active tab state in shell session snapshot. | agent | Completed 2026-03-05: active tab now persists via shell session contracts/store/endpoints and is restored through bootstrap + shell presenter initialization. |
 | WL-023 | done | P2 | Persist last active tab per workspace. | agent | Completed 2026-03-05: shell session/bootstrap now persist `ActiveTabsByWorkspace`, presenter restores workspace-specific tabs on switch/initialize, and integration/presenter/compliance tests cover the new map flow. |
 | WL-024 | done | P1 | Add macOS Intel desktop artifacts to downloads matrix. | agent | Completed 2026-03-05: workflow matrix now publishes both macOS architectures, manifest generation + portal fallback labels include `osx-x64`, and runbook desktop gate enforces the new matrix/manifest coverage. |
-| WL-025 | in_progress | P2 | Keep `IChummerClient` interface pure by moving bootstrap helper to extension/helper layer. | agent | Remove default interface composition from contract surface and update callsites/tests to use helper without changing runtime behavior. |
+| WL-025 | done | P2 | Keep `IChummerClient` interface pure by moving bootstrap helper to extension/helper layer. | agent | Completed 2026-03-05: contract remains method-signature-only and new compliance/runbook guardrails block default shell-bootstrap method bodies from reappearing on the interface. |
+| WL-026 | in_progress | P2 | Harden preapproved `runbook local-tests` for unattended sandbox execution. | agent | Add first-run/IPC-safe env defaults and optional no-restore path so targeted tests can run via `bash scripts/runbook.sh` without escalation. |
 
 ## Intake Template
 Add new items at the bottom:

@@ -76,6 +76,15 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
     fi
   }
 
+  require_no_match() {
+    local pattern="$1"
+    local path="$2"
+    if rg -q -- "$pattern" "$path"; then
+      echo "forbidden pattern '$pattern' found in $path" >&2
+      status=1
+    fi
+  }
+
   require_path "Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj"
   require_path "Chummer.Blazor.Desktop/Program.cs"
   require_path "Chummer.Desktop.Runtime/ServiceCollectionDesktopRuntimeExtensions.cs"
@@ -104,6 +113,9 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "chummer-\\(\\?P<app>avalonia\\|blazor-desktop\\)-" "scripts/generate-releases-manifest.sh"
   require_match "\"osx-x64\": \"macOS x64\"" "scripts/generate-releases-manifest.sh"
   require_match "\"id\": f\"\\{app\\}-\\{rid\\}\"" "scripts/generate-releases-manifest.sh"
+  require_match "Task<ShellBootstrapSnapshot> GetShellBootstrapAsync\\(string\\? rulesetId, CancellationToken ct\\);" "Chummer.Presentation/IChummerClient.cs"
+  require_no_match "GetShellBootstrapAsync\\(string\\? rulesetId, CancellationToken ct\\)\\s*\\{" "Chummer.Presentation/IChummerClient.cs"
+  require_no_match "GetShellBootstrapAsync\\(string\\? rulesetId, CancellationToken ct\\)\\s*=>" "Chummer.Presentation/IChummerClient.cs"
   require_match "RUNBOOK_MODE\" == \"downloads-manifest\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"downloads-sync\"" "scripts/runbook.sh"
   require_match "RUNBOOK_MODE\" == \"amend-checksums\"" "scripts/runbook.sh"

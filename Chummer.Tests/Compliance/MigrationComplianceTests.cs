@@ -829,6 +829,13 @@ public class MigrationComplianceTests
         StringAssert.Contains(clientContractText, "SaveShellPreferencesAsync");
         StringAssert.Contains(clientContractText, "GetShellSessionAsync");
         StringAssert.Contains(clientContractText, "SaveShellSessionAsync");
+        StringAssert.Contains(clientContractText, "Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct);");
+        Assert.IsFalse(
+            clientContractText.Contains("GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)\n    {", StringComparison.Ordinal),
+            "IChummerClient should not include default interface method bodies for shell bootstrap composition.");
+        Assert.IsFalse(
+            clientContractText.Contains("GetShellBootstrapAsync(string? rulesetId, CancellationToken ct) =>", StringComparison.Ordinal),
+            "IChummerClient should not include expression-bodied default interface methods for shell bootstrap composition.");
 
         StringAssert.Contains(shellEndpointsText, "/api/shell/preferences");
         StringAssert.Contains(shellEndpointsText, "/api/shell/session");
