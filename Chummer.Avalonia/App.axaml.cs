@@ -13,6 +13,7 @@ namespace Chummer.Avalonia;
 public partial class App : global::Avalonia.Application
 {
     private ServiceProvider? _serviceProvider;
+    internal static IServiceProvider? Services { get; private set; }
 
     public override void Initialize()
     {
@@ -24,9 +25,11 @@ public partial class App : global::Avalonia.Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             _serviceProvider = BuildServiceProvider();
+            Services = _serviceProvider;
             desktop.MainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             desktop.Exit += (_, _) =>
             {
+                Services = null;
                 _serviceProvider?.Dispose();
                 _serviceProvider = null;
             };

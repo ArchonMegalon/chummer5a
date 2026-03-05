@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Chummer.Avalonia.Controls;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Chummer.Avalonia;
 
@@ -22,6 +23,16 @@ public partial class MainWindow : Window
     private readonly StatusStripControl _statusStrip;
     private DesktopDialogWindow? _dialogWindow;
     private long _lastDownloadVersionHandled;
+
+    public MainWindow()
+        : this(
+            ResolveService<ICharacterOverviewPresenter>(),
+            ResolveService<IShellPresenter>(),
+            ResolveService<ICommandAvailabilityEvaluator>(),
+            ResolveService<IShellSurfaceResolver>(),
+            ResolveService<CharacterOverviewViewModelAdapter>())
+    {
+    }
 
     public MainWindow(
         ICharacterOverviewPresenter presenter,
@@ -62,6 +73,14 @@ public partial class MainWindow : Window
 
         RefreshState();
         Opened += OnOpened;
+    }
+
+    private static T ResolveService<T>()
+        where T : notnull
+    {
+        IServiceProvider services = App.Services
+            ?? throw new InvalidOperationException("Avalonia services are not initialized. Use DI startup to construct MainWindow.");
+        return services.GetRequiredService<T>();
     }
 
     protected override void OnClosed(EventArgs e)
