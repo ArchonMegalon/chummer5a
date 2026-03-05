@@ -60,6 +60,26 @@ public sealed class DesktopShellDownloadDispatchTests
         cut.WaitForAssertion(() => Assert.AreEqual(0, DownloadInvocationCount(context)));
     }
 
+    [TestMethod]
+    public void OnAfterRenderAsync_dispatches_json_download_with_json_mime_type()
+    {
+        using var context = new BunitContext();
+        context.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        FakeCharacterOverviewPresenter presenter = new();
+        presenter.Publish(CreateOverviewState(CreateReceipt("ws-1", WorkspaceDocumentFormat.Json, "ws-1-export.json"), 1));
+        TrackingShellPresenter shellPresenter = new(ShellState.Empty);
+        RegisterDesktopShellServices(context, presenter, shellPresenter);
+
+        IRenderedComponent<DesktopShell> cut = context.Render<DesktopShell>();
+
+        cut.WaitForAssertion(() => Assert.AreEqual(1, DownloadInvocationCount(context)));
+        var invocation = context.JSInterop.Invocations
+            .First(item => string.Equals(item.Identifier, "chummerDownloads.downloadBase64", StringComparison.Ordinal));
+        Assert.AreEqual("ws-1-export.json", invocation.Arguments[0]?.ToString());
+        Assert.AreEqual("application/json", invocation.Arguments[2]?.ToString());
+    }
+
     private static int DownloadInvocationCount(BunitContext context)
     {
         return context.JSInterop.Invocations.Count(invocation =>
@@ -75,13 +95,16 @@ public sealed class DesktopShellDownloadDispatchTests
         };
     }
 
-    private static WorkspaceDownloadReceipt CreateReceipt(string workspaceId)
+    private static WorkspaceDownloadReceipt CreateReceipt(
+        string workspaceId,
+        WorkspaceDocumentFormat format = WorkspaceDocumentFormat.Chum5Xml,
+        string? fileName = null)
     {
         return new WorkspaceDownloadReceipt(
             Id: new CharacterWorkspaceId(workspaceId),
-            Format: WorkspaceDocumentFormat.Chum5Xml,
+            Format: format,
             ContentBase64: Convert.ToBase64String(Encoding.UTF8.GetBytes("<character/>")),
-            FileName: $"{workspaceId}.chum5",
+            FileName: fileName ?? $"{workspaceId}.chum5",
             DocumentLength: 12,
             RulesetId: "sr5");
     }

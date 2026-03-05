@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.Text;
 using System.Text.Json.Nodes;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
@@ -335,6 +336,31 @@ public class CharacterOverviewPresenterTests
 
         Assert.IsNull(presenter.State.PendingDownload);
         Assert.IsNull(presenter.State.Error);
+    }
+
+    [TestMethod]
+    public async Task Export_character_dialog_download_prepares_json_bundle()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.ExecuteCommandAsync("export_character", CancellationToken.None);
+
+        Assert.IsNotNull(presenter.State.ActiveDialog);
+
+        await presenter.ExecuteDialogActionAsync("download", CancellationToken.None);
+
+        Assert.IsNull(presenter.State.ActiveDialog);
+        Assert.IsNull(presenter.State.Error);
+        Assert.IsNotNull(presenter.State.PendingDownload);
+        Assert.AreEqual(WorkspaceDocumentFormat.Json, presenter.State.PendingDownload?.Format);
+        StringAssert.EndsWith(presenter.State.PendingDownload?.FileName ?? string.Empty, "-export.json");
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Export bundle prepared:");
+        string payload = Encoding.UTF8.GetString(Convert.FromBase64String(presenter.State.PendingDownload!.ContentBase64));
+        StringAssert.Contains(payload, "\"Summary\"");
+        StringAssert.Contains(payload, "\"Profile\"");
+        StringAssert.Contains(payload, "\"Progress\"");
     }
 
     [TestMethod]

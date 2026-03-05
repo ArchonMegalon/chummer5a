@@ -13,7 +13,9 @@ public partial class DesktopShell
 
         string mimeType = pendingDownload.Format == WorkspaceDocumentFormat.Chum5Xml
             ? "application/xml"
-            : "application/octet-stream";
+            : pendingDownload.Format == WorkspaceDocumentFormat.Json
+                ? "application/json"
+                : "application/octet-stream";
 
         try
         {

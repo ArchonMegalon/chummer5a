@@ -11,7 +11,8 @@ public readonly record struct CharacterWorkspaceId(string Value)
 
 public enum WorkspaceDocumentFormat
 {
-    Chum5Xml = 0
+    Chum5Xml = 0,
+    Json = 1
 }
 
 public sealed record WorkspaceDocument(

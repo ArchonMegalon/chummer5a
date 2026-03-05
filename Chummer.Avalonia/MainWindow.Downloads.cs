@@ -32,17 +32,29 @@ public partial class MainWindow
         }
 
         IReadOnlyList<FilePickerFileType> fileTypes =
-        [
-            new FilePickerFileType("Chummer Character Files")
-            {
-                Patterns = ["*.chum5", "*.xml"],
-                MimeTypes = ["application/xml"]
-            }
-        ];
+            pendingDownload.Format == WorkspaceDocumentFormat.Json
+                ? [
+                    new FilePickerFileType("JSON Files")
+                    {
+                        Patterns = ["*.json"],
+                        MimeTypes = ["application/json"]
+                    }
+                ]
+                : [
+                    new FilePickerFileType("Chummer Character Files")
+                    {
+                        Patterns = ["*.chum5", "*.xml"],
+                        MimeTypes = ["application/xml"]
+                    }
+                ];
+
+        string pickerTitle = pendingDownload.Format == WorkspaceDocumentFormat.Json
+            ? "Download Export Bundle"
+            : "Save Character As";
 
         IStorageFile? targetFile = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Save Character As",
+            Title = pickerTitle,
             SuggestedFileName = pendingDownload.FileName,
             FileTypeChoices = fileTypes,
             ShowOverwritePrompt = true

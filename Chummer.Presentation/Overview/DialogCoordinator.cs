@@ -1,5 +1,10 @@
+using Chummer.Contracts.Api;
+using Chummer.Contracts.Characters;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using System.IO;
+using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Chummer.Presentation.Overview;
@@ -215,7 +220,7 @@ public sealed class DialogCoordinator : IDialogCoordinator
             || string.Equals(dialog.Id, "dialog.export_character", StringComparison.Ordinal))
             && string.Equals(actionId, "download", StringComparison.Ordinal))
         {
-            PublishDialogNotice(context, "Export bundle prepared for download.");
+            PublishExportDownload(dialog, context);
             return;
         }
 
@@ -453,5 +458,85 @@ public sealed class DialogCoordinator : IDialogCoordinator
         }
 
         return true;
+    }
+
+    private static void PublishExportDownload(DesktopDialogState dialog, DialogCoordinationContext context)
+    {
+        CharacterWorkspaceId? workspaceId = context.State.WorkspaceId;
+        CharacterProfileSection? profile = context.State.Profile;
+        CharacterProgressSection? progress = context.State.Progress;
+        CharacterSkillsSection? skills = context.State.Skills;
+
+        if (workspaceId is null || profile is null || progress is null)
+        {
+            context.Publish(context.State with
+            {
+                Error = "Export requires a loaded workspace with profile and progress data.",
+                Notice = null
+            });
+            return;
+        }
+
+        DataExportBundle bundle = new(
+            Summary: new CharacterFileSummary(
+                Name: profile.Name,
+                Alias: profile.Alias,
+                Metatype: profile.Metatype,
+                BuildMethod: profile.BuildMethod,
+                CreatedVersion: profile.CreatedVersion,
+                AppVersion: profile.AppVersion,
+                Karma: progress.Karma,
+                Nuyen: progress.Nuyen,
+                Created: profile.Created),
+            Profile: profile,
+            Progress: progress,
+            Attributes: null,
+            Skills: skills,
+            Inventory: null,
+            Qualities: null,
+            Contacts: null);
+
+        string json = JsonSerializer.Serialize(bundle, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+        byte[] bytes = Encoding.UTF8.GetBytes(json);
+        string rulesetId = ResolveRulesetId(context.State, workspaceId.Value);
+        string baseFileName = string.IsNullOrWhiteSpace(profile.Name) ? workspaceId.Value.Value : profile.Name;
+        string sanitizedFileName = SanitizeFileName(baseFileName);
+        WorkspaceDownloadReceipt receipt = new(
+            Id: workspaceId.Value,
+            Format: WorkspaceDocumentFormat.Json,
+            ContentBase64: Convert.ToBase64String(bytes),
+            FileName: $"{sanitizedFileName}-export.json",
+            DocumentLength: bytes.Length,
+            RulesetId: rulesetId);
+
+        context.Publish(context.State with
+        {
+            ActiveDialog = null,
+            Error = null,
+            Notice = $"Export bundle prepared: {receipt.FileName} ({receipt.DocumentLength} bytes).",
+            PendingDownload = receipt,
+            PendingDownloadVersion = context.State.PendingDownloadVersion + 1
+        });
+    }
+
+    private static string ResolveRulesetId(CharacterOverviewState state, CharacterWorkspaceId workspaceId)
+    {
+        OpenWorkspaceState? workspace = state.OpenWorkspaces.FirstOrDefault(
+            candidate => string.Equals(candidate.Id.Value, workspaceId.Value, StringComparison.Ordinal));
+        return workspace?.RulesetId ?? RulesetDefaults.Sr5;
+    }
+
+    private static string SanitizeFileName(string value)
+    {
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+        var builder = new StringBuilder(value.Length);
+        foreach (char character in value)
+            builder.Append(invalidChars.Contains(character) ? '_' : character);
+
+        string sanitized = builder.ToString().Trim();
+        return string.IsNullOrWhiteSpace(sanitized) ? "workspace" : sanitized;
     }
 }
