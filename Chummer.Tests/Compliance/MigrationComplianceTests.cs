@@ -699,6 +699,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "deploy_portal_downloads");
         StringAssert.Contains(workflowText, "deploy-downloads");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
+        StringAssert.Contains(workflowText, "Verify deployed manifest has artifacts");
+        StringAssert.Contains(workflowText, "bash scripts/verify-releases-manifest.sh \"$CHUMMER_PORTAL_DOWNLOADS_DEPLOY_DIR\"");
         StringAssert.Contains(workflowText, "Verify deployed portal manifest has artifacts");
         StringAssert.Contains(workflowText, "scripts/verify-releases-manifest.sh");
     }
@@ -852,6 +854,7 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(publisherText, "Expected desktop-download-bundle layout");
         StringAssert.Contains(publisherText, "generate-releases-manifest.sh");
+        StringAssert.Contains(publisherText, "verify-releases-manifest.sh");
         StringAssert.Contains(publisherText, "Published ${#artifacts[@]} desktop artifact(s)");
 
         string verifierPath = FindPath("scripts", "verify-releases-manifest.sh");
