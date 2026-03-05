@@ -35,19 +35,44 @@ fi
 
 if [[ "$RUNBOOK_MODE" == "local-tests" ]]; then
   TEST_PROJECT="${TEST_PROJECT:-Chummer.Tests/Chummer.Tests.csproj}"
+  TEST_CONFIGURATION="${TEST_CONFIGURATION:-Release}"
   TEST_FRAMEWORK="${TEST_FRAMEWORK:-$RUNBOOK_ARG_FRAMEWORK}"
   TEST_FILTER="${TEST_FILTER:-$RUNBOOK_ARG_FILTER}"
+  TEST_MAX_CPU="${TEST_MAX_CPU:-1}"
+  TEST_DISABLE_BUILD_SERVERS="${TEST_DISABLE_BUILD_SERVERS:-1}"
+  TEST_NO_RESTORE="${TEST_NO_RESTORE:-0}"
+  TEST_NO_BUILD="${TEST_NO_BUILD:-0}"
   TEST_LOG_FILE="${TEST_LOG_FILE:-/tmp/chummer-local-tests.log}"
+  export DOTNET_CLI_HOME="${DOTNET_CLI_HOME:-/tmp}"
+  export DOTNET_SKIP_FIRST_TIME_EXPERIENCE="${DOTNET_SKIP_FIRST_TIME_EXPERIENCE:-1}"
+  export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER="${DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER:-1}"
+  export MSBUILDDISABLENODEREUSE="${MSBUILDDISABLENODEREUSE:-1}"
   framework_args=()
   filter_args=()
+  cpu_args=()
+  server_args=()
+  restore_args=()
+  build_args=()
   if [[ -n "$TEST_FRAMEWORK" ]]; then
     framework_args=(-f "$TEST_FRAMEWORK")
   fi
   if [[ -n "$TEST_FILTER" ]]; then
     filter_args=(--filter "$TEST_FILTER")
   fi
+  if [[ -n "$TEST_MAX_CPU" ]]; then
+    cpu_args=(-m:"$TEST_MAX_CPU")
+  fi
+  if [[ "$TEST_DISABLE_BUILD_SERVERS" == "1" || "$TEST_DISABLE_BUILD_SERVERS" == "true" || "$TEST_DISABLE_BUILD_SERVERS" == "TRUE" ]]; then
+    server_args=(--disable-build-servers)
+  fi
+  if [[ "$TEST_NO_RESTORE" == "1" || "$TEST_NO_RESTORE" == "true" || "$TEST_NO_RESTORE" == "TRUE" ]]; then
+    restore_args=(--no-restore)
+  fi
+  if [[ "$TEST_NO_BUILD" == "1" || "$TEST_NO_BUILD" == "true" || "$TEST_NO_BUILD" == "TRUE" ]]; then
+    build_args=(--no-build)
+  fi
   set +e
-  dotnet test "$TEST_PROJECT" -c Release "${framework_args[@]}" "${filter_args[@]}" --logger "console;verbosity=normal" 2>&1 | tee "$TEST_LOG_FILE"
+  dotnet test "$TEST_PROJECT" -c "$TEST_CONFIGURATION" "${framework_args[@]}" "${filter_args[@]}" "${cpu_args[@]}" "${server_args[@]}" "${restore_args[@]}" "${build_args[@]}" --logger "console;verbosity=normal" 2>&1 | tee "$TEST_LOG_FILE"
   status=${PIPESTATUS[0]}
   set -e
   echo

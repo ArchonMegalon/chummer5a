@@ -36,7 +36,8 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-023 | done | P2 | Persist last active tab per workspace. | agent | Completed 2026-03-05: shell session/bootstrap now persist `ActiveTabsByWorkspace`, presenter restores workspace-specific tabs on switch/initialize, and integration/presenter/compliance tests cover the new map flow. |
 | WL-024 | done | P1 | Add macOS Intel desktop artifacts to downloads matrix. | agent | Completed 2026-03-05: workflow matrix now publishes both macOS architectures, manifest generation + portal fallback labels include `osx-x64`, and runbook desktop gate enforces the new matrix/manifest coverage. |
 | WL-025 | done | P2 | Keep `IChummerClient` interface pure by moving bootstrap helper to extension/helper layer. | agent | Completed 2026-03-05: contract remains method-signature-only and new compliance/runbook guardrails block default shell-bootstrap method bodies from reappearing on the interface. |
-| WL-026 | in_progress | P2 | Harden preapproved `runbook local-tests` for unattended sandbox execution. | agent | Add first-run/IPC-safe env defaults and optional no-restore path so targeted tests can run via `bash scripts/runbook.sh` without escalation. |
+| WL-026 | done | P2 | Harden preapproved `runbook local-tests` for unattended sandbox execution. | agent | Completed 2026-03-05: added first-run/IPC-safe env defaults, single-process/build-server toggles, and optional no-restore/no-build switches for preapproved-script local test runs. |
+| WL-027 | in_progress | P3 | Add fast-fail NuGet preflight for `runbook local-tests`. | agent | Detect unreachable `api.nuget.org` early in restore-enabled local test runs to avoid long unattended retry loops in restricted environments. |
 
 ## Intake Template
 Add new items at the bottom:

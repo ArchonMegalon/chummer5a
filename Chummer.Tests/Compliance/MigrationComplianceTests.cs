@@ -1089,6 +1089,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED=true");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_BUILD");
         StringAssert.Contains(runbookText, "docker compose run $build_arg --rm chummer-tests");
+        StringAssert.Contains(runbookText, "TEST_DISABLE_BUILD_SERVERS");
+        StringAssert.Contains(runbookText, "TEST_NO_RESTORE");
+        StringAssert.Contains(runbookText, "DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER");
+        StringAssert.Contains(runbookText, "--disable-build-servers");
+        StringAssert.Contains(runbookText, "MSBUILDDISABLENODEREUSE");
 
         StringAssert.Contains(generatorText, "Docker/Downloads/releases.json");
         StringAssert.Contains(generatorText, "Chummer.Portal/downloads/releases.json");
