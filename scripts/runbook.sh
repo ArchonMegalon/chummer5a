@@ -259,29 +259,29 @@ if [[ "$RUNBOOK_MODE" == "docker-tests" ]]; then
 fi
 
 if [[ "$RUNBOOK_MODE" == "push" ]]; then
+  RUNBOOK_PUSH_ENABLE="${RUNBOOK_PUSH_ENABLE:-0}"
+  if [[ "$RUNBOOK_PUSH_ENABLE" != "1" && "$RUNBOOK_PUSH_ENABLE" != "true" && "$RUNBOOK_PUSH_ENABLE" != "TRUE" ]]; then
+    echo "push mode is disabled by default."
+    echo "Set RUNBOOK_PUSH_ENABLE=1 to run an explicit push from this runbook."
+    echo "Example: RUNBOOK_MODE=push RUNBOOK_PUSH_ENABLE=1 bash scripts/runbook.sh"
+    exit 2
+  fi
+
   git_cmd=(git --git-dir="$REPO_ROOT/.git" --work-tree="$REPO_ROOT")
+  RUNBOOK_PUSH_REMOTE="${RUNBOOK_PUSH_REMOTE:-origin}"
+  RUNBOOK_PUSH_REF="${RUNBOOK_PUSH_REF:-}"
+  BRANCH_NAME="$(${git_cmd[@]} rev-parse --abbrev-ref HEAD)"
+  REF_SPEC="${RUNBOOK_PUSH_REF:-$BRANCH_NAME}"
+
   echo "== push mode =="
-  echo "branch: $(${git_cmd[@]} rev-parse --abbrev-ref HEAD)"
+  echo "branch: $BRANCH_NAME"
   echo "status: $(${git_cmd[@]} status --short --branch | head -n 1)"
+  echo "remote: $RUNBOOK_PUSH_REMOTE"
+  echo "refspec: $REF_SPEC"
 
-  echo
-  echo "== attempt 1: https origin push =="
-  if "${git_cmd[@]}" push; then
-    echo "push completed via https origin"
-    exit 0
-  fi
-
-  echo
-  echo "== attempt 2: ssh push with local key =="
-  mkdir -p ~/.ssh
-  ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || true
-  ssh_cmd='ssh -o StrictHostKeyChecking=accept-new'
-  if [[ -f /home/tibor/.ssh/id_ed25519 ]]; then
-    ssh_cmd='ssh -i /home/tibor/.ssh/id_ed25519 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new'
-  fi
-  GIT_SSH_COMMAND="$ssh_cmd" "${git_cmd[@]}" push git@github.com:ArchonMegalon/chummer5a.git Docker
-  echo "push completed via ssh"
-  exit 0
+  "${git_cmd[@]}" push "$RUNBOOK_PUSH_REMOTE" "$REF_SPEC"
+  echo "push completed"
+  exit "$?"
 fi
 
 echo "== docker ps (chummer/cloudflared) =="
