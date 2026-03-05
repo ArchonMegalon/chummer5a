@@ -54,7 +54,7 @@ Purpose: keep a live, ordered queue of actionable work and execute items continu
 | WQ-041 | done | P2 | Land verification hardening + strict-gate wrapper batch commit. | agent | Completed 2026-03-05 in commit `564953e39`: artifact-link verification hardening, workflow/runbook/docs wiring, and strict host gate wrapper script are merged. |
 | WQ-042 | blocked | P1 | Execute strict host-gate wrapper in this sandbox. | agent | `scripts/runbook-strict-host-gates.sh` fails immediately on strict NuGet preflight (`api.nuget.org:443` denied), which is expected until host/network access is available. |
 | WQ-043 | done | P2 | Add host prerequisite check script for strict gate readiness. | agent | Completed 2026-03-05: added `scripts/check-host-gate-prereqs.sh` plus `RUNBOOK_MODE=host-prereqs` with summary output, and wired docs/guardrails/compliance checks. |
-| WQ-044 | in_progress | P2 | Commit prerequisite-check and verification-hardening follow-up batch. | agent | Finalize current queue/doc/script updates into a cohesive commit and continue with remaining actionable backlog. |
+| WQ-044 | done | P2 | Commit prerequisite-check and verification-hardening follow-up batch. | agent | Completed 2026-03-05 in commit `8205d6a81`: host prerequisite runbook mode, verifier hardening wiring, and updated docs/compliance coverage are committed. |
 
 ## Intake Template
 Append new items at bottom:

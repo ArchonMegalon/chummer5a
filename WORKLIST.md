@@ -51,7 +51,7 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-038 | done | P2 | Commit verification hardening and strict-gate wrapper batch. | agent | Completed 2026-03-05 in commit `564953e39` with artifact-link verification, workflow/runbook wiring, docs updates, and strict host-gate wrapper script. |
 | WL-039 | blocked | P1 | Execute strict host-gate wrapper in this sandbox. | agent | Strict wrapper intentionally fails on blocked NuGet preflight (`api.nuget.org:443`) in this environment; requires host/network access for full execution. |
 | WL-040 | done | P2 | Add host prerequisite checker for strict gate readiness. | agent | Completed 2026-03-05: added `scripts/check-host-gate-prereqs.sh` and `runbook` mode `host-prereqs` with summarized PASS/FAIL output for Docker+NuGet readiness. |
-| WL-041 | in_progress | P2 | Commit prerequisite checker and verifier hardening batch. | agent | Consolidate current workflow/runbook/verifier/docs/queue updates into a commit, then continue chaining the next actionable item. |
+| WL-041 | done | P2 | Commit prerequisite checker and verifier hardening batch. | agent | Completed 2026-03-05 in commit `8205d6a81` with host-prereq runbook mode, stricter verifier flow wiring, and documentation/compliance updates. |
 
 ## Intake Template
 Add new items at the bottom:
