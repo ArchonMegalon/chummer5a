@@ -212,3 +212,6 @@ FakesAssemblies/
 
 # Mac Specific Generated Files
 .DS_Store
+
+# Local agent runtime state
+AGENT_MEMORY.md
