@@ -54,6 +54,7 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-041 | done | P2 | Commit prerequisite checker and verifier hardening batch. | agent | Completed 2026-03-05 in commit `8205d6a81` with host-prereq runbook mode, stricter verifier flow wiring, and documentation/compliance updates. |
 | WL-042 | done | P1 | Fix host-prereqs logging path reliability for non-sudo runs. | agent | Completed 2026-03-05: runbook/prereq scripts now choose per-user writable log files, so host-prereqs reports accurate PASS/FAIL summaries without `/tmp` permission collisions. |
 | WL-043 | done | P2 | Add strict-wrapper prerequisite phase. | agent | Completed 2026-03-05: strict host-gate wrapper now runs prerequisite probe first (`check-host-gate-prereqs.sh`) before strict local/docker tests, with guardrail coverage updated. |
+| WL-044 | blocked | P1 | Run strict host gates and capture output for next remediation chain. | user/operator | Execute `sudo bash scripts/runbook-strict-host-gates.sh` on host; provide output so failures (if any) can be queued and fixed immediately. |
 
 ## Intake Template
 Add new items at the bottom:

@@ -57,6 +57,7 @@ Purpose: keep a live, ordered queue of actionable work and execute items continu
 | WQ-044 | done | P2 | Commit prerequisite-check and verification-hardening follow-up batch. | agent | Completed 2026-03-05 in commit `8205d6a81`: host prerequisite runbook mode, verifier hardening wiring, and updated docs/compliance coverage are committed. |
 | WQ-045 | done | P1 | Fix host-prereqs log path/summary reliability for non-sudo users. | agent | Completed 2026-03-05: replaced fixed `/tmp` prereq logs with per-user writable-path resolution in `runbook` + `check-host-gate-prereqs`, eliminating permission-denied logging and stale summary mismatches. |
 | WQ-046 | done | P2 | Run strict host-gate wrapper through explicit prerequisite phase first. | agent | Completed 2026-03-05: `scripts/runbook-strict-host-gates.sh` now executes `check-host-gate-prereqs.sh` before strict local/docker tests, with runbook/compliance guardrails updated. |
+| WQ-047 | blocked | P1 | Execute strict host gates on operator host and collect results. | user/operator | Run `sudo bash scripts/runbook-strict-host-gates.sh` on host with network + docker access, then feed output back for next chained remediation tasks if any failures appear. |
 
 ## Intake Template
 Append new items at bottom:
