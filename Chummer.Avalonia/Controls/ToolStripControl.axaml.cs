@@ -15,6 +15,11 @@ public partial class ToolStripControl : UserControl
     public event EventHandler? SaveRequested;
     public event EventHandler? CloseWorkspaceRequested;
 
+    public void SetState(ToolStripState state)
+    {
+        SetStatusText(state.StatusText);
+    }
+
     public void SetStatusText(string statusText)
     {
         StatusText.Text = statusText;
@@ -40,3 +45,5 @@ public partial class ToolStripControl : UserControl
         CloseWorkspaceRequested?.Invoke(this, EventArgs.Empty);
     }
 }
+
+public sealed record ToolStripState(string StatusText);

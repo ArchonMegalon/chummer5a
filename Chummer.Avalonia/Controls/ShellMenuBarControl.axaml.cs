@@ -17,6 +17,14 @@ public partial class ShellMenuBarControl : UserControl
 
     public event EventHandler<string>? MenuSelected;
 
+    public void SetState(MenuBarState state)
+    {
+        SetMenuState(
+            openMenuId: state.OpenMenuId,
+            knownMenuIds: state.KnownMenuIds,
+            isBusy: state.IsBusy);
+    }
+
     public void SetMenuState(string? openMenuId, IEnumerable<string> knownMenuIds, bool isBusy)
     {
         HashSet<string> knownMenus = knownMenuIds.ToHashSet(StringComparer.Ordinal);
@@ -41,3 +49,8 @@ public partial class ShellMenuBarControl : UserControl
         MenuSelected?.Invoke(this, menuId);
     }
 }
+
+public sealed record MenuBarState(
+    string? OpenMenuId,
+    IReadOnlyList<string> KnownMenuIds,
+    bool IsBusy);

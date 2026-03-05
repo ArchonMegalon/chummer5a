@@ -32,17 +32,18 @@ public partial class MainWindow
     {
         _workspaceActionsById = shellFrame.WorkspaceActionsById;
 
-        _toolStrip.SetStatusText(shellFrame.ToolStripStatusText);
+        ApplyHeaderState(shellFrame.HeaderState);
         ApplyChromeState(shellFrame.ChromeState);
-
-        _menuBar.SetMenuState(
-            openMenuId: shellFrame.OpenMenuId,
-            knownMenuIds: shellFrame.KnownMenuIds,
-            isBusy: shellFrame.IsBusy);
 
         _commandDialogPane.SetState(commandDialogState);
         _navigatorPane.SetState(shellFrame.NavigatorPaneState);
         _sectionHost.SetState(shellFrame.SectionHostState);
+    }
+
+    private void ApplyHeaderState(MainWindowHeaderState headerState)
+    {
+        _toolStrip.SetState(headerState.ToolStrip);
+        _menuBar.SetState(headerState.MenuBar);
     }
 
     private void ApplyChromeState(MainWindowChromeState chromeState)

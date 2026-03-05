@@ -1528,6 +1528,10 @@ public class MigrationComplianceTests
         string statusStripCodeText = File.ReadAllText(statusStripCodePath);
         string sectionHostCodePath = FindPath("Chummer.Avalonia", "Controls", "SectionHostControl.axaml.cs");
         string sectionHostCodeText = File.ReadAllText(sectionHostCodePath);
+        string toolStripCodePath = FindPath("Chummer.Avalonia", "Controls", "ToolStripControl.axaml.cs");
+        string toolStripCodeText = File.ReadAllText(toolStripCodePath);
+        string menuBarCodePath = FindPath("Chummer.Avalonia", "Controls", "ShellMenuBarControl.axaml.cs");
+        string menuBarCodeText = File.ReadAllText(menuBarCodePath);
 
         Assert.IsFalse(codeText.Contains("FindControl<", StringComparison.Ordinal));
         StringAssert.Contains(codeText, "public MainWindow(");
@@ -1549,16 +1553,18 @@ public class MigrationComplianceTests
         StringAssert.Contains(stateText, "MainWindowShellFrameProjector.Project(");
         StringAssert.Contains(stateText, "CommandDialogPaneState commandDialogState = BuildCommandDialogState(state, shellFrame);");
         StringAssert.Contains(stateText, "ApplyShellFrame(shellFrame, commandDialogState);");
-        StringAssert.Contains(stateText, "_menuBar.SetMenuState(");
+        StringAssert.Contains(stateText, "ApplyHeaderState(shellFrame.HeaderState);");
         StringAssert.Contains(stateText, "_navigatorPane.SetState(shellFrame.NavigatorPaneState);");
         StringAssert.Contains(stateText, "_commandDialogPane.SetState(commandDialogState);");
         StringAssert.Contains(stateText, "_sectionHost.SetState(shellFrame.SectionHostState);");
-        StringAssert.Contains(stateText, "_toolStrip.SetStatusText(");
+        StringAssert.Contains(stateText, "_toolStrip.SetState(headerState.ToolStrip);");
+        StringAssert.Contains(stateText, "_menuBar.SetState(headerState.MenuBar);");
         StringAssert.Contains(stateText, "ApplyChromeState(shellFrame.ChromeState);");
         StringAssert.Contains(stateText, "_workspaceStrip.SetState(chromeState.WorkspaceStrip);");
         StringAssert.Contains(stateText, "_summaryHeader.SetState(chromeState.SummaryHeader);");
         StringAssert.Contains(stateText, "_statusStrip.SetState(chromeState.StatusStrip);");
         StringAssert.Contains(stateText, "private static CommandDialogPaneState BuildCommandDialogState(");
+        StringAssert.Contains(stateText, "private void ApplyHeaderState(MainWindowHeaderState headerState)");
         StringAssert.Contains(stateText, "private void ApplyChromeState(MainWindowChromeState chromeState)");
         StringAssert.Contains(navigatorCodeText, "public void SetState(NavigatorPaneState state)");
         StringAssert.Contains(navigatorCodeText, "SetOpenWorkspaces(state.OpenWorkspaces, state.SelectedWorkspaceId);");
@@ -1577,8 +1583,15 @@ public class MigrationComplianceTests
         StringAssert.Contains(sectionHostCodeText, "public void SetState(SectionHostState state)");
         StringAssert.Contains(sectionHostCodeText, "SetNotice(state.Notice);");
         StringAssert.Contains(sectionHostCodeText, "SetSectionPreview(state.PreviewJson, state.Rows);");
+        StringAssert.Contains(toolStripCodeText, "public void SetState(ToolStripState state)");
+        StringAssert.Contains(toolStripCodeText, "SetStatusText(state.StatusText);");
+        StringAssert.Contains(menuBarCodeText, "public void SetState(MenuBarState state)");
+        StringAssert.Contains(menuBarCodeText, "SetMenuState(");
         StringAssert.Contains(projectorText, "BuildWorkspaceActionLookup");
         StringAssert.Contains(projectorText, "WorkspaceActionsById");
+        StringAssert.Contains(projectorText, "HeaderState: new MainWindowHeaderState(");
+        StringAssert.Contains(projectorText, "ToolStrip: new ToolStripState(");
+        StringAssert.Contains(projectorText, "MenuBar: new MenuBarState(");
         StringAssert.Contains(projectorText, "ChromeState: new MainWindowChromeState(");
         StringAssert.Contains(projectorText, "WorkspaceStrip: new WorkspaceStripState(");
         StringAssert.Contains(projectorText, "SummaryHeader: new SummaryHeaderState(");

@@ -17,7 +17,13 @@ internal static class MainWindowShellFrameProjector
         IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> workspaceActionsById = BuildWorkspaceActionLookup(shellSurface.WorkspaceActions);
 
         return new MainWindowShellFrame(
-            ToolStripStatusText: BuildToolStripStatusText(state, shellSurface, workspaceContext),
+            HeaderState: new MainWindowHeaderState(
+                ToolStrip: new ToolStripState(
+                    BuildToolStripStatusText(state, shellSurface, workspaceContext)),
+                MenuBar: new MenuBarState(
+                    OpenMenuId: shellSurface.OpenMenuId,
+                    KnownMenuIds: shellSurface.MenuRoots.Select(menu => menu.Id).ToArray(),
+                    IsBusy: state.IsBusy)),
             ChromeState: new MainWindowChromeState(
                 WorkspaceStrip: new WorkspaceStripState(
                     $"Workspace: {(workspaceContext.ActiveWorkspaceId?.Value ?? "none")} (open: {workspaceContext.OpenWorkspaceCount}, {workspaceContext.ActiveWorkspaceSaveStatus})"),
@@ -37,9 +43,6 @@ internal static class MainWindowShellFrameProjector
                 Rows: state.ActiveSectionRows
                     .Select(row => new SectionRowDisplayItem(row.Path, row.Value))
                     .ToArray()),
-            KnownMenuIds: shellSurface.MenuRoots.Select(menu => menu.Id).ToArray(),
-            OpenMenuId: shellSurface.OpenMenuId,
-            IsBusy: state.IsBusy,
             Commands: ProjectCommands(state, shellSurface, commandAvailabilityEvaluator),
             LastCommandId: shellSurface.LastCommandId,
             NavigatorPaneState: new NavigatorPaneState(
@@ -161,16 +164,17 @@ internal static class MainWindowShellFrameProjector
 }
 
 internal sealed record MainWindowShellFrame(
-    string ToolStripStatusText,
+    MainWindowHeaderState HeaderState,
     MainWindowChromeState ChromeState,
     SectionHostState SectionHostState,
-    IReadOnlyList<string> KnownMenuIds,
-    string? OpenMenuId,
-    bool IsBusy,
     CommandPaletteItem[] Commands,
     string? LastCommandId,
     NavigatorPaneState NavigatorPaneState,
     IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> WorkspaceActionsById);
+
+internal sealed record MainWindowHeaderState(
+    ToolStripState ToolStrip,
+    MenuBarState MenuBar);
 
 internal sealed record MainWindowChromeState(
     WorkspaceStripState WorkspaceStrip,
