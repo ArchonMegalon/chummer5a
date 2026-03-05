@@ -17,9 +17,8 @@ public class OverviewCommandPolicyTests
             .OrderBy(commandId => commandId)
             .ToArray();
 
-        Assert.AreEqual(
-            0,
-            missing.Length,
+        Assert.IsEmpty(
+            missing,
             "App commands missing shared presenter command policy coverage: " + string.Join(", ", missing));
     }
 

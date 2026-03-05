@@ -50,11 +50,11 @@ public class CharacterSectionServiceTests
         Assert.IsGreaterThanOrEqualTo(0, section.ArmorCount);
         Assert.IsGreaterThanOrEqualTo(0, section.CyberwareCount);
         Assert.IsGreaterThanOrEqualTo(0, section.VehicleCount);
-        Assert.AreEqual(section.GearCount, section.GearNames.Count);
-        Assert.AreEqual(section.WeaponCount, section.WeaponNames.Count);
-        Assert.AreEqual(section.ArmorCount, section.ArmorNames.Count);
-        Assert.AreEqual(section.CyberwareCount, section.CyberwareNames.Count);
-        Assert.AreEqual(section.VehicleCount, section.VehicleNames.Count);
+        Assert.HasCount(section.GearCount, section.GearNames);
+        Assert.HasCount(section.WeaponCount, section.WeaponNames);
+        Assert.HasCount(section.ArmorCount, section.ArmorNames);
+        Assert.HasCount(section.CyberwareCount, section.CyberwareNames);
+        Assert.HasCount(section.VehicleCount, section.VehicleNames);
     }
 
     [TestMethod]
@@ -259,7 +259,7 @@ public class CharacterSectionServiceTests
 
         Assert.IsGreaterThan(0, section.Count);
         Assert.IsTrue(section.Qualities.Any(quality => !string.IsNullOrWhiteSpace(quality.Name)));
-        Assert.AreEqual(section.Count, section.Qualities.Count);
+        Assert.HasCount(section.Count, section.Qualities);
     }
 
     [TestMethod]
@@ -343,7 +343,7 @@ public class CharacterSectionServiceTests
         CharacterAiProgramsSection section = service.ParseAiPrograms(xml);
 
         Assert.IsGreaterThanOrEqualTo(0, section.Count);
-        Assert.AreEqual(section.Count, section.AiPrograms.Count);
+        Assert.HasCount(section.Count, section.AiPrograms);
     }
 
     [TestMethod]
@@ -453,7 +453,7 @@ public class CharacterSectionServiceTests
         Assert.IsGreaterThan(0, section.Count);
         Assert.IsGreaterThanOrEqualTo(0, section.TotalKarma);
         Assert.IsGreaterThanOrEqualTo(0, section.TotalNuyen);
-        Assert.AreEqual(section.Count, section.Expenses.Count);
+        Assert.HasCount(section.Count, section.Expenses);
     }
 
     [TestMethod]
@@ -501,7 +501,7 @@ public class CharacterSectionServiceTests
         CharacterLocationsSection section = service.ParseWeaponLocations(xml);
 
         Assert.IsGreaterThanOrEqualTo(0, section.Count);
-        Assert.AreEqual(section.Count, section.Locations.Count);
+        Assert.HasCount(section.Count, section.Locations);
     }
 
     [TestMethod]
@@ -513,7 +513,7 @@ public class CharacterSectionServiceTests
         CharacterLocationsSection section = service.ParseVehicleLocations(xml);
 
         Assert.IsGreaterThanOrEqualTo(0, section.Count);
-        Assert.AreEqual(section.Count, section.Locations.Count);
+        Assert.HasCount(section.Count, section.Locations);
     }
 
     [TestMethod]
@@ -525,7 +525,7 @@ public class CharacterSectionServiceTests
         CharacterCalendarSection section = service.ParseCalendar(xml);
 
         Assert.IsGreaterThanOrEqualTo(0, section.Count);
-        Assert.AreEqual(section.Count, section.Entries.Count);
+        Assert.HasCount(section.Count, section.Entries);
     }
 
     [TestMethod]
@@ -538,7 +538,7 @@ public class CharacterSectionServiceTests
 
         Assert.IsGreaterThan(0, section.Count);
         Assert.IsGreaterThanOrEqualTo(0, section.EnabledCount);
-        Assert.AreEqual(section.Count, section.Improvements.Count);
+        Assert.HasCount(section.Count, section.Improvements);
     }
 
     [TestMethod]
@@ -561,7 +561,7 @@ public class CharacterSectionServiceTests
 
         CharacterDrugsSection section = service.ParseDrugs(xml);
 
-        Assert.AreEqual(1, section.Count);
+        Assert.HasCount(1, section.Drugs);
         Assert.AreEqual("Jazz", section.Drugs[0].Name);
         Assert.AreEqual(3m, section.Drugs[0].Quantity);
     }

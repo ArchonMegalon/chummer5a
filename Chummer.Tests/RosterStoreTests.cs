@@ -22,8 +22,8 @@ public class RosterStoreTests
             IReadOnlyList<RosterEntry> first = store.Upsert(entry);
             IReadOnlyList<RosterEntry> second = store.Upsert(entry);
 
-            Assert.AreEqual(1, first.Count);
-            Assert.AreEqual(1, second.Count);
+            Assert.HasCount(1, first);
+            Assert.HasCount(1, second);
         }
         finally
         {
@@ -45,7 +45,7 @@ public class RosterStoreTests
             }
 
             IReadOnlyList<RosterEntry> entries = store.Load();
-            Assert.AreEqual(50, entries.Count);
+            Assert.HasCount(50, entries);
         }
         finally
         {

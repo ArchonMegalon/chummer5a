@@ -78,8 +78,8 @@ public sealed class DesktopShellRulesetCatalogTests
             IReadOnlyList<AngleSharp.Dom.IElement> actionButtons = cut.FindAll(".section-actions .action-button");
             IReadOnlyList<AngleSharp.Dom.IElement> controlButtons = cut.FindAll(".controls .mini-btn");
 
-            Assert.AreEqual(1, actionButtons.Count);
-            Assert.AreEqual(1, controlButtons.Count);
+            Assert.HasCount(1, actionButtons);
+            Assert.HasCount(1, controlButtons);
             StringAssert.Contains(actionButtons[0].TextContent, "SR6 Matrix Action");
             Assert.AreEqual("ui-sr6-control", controlButtons[0].GetAttribute("data-ui-control"));
             StringAssert.Contains(controlButtons[0].TextContent, "SR6 Matrix Control");

@@ -45,7 +45,7 @@ public class WorkspaceOverviewStateFactoryTests
         Assert.AreEqual("tab-gear.armor", next.ActiveActionId);
         Assert.AreEqual("armor", next.ActiveSectionId);
         Assert.AreEqual("{\"sectionId\":\"armor\"}", next.ActiveSectionJson);
-        Assert.AreEqual(1, next.ActiveSectionRows.Count);
+        Assert.HasCount(1, next.ActiveSectionRows);
         Assert.IsTrue(next.HasSavedWorkspace);
         Assert.IsNull(next.ActiveDialog);
     }
@@ -84,13 +84,13 @@ public class WorkspaceOverviewStateFactoryTests
 
         Assert.AreEqual("save_character", next.LastCommandId);
         Assert.AreEqual("Workspace restored.", next.Notice);
-        Assert.AreEqual(1, next.Commands.Count);
+        Assert.HasCount(1, next.Commands);
         Assert.AreEqual("save_character", next.Commands[0].Id);
-        Assert.AreEqual(1, next.NavigationTabs.Count);
+        Assert.HasCount(1, next.NavigationTabs);
         Assert.AreEqual("tab-info", next.NavigationTabs[0].Id);
         Assert.AreEqual(125, next.Preferences.UiScalePercent);
         Assert.AreEqual("legacy", next.Preferences.Theme);
-        Assert.AreEqual(0, next.ActiveSectionRows.Count);
+        Assert.IsEmpty(next.ActiveSectionRows);
         Assert.IsFalse(next.HasSavedWorkspace);
     }
 

@@ -419,10 +419,10 @@ public class MigrationComplianceTests
             .ToHashSet(StringComparer.Ordinal);
 
         Assert.IsGreaterThanOrEqualTo(16, tabIds.Count, $"Expected at least 16 desktop-style navigation tabs, got {tabIds.Count}.");
-        Assert.IsTrue(tabIds.Contains("tab-info"), "Missing Info navigation tab.");
-        Assert.IsTrue(tabIds.Contains("tab-gear"), "Missing Gear navigation tab.");
-        Assert.IsTrue(tabIds.Contains("tab-magician"), "Missing Magician navigation tab.");
-        Assert.IsTrue(tabIds.Contains("tab-improvements"), "Missing Improvements navigation tab.");
+        CollectionAssert.Contains(tabIds.ToList(), "tab-info", "Missing Info navigation tab.");
+        CollectionAssert.Contains(tabIds.ToList(), "tab-gear", "Missing Gear navigation tab.");
+        CollectionAssert.Contains(tabIds.ToList(), "tab-magician", "Missing Magician navigation tab.");
+        CollectionAssert.Contains(tabIds.ToList(), "tab-improvements", "Missing Improvements navigation tab.");
     }
 
     [TestMethod]

@@ -25,7 +25,7 @@ public class WorkspaceSessionActivationServiceTests
             updateSession: true);
 
         Assert.AreEqual("ws-1", state.ActiveWorkspaceId?.Value);
-        Assert.AreEqual(1, state.OpenWorkspaces.Count);
+        Assert.HasCount(1, state.OpenWorkspaces);
         Assert.AreEqual("ws-1", state.OpenWorkspaces[0].Id.Value);
         Assert.AreEqual(RulesetDefaults.Sr5, state.OpenWorkspaces[0].RulesetId);
     }
@@ -46,7 +46,7 @@ public class WorkspaceSessionActivationServiceTests
             rulesetId: " SR6 ");
 
         Assert.AreEqual("ws-ruleset", state.ActiveWorkspaceId?.Value);
-        Assert.AreEqual(1, state.OpenWorkspaces.Count);
+        Assert.HasCount(1, state.OpenWorkspaces);
         Assert.AreEqual("sr6", state.OpenWorkspaces[0].RulesetId);
     }
 
@@ -69,7 +69,7 @@ public class WorkspaceSessionActivationServiceTests
             updateSession: true);
 
         Assert.AreEqual("ws-1", state.ActiveWorkspaceId?.Value);
-        Assert.AreEqual(2, state.OpenWorkspaces.Count);
+        Assert.HasCount(2, state.OpenWorkspaces);
         Assert.AreEqual(
             2,
             state.OpenWorkspaces.Select(workspace => workspace.Id.Value).Distinct().Count());
@@ -93,7 +93,7 @@ public class WorkspaceSessionActivationServiceTests
             updateSession: false);
 
         Assert.AreEqual("ws-1", switchedState.ActiveWorkspaceId?.Value);
-        Assert.AreEqual(1, switchedState.OpenWorkspaces.Count);
+        Assert.HasCount(1, switchedState.OpenWorkspaces);
 
         WorkspaceSessionState openedState = service.Activate(
             sessionPresenter,
@@ -103,7 +103,7 @@ public class WorkspaceSessionActivationServiceTests
             updateSession: false);
 
         Assert.AreEqual("ws-3", openedState.ActiveWorkspaceId?.Value);
-        Assert.AreEqual(2, openedState.OpenWorkspaces.Count);
+        Assert.HasCount(2, openedState.OpenWorkspaces);
     }
 
     private static CharacterProfileSection CreateProfile(string name, string alias)

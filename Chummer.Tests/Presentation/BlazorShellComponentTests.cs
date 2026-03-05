@@ -41,11 +41,11 @@ public sealed class BlazorShellComponentTests
             .Add(component => component.IsCommandEnabled,
                 command => string.Equals(command.Id, "save_character", StringComparison.Ordinal)));
 
-        Assert.AreEqual(1, cut.FindAll(".menu-btn").Count);
+        Assert.HasCount(1, cut.FindAll(".menu-btn"));
         StringAssert.Contains(cut.Find(".menu-btn").ClassName, "active");
 
         IReadOnlyList<AngleSharp.Dom.IElement> menuButtons = cut.FindAll(".menu-item");
-        Assert.AreEqual(2, menuButtons.Count);
+        Assert.HasCount(2, menuButtons);
         Assert.IsFalse(menuButtons[0].HasAttribute("disabled"));
         Assert.IsTrue(menuButtons[1].HasAttribute("disabled"));
     }
@@ -100,7 +100,7 @@ public sealed class BlazorShellComponentTests
             .Add(component => component.ExecuteCommandRequested, (Action<string>)(commandId => executedCommandId = commandId)));
 
         IReadOnlyList<AngleSharp.Dom.IElement> toolButtons = cut.FindAll(".tool-btn");
-        Assert.AreEqual(2, toolButtons.Count);
+        Assert.HasCount(2, toolButtons);
         Assert.IsTrue(toolButtons[0].HasAttribute("disabled"));
         Assert.IsFalse(toolButtons[1].HasAttribute("disabled"));
         StringAssert.Contains(toolButtons[1].ClassName, "selected");
@@ -124,9 +124,9 @@ public sealed class BlazorShellComponentTests
             .Add(component => component.IsBusy, false));
 
         IReadOnlyList<AngleSharp.Dom.IElement> docs = cut.FindAll(".mdi-doc");
-        Assert.AreEqual(2, docs.Count);
+        Assert.HasCount(2, docs);
         StringAssert.Contains(docs[0].TextContent, "*");
-        Assert.IsFalse(docs[1].TextContent.Contains('*'));
+        Assert.IsLessThan(0, docs[1].TextContent.IndexOf('*'));
     }
 
     [TestMethod]
@@ -225,7 +225,7 @@ public sealed class BlazorShellComponentTests
         IRenderedComponent<SectionPane> sectionCut = context.Render<SectionPane>(parameters => parameters
             .Add(component => component.State, sectionState));
 
-        Assert.AreEqual(1, sectionCut.FindAll(".section-table tbody tr").Count);
+        Assert.HasCount(1, sectionCut.FindAll(".section-table tbody tr"));
         StringAssert.Contains(sectionCut.Markup, "skills[0].name");
         StringAssert.Contains(sectionCut.Markup, "{\"skills\":1}");
     }

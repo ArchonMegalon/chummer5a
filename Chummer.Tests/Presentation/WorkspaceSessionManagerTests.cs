@@ -30,7 +30,7 @@ public class WorkspaceSessionManagerTests
 
         IReadOnlyList<OpenWorkspaceState> restored = manager.Restore(input);
 
-        Assert.AreEqual(2, restored.Count);
+        Assert.HasCount(2, restored);
         Assert.AreEqual("ws-new", restored[0].Id.Value);
         Assert.AreEqual("sr6", restored[0].RulesetId);
         Assert.AreEqual("ws-old", restored[1].Id.Value);
@@ -52,7 +52,7 @@ public class WorkspaceSessionManagerTests
             new CharacterWorkspaceId("ws-1"),
             CreateProfile("One Updated", "A2"));
 
-        Assert.AreEqual(2, updated.Count);
+        Assert.HasCount(2, updated);
         Assert.AreEqual("ws-1", updated[0].Id.Value);
         Assert.AreEqual("One Updated", updated[0].Name);
         Assert.AreEqual("A2", updated[0].Alias);
@@ -106,7 +106,7 @@ public class WorkspaceSessionManagerTests
         IReadOnlyList<OpenWorkspaceState> remaining = manager.Close(existing, new CharacterWorkspaceId("ws-top"));
         CharacterWorkspaceId? next = manager.SelectNext(remaining);
 
-        Assert.AreEqual(1, remaining.Count);
+        Assert.HasCount(1, remaining);
         Assert.AreEqual("ws-next", remaining[0].Id.Value);
         Assert.IsNotNull(next);
         Assert.AreEqual("ws-next", next.Value.Value);

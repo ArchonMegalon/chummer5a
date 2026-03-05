@@ -19,7 +19,7 @@ public class SettingsStoreTests
 
             JsonObject settings = store.Load("global");
 
-            Assert.AreEqual(0, settings.Count);
+            Assert.IsEmpty(settings);
         }
         finally
         {
@@ -46,7 +46,7 @@ public class SettingsStoreTests
 
             Assert.AreEqual(120, actual["uiScale"]?.GetValue<int>());
             Assert.AreEqual("classic", actual["theme"]?.GetValue<string>());
-            Assert.AreEqual(true, actual["compactMode"]?.GetValue<bool>());
+            Assert.IsTrue(actual["compactMode"]?.GetValue<bool>() ?? false);
         }
         finally
         {

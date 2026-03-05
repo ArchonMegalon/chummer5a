@@ -36,7 +36,7 @@ public class WorkspaceViewStateStoreTests
         Assert.AreEqual("tab-skills.skills", restored.ActiveActionId);
         Assert.AreEqual("skills", restored.ActiveSectionId);
         Assert.AreEqual("{\"sectionId\":\"skills\"}", restored.ActiveSectionJson);
-        Assert.AreEqual(2, restored.ActiveSectionRows.Count);
+        Assert.HasCount(2, restored.ActiveSectionRows);
         Assert.AreEqual("skills[0].name", restored.ActiveSectionRows[0].Path);
         Assert.AreEqual("skills[1].name", restored.ActiveSectionRows[1].Path);
         Assert.IsTrue(restored.HasSavedWorkspace);

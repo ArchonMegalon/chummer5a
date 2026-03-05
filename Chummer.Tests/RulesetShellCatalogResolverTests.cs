@@ -33,7 +33,7 @@ public sealed class RulesetShellCatalogResolverTests
                 ],
                 tabs: [])]);
 
-        Assert.AreEqual(1, commands.Count);
+        Assert.HasCount(1, commands);
         Assert.AreEqual("sr6-only", commands[0].Id);
     }
 
@@ -44,7 +44,7 @@ public sealed class RulesetShellCatalogResolverTests
             "sr5",
             [new StubRulesetPlugin("sr6", commands: [], tabs: [])]);
 
-        Assert.AreEqual(NavigationTabCatalog.ForRuleset("sr5").Count, tabs.Count);
+        Assert.HasCount(NavigationTabCatalog.ForRuleset("sr5").Count, tabs);
         Assert.IsTrue(tabs.Any(tab => string.Equals(tab.Id, "tab-info", StringComparison.Ordinal)));
     }
 
@@ -70,7 +70,7 @@ public sealed class RulesetShellCatalogResolverTests
                     tabs: [])
             ]);
 
-        Assert.AreEqual(1, commands.Count);
+        Assert.HasCount(1, commands);
         Assert.AreEqual("second", commands[0].Id);
     }
 
@@ -101,7 +101,7 @@ public sealed class RulesetShellCatalogResolverTests
                     controls: [])
             ]);
 
-        Assert.AreEqual(1, actions.Count);
+        Assert.HasCount(1, actions);
         Assert.AreEqual("tab-sr6.summary", actions[0].Id);
         Assert.AreEqual("sr6", actions[0].RulesetId);
     }
@@ -114,7 +114,7 @@ public sealed class RulesetShellCatalogResolverTests
             rulesetId: "sr5",
             plugins: [new StubRulesetPlugin("sr6", commands: [], tabs: [])]);
 
-        Assert.AreEqual(DesktopUiControlCatalog.ForTab("tab-info", "sr5").Count, controls.Count);
+        Assert.HasCount(DesktopUiControlCatalog.ForTab("tab-info", "sr5").Count, controls);
         Assert.IsTrue(controls.Any(control => string.Equals(control.TabId, "tab-info", StringComparison.Ordinal)));
     }
 

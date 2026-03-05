@@ -64,7 +64,7 @@ public class WorkspaceSessionPresenterTests
         WorkspaceSessionState opened = presenter.Open(workspaceId, profile);
 
         Assert.AreEqual("ws-open", opened.ActiveWorkspaceId?.Value);
-        Assert.AreEqual(1, opened.OpenWorkspaces.Count);
+        Assert.HasCount(1, opened.OpenWorkspaces);
         Assert.AreEqual("Opened Character", opened.OpenWorkspaces[0].Name);
         Assert.AreEqual("OPEN", opened.OpenWorkspaces[0].Alias);
         string[] expectedRecent = ["ws-open"];
@@ -105,7 +105,7 @@ public class WorkspaceSessionPresenterTests
         WorkspaceSessionState cleared = presenter.CloseAll();
 
         Assert.IsNull(cleared.ActiveWorkspaceId);
-        Assert.AreEqual(0, cleared.OpenWorkspaces.Count);
+        Assert.IsEmpty(cleared.OpenWorkspaces);
         string[] expectedRecent = ["ws-2", "ws-1"];
         CollectionAssert.AreEqual(
             expectedRecent,

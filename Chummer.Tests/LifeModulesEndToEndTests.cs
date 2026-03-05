@@ -47,7 +47,7 @@ public class LifeModulesEndToEndTests
             .OrderBy(x => x)
             .ToList();
 
-        Assert.IsTrue(orders.Count > 0, "No <stage> entries found.");
+        Assert.IsGreaterThan(0, orders.Count, "No <stage> entries found.");
 
         for (int i = 0; i < orders.Count; i++)
         {
@@ -72,7 +72,7 @@ public class LifeModulesEndToEndTests
             .Elements("module")
             .ToList();
 
-        Assert.IsTrue(modules.Count > 0, "No <module> entries found in lifemodules.xml.");
+        Assert.IsGreaterThan(0, modules.Count, "No <module> entries found in lifemodules.xml.");
 
         foreach (XElement module in modules)
         {
@@ -80,13 +80,13 @@ public class LifeModulesEndToEndTests
             Assert.IsTrue(Guid.TryParse(id, out _), $"Module has missing/invalid GUID id: '{id}'.");
 
             string stage = (module.Element("stage")?.Value ?? string.Empty).Trim();
-            Assert.IsTrue(stageNames.Contains(stage), $"Module references unknown stage '{stage}'.");
+            CollectionAssert.Contains(stageNames.ToList(), stage, $"Module references unknown stage '{stage}'.");
 
             string category = (module.Element("category")?.Value ?? string.Empty).Trim();
             Assert.AreEqual("LifeModule", category, "Module category must be 'LifeModule'.");
 
             string name = (module.Element("name")?.Value ?? string.Empty).Trim();
-            Assert.IsTrue(name.Length > 0, "Module has empty <name>.");
+            Assert.IsGreaterThan(0, name.Length, "Module has empty <name>.");
 
             string karma = (module.Element("karma")?.Value ?? string.Empty).Trim();
             Assert.IsTrue(int.TryParse(karma, out _), $"Module '{name}' has non-integer <karma>: '{karma}'.");
@@ -112,7 +112,7 @@ public class LifeModulesEndToEndTests
             if (childElements.Count == 0)
             {
                 string directValue = (macro.Value ?? string.Empty).Trim();
-                Assert.IsTrue(directValue.Length > 0,
+                Assert.IsGreaterThan(0, directValue.Length,
                     $"Macro '{macro.Name.LocalName}' must have text value or child nodes.");
                 continue;
             }
@@ -123,13 +123,13 @@ public class LifeModulesEndToEndTests
             if (randomOrPersistent)
             {
                 int options = mode.Elements().Count(x => !x.Name.LocalName.Equals("default", StringComparison.OrdinalIgnoreCase));
-                Assert.IsTrue(options > 0,
+                Assert.IsGreaterThan(0, options,
                     $"Macro '{macro.Name.LocalName}' with mode '{mode.Name.LocalName}' must define at least one non-default option.");
             }
             else
             {
                 // Keyed-map macros are also used by StoryBuilder via pool lookups (e.g. $MACRO_POOLKEY).
-                Assert.IsTrue(childElements.Count > 0, $"Macro '{macro.Name.LocalName}' must define at least one keyed child.");
+                Assert.IsGreaterThan(0, childElements.Count, $"Macro '{macro.Name.LocalName}' must define at least one keyed child.");
             }
         }
     }

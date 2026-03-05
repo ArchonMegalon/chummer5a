@@ -34,13 +34,13 @@ public class ContentOverlayCatalogServiceTests
             Assert.IsTrue(resolved.EndsWith(Path.Combine("pack-high", "data", "lifemodules.xml"), StringComparison.Ordinal));
 
             var dataDirectories = service.GetDataDirectories();
-            Assert.AreEqual(3, dataDirectories.Count);
+            Assert.HasCount(3, dataDirectories);
             Assert.AreEqual(Path.Combine(root, "data"), dataDirectories[0]);
             Assert.AreEqual(Path.Combine(amendsRoot, "pack-low", "data"), dataDirectories[1]);
             Assert.AreEqual(Path.Combine(amendsRoot, "pack-high", "data"), dataDirectories[2]);
 
             var catalog = service.GetCatalog();
-            Assert.AreEqual(2, catalog.Overlays.Count);
+            Assert.HasCount(2, catalog.Overlays);
             string[] expectedOverlayIds = ["pack-low", "pack-high"];
             CollectionAssert.AreEqual(expectedOverlayIds, catalog.Overlays.Select(overlay => overlay.Id).ToArray());
         }
@@ -72,10 +72,10 @@ public class ContentOverlayCatalogServiceTests
             var service = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
             var catalog = service.GetCatalog();
 
-            Assert.AreEqual(1, catalog.Overlays.Count);
+            Assert.HasCount(1, catalog.Overlays);
             Assert.AreEqual("local-test-amend", catalog.Overlays[0].Id);
             Assert.AreEqual(ContentOverlayModes.ReplaceFile, catalog.Overlays[0].Mode);
-            Assert.AreEqual(2, service.GetLanguageDirectories().Count);
+            Assert.HasCount(2, service.GetLanguageDirectories());
             Assert.IsTrue(service.GetLanguageDirectories().Contains(Path.Combine(amendsRoot, "lang"), StringComparer.Ordinal));
         }
         finally
@@ -103,7 +103,7 @@ public class ContentOverlayCatalogServiceTests
             var service = new FileSystemContentOverlayCatalogService(root, root, configured);
             var catalog = service.GetCatalog();
 
-            Assert.AreEqual(2, catalog.Overlays.Count);
+            Assert.HasCount(2, catalog.Overlays);
             string[] expectedOverlayIds = ["pack-one", "pack-two"];
             CollectionAssert.AreEqual(
                 expectedOverlayIds,

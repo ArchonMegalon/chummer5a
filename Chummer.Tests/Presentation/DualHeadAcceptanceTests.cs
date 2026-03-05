@@ -135,7 +135,7 @@ public class DualHeadAcceptanceTests
         Assert.AreEqual("skills", avaloniaState.ActiveSectionId);
         Assert.AreEqual("skills", blazorState.ActiveSectionId);
         Assert.AreEqual(avaloniaState.ActiveSectionJson, blazorState.ActiveSectionJson);
-        Assert.AreEqual(avaloniaState.ActiveSectionRows.Count, blazorState.ActiveSectionRows.Count);
+        Assert.HasCount(avaloniaState.ActiveSectionRows.Count, blazorState.ActiveSectionRows);
     }
 
     [TestMethod]
@@ -405,7 +405,7 @@ public class DualHeadAcceptanceTests
         Assert.AreEqual(GetString(avaloniaRoot, "BuildMethod"), GetString(blazorRoot, "BuildMethod"));
         Assert.AreEqual(GetDecimal(avaloniaRoot, "Karma"), GetDecimal(blazorRoot, "Karma"));
         Assert.AreEqual(GetDecimal(avaloniaRoot, "Nuyen"), GetDecimal(blazorRoot, "Nuyen"));
-        Assert.AreEqual(avaloniaState.ActiveSectionRows.Count, blazorState.ActiveSectionRows.Count);
+        Assert.HasCount(avaloniaState.ActiveSectionRows.Count, blazorState.ActiveSectionRows);
     }
 
     [TestMethod]

@@ -20,7 +20,7 @@ public class LifeModulesServiceTests
             var service = new XmlLifeModulesCatalogService(xmlPath);
             IReadOnlyList<LifeModuleStageDto> stages = service.GetStages();
 
-            Assert.AreEqual(2, stages.Count);
+            Assert.HasCount(2, stages);
             Assert.AreEqual(1, stages[0].Order);
             Assert.AreEqual("Youth", stages[0].Name);
             Assert.AreEqual(2, stages[1].Order);
@@ -42,8 +42,8 @@ public class LifeModulesServiceTests
             IReadOnlyList<LifeModuleSummaryDto> all = service.GetModules();
             IReadOnlyList<LifeModuleSummaryDto> filtered = service.GetModules("Adult");
 
-            Assert.AreEqual(2, all.Count);
-            Assert.AreEqual(1, filtered.Count);
+            Assert.HasCount(2, all);
+            Assert.HasCount(1, filtered);
             Assert.AreEqual("Adult", filtered[0].Stage);
             Assert.AreEqual("Corporate Intern", filtered[0].Name);
         }

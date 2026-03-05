@@ -22,7 +22,7 @@ public class CharacterFileServiceTests
         Assert.AreEqual("Barrett", summary.Alias);
         Assert.AreEqual("Human", summary.Metatype);
         Assert.AreEqual("SumtoTen", summary.BuildMethod);
-        Assert.AreEqual(false, summary.Created);
+        Assert.IsFalse(summary.Created);
         Assert.AreEqual(3m, summary.Karma);
         Assert.AreEqual(617.50m, summary.Nuyen);
     }
@@ -36,7 +36,7 @@ public class CharacterFileServiceTests
         CharacterValidationResult validation = service.ValidateXml(xml);
 
         Assert.IsFalse(validation.IsValid);
-        Assert.IsTrue(validation.Issues.Count >= 1);
+        Assert.IsGreaterThanOrEqualTo(1, validation.Issues.Count);
         Assert.IsTrue(validation.Issues.Any(issue => issue.Code == "MissingRequiredNode"));
         Assert.IsTrue(validation.Issues.Any(issue => issue.Code == "InvalidDecimal"));
     }

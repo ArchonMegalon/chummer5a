@@ -37,7 +37,7 @@ public class ShellPresenterTests
 
         Assert.IsFalse(presenter.State.IsBusy);
         Assert.IsNull(presenter.State.Error);
-        Assert.AreEqual(2, presenter.State.OpenWorkspaces.Count);
+        Assert.HasCount(2, presenter.State.OpenWorkspaces);
         Assert.AreEqual("ws-new", presenter.State.ActiveWorkspaceId?.Value);
         Assert.AreEqual("ws-new", presenter.State.OpenWorkspaces[0].Id.Value);
         Assert.AreEqual("file", presenter.State.MenuRoots[0].Id);
@@ -249,7 +249,7 @@ public class ShellPresenterTests
 
         await presenter.SetPreferredRulesetAsync("sr6", CancellationToken.None);
 
-        Assert.AreEqual(1, client.SavedPreferences.Count);
+        Assert.HasCount(1, client.SavedPreferences);
         Assert.AreEqual("sr6", client.SavedPreferences[0].PreferredRulesetId);
     }
 

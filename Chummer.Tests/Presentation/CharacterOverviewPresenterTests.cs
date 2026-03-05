@@ -46,7 +46,7 @@ public class CharacterOverviewPresenterTests
 
         await presenter.InitializeAsync(CancellationToken.None);
 
-        Assert.AreEqual(2, presenter.State.OpenWorkspaces.Count);
+        Assert.HasCount(2, presenter.State.OpenWorkspaces);
         Assert.AreEqual("ws-legacy-2", presenter.State.OpenWorkspaces[0].Id.Value);
         Assert.AreEqual("ws-legacy-1", presenter.State.OpenWorkspaces[1].Id.Value);
         StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Restored 2 workspace(s)");
@@ -82,7 +82,7 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual(0, client.GetCommandsCalls);
         Assert.AreEqual(0, client.GetNavigationTabsCalls);
         Assert.AreEqual(0, client.ListWorkspacesCalls);
-        Assert.AreEqual(1, presenter.State.OpenWorkspaces.Count);
+        Assert.HasCount(1, presenter.State.OpenWorkspaces);
         Assert.AreEqual("ws-shell-1", presenter.State.OpenWorkspaces[0].Id.Value);
         Assert.AreEqual("sr6", presenter.State.OpenWorkspaces[0].RulesetId);
     }
@@ -140,7 +140,7 @@ public class CharacterOverviewPresenterTests
         await presenter.LoadAsync(new CharacterWorkspaceId("ws-2"), CancellationToken.None);
 
         Assert.AreEqual("ws-2", presenter.State.WorkspaceId?.Value);
-        Assert.AreEqual(2, presenter.State.OpenWorkspaces.Count);
+        Assert.HasCount(2, presenter.State.OpenWorkspaces);
         string[] expectedWorkspaceIds = ["ws-1", "ws-2"];
         CollectionAssert.AreEquivalent(
             expectedWorkspaceIds,
@@ -200,7 +200,7 @@ public class CharacterOverviewPresenterTests
 
         Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
         Assert.AreEqual("ws-1", presenter.State.Session.ActiveWorkspaceId?.Value);
-        Assert.AreEqual(1, presenter.State.Session.OpenWorkspaces.Count);
+        Assert.HasCount(1, presenter.State.Session.OpenWorkspaces);
         Assert.AreEqual("ws-1", presenter.State.Session.OpenWorkspaces[0].Id.Value);
     }
 
@@ -219,7 +219,7 @@ public class CharacterOverviewPresenterTests
 
         Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
         Assert.AreEqual("ws-1", presenter.State.Session.ActiveWorkspaceId?.Value);
-        Assert.AreEqual(1, presenter.State.OpenWorkspaces.Count);
+        Assert.HasCount(1, presenter.State.OpenWorkspaces);
         StringAssert.Contains(presenter.State.Notice ?? string.Empty, "already closed");
     }
 
@@ -234,7 +234,7 @@ public class CharacterOverviewPresenterTests
         await presenter.ExecuteCommandAsync("close_window", CancellationToken.None);
 
         Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
-        Assert.AreEqual(1, presenter.State.OpenWorkspaces.Count);
+        Assert.HasCount(1, presenter.State.OpenWorkspaces);
         Assert.AreEqual("ws-1", presenter.State.OpenWorkspaces[0].Id.Value);
         Assert.IsTrue((presenter.State.Notice ?? string.Empty).Contains("Closed active workspace.", StringComparison.Ordinal));
     }

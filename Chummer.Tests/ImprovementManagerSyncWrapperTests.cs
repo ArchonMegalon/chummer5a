@@ -40,7 +40,7 @@ namespace Chummer.Tests
                 RegexOptions.Singleline);
 
             Assert.IsTrue(objMatch.Success, "Could not isolate the sync duplicate-check branch in RemoveImprovementsCoreAsync.");
-            Assert.IsFalse(objMatch.Groups["syncBlock"].Value.Contains("AnyAsync("));
+            Assert.IsLessThan(0, objMatch.Groups["syncBlock"].Value.IndexOf("AnyAsync(", StringComparison.Ordinal));
         }
 
         private static void AssertCoreInvocationExists(string wrapperMethodName, string invocationFragment)

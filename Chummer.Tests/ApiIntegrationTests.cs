@@ -583,7 +583,7 @@ public class ApiIntegrationTests
         Assert.AreEqual("Apex", summary["alias"]?.GetValue<string>());
 
         JsonObject validation = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/validate");
-        Assert.AreEqual(true, validation["isValid"]?.GetValue<bool>());
+        Assert.IsTrue(validation["isValid"]?.GetValue<bool>() ?? false);
         Assert.IsTrue(validation["issues"] is JsonArray);
 
         JsonObject profile = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/profile");
@@ -734,7 +734,7 @@ public class ApiIntegrationTests
         JsonObject listed = await GetRequiredJsonObject(client, "/api/workspaces?maxCount=1");
         Assert.AreEqual(1, listed["count"]?.GetValue<int>());
         JsonArray listedWorkspaces = listed["workspaces"]?.AsArray() ?? [];
-        Assert.AreEqual(1, listedWorkspaces.Count);
+        Assert.HasCount(1, listedWorkspaces);
     }
 
     [TestMethod]
@@ -891,7 +891,7 @@ public class ApiIntegrationTests
 
         JsonObject remaining = await GetRequiredJsonObject(client, "/api/workspaces?maxCount=1");
         JsonArray remainingWorkspaces = remaining["workspaces"] as JsonArray ?? [];
-        Assert.AreEqual(0, remainingWorkspaces.Count, "Unable to clear all persisted workspaces before running test.");
+        Assert.IsEmpty(remainingWorkspaces, "Unable to clear all persisted workspaces before running test.");
     }
 
     private static Uri ResolveBaseUri()

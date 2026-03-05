@@ -53,9 +53,9 @@ public sealed class InProcessChummerClientRulesetPluginTests
         IReadOnlyList<AppCommandDefinition> commands = await client.GetCommandsAsync("SR6", CancellationToken.None);
         IReadOnlyList<NavigationTabDefinition> tabs = await client.GetNavigationTabsAsync("sr6", CancellationToken.None);
 
-        Assert.AreEqual(1, commands.Count);
+        Assert.HasCount(1, commands);
         Assert.AreEqual("sr6_custom_command", commands[0].Id);
-        Assert.AreEqual(1, tabs.Count);
+        Assert.HasCount(1, tabs);
         Assert.AreEqual("tab-sr6-custom", tabs[0].Id);
     }
 
@@ -69,8 +69,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         IReadOnlyList<AppCommandDefinition> commands = await client.GetCommandsAsync("sr5", CancellationToken.None);
         IReadOnlyList<NavigationTabDefinition> tabs = await client.GetNavigationTabsAsync("sr5", CancellationToken.None);
 
-        Assert.AreEqual(AppCommandCatalog.ForRuleset("sr5").Count, commands.Count);
-        Assert.AreEqual(NavigationTabCatalog.ForRuleset("sr5").Count, tabs.Count);
+        Assert.HasCount(AppCommandCatalog.ForRuleset("sr5").Count, commands);
+        Assert.HasCount(NavigationTabCatalog.ForRuleset("sr5").Count, tabs);
         Assert.IsTrue(commands.Any(command => string.Equals(command.Id, "file", StringComparison.Ordinal)));
         Assert.IsTrue(tabs.Any(tab => string.Equals(tab.Id, "tab-info", StringComparison.Ordinal)));
     }

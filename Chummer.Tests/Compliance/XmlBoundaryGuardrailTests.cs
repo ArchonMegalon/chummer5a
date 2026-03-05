@@ -52,8 +52,9 @@ public class XmlBoundaryGuardrailTests
         foreach ((string interfaceName, int baselineCount) in AllowedXmlInterfaceParameterCounts)
         {
             actualXmlParameterCounts.TryGetValue(interfaceName, out int actualCount);
-            Assert.IsTrue(
-                actualCount <= baselineCount,
+            Assert.IsLessThanOrEqualTo(
+                baselineCount,
+                actualCount,
                 $"{interfaceName} introduced additional raw xml parameters. Baseline: {baselineCount}, actual: {actualCount}.");
         }
     }

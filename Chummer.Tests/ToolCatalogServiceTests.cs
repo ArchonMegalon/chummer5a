@@ -26,7 +26,7 @@ public class ToolCatalogServiceTests
             MasterIndexResponse response = service.GetMasterIndex();
 
             Assert.AreEqual(2, response.Count);
-            Assert.AreEqual(2, response.Files.Count);
+            Assert.HasCount(2, response.Files);
             Assert.IsTrue(response.Files.Any(file => file.File == "valid.xml" && file.Root == "chummer" && file.ElementCount >= 3));
             Assert.IsTrue(response.Files.Any(file => file.File == "broken.xml" && file.Root == string.Empty && file.ElementCount == 0));
         }
@@ -63,10 +63,10 @@ public class ToolCatalogServiceTests
             MasterIndexResponse response = service.GetMasterIndex();
 
             Assert.AreEqual(1, response.Count);
-            Assert.AreEqual(1, response.Files.Count);
+            Assert.HasCount(1, response.Files);
             Assert.AreEqual("qualities.xml", response.Files[0].File);
             Assert.AreEqual("chummer", response.Files[0].Root);
-            Assert.IsTrue(response.Files[0].ElementCount >= 7);
+            Assert.IsGreaterThanOrEqualTo(7, response.Files[0].ElementCount);
         }
         finally
         {
@@ -102,7 +102,7 @@ public class ToolCatalogServiceTests
 
             MasterIndexFileEntry qualities = response.Files.Single(file => file.File == "qualities.xml");
             Assert.AreEqual(1, response.Count);
-            Assert.AreEqual(1, response.Files.Count);
+            Assert.HasCount(1, response.Files);
             Assert.AreEqual("chummer", qualities.Root);
             Assert.AreEqual(8, qualities.ElementCount, "Merge-catalog should replace the matching id entry instead of appending duplicates.");
         }
@@ -127,7 +127,7 @@ public class ToolCatalogServiceTests
             TranslatorLanguagesResponse response = service.GetTranslatorLanguages();
 
             Assert.AreEqual(2, response.Count);
-            Assert.AreEqual(2, response.Languages.Count);
+            Assert.HasCount(2, response.Languages);
             Assert.IsTrue(response.Languages.Any(language => language.Code == "en-us" && language.Name == "English"));
             Assert.IsTrue(response.Languages.Any(language => language.Code == "fr-fr" && language.Name == "fr-fr"));
         }
@@ -158,7 +158,7 @@ public class ToolCatalogServiceTests
             TranslatorLanguagesResponse response = service.GetTranslatorLanguages();
 
             Assert.AreEqual(1, response.Count);
-            Assert.AreEqual(1, response.Languages.Count);
+            Assert.HasCount(1, response.Languages);
             Assert.AreEqual("en-us", response.Languages[0].Code);
             Assert.AreEqual("English Overlay", response.Languages[0].Name);
         }
@@ -190,7 +190,7 @@ public class ToolCatalogServiceTests
             TranslatorLanguagesResponse response = service.GetTranslatorLanguages();
 
             Assert.AreEqual(1, response.Count);
-            Assert.AreEqual(1, response.Languages.Count);
+            Assert.HasCount(1, response.Languages);
             Assert.AreEqual("en-us", response.Languages[0].Code);
             Assert.AreEqual("English", response.Languages[0].Name);
         }

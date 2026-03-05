@@ -41,13 +41,13 @@ public class SectionRowProjectorTests
 
         IReadOnlyList<SectionRowState> rows = SectionRowProjector.BuildRows(payload, maxRows: 3);
 
-        Assert.AreEqual(3, rows.Count);
+        Assert.HasCount(3, rows);
     }
 
     [TestMethod]
     public void BuildRows_returns_empty_for_null_node()
     {
         IReadOnlyList<SectionRowState> rows = SectionRowProjector.BuildRows(node: null);
-        Assert.AreEqual(0, rows.Count);
+        Assert.IsEmpty(rows);
     }
 }

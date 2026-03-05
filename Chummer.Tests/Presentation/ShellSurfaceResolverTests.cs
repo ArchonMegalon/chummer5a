@@ -80,13 +80,13 @@ public sealed class ShellSurfaceResolverTests
         Assert.AreEqual(profileTab.Id, surface.ActiveTabId);
         Assert.AreEqual("sr5", surface.PreferredRulesetId);
         Assert.AreEqual("ws-1", surface.ActiveWorkspaceId?.Value);
-        Assert.AreEqual(1, surface.OpenWorkspaces.Count);
+        Assert.HasCount(1, surface.OpenWorkspaces);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastWorkspaceActionTabId);
         Assert.AreEqual("sr6", catalogResolver.LastWorkspaceActionRulesetId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastUiControlTabId);
         Assert.AreEqual("sr6", catalogResolver.LastUiControlRulesetId);
-        Assert.AreEqual(1, surface.WorkspaceActions.Count);
-        Assert.AreEqual(1, surface.DesktopUiControls.Count);
+        Assert.HasCount(1, surface.WorkspaceActions);
+        Assert.HasCount(1, surface.DesktopUiControls);
     }
 
     [TestMethod]
@@ -146,9 +146,9 @@ public sealed class ShellSurfaceResolverTests
         Assert.AreEqual("sr6", catalogResolver.LastWorkspaceActionRulesetId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastUiControlTabId);
         Assert.AreEqual("sr6", catalogResolver.LastUiControlRulesetId);
-        Assert.AreEqual(1, surface.WorkspaceActions.Count);
+        Assert.HasCount(1, surface.WorkspaceActions);
         Assert.AreEqual("action.allowed", surface.WorkspaceActions[0].Id);
-        Assert.AreEqual(1, surface.DesktopUiControls.Count);
+        Assert.HasCount(1, surface.DesktopUiControls);
         Assert.AreEqual("ui.allowed", surface.DesktopUiControls[0].Id);
     }
 

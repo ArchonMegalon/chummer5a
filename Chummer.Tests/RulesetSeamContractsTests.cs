@@ -100,10 +100,10 @@ public class RulesetSeamContractsTests
         Assert.AreEqual("workspace", envelope.PayloadKind);
         Assert.AreEqual("{}", envelope.Payload);
 
-        Assert.IsTrue(plugin.ShellDefinitions.GetCommands().Count > 0);
-        Assert.IsTrue(plugin.ShellDefinitions.GetNavigationTabs().Count > 0);
-        Assert.IsTrue(plugin.Catalogs.GetWorkspaceActions().Count > 0);
-        Assert.IsTrue(plugin.Catalogs.GetDesktopUiControls().Count > 0);
+        Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetCommands().Count);
+        Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetNavigationTabs().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetDesktopUiControls().Count);
 
         RulesetRuleEvaluationResult ruleResult = await plugin.Rules.EvaluateAsync(
             new RulesetRuleEvaluationRequest(

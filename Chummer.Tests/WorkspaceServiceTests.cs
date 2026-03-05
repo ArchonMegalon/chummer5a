@@ -80,7 +80,7 @@ public class WorkspaceServiceTests
         var save = workspaceService.Save(imported.Id);
         Assert.IsTrue(save.Success);
         Assert.AreEqual(imported.Id, save.Value?.Id);
-        Assert.IsTrue((save.Value?.DocumentLength ?? 0) > 0);
+        Assert.IsGreaterThan(0, save.Value?.DocumentLength ?? 0);
         Assert.AreEqual("sr6", save.Value?.RulesetId);
 
         var download = workspaceService.Download(imported.Id);
@@ -126,8 +126,8 @@ public class WorkspaceServiceTests
         IReadOnlyList<WorkspaceListItem> fullList = workspaceService.List();
         IReadOnlyList<WorkspaceListItem> cappedList = workspaceService.List(maxCount: 2);
 
-        Assert.AreEqual(3, fullList.Count);
-        Assert.AreEqual(2, cappedList.Count);
+        Assert.HasCount(3, fullList);
+        Assert.HasCount(2, cappedList);
         Assert.IsTrue(cappedList.All(item => fullList.Any(full => string.Equals(full.Id.Value, item.Id.Value, StringComparison.Ordinal))));
     }
 

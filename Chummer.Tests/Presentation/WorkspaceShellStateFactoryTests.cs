@@ -46,14 +46,14 @@ public class WorkspaceShellStateFactoryTests
 
         Assert.AreEqual("Workspace reset complete.", next.Notice);
         Assert.AreEqual("save_character", next.LastCommandId);
-        Assert.AreEqual(1, next.Commands.Count);
+        Assert.HasCount(1, next.Commands);
         Assert.AreEqual("save_character", next.Commands[0].Id);
-        Assert.AreEqual(1, next.NavigationTabs.Count);
+        Assert.HasCount(1, next.NavigationTabs);
         Assert.AreEqual("tab-info", next.NavigationTabs[0].Id);
         Assert.AreEqual(125, next.Preferences.UiScalePercent);
         Assert.AreEqual("legacy", next.Preferences.Theme);
         Assert.AreEqual("ws-a", next.Session.ActiveWorkspaceId?.Value);
-        Assert.AreEqual(1, next.OpenWorkspaces.Count);
+        Assert.HasCount(1, next.OpenWorkspaces);
     }
 
     [TestMethod]
