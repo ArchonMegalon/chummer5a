@@ -44,6 +44,7 @@ Purpose: keep a live, ordered queue of actionable work and execute items continu
 | WQ-031 | done | P2 | Add optional object-storage publish path for desktop download bundles. | agent | Completed 2026-03-05: added `scripts/publish-download-bundle-s3.sh`, wired opt-in `deploy-downloads-object-storage` workflow job + env/secret variables, added `runbook` mode `downloads-sync-s3`, and documented S3/R2-compatible deployment flow in README/compliance guardrails. |
 | WQ-032 | done | P3 | Strengthen macOS matrix guardrail to require `osx-x64` rows for both desktop heads. | agent | Completed 2026-03-05: compliance assertions now require explicit `osx-x64` matrix blocks for both Avalonia and Blazor Desktop rows instead of generic RID string presence. |
 | WQ-033 | blocked | P1 | Execute targeted/full `local-tests` through preapproved runbook path after dependency restore. | agent | Blocked in this sandbox: outbound NuGet access to `api.nuget.org:443` is denied, so restore-enabled runs cannot complete. Preflight now fails fast with explicit guidance. |
+| WQ-034 | done | P1 | Enforce self-hosted portal downloads default configuration. | agent | Completed 2026-03-05: `Chummer.Portal/appsettings.json` now defaults `DownloadsBaseUrl` to `/downloads/` and runbook/compliance guardrails enforce no regression to GitHub fallback defaults. |
 
 ## Intake Template
 Append new items at bottom:

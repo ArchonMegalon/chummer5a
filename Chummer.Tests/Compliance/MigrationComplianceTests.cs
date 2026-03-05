@@ -755,6 +755,8 @@ public class MigrationComplianceTests
     {
         string readmePath = FindPath("README.md");
         string readmeText = File.ReadAllText(readmePath);
+        string portalSettingsPath = FindPath("Chummer.Portal", "appsettings.json");
+        string portalSettingsText = File.ReadAllText(portalSettingsPath);
 
         StringAssert.Contains(readmeText, "Modern migration path (Docker branch)");
         StringAssert.Contains(readmeText, "multi-head UI stack (`Chummer.Blazor`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`)");
@@ -772,6 +774,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(readmeText, "scripts/publish-download-bundle-s3.sh");
         StringAssert.Contains(readmeText, "Live deployment verification is required");
+        StringAssert.Contains(portalSettingsText, "\"DownloadsBaseUrl\": \"/downloads/\"");
+        Assert.IsFalse(
+            portalSettingsText.Contains("github.com/ArchonMegalon/chummer5a/releases/latest", StringComparison.Ordinal),
+            "Portal default downloads base URL should remain self-hosted by default.");
         Assert.IsFalse(
             readmeText.Contains("two UI heads (`Chummer.Blazor`, `Chummer.Avalonia`)", StringComparison.Ordinal),
             "README summary regressed to outdated two-head architecture language.");

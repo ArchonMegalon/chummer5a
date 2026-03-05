@@ -159,6 +159,7 @@ if [[ "$RUNBOOK_MODE" == "desktop-gate" ]]; then
   require_match "Chummer.Desktop.Runtime/\\*\\*" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "Chummer.Infrastructure/\\*\\*" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "Chummer.Portal/\\*\\*" ".github/workflows/desktop-downloads-matrix.yml"
+  require_match "\"DownloadsBaseUrl\": \"/downloads/\"" "Chummer.Portal/appsettings.json"
   require_match "scripts/generate-releases-manifest.sh" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "scripts/publish-download-bundle.sh" ".github/workflows/desktop-downloads-matrix.yml"
   require_match "scripts/publish-download-bundle-s3.sh" ".github/workflows/desktop-downloads-matrix.yml"

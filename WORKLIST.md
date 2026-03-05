@@ -41,6 +41,7 @@ Purpose: queue actionable items and run them in order without losing momentum.
 | WL-028 | done | P2 | Add optional object-storage publish path for desktop downloads bundles. | agent | Completed 2026-03-05: optional S3/R2-compatible publish script and workflow job are in place, runbook gained `downloads-sync-s3`, and README/compliance guardrails cover object-storage deployment variables. |
 | WL-029 | done | P3 | Strengthen `osx-x64` matrix guardrail to per-app enforcement. | agent | Completed 2026-03-05: compliance checks now assert explicit per-app macOS Intel rows for both desktop heads. |
 | WL-030 | blocked | P1 | Run targeted/full local test gates via preapproved runbook path. | agent | Blocked in this sandbox by outbound NuGet restriction (`api.nuget.org:443` denied) during restore; runbook now preflights and fails fast instead of retry loops. |
+| WL-031 | done | P1 | Make portal downloads default to self-hosted URLs. | agent | Completed 2026-03-05: portal appsettings default now points at `/downloads/`, with runbook/compliance checks preventing fallback-default regression to GitHub releases URL. |
 
 ## Intake Template
 Add new items at the bottom:
