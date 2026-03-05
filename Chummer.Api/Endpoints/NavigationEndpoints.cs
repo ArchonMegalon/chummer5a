@@ -7,9 +7,9 @@ public static class NavigationEndpoints
 {
     public static IEndpointRouteBuilder MapNavigationEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/navigation-tabs", (string? ruleset) =>
+        app.MapGet("/api/navigation-tabs", (string? ruleset, IEnumerable<IRulesetPlugin> rulesetPlugins) =>
         {
-            IReadOnlyList<NavigationTabDefinition> tabs = NavigationTabCatalog.ForRuleset(RulesetDefaults.Normalize(ruleset));
+            IReadOnlyList<NavigationTabDefinition> tabs = RulesetShellCatalogResolver.ResolveNavigationTabs(ruleset, rulesetPlugins);
             return Results.Ok(new NavigationTabCatalogResponse(
                 Count: tabs.Count,
                 Tabs: tabs));
