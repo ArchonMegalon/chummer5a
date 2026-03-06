@@ -497,6 +497,26 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Linked_asset_library_contracts_lock_in_registry_share_and_transfer_vocabulary()
+    {
+        string linkedAssetLibraryContractsPath = FindPath("Chummer.Contracts", "Assets", "LinkedAssetLibraryContracts.cs");
+        string linkedAssetLibraryContractsText = File.ReadAllText(linkedAssetLibraryContractsPath);
+
+        StringAssert.Contains(linkedAssetLibraryContractsText, "public static class LinkedAssetShareSubjectKinds");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "public static class LinkedAssetShareAccessLevels");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "public static class LinkedAssetTransferFormats");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "public sealed record LinkedAssetShareGrant");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "public sealed record LinkedAssetLibraryEntry");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "public sealed record LinkedAssetImportReceipt");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "public sealed record LinkedAssetExportReceipt");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "PublicCatalog");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "Manage");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "Bundle");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "DateTimeOffset UpdatedAtUtc");
+        StringAssert.Contains(linkedAssetLibraryContractsText, "string FileName");
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");

@@ -883,6 +883,51 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Linked_asset_library_contracts_define_registry_share_and_transfer_receipts()
+    {
+        LinkedAssetReference assetReference = new(
+            AssetId: "contact-1",
+            VersionId: "contactv-2",
+            AssetType: "contact",
+            Visibility: LinkedAssetVisibilityModes.CampaignShared);
+        LinkedAssetLibraryEntry entry = new(
+            OwnerId: "user-1",
+            Asset: assetReference,
+            Shares:
+            [
+                new LinkedAssetShareGrant(
+                    SubjectKind: LinkedAssetShareSubjectKinds.Campaign,
+                    SubjectId: "campaign-7",
+                    AccessLevel: LinkedAssetShareAccessLevels.Link),
+                new LinkedAssetShareGrant(
+                    SubjectKind: LinkedAssetShareSubjectKinds.User,
+                    SubjectId: "user-2",
+                    AccessLevel: LinkedAssetShareAccessLevels.View)
+            ],
+            UpdatedAtUtc: DateTimeOffset.UtcNow);
+        LinkedAssetImportReceipt importReceipt = new(
+            AssetId: assetReference.AssetId,
+            VersionId: assetReference.VersionId,
+            AssetType: assetReference.AssetType,
+            Format: LinkedAssetTransferFormats.Bundle,
+            ImportedCount: 1);
+        LinkedAssetExportReceipt exportReceipt = new(
+            AssetId: assetReference.AssetId,
+            VersionId: assetReference.VersionId,
+            AssetType: assetReference.AssetType,
+            Format: LinkedAssetTransferFormats.Json,
+            FileName: "contact-1.json",
+            DocumentLength: 256);
+
+        Assert.AreEqual("user-1", entry.OwnerId);
+        Assert.AreEqual(LinkedAssetShareSubjectKinds.Campaign, entry.Shares[0].SubjectKind);
+        Assert.AreEqual(LinkedAssetShareAccessLevels.Link, entry.Shares[0].AccessLevel);
+        Assert.AreEqual(LinkedAssetTransferFormats.Bundle, importReceipt.Format);
+        Assert.AreEqual(LinkedAssetTransferFormats.Json, exportReceipt.Format);
+        Assert.AreEqual("contact-1.json", exportReceipt.FileName);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);
