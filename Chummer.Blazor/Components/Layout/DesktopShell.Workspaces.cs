@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
@@ -90,12 +91,17 @@ public partial class DesktopShell
         await Presenter.SaveAsync(CancellationToken.None);
     }
 
-    private async Task HandleUiControlAsync(string controlId)
+    private async Task ExecuteWorkflowSurfaceAsync(string actionId)
     {
         if (_bridge is null)
             return;
 
-        await _bridge.HandleUiControlAsync(controlId, CancellationToken.None);
+        WorkspaceSurfaceActionDefinition? action = ActiveWorkspaceActions
+            .FirstOrDefault(candidate => string.Equals(candidate.Id, actionId, StringComparison.Ordinal));
+        if (action is null)
+            return;
+
+        await _bridge.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
     }
 
     private async Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action)

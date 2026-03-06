@@ -2154,7 +2154,7 @@ public class MigrationComplianceTests
         string dialogFactoryText = File.ReadAllText(dialogFactoryPath);
 
         StringAssert.Contains(blazorShellText, "ExecuteCommandRequested=\"@ExecuteCommandAsync\"");
-        StringAssert.Contains(blazorShellText, "HandleUiControlRequested=\"@HandleUiControlAsync\"");
+        StringAssert.Contains(blazorShellText, "ExecuteWorkflowSurfaceRequested=\"@ExecuteWorkflowSurfaceAsync\"");
         StringAssert.Contains(blazorShellText, "ExecuteDialogActionRequested=\"@ExecuteDialogActionAsync\"");
         StringAssert.Contains(blazorShellText, "CloseRequested=\"@CloseDialogAsync\"");
         StringAssert.Contains(blazorShellText, "FieldInputRequested=\"@OnDialogFieldInputAsync\"");
@@ -2886,7 +2886,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.MenuRoots");
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.NavigationTabs");
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.WorkspaceActions");
-        StringAssert.Contains(avaloniaProjectorText, "shellSurface.DesktopUiControls");
+        StringAssert.Contains(avaloniaProjectorText, "shellSurface.ActiveWorkflowSurfaceActions");
         StringAssert.Contains(avaloniaProjectorText, "ProjectCommandDialogState(");
 
         StringAssert.Contains(dualHeadAcceptanceText, "ShellCatalogResolver.ResolveWorkspaceActionsForTab(");
@@ -3690,7 +3690,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(navigatorCodeText, "SetOpenWorkspaces(state.OpenWorkspaces, state.SelectedWorkspaceId);");
         StringAssert.Contains(navigatorCodeText, "SetNavigationTabs(state.NavigationTabs, state.ActiveTabId);");
         StringAssert.Contains(navigatorCodeText, "SetSectionActions(state.SectionActions, state.ActiveActionId);");
-        StringAssert.Contains(navigatorCodeText, "SetUiControls(state.UiControls);");
+        StringAssert.Contains(navigatorCodeText, "SetWorkflowSurfaces(state.WorkflowSurfaces);");
         StringAssert.Contains(commandPaneCodeText, "public void SetState(CommandDialogPaneState state)");
         StringAssert.Contains(commandPaneCodeText, "SetCommands(state.Commands, state.SelectedCommandId);");
         StringAssert.Contains(commandPaneCodeText, "SetDialog(");

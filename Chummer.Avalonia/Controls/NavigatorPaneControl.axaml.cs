@@ -8,7 +8,7 @@ public partial class NavigatorPaneControl : UserControl
     private bool _suppressWorkspaceSelectionEvent;
     private bool _suppressTabSelectionEvent;
     private bool _suppressSectionActionSelectionEvent;
-    private bool _suppressUiControlSelectionEvent;
+    private bool _suppressWorkflowSurfaceSelectionEvent;
 
     public NavigatorPaneControl()
     {
@@ -16,20 +16,20 @@ public partial class NavigatorPaneControl : UserControl
         OpenWorkspacesList.SelectionChanged += OpenWorkspacesList_OnSelectionChanged;
         NavigationTabsList.SelectionChanged += NavigationTabsList_OnSelectionChanged;
         SectionActionsList.SelectionChanged += SectionActionsList_OnSelectionChanged;
-        UiControlsList.SelectionChanged += UiControlsList_OnSelectionChanged;
+        WorkflowSurfacesList.SelectionChanged += WorkflowSurfacesList_OnSelectionChanged;
     }
 
     public event EventHandler<string>? WorkspaceSelected;
     public event EventHandler<string>? NavigationTabSelected;
     public event EventHandler<string>? SectionActionSelected;
-    public event EventHandler<string>? UiControlSelected;
+    public event EventHandler<string>? WorkflowSurfaceSelected;
 
     public void SetState(NavigatorPaneState state)
     {
         SetOpenWorkspaces(state.OpenWorkspaces, state.SelectedWorkspaceId);
         SetNavigationTabs(state.NavigationTabs, state.ActiveTabId);
         SetSectionActions(state.SectionActions, state.ActiveActionId);
-        SetUiControls(state.UiControls);
+        SetWorkflowSurfaces(state.WorkflowSurfaces);
     }
 
     public void SetOpenWorkspaces(IEnumerable<NavigatorWorkspaceItem> workspaces, string? selectedWorkspaceId)
@@ -62,13 +62,13 @@ public partial class NavigatorPaneControl : UserControl
         _suppressSectionActionSelectionEvent = false;
     }
 
-    public void SetUiControls(IEnumerable<NavigatorUiControlItem> controls)
+    public void SetWorkflowSurfaces(IEnumerable<NavigatorWorkflowSurfaceItem> workflowSurfaces)
     {
-        NavigatorUiControlItem[] controlItems = controls.ToArray();
-        _suppressUiControlSelectionEvent = true;
-        UiControlsList.ItemsSource = controlItems;
-        UiControlsList.SelectedItem = null;
-        _suppressUiControlSelectionEvent = false;
+        NavigatorWorkflowSurfaceItem[] surfaceItems = workflowSurfaces.ToArray();
+        _suppressWorkflowSurfaceSelectionEvent = true;
+        WorkflowSurfacesList.ItemsSource = surfaceItems;
+        WorkflowSurfacesList.SelectedItem = null;
+        _suppressWorkflowSurfaceSelectionEvent = false;
     }
 
     private void OpenWorkspacesList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -105,16 +105,16 @@ public partial class NavigatorPaneControl : UserControl
         ClearSelection(SectionActionsList, ref _suppressSectionActionSelectionEvent);
     }
 
-    private void UiControlsList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private void WorkflowSurfacesList_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (_suppressUiControlSelectionEvent)
+        if (_suppressWorkflowSurfaceSelectionEvent)
             return;
 
-        if (UiControlsList.SelectedItem is not NavigatorUiControlItem control)
+        if (WorkflowSurfacesList.SelectedItem is not NavigatorWorkflowSurfaceItem surface)
             return;
 
-        UiControlSelected?.Invoke(this, control.Id);
-        ClearSelection(UiControlsList, ref _suppressUiControlSelectionEvent);
+        WorkflowSurfaceSelected?.Invoke(this, surface.ActionId);
+        ClearSelection(WorkflowSurfacesList, ref _suppressWorkflowSurfaceSelectionEvent);
     }
 
     private static void ClearSelection(ListBox listBox, ref bool suppressSelectionEvent)
@@ -147,7 +147,7 @@ public sealed record NavigatorPaneState(
     string? ActiveTabId,
     NavigatorSectionActionItem[] SectionActions,
     string? ActiveActionId,
-    NavigatorUiControlItem[] UiControls);
+    NavigatorWorkflowSurfaceItem[] WorkflowSurfaces);
 
 public sealed record NavigatorTabItem(
     string Id,
@@ -170,10 +170,14 @@ public sealed record NavigatorSectionActionItem(string Id, string Label, Workspa
     }
 }
 
-public sealed record NavigatorUiControlItem(string Id, string Label)
+public sealed record NavigatorWorkflowSurfaceItem(
+    string SurfaceId,
+    string WorkflowId,
+    string Label,
+    string ActionId)
 {
     public override string ToString()
     {
-        return $"{Label} ({Id})";
+        return $"{Label} ({WorkflowId})";
     }
 }

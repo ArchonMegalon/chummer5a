@@ -32,7 +32,7 @@ public sealed class ShellSurfaceResolverTests
             Kind: WorkflowSurfaceKinds.Workbench,
             RegionId: ShellRegionIds.SectionPane,
             LayoutToken: WorkflowLayoutTokens.CareerWorkbench,
-            ActionIds: ["career.refresh"]);
+            ActionIds: ["action.profile"]);
         var shellState = ShellState.Empty with
         {
             ActiveRulesetId = "sr6",
@@ -110,6 +110,9 @@ public sealed class ShellSurfaceResolverTests
         Assert.AreEqual("sr6", catalogResolver.LastUiControlRulesetId);
         Assert.HasCount(1, surface.WorkspaceActions);
         Assert.HasCount(1, surface.DesktopUiControls);
+        Assert.HasCount(1, surface.ActiveWorkflowSurfaceActions);
+        Assert.AreEqual("career.main", surface.ActiveWorkflowSurfaceActions[0].SurfaceId);
+        Assert.AreEqual("action.profile", surface.ActiveWorkflowSurfaceActions[0].ActionId);
     }
 
     [TestMethod]
@@ -162,7 +165,17 @@ public sealed class ShellSurfaceResolverTests
             OpenMenuId = "file",
             Notice = "surface-notice",
             Error = "surface-error",
-            LastCommandId = "shell-command"
+            LastCommandId = "shell-command",
+            WorkflowSurfaces =
+            [
+                new WorkflowSurfaceDefinition(
+                    SurfaceId: "surface.allowed",
+                    WorkflowId: WorkflowDefinitionIds.CareerWorkbench,
+                    Kind: WorkflowSurfaceKinds.Workbench,
+                    RegionId: ShellRegionIds.SectionPane,
+                    LayoutToken: WorkflowLayoutTokens.CareerWorkbench,
+                    ActionIds: ["action.allowed", "action.blocked"])
+            ]
         };
 
         var allowedAction = new WorkspaceSurfaceActionDefinition(
@@ -216,6 +229,9 @@ public sealed class ShellSurfaceResolverTests
         Assert.AreEqual("action.allowed", surface.WorkspaceActions[0].Id);
         Assert.HasCount(1, surface.DesktopUiControls);
         Assert.AreEqual("ui.allowed", surface.DesktopUiControls[0].Id);
+        Assert.HasCount(1, surface.ActiveWorkflowSurfaceActions);
+        Assert.AreEqual("surface.allowed", surface.ActiveWorkflowSurfaceActions[0].SurfaceId);
+        Assert.AreEqual("action.allowed", surface.ActiveWorkflowSurfaceActions[0].ActionId);
     }
 
     private sealed class StubShellCatalogResolver : IRulesetShellCatalogResolver

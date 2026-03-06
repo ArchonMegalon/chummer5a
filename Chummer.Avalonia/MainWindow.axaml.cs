@@ -66,7 +66,7 @@ public partial class MainWindow : Window
             onWorkspaceSelected: NavigatorPane_OnWorkspaceSelected,
             onNavigationTabSelected: NavigatorPane_OnNavigationTabSelected,
             onSectionActionSelected: NavigatorPane_OnSectionActionSelected,
-            onUiControlSelected: NavigatorPane_OnUiControlSelected,
+            onWorkflowSurfaceSelected: NavigatorPane_OnWorkflowSurfaceSelected,
             onCommandSelected: CommandDialogPane_OnCommandSelected,
             onDialogActionSelected: CommandDialogPane_OnDialogActionSelected);
         _lifecycleCoordinator = new MainWindowLifecycleCoordinator(

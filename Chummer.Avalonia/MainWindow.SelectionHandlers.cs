@@ -37,11 +37,15 @@ public partial class MainWindow
             $"execute workspace action '{actionId}'");
     }
 
-    private async void NavigatorPane_OnUiControlSelected(object? sender, string controlId)
+    private async void NavigatorPane_OnWorkflowSurfaceSelected(object? sender, string actionId)
     {
+        if (!_transientStateCoordinator.TryResolveWorkspaceAction(actionId, out WorkspaceSurfaceActionDefinition? action)
+            || action is null)
+            return;
+
         await RunUiActionAsync(
-            () => _interactionCoordinator.HandleUiControlAsync(controlId, CancellationToken.None),
-            $"handle desktop control '{controlId}'");
+            () => _interactionCoordinator.ExecuteWorkspaceActionAsync(action, CancellationToken.None),
+            $"execute workflow surface '{actionId}'");
     }
 
     private async void CommandDialogPane_OnDialogActionSelected(object? sender, string actionId)

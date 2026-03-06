@@ -60,8 +60,8 @@ public partial class DesktopShell : IDisposable
     private IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions =>
         _shellSurfaceState.WorkspaceActions;
 
-    private IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls =>
-        _shellSurfaceState.DesktopUiControls;
+    private IReadOnlyList<WorkflowSurfaceActionBinding> ActiveWorkflowSurfaceActions =>
+        _shellSurfaceState.ActiveWorkflowSurfaceActions;
 
     private string ComplianceState =>
         ShellStatusTextFormatter.BuildComplianceState(_shellSurfaceState, State.Preferences);

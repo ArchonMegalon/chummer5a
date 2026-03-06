@@ -54,7 +54,7 @@ internal static class MainWindowShellFrameProjector
                 ActiveTabId: shellSurface.ActiveTabId,
                 SectionActions: ProjectSectionActions(shellSurface),
                 ActiveActionId: state.ActiveActionId,
-                UiControls: ProjectUiControls(shellSurface)),
+                WorkflowSurfaces: ProjectWorkflowSurfaces(shellSurface)),
             WorkspaceActionsById: workspaceActionsById);
     }
 
@@ -140,10 +140,14 @@ internal static class MainWindowShellFrameProjector
             .ToArray();
     }
 
-    private static NavigatorUiControlItem[] ProjectUiControls(ShellSurfaceState shellSurface)
+    private static NavigatorWorkflowSurfaceItem[] ProjectWorkflowSurfaces(ShellSurfaceState shellSurface)
     {
-        return shellSurface.DesktopUiControls
-            .Select(control => new NavigatorUiControlItem(control.Id, control.Label))
+        return shellSurface.ActiveWorkflowSurfaceActions
+            .Select(surface => new NavigatorWorkflowSurfaceItem(
+                surface.SurfaceId,
+                surface.WorkflowId,
+                surface.Label,
+                surface.ActionId))
             .ToArray();
     }
 

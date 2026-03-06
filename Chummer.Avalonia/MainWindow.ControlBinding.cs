@@ -22,7 +22,7 @@ internal static class MainWindowControlBinder
         EventHandler<string> onWorkspaceSelected,
         EventHandler<string> onNavigationTabSelected,
         EventHandler<string> onSectionActionSelected,
-        EventHandler<string> onUiControlSelected,
+        EventHandler<string> onWorkflowSurfaceSelected,
         EventHandler<string> onCommandSelected,
         EventHandler<string> onDialogActionSelected)
     {
@@ -35,7 +35,7 @@ internal static class MainWindowControlBinder
         navigatorPane.WorkspaceSelected += onWorkspaceSelected;
         navigatorPane.NavigationTabSelected += onNavigationTabSelected;
         navigatorPane.SectionActionSelected += onSectionActionSelected;
-        navigatorPane.UiControlSelected += onUiControlSelected;
+        navigatorPane.WorkflowSurfaceSelected += onWorkflowSurfaceSelected;
         commandDialogPane.CommandSelected += onCommandSelected;
         commandDialogPane.DialogActionSelected += onDialogActionSelected;
 

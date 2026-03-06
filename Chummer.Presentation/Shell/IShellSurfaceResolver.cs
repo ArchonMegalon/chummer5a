@@ -5,12 +5,21 @@ using Chummer.Presentation.Overview;
 
 namespace Chummer.Presentation.Shell;
 
+public sealed record WorkflowSurfaceActionBinding(
+    string SurfaceId,
+    string WorkflowId,
+    string Label,
+    string ActionId,
+    string RegionId,
+    string LayoutToken);
+
 public sealed record ShellSurfaceState(
     IReadOnlyList<AppCommandDefinition> Commands,
     IReadOnlyList<AppCommandDefinition> MenuRoots,
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     IReadOnlyList<WorkspaceSurfaceActionDefinition> WorkspaceActions,
     IReadOnlyList<DesktopUiControlDefinition> DesktopUiControls,
+    IReadOnlyList<WorkflowSurfaceActionBinding> ActiveWorkflowSurfaceActions,
     IReadOnlyList<OpenWorkspaceState> OpenWorkspaces,
     string ActiveRulesetId,
     string PreferredRulesetId,
@@ -33,6 +42,7 @@ public sealed record ShellSurfaceState(
         NavigationTabs: [],
         WorkspaceActions: [],
         DesktopUiControls: [],
+        ActiveWorkflowSurfaceActions: [],
         OpenWorkspaces: [],
         ActiveRulesetId: string.Empty,
         PreferredRulesetId: string.Empty,

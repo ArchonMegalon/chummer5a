@@ -1,5 +1,6 @@
 @using Chummer.Contracts.Presentation
 @using Chummer.Contracts.Workspaces
+@using Chummer.Presentation.Shell
 
 <aside class="left-pane">
     <OpenWorkspaceTree OpenWorkspaces="OpenWorkspaces"
@@ -39,15 +40,15 @@
     </section>
 
     <section class="panel controls">
-        <h2>Desktop Controls</h2>
+        <h2>Workflow Surfaces</h2>
         <div class="mini-grid">
-            @foreach (DesktopUiControlDefinition control in ActiveUiControls)
+            @foreach (WorkflowSurfaceActionBinding surface in ActiveWorkflowSurfaceActions)
             {
                 <button class="mini-btn"
-                        data-ui-control="@control.Id"
+                        data-workflow-surface="@surface.SurfaceId"
                         disabled="@State.IsBusy"
-                        @onclick="() => HandleUiControlRequested.InvokeAsync(control.Id)">
-                    @control.Label
+                        @onclick="() => ExecuteWorkflowSurfaceRequested.InvokeAsync(surface.ActionId)">
+                    @surface.Label
                 </button>
             }
         </div>
@@ -74,7 +75,7 @@
     public IReadOnlyList<WorkspaceSurfaceActionDefinition> ActiveWorkspaceActions { get; set; } = [];
 
     [Parameter]
-    public IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls { get; set; } = [];
+    public IReadOnlyList<WorkflowSurfaceActionBinding> ActiveWorkflowSurfaceActions { get; set; } = [];
 
     [Parameter]
     public Func<NavigationTabDefinition, bool> IsNavigationTabEnabled { get; set; } = _ => false;
@@ -92,5 +93,5 @@
     public EventCallback<WorkspaceSurfaceActionDefinition> ExecuteWorkspaceActionRequested { get; set; }
 
     [Parameter]
-    public EventCallback<string> HandleUiControlRequested { get; set; }
+    public EventCallback<string> ExecuteWorkflowSurfaceRequested { get; set; }
 }

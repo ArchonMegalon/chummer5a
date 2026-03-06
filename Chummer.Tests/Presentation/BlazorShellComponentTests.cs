@@ -9,6 +9,7 @@ using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
+using Chummer.Presentation.Shell;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using BunitContext = Bunit.BunitContext;
 
@@ -149,7 +150,7 @@ public sealed class BlazorShellComponentTests
         string? closedWorkspaceId = null;
         string? selectedTabId = null;
         WorkspaceSurfaceActionDefinition? executedAction = null;
-        string? handledControlId = null;
+        string? executedWorkflowSurfaceActionId = null;
 
         WorkspaceSurfaceActionDefinition summaryAction = new(
             Id: "summary",
@@ -161,27 +162,31 @@ public sealed class BlazorShellComponentTests
             EnabledByDefault: true,
             RulesetId: RulesetDefaults.Sr5);
 
-        DesktopUiControlDefinition diceControl = new(
-            Id: "ui-roll-dice",
-            Label: "Roll Dice",
-            TabId: "tab-info",
-            RequiresOpenCharacter: true,
-            EnabledByDefault: true,
-            RulesetId: RulesetDefaults.Sr5);
+        WorkflowSurfaceActionBinding summarySurface = new(
+            SurfaceId: "surface.summary",
+            WorkflowId: WorkflowDefinitionIds.CareerWorkbench,
+            Label: "Refresh Summary",
+            ActionId: "summary",
+            RegionId: ShellRegionIds.SectionPane,
+            LayoutToken: WorkflowLayoutTokens.CareerWorkbench);
+        IReadOnlyList<OpenWorkspaceState> openWorkspaces = [openWorkspace];
+        IReadOnlyList<NavigationTabDefinition> navigationTabs =
+        [
+            new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true, RulesetDefaults.Sr5),
+            new NavigationTabDefinition("tab-skills", "Skills", "skills", "character", true, true, RulesetDefaults.Sr5)
+        ];
+        IReadOnlyList<WorkspaceSurfaceActionDefinition> workspaceActions = [summaryAction];
+        IReadOnlyList<WorkflowSurfaceActionBinding> workflowSurfaceActions = [summarySurface];
 
         using var context = new BunitContext();
         IRenderedComponent<WorkspaceLeftPane> cut = context.Render<WorkspaceLeftPane>(parameters => parameters
             .Add(component => component.State, state)
-            .Add(component => component.OpenWorkspaces, [openWorkspace])
+            .Add(component => component.OpenWorkspaces, openWorkspaces)
             .Add(component => component.ActiveWorkspaceId, workspaceId)
             .Add(component => component.ActiveTabId, "tab-info")
-            .Add(component => component.NavigationTabs,
-            [
-                new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true, RulesetDefaults.Sr5),
-                new NavigationTabDefinition("tab-skills", "Skills", "skills", "character", true, true, RulesetDefaults.Sr5)
-            ])
-            .Add(component => component.ActiveWorkspaceActions, [summaryAction])
-            .Add(component => component.ActiveUiControls, [diceControl])
+            .Add(component => component.NavigationTabs, navigationTabs)
+            .Add(component => component.ActiveWorkspaceActions, workspaceActions)
+            .Add(component => component.ActiveWorkflowSurfaceActions, workflowSurfaceActions)
             .Add(component => component.IsNavigationTabEnabled,
                 tab => string.Equals(tab.Id, "tab-info", StringComparison.Ordinal))
             .Add(component => component.OpenWorkspaceRequested, (Action<string>)(workspace => openedWorkspaceId = workspace))
@@ -189,7 +194,7 @@ public sealed class BlazorShellComponentTests
             .Add(component => component.SelectTabRequested, (Action<string>)(tabId => selectedTabId = tabId))
             .Add(component => component.ExecuteWorkspaceActionRequested,
                 (Action<WorkspaceSurfaceActionDefinition>)(action => executedAction = action))
-            .Add(component => component.HandleUiControlRequested, (Action<string>)(controlId => handledControlId = controlId)));
+            .Add(component => component.ExecuteWorkflowSurfaceRequested, (Action<string>)(actionId => executedWorkflowSurfaceActionId = actionId)));
 
         AngleSharp.Dom.IElement enabledTab = cut.Find(".tabs #tab-info");
         AngleSharp.Dom.IElement disabledTab = cut.Find(".tabs #tab-skills");
@@ -201,13 +206,13 @@ public sealed class BlazorShellComponentTests
         cut.Find(".navigator .mini-btn").Click();
         enabledTab.Click();
         cut.Find(".section-actions .action-button").Click();
-        cut.Find("button[data-ui-control='ui-roll-dice']").Click();
+        cut.Find("button[data-workflow-surface='surface.summary']").Click();
 
         Assert.AreEqual("ws-1", openedWorkspaceId);
         Assert.AreEqual("ws-1", closedWorkspaceId);
         Assert.AreEqual("tab-info", selectedTabId);
         Assert.AreEqual("summary", executedAction?.Id);
-        Assert.AreEqual("ui-roll-dice", handledControlId);
+        Assert.AreEqual("summary", executedWorkflowSurfaceActionId);
     }
 
     [TestMethod]

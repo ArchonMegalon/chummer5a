@@ -8,7 +8,7 @@
     <ListBox Grid.Row="3" x:Name="NavigationTabsList" />
     <TextBlock Grid.Row="4" Text="Section Actions" FontWeight="Bold" />
     <ListBox Grid.Row="5" x:Name="SectionActionsList" />
-    <TextBlock Grid.Row="6" Text="Desktop Controls" FontWeight="Bold" />
-    <ListBox Grid.Row="7" x:Name="UiControlsList" />
+    <TextBlock Grid.Row="6" Text="Workflow Surfaces" FontWeight="Bold" />
+    <ListBox Grid.Row="7" x:Name="WorkflowSurfacesList" />
   </Grid>
 </UserControl>

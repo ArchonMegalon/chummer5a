@@ -31,13 +31,13 @@
                            ActiveTabId="@_shellSurfaceState.ActiveTabId"
                            NavigationTabs="@NavigationTabs"
                            ActiveWorkspaceActions="@ActiveWorkspaceActions"
-                           ActiveUiControls="@ActiveUiControls"
+                           ActiveWorkflowSurfaceActions="@ActiveWorkflowSurfaceActions"
                            IsNavigationTabEnabled="@IsNavigationTabEnabled"
                            OpenWorkspaceRequested="@OpenWorkspaceAsync"
                            CloseWorkspaceRequested="@CloseWorkspaceAsync"
                            SelectTabRequested="@SelectTabAsync"
                            ExecuteWorkspaceActionRequested="@ExecuteWorkspaceActionAsync"
-                           HandleUiControlRequested="@HandleUiControlAsync" />
+                           ExecuteWorkflowSurfaceRequested="@ExecuteWorkflowSurfaceAsync" />
 
         <main class="center-pane">
             <SummaryHeader State="@State"

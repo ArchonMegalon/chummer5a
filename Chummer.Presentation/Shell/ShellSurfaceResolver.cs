@@ -59,6 +59,9 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
                     activeRulesetId)
                 .Where(control => _availabilityEvaluator.IsUiControlEnabled(control, overviewState))
                 .ToArray();
+        WorkflowSurfaceActionBinding[] workflowSurfaceActions = BuildWorkflowSurfaceActions(
+            shellState.WorkflowSurfaces ?? [],
+            workspaceActions);
 
         ShellSurfaceState state = new(
             Commands: shellState.Commands,
@@ -66,6 +69,7 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
             NavigationTabs: shellState.NavigationTabs,
             WorkspaceActions: workspaceActions,
             DesktopUiControls: uiControls,
+            ActiveWorkflowSurfaceActions: workflowSurfaceActions,
             OpenWorkspaces: openWorkspaces,
             ActiveRulesetId: activeRulesetId,
             PreferredRulesetId: preferredRulesetId,
@@ -95,5 +99,47 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
             ?? secondaryCandidates.Select(RulesetDefaults.NormalizeOptional).FirstOrDefault(candidate => candidate is not null)
             ?? (tertiaryCandidates?.Select(RulesetDefaults.NormalizeOptional).FirstOrDefault(candidate => candidate is not null))
             ?? string.Empty;
+    }
+
+    private static WorkflowSurfaceActionBinding[] BuildWorkflowSurfaceActions(
+        IReadOnlyList<WorkflowSurfaceDefinition> workflowSurfaces,
+        IReadOnlyList<WorkspaceSurfaceActionDefinition> workspaceActions)
+    {
+        if (workflowSurfaces.Count == 0 || workspaceActions.Count == 0)
+        {
+            return [];
+        }
+
+        Dictionary<string, WorkspaceSurfaceActionDefinition> workspaceActionsById = workspaceActions
+            .ToDictionary(action => action.Id, StringComparer.Ordinal);
+
+        return workflowSurfaces
+            .Select(surface => TryCreateWorkflowSurfaceAction(surface, workspaceActionsById))
+            .Where(binding => binding is not null)
+            .Cast<WorkflowSurfaceActionBinding>()
+            .ToArray();
+    }
+
+    private static WorkflowSurfaceActionBinding? TryCreateWorkflowSurfaceAction(
+        WorkflowSurfaceDefinition surface,
+        IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> workspaceActionsById)
+    {
+        foreach (string actionId in surface.ActionIds)
+        {
+            if (!workspaceActionsById.TryGetValue(actionId, out WorkspaceSurfaceActionDefinition? action))
+            {
+                continue;
+            }
+
+            return new WorkflowSurfaceActionBinding(
+                SurfaceId: surface.SurfaceId,
+                WorkflowId: surface.WorkflowId,
+                Label: action.Label,
+                ActionId: action.Id,
+                RegionId: surface.RegionId,
+                LayoutToken: surface.LayoutToken);
+        }
+
+        return null;
     }
 }
