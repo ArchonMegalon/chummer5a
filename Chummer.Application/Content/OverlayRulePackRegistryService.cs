@@ -89,7 +89,11 @@ public sealed class OverlayRulePackRegistryService : IRulePackRegistryService
                 InstalledTargetKind: RuleProfileApplyTargetKinds.GlobalDefaults,
                 InstalledTargetId: OwnerScope.LocalSingleUser.NormalizedValue);
 
-        return new RulePackRegistryEntry(manifest, publication, install);
+        return new RulePackRegistryEntry(
+            manifest,
+            publication,
+            install,
+            RegistryEntrySourceKinds.OverlayCatalogBridge);
     }
 
     private static RulePackRegistryEntry ToRegistryEntry(
@@ -114,7 +118,11 @@ public sealed class OverlayRulePackRegistryService : IRulePackRegistryService
             ? persistedInstall
             : new ArtifactInstallState(ArtifactInstallStates.Available);
 
-        return new RulePackRegistryEntry(manifest, publication, install);
+        return new RulePackRegistryEntry(
+            manifest,
+            publication,
+            install,
+            RegistryEntrySourceKinds.PersistedManifest);
     }
 
     private static void UpsertEntry(List<RulePackRegistryEntry> entries, RulePackRegistryEntry entry, string rulesetId)

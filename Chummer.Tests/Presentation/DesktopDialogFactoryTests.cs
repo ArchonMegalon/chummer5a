@@ -195,7 +195,8 @@ public class DesktopDialogFactoryTests
                     "SR5 Core",
                     ArtifactVisibilityModes.LocalOnly,
                     ArtifactTrustTiers.Official,
-                    [RulePackCapabilityIds.DeriveStat])
+                    [RulePackCapabilityIds.DeriveStat],
+                    SourceKind: RegistryEntrySourceKinds.BuiltInCoreProfile)
             ],
             ProviderBindings:
             [
@@ -210,7 +211,8 @@ public class DesktopDialogFactoryTests
             [
                 new RuntimeMigrationPreviewItem(RuntimeMigrationPreviewChangeKinds.RulePackAdded, "Profile applies RulePack 'official.sr5.core@1.0.0'.")
             ],
-            GeneratedAtUtc: DateTimeOffset.UtcNow);
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            ProfileSourceKind: RegistryEntrySourceKinds.BuiltInCoreProfile);
 
         DesktopDialogState dialog = factory.CreateCommandDialog(
             OverviewCommandPolicy.RuntimeInspectorCommandId,
@@ -223,8 +225,10 @@ public class DesktopDialogFactoryTests
 
         Assert.AreEqual("dialog.runtime_inspector", dialog.Id);
         Assert.AreEqual("official.sr5.core", DesktopDialogFieldValueParser.GetValue(dialog, "runtimeProfileId"));
+        Assert.AreEqual(RegistryEntrySourceKinds.BuiltInCoreProfile, DesktopDialogFieldValueParser.GetValue(dialog, "runtimeProfileSource"));
         Assert.AreEqual("sha256:sr5-runtime-fingerprint", DesktopDialogFieldValueParser.GetValue(dialog, "runtimeFingerprint"));
         StringAssert.Contains(DesktopDialogFieldValueParser.GetValue(dialog, "runtimeProviderBindings"), "derive.stat");
+        StringAssert.Contains(DesktopDialogFieldValueParser.GetValue(dialog, "runtimeRulePacks"), RegistryEntrySourceKinds.BuiltInCoreProfile);
     }
 
     private static CharacterProfileSection CreateProfile(string name, string alias)

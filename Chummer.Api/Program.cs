@@ -92,6 +92,7 @@ app.MapGet("/docs", () => Results.Redirect("/docs/index.html"));
 
 app.MapInfoEndpoints();
 app.MapHubCatalogEndpoints();
+app.MapHubPublicationEndpoints();
 app.MapBuildKitRegistryEndpoints();
 app.MapRulePackRegistryEndpoints();
 app.MapRuleProfileRegistryEndpoints();

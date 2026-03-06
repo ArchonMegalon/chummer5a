@@ -128,6 +128,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
                 RuntimeFingerprint: null,
                 Facts:
                 [
+                    new HubProjectDetailFact("source-kind", "Source Kind", entry.SourceKind),
                     new HubProjectDetailFact("install-state", "Install State", entry.Install.State),
                     .. installHistoryFacts,
                     new HubProjectDetailFact("engine-api", "Engine API", entry.Manifest.EngineApiVersion),
@@ -173,6 +174,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             RuntimeFingerprint: entry.Manifest.RuntimeLock.RuntimeFingerprint,
             Facts:
             [
+                new HubProjectDetailFact("source-kind", "Source Kind", entry.SourceKind),
                 new HubProjectDetailFact("install-state", "Install State", entry.Install.State),
                 .. installHistoryFacts,
                 new HubProjectDetailFact("audience", "Audience", entry.Manifest.Audience),

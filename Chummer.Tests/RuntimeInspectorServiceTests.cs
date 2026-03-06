@@ -66,8 +66,10 @@ public class RuntimeInspectorServiceTests
         Assert.AreEqual("official.sr5.core", projection.TargetId);
         Assert.AreEqual(ArtifactInstallStates.Available, projection.Install.State);
         Assert.AreEqual("runtime-lock-sha256", projection.Install.RuntimeFingerprint);
+        Assert.AreEqual(RegistryEntrySourceKinds.BuiltInCoreProfile, projection.ProfileSourceKind);
         Assert.HasCount(1, projection.ResolvedRulePacks);
         Assert.AreEqual("house-rules", projection.ResolvedRulePacks[0].RulePack.Id);
+        Assert.AreEqual(RegistryEntrySourceKinds.PersistedManifest, projection.ResolvedRulePacks[0].SourceKind);
         Assert.IsTrue(projection.Warnings.Any(warning => string.Equals(warning.Kind, RuntimeInspectorWarningKinds.Trust, StringComparison.Ordinal)));
         Assert.IsTrue(projection.CompatibilityDiagnostics.Any(diagnostic => string.Equals(diagnostic.State, RuntimeLockCompatibilityStates.Compatible, StringComparison.Ordinal)));
     }
@@ -128,7 +130,8 @@ public class RuntimeInspectorServiceTests
                 PublicationStatus: RuleProfilePublicationStatuses.Published,
                 Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
                 Shares: []),
-            new ArtifactInstallState(ArtifactInstallStates.Available));
+            new ArtifactInstallState(ArtifactInstallStates.Available),
+            RegistryEntrySourceKinds.BuiltInCoreProfile);
     }
 
     private sealed class RuleProfileRegistryServiceStub : IRuleProfileRegistryService

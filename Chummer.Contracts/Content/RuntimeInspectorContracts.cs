@@ -40,7 +40,8 @@ public sealed record RuntimeInspectorRulePackEntry(
     string Visibility,
     string TrustTier,
     IReadOnlyList<string> CapabilityIds,
-    bool Enabled = true);
+    bool Enabled = true,
+    string SourceKind = RegistryEntrySourceKinds.PersistedManifest);
 
 public sealed record RuntimeInspectorProviderBinding(
     string CapabilityId,
@@ -86,4 +87,5 @@ public sealed record RuntimeInspectorProjection(
     IReadOnlyList<RuntimeLockCompatibilityDiagnostic> CompatibilityDiagnostics,
     IReadOnlyList<RuntimeInspectorWarning> Warnings,
     IReadOnlyList<RuntimeMigrationPreviewItem> MigrationPreview,
-    DateTimeOffset GeneratedAtUtc);
+    DateTimeOffset GeneratedAtUtc,
+    string ProfileSourceKind = RegistryEntrySourceKinds.PersistedManifest);

@@ -82,6 +82,8 @@ public class RuleProfileRegistryServiceTests
         Assert.AreEqual("house-rules", overlayProfile.Manifest.RulePacks[0].RulePack.Id);
         Assert.AreEqual(RuleProfileCatalogKinds.Personal, overlayProfile.Manifest.CatalogKind);
         Assert.AreEqual(ArtifactInstallStates.Available, overlayProfile.Install.State);
+        Assert.AreEqual(RegistryEntrySourceKinds.BuiltInCoreProfile, entries.Single(entry => string.Equals(entry.Manifest.ProfileId, "official.sr5.core", StringComparison.Ordinal)).SourceKind);
+        Assert.AreEqual(RegistryEntrySourceKinds.OverlayDerivedProfile, overlayProfile.SourceKind);
     }
 
     [TestMethod]
@@ -185,6 +187,7 @@ public class RuleProfileRegistryServiceTests
         Assert.HasCount(1, entry.Publication.Shares);
         Assert.AreEqual(ArtifactInstallStates.Pinned, entry.Install.State);
         Assert.AreEqual("workspace-1", entry.Install.InstalledTargetId);
+        Assert.AreEqual(RegistryEntrySourceKinds.OverlayDerivedProfile, entry.SourceKind);
     }
 
     [TestMethod]
@@ -285,8 +288,10 @@ public class RuleProfileRegistryServiceTests
         Assert.AreEqual("alice", persistedCollision.Publication.OwnerId);
         Assert.AreEqual(RuleProfilePublicationStatuses.Draft, persistedCollision.Publication.PublicationStatus);
         Assert.AreEqual(ArtifactInstallStates.Available, persistedCollision.Install.State);
+        Assert.AreEqual(RegistryEntrySourceKinds.PersistedManifest, persistedCollision.SourceKind);
         Assert.AreEqual("Seattle Campaign Runtime", persistedOnly.Manifest.Title);
         Assert.AreEqual(ArtifactVisibilityModes.LocalOnly, persistedOnly.Publication.Visibility);
+        Assert.AreEqual(RegistryEntrySourceKinds.PersistedManifest, persistedOnly.SourceKind);
     }
 
     private static DefaultRuleProfileRegistryService CreateServiceWithRulePackChecksum(string checksum)

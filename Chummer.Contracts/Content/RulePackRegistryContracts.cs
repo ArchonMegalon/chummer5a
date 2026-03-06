@@ -30,6 +30,14 @@ public static class RulePackShareAccessLevels
     public const string Manage = "manage";
 }
 
+public static class RegistryEntrySourceKinds
+{
+    public const string PersistedManifest = "persisted-manifest";
+    public const string OverlayCatalogBridge = "overlay-catalog-bridge";
+    public const string BuiltInCoreProfile = "built-in-core-profile";
+    public const string OverlayDerivedProfile = "overlay-derived-profile";
+}
+
 public sealed record RulePackForkLineage(
     string RootPackId,
     string ParentPackId,
@@ -59,7 +67,8 @@ public sealed record RulePackPublicationMetadata(
 public sealed record RulePackRegistryEntry(
     RulePackManifest Manifest,
     RulePackPublicationMetadata Publication,
-    ArtifactInstallState Install);
+    ArtifactInstallState Install,
+    string SourceKind = RegistryEntrySourceKinds.PersistedManifest);
 
 public sealed record RulePackManifestRecord(
     RulePackManifest Manifest);

@@ -65,7 +65,8 @@ public sealed record RuleProfilePublicationMetadata(
 public sealed record RuleProfileRegistryEntry(
     RuleProfileManifest Manifest,
     RuleProfilePublicationMetadata Publication,
-    ArtifactInstallState Install);
+    ArtifactInstallState Install,
+    string SourceKind = RegistryEntrySourceKinds.PersistedManifest);
 
 public sealed record RuleProfileManifestRecord(
     RuleProfileManifest Manifest);

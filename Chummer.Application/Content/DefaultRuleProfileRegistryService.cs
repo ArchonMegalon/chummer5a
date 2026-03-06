@@ -139,7 +139,11 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
             ? persistedInstall
             : new ArtifactInstallState(ArtifactInstallStates.Available);
 
-        return new RuleProfileRegistryEntry(manifest, publication, install);
+        return new RuleProfileRegistryEntry(
+            manifest,
+            publication,
+            install,
+            RegistryEntrySourceKinds.BuiltInCoreProfile);
     }
 
     private RuleProfileRegistryEntry CreateOverlayProfile(
@@ -188,7 +192,11 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
                 ArtifactInstallStates.Available,
                 RuntimeFingerprint: runtimeLock.RuntimeFingerprint);
 
-        return new RuleProfileRegistryEntry(manifest, publication, install);
+        return new RuleProfileRegistryEntry(
+            manifest,
+            publication,
+            install,
+            RegistryEntrySourceKinds.OverlayDerivedProfile);
     }
 
     private static RuleProfileRegistryEntry CreatePersistedProfile(
@@ -216,7 +224,11 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
                 ArtifactInstallStates.Available,
                 RuntimeFingerprint: manifest.RuntimeLock.RuntimeFingerprint);
 
-        return new RuleProfileRegistryEntry(manifest, publication, install);
+        return new RuleProfileRegistryEntry(
+            manifest,
+            publication,
+            install,
+            RegistryEntrySourceKinds.PersistedManifest);
     }
 
     private static void UpsertEntry(List<RuleProfileRegistryEntry> entries, RuleProfileRegistryEntry entry)

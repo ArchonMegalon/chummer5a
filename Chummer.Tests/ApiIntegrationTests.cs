@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Hub;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Session;
 using Chummer.Presentation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -216,6 +217,55 @@ public class ApiIntegrationTests
         Assert.AreEqual(HubCatalogItemKinds.RuleProfile, payload["kind"]?.GetValue<string>());
         Assert.AreEqual("official.sr5.core", payload["itemId"]?.GetValue<string>());
         Assert.IsInstanceOfType<JsonArray>(payload["rows"]);
+    }
+
+    [TestMethod]
+    public async Task Hub_publish_draft_endpoint_returns_not_implemented_receipt()
+    {
+        using var client = CreateClient();
+        HubPublishDraftRequest request = new(
+            ProjectKind: HubCatalogItemKinds.RulePack,
+            ProjectId: "campaign.shadowops",
+            RulesetId: RulesetDefaults.Sr5,
+            Title: "Campaign ShadowOps");
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync("/api/hub/publish/drafts", request);
+        Assert.AreEqual(HttpStatusCode.NotImplemented, response.StatusCode);
+        JsonObject payload = await ParseRequiredJsonObject(response);
+
+        Assert.AreEqual("hub_publication_not_implemented", payload["error"]?.GetValue<string>());
+        Assert.AreEqual(HubPublicationOperations.CreateDraft, payload["operation"]?.GetValue<string>());
+        Assert.AreEqual(HubCatalogItemKinds.RulePack, payload["projectKind"]?.GetValue<string>());
+        Assert.AreEqual("campaign.shadowops", payload["projectId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Hub_publish_submit_endpoint_returns_not_implemented_receipt()
+    {
+        using var client = CreateClient();
+        HubSubmitProjectRequest request = new("submit for moderation");
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync("/api/hub/publish/rulepack/campaign.shadowops/submit?ruleset=sr5", request);
+        Assert.AreEqual(HttpStatusCode.NotImplemented, response.StatusCode);
+        JsonObject payload = await ParseRequiredJsonObject(response);
+
+        Assert.AreEqual("hub_publication_not_implemented", payload["error"]?.GetValue<string>());
+        Assert.AreEqual(HubPublicationOperations.SubmitProject, payload["operation"]?.GetValue<string>());
+        Assert.AreEqual(HubCatalogItemKinds.RulePack, payload["projectKind"]?.GetValue<string>());
+        Assert.AreEqual("campaign.shadowops", payload["projectId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Hub_moderation_queue_endpoint_returns_not_implemented_receipt()
+    {
+        using var client = CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync("/api/hub/moderation/queue");
+        Assert.AreEqual(HttpStatusCode.NotImplemented, response.StatusCode);
+        JsonObject payload = await ParseRequiredJsonObject(response);
+
+        Assert.AreEqual("hub_publication_not_implemented", payload["error"]?.GetValue<string>());
+        Assert.AreEqual(HubPublicationOperations.ListModerationQueue, payload["operation"]?.GetValue<string>());
     }
 
     [TestMethod]
@@ -1387,9 +1437,7 @@ public class ApiIntegrationTests
         string content = await response.Content.ReadAsStringAsync();
         Assert.IsTrue(response.IsSuccessStatusCode, $"GET {relativePath} failed with {(int)response.StatusCode}: {content}");
 
-        JsonNode parsed = JsonNode.Parse(content);
-        Assert.IsInstanceOfType<JsonObject>(parsed);
-        return (JsonObject)parsed!;
+        return ParseRequiredJsonObject(content);
     }
 
     private static async Task<JsonObject> PostRequiredJsonObject(HttpClient client, string relativePath, JsonObject payload)
@@ -1399,9 +1447,7 @@ public class ApiIntegrationTests
         string content = await response.Content.ReadAsStringAsync();
         Assert.IsTrue(response.IsSuccessStatusCode, $"POST {relativePath} failed with {(int)response.StatusCode}: {content}");
 
-        JsonNode parsed = JsonNode.Parse(content);
-        Assert.IsInstanceOfType<JsonObject>(parsed);
-        return (JsonObject)parsed!;
+        return ParseRequiredJsonObject(content);
     }
 
     private static async Task<JsonObject> PatchRequiredJsonObject(HttpClient client, string relativePath, JsonObject payload)
@@ -1414,6 +1460,17 @@ public class ApiIntegrationTests
         string content = await response.Content.ReadAsStringAsync();
         Assert.IsTrue(response.IsSuccessStatusCode, $"PATCH {relativePath} failed with {(int)response.StatusCode}: {content}");
 
+        return ParseRequiredJsonObject(content);
+    }
+
+    private static async Task<JsonObject> ParseRequiredJsonObject(HttpResponseMessage response)
+    {
+        string content = await response.Content.ReadAsStringAsync();
+        return ParseRequiredJsonObject(content);
+    }
+
+    private static JsonObject ParseRequiredJsonObject(string content)
+    {
         JsonNode parsed = JsonNode.Parse(content);
         Assert.IsInstanceOfType<JsonObject>(parsed);
         return (JsonObject)parsed!;

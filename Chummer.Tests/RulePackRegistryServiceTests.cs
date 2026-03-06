@@ -50,6 +50,7 @@ public class RulePackRegistryServiceTests
         Assert.AreEqual(RulePackPublicationStatuses.Published, entries[0].Publication.PublicationStatus);
         Assert.AreEqual(RulePackReviewStates.NotRequired, entries[0].Publication.Review.State);
         Assert.AreEqual(ArtifactInstallStates.Installed, entries[0].Install.State);
+        Assert.AreEqual(RegistryEntrySourceKinds.OverlayCatalogBridge, entries[0].SourceKind);
     }
 
     [TestMethod]
@@ -117,6 +118,7 @@ public class RulePackRegistryServiceTests
         Assert.HasCount(1, entry.Publication.Shares);
         Assert.AreEqual(ArtifactInstallStates.Pinned, entry.Install.State);
         Assert.AreEqual("workspace-1", entry.Install.InstalledTargetId);
+        Assert.AreEqual(RegistryEntrySourceKinds.OverlayCatalogBridge, entry.SourceKind);
     }
 
     [TestMethod]
@@ -203,8 +205,10 @@ public class RulePackRegistryServiceTests
         Assert.AreEqual("alice", persistedCollision.Publication.OwnerId);
         Assert.AreEqual(RulePackPublicationStatuses.Draft, persistedCollision.Publication.PublicationStatus);
         Assert.AreEqual(ArtifactInstallStates.Available, persistedCollision.Install.State);
+        Assert.AreEqual(RegistryEntrySourceKinds.PersistedManifest, persistedCollision.SourceKind);
         Assert.AreEqual("GM Tools", persistedOnly.Manifest.Title);
         Assert.AreEqual(ArtifactVisibilityModes.LocalOnly, persistedOnly.Publication.Visibility);
+        Assert.AreEqual(RegistryEntrySourceKinds.PersistedManifest, persistedOnly.SourceKind);
     }
 
     private sealed class ContentOverlayCatalogServiceStub : IContentOverlayCatalogService

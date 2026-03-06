@@ -53,6 +53,7 @@ public class HubCatalogServiceTests
         Assert.IsNotNull(rulePack);
         Assert.AreEqual(HubCatalogItemKinds.RulePack, rulePack.Summary.Kind);
         Assert.AreEqual(RulePackPublicationStatuses.Published, rulePack.PublicationStatus);
+        Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "source-kind" && fact.Value == RegistryEntrySourceKinds.PersistedManifest));
         Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "engine-api"));
         Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "install-history-count" && fact.Value == "1"));
         Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "last-install-target" && fact.Value == "workspace-1"));
@@ -66,6 +67,7 @@ public class HubCatalogServiceTests
         Assert.AreEqual(HubCatalogItemKinds.RuleProfile, ruleProfile.Summary.Kind);
         Assert.AreEqual("sha256:core", ruleProfile.RuntimeFingerprint);
         Assert.AreEqual(ArtifactInstallStates.Available, ruleProfile.Summary.InstallState);
+        Assert.IsTrue(ruleProfile.Facts.Any(fact => fact.FactId == "source-kind" && fact.Value == RegistryEntrySourceKinds.PersistedManifest));
         Assert.IsTrue(ruleProfile.Actions.Any(action => action.Kind == HubProjectActionKinds.InspectRuntime));
         Assert.IsTrue(ruleProfile.Facts.Any(fact => fact.FactId == "last-install-operation" && fact.Value == ArtifactInstallHistoryOperations.Pin));
 

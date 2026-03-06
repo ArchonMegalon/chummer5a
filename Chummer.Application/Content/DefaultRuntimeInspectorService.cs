@@ -55,7 +55,8 @@ public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService
             CompatibilityDiagnostics: compatibilityDiagnostics,
             Warnings: warnings,
             MigrationPreview: migrationPreview,
-            GeneratedAtUtc: DateTimeOffset.UtcNow);
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            ProfileSourceKind: profile.SourceKind);
     }
 
     private static RuntimeInspectorRulePackEntry ToResolvedRulePackEntry(
@@ -68,7 +69,8 @@ public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService
             Visibility: registryEntry?.Publication.Visibility ?? ArtifactVisibilityModes.LocalOnly,
             TrustTier: registryEntry?.Manifest.TrustTier ?? ArtifactTrustTiers.LocalOnly,
             CapabilityIds: registryEntry?.Manifest.Capabilities.Select(capability => capability.CapabilityId).ToArray() ?? [],
-            Enabled: selection.EnabledByDefault);
+            Enabled: selection.EnabledByDefault,
+            SourceKind: registryEntry?.SourceKind ?? RegistryEntrySourceKinds.PersistedManifest);
     }
 
     private static RuntimeLockCompatibilityDiagnostic[] BuildCompatibilityDiagnostics(

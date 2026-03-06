@@ -278,7 +278,7 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
         string rulePacks = projection.ResolvedRulePacks.Count == 0
             ? "(none)"
             : string.Join(Environment.NewLine, projection.ResolvedRulePacks.Select(rulePack =>
-                $"{rulePack.RulePack.Id}@{rulePack.RulePack.Version} [{rulePack.TrustTier}]"));
+                $"{rulePack.RulePack.Id}@{rulePack.RulePack.Version} [{rulePack.TrustTier}] ({rulePack.SourceKind})"));
         string providerBindings = projection.ProviderBindings.Count == 0
             ? "(none)"
             : string.Join(Environment.NewLine, projection.ProviderBindings.Select(binding =>
@@ -305,6 +305,7 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
             Fields:
             [
                 new DesktopDialogField("runtimeProfileId", "Profile", projection.TargetId, projection.TargetId, IsReadOnly: true),
+                new DesktopDialogField("runtimeProfileSource", "Profile Source", projection.ProfileSourceKind, projection.ProfileSourceKind, IsReadOnly: true),
                 new DesktopDialogField("runtimeTargetKind", "Target Kind", projection.TargetKind, projection.TargetKind, IsReadOnly: true),
                 new DesktopDialogField("runtimeRulesetId", "Ruleset", projection.RuntimeLock.RulesetId, projection.RuntimeLock.RulesetId, IsReadOnly: true),
                 new DesktopDialogField("runtimeEngineApi", "Engine API", projection.RuntimeLock.EngineApiVersion, projection.RuntimeLock.EngineApiVersion, IsReadOnly: true),
