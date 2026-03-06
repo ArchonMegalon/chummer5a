@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Owners;
 using Chummer.Contracts.Rulesets;
@@ -12,13 +10,16 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
     private const string SystemOwnerId = "system";
     private readonly IRulesetPluginRegistry _pluginRegistry;
     private readonly IRulePackRegistryService _rulePackRegistryService;
+    private readonly IRuntimeFingerprintService _runtimeFingerprintService;
 
     public DefaultRuleProfileRegistryService(
         IRulesetPluginRegistry pluginRegistry,
-        IRulePackRegistryService rulePackRegistryService)
+        IRulePackRegistryService rulePackRegistryService,
+        IRuntimeFingerprintService runtimeFingerprintService)
     {
         _pluginRegistry = pluginRegistry;
         _rulePackRegistryService = rulePackRegistryService;
+        _runtimeFingerprintService = runtimeFingerprintService;
     }
 
     public IReadOnlyList<RuleProfileRegistryEntry> List(OwnerScope owner, string? rulesetId = null)
@@ -67,12 +68,11 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
         return entries;
     }
 
-    private static RuleProfileRegistryEntry CreateCoreProfile(IRulesetPlugin plugin)
+    private RuleProfileRegistryEntry CreateCoreProfile(IRulesetPlugin plugin)
     {
         string rulesetId = plugin.Id.NormalizedValue;
         ResolvedRuntimeLock runtimeLock = CreateRuntimeLock(
             plugin,
-            profileId: $"official.{rulesetId}.core",
             rulePacks: []);
 
         RuleProfileManifest manifest = new(
@@ -103,7 +103,7 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
         return new RuleProfileRegistryEntry(manifest, publication);
     }
 
-    private static RuleProfileRegistryEntry CreateOverlayProfile(
+    private RuleProfileRegistryEntry CreateOverlayProfile(
         IRulesetPlugin plugin,
         OwnerScope owner,
         IReadOnlyList<RulePackRegistryEntry> rulePacks)
@@ -116,7 +116,7 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
                 Required: true,
                 EnabledByDefault: true))
             .ToArray();
-        ResolvedRuntimeLock runtimeLock = CreateRuntimeLock(plugin, profileId, rulePacks);
+        ResolvedRuntimeLock runtimeLock = CreateRuntimeLock(plugin, rulePacks);
         RuleProfileManifest manifest = new(
             ProfileId: profileId,
             Title: $"{plugin.DisplayName} Local Overlay Catalog",
@@ -139,9 +139,8 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
         return new RuleProfileRegistryEntry(manifest, publication);
     }
 
-    private static ResolvedRuntimeLock CreateRuntimeLock(
+    private ResolvedRuntimeLock CreateRuntimeLock(
         IRulesetPlugin plugin,
-        string profileId,
         IReadOnlyList<RulePackRegistryEntry> rulePacks)
     {
         string rulesetId = plugin.Id.NormalizedValue;
@@ -167,6 +166,12 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
                 group => group.Key,
                 group => group.Last().ProviderId,
                 StringComparer.Ordinal);
+        string runtimeFingerprint = _runtimeFingerprintService.ComputeResolvedRuntimeFingerprint(
+            rulesetId,
+            [bundle],
+            rulePacks,
+            providerBindings,
+            EngineApiVersion);
 
         return new ResolvedRuntimeLock(
             RulesetId: rulesetId,
@@ -174,18 +179,6 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
             RulePacks: runtimeRulePacks,
             ProviderBindings: providerBindings,
             EngineApiVersion: EngineApiVersion,
-            RuntimeFingerprint: ComputeRuntimeFingerprint(profileId, rulesetId, runtimeRulePacks));
-    }
-
-    private static string ComputeRuntimeFingerprint(
-        string profileId,
-        string rulesetId,
-        IReadOnlyList<ArtifactVersionReference> rulePacks)
-    {
-        string fingerprintSource = string.Join(
-            "|",
-            [profileId, rulesetId, .. rulePacks.Select(rulePack => $"{rulePack.Id}@{rulePack.Version}")]);
-        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(fingerprintSource));
-        return $"sha256:{Convert.ToHexString(hash).ToLowerInvariant()}";
+            RuntimeFingerprint: runtimeFingerprint);
     }
 }

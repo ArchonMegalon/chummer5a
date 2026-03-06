@@ -65,7 +65,8 @@ public class RuleProfileRegistryServiceTests
                         PublicationStatus: RulePackPublicationStatuses.Published,
                         Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
                         Shares: []))
-            ]));
+            ]),
+            new DefaultRuntimeFingerprintService());
 
         IReadOnlyList<RuleProfileRegistryEntry> entries = service.List(OwnerScope.LocalSingleUser);
 
@@ -83,11 +84,69 @@ public class RuleProfileRegistryServiceTests
     {
         DefaultRuleProfileRegistryService service = new(
             new RulesetPluginRegistry([new StubRulesetPlugin(RulesetDefaults.Sr5, "Shadowrun Fifth Edition", schemaVersion: 5)]),
-            new RulePackRegistryServiceStub([]));
+            new RulePackRegistryServiceStub([]),
+            new DefaultRuntimeFingerprintService());
 
         RuleProfileRegistryEntry? entry = service.Get(OwnerScope.LocalSingleUser, "missing-profile", RulesetDefaults.Sr5);
 
         Assert.IsNull(entry);
+    }
+
+    [TestMethod]
+    public void Default_registry_service_runtime_fingerprint_tracks_rulepack_asset_checksums()
+    {
+        DefaultRuleProfileRegistryService checksumA = CreateServiceWithRulePackChecksum("sha256:abc");
+        DefaultRuleProfileRegistryService checksumB = CreateServiceWithRulePackChecksum("sha256:def");
+
+        string fingerprintA = checksumA.Get(OwnerScope.LocalSingleUser, "local.sr5.current-overlays", RulesetDefaults.Sr5)!.Manifest.RuntimeLock.RuntimeFingerprint;
+        string fingerprintB = checksumB.Get(OwnerScope.LocalSingleUser, "local.sr5.current-overlays", RulesetDefaults.Sr5)!.Manifest.RuntimeLock.RuntimeFingerprint;
+
+        Assert.AreNotEqual(fingerprintA, fingerprintB);
+    }
+
+    private static DefaultRuleProfileRegistryService CreateServiceWithRulePackChecksum(string checksum)
+    {
+        return new DefaultRuleProfileRegistryService(
+            new RulesetPluginRegistry([new StubRulesetPlugin(RulesetDefaults.Sr5, "Shadowrun Fifth Edition", schemaVersion: 5)]),
+            new RulePackRegistryServiceStub(
+            [
+                new RulePackRegistryEntry(
+                    new RulePackManifest(
+                        PackId: "house-rules",
+                        Version: "1.0.0",
+                        Title: "House Rules",
+                        Author: "GM",
+                        Description: "Campaign overlay.",
+                        Targets: [RulesetDefaults.Sr5],
+                        EngineApiVersion: "rulepack-v1",
+                        DependsOn: [],
+                        ConflictsWith: [],
+                        Visibility: ArtifactVisibilityModes.LocalOnly,
+                        TrustTier: ArtifactTrustTiers.LocalOnly,
+                        Assets:
+                        [
+                            new RulePackAssetDescriptor(
+                                Kind: RulePackAssetKinds.Xml,
+                                Mode: RulePackAssetModes.MergeCatalog,
+                                RelativePath: "data/qualities.xml",
+                                Checksum: checksum)
+                        ],
+                        Capabilities:
+                        [
+                            new RulePackCapabilityDescriptor(
+                                CapabilityId: RulePackCapabilityIds.ContentCatalog,
+                                AssetKind: RulePackAssetKinds.Xml,
+                                AssetMode: RulePackAssetModes.MergeCatalog)
+                        ],
+                        ExecutionPolicies: []),
+                    new RulePackPublicationMetadata(
+                        OwnerId: "system",
+                        Visibility: ArtifactVisibilityModes.LocalOnly,
+                        PublicationStatus: RulePackPublicationStatuses.Published,
+                        Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                        Shares: []))
+            ]),
+            new DefaultRuntimeFingerprintService());
     }
 
     private sealed class RulePackRegistryServiceStub : IRulePackRegistryService

@@ -316,6 +316,10 @@ public class MigrationComplianceTests
         string ruleProfileRegistryEndpointsText = File.ReadAllText(ruleProfileRegistryEndpointsPath);
         string ruleProfileRegistryServiceContractPath = FindPath("Chummer.Application", "Content", "IRuleProfileRegistryService.cs");
         string ruleProfileRegistryServiceContractText = File.ReadAllText(ruleProfileRegistryServiceContractPath);
+        string runtimeFingerprintServiceContractPath = FindPath("Chummer.Application", "Content", "IRuntimeFingerprintService.cs");
+        string runtimeFingerprintServiceContractText = File.ReadAllText(runtimeFingerprintServiceContractPath);
+        string runtimeFingerprintServicePath = FindPath("Chummer.Application", "Content", "DefaultRuntimeFingerprintService.cs");
+        string runtimeFingerprintServiceText = File.ReadAllText(runtimeFingerprintServicePath);
         string defaultRuleProfileRegistryServicePath = FindPath("Chummer.Application", "Content", "DefaultRuleProfileRegistryService.cs");
         string defaultRuleProfileRegistryServiceText = File.ReadAllText(defaultRuleProfileRegistryServicePath);
         string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
@@ -333,10 +337,17 @@ public class MigrationComplianceTests
         StringAssert.Contains(ruleProfileRegistryEndpointsText, "ruleprofile_not_found");
         StringAssert.Contains(ruleProfileRegistryServiceContractText, "public interface IRuleProfileRegistryService");
         StringAssert.Contains(ruleProfileRegistryServiceContractText, "IReadOnlyList<RuleProfileRegistryEntry> List");
+        StringAssert.Contains(runtimeFingerprintServiceContractText, "public interface IRuntimeFingerprintService");
+        StringAssert.Contains(runtimeFingerprintServiceText, "public sealed class DefaultRuntimeFingerprintService : IRuntimeFingerprintService");
+        StringAssert.Contains(runtimeFingerprintServiceText, "ComputeResolvedRuntimeFingerprint");
         StringAssert.Contains(defaultRuleProfileRegistryServiceText, "public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryService");
         StringAssert.Contains(defaultRuleProfileRegistryServiceText, "IRulePackRegistryService");
+        StringAssert.Contains(defaultRuleProfileRegistryServiceText, "IRuntimeFingerprintService");
+        StringAssert.Contains(defaultRuleProfileRegistryServiceText, "ComputeResolvedRuntimeFingerprint(");
+        Assert.IsFalse(defaultRuleProfileRegistryServiceText.Contains("ComputeRuntimeFingerprint(", StringComparison.Ordinal));
         StringAssert.Contains(defaultRuleProfileRegistryServiceText, "official.");
         StringAssert.Contains(defaultRuleProfileRegistryServiceText, "current-overlays");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeFingerprintService, DefaultRuntimeFingerprintService>()");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuleProfileRegistryService, DefaultRuleProfileRegistryService>()");
         StringAssert.Contains(readmeText, "/api/profiles/*");
     }
