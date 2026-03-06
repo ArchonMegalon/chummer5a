@@ -85,12 +85,14 @@ public interface IRulesetCatalogProvider
 
 public sealed record RulesetRuleEvaluationRequest(
     string RuleId,
-    IReadOnlyDictionary<string, object?> Inputs);
+    IReadOnlyDictionary<string, object?> Inputs,
+    RulesetExecutionOptions? Options = null);
 
 public sealed record RulesetRuleEvaluationResult(
     bool Success,
     IReadOnlyDictionary<string, object?> Outputs,
-    IReadOnlyList<string> Messages);
+    IReadOnlyList<string> Messages,
+    RulesetExplainTrace? Explain = null);
 
 public interface IRulesetRuleHost
 {
@@ -100,12 +102,14 @@ public interface IRulesetRuleHost
 public sealed record RulesetScriptExecutionRequest(
     string ScriptId,
     string ScriptSource,
-    IReadOnlyDictionary<string, object?> Inputs);
+    IReadOnlyDictionary<string, object?> Inputs,
+    RulesetExecutionOptions? Options = null);
 
 public sealed record RulesetScriptExecutionResult(
     bool Success,
     string? Error,
-    IReadOnlyDictionary<string, object?> Outputs);
+    IReadOnlyDictionary<string, object?> Outputs,
+    RulesetExplainTrace? Explain = null);
 
 public interface IRulesetScriptHost
 {

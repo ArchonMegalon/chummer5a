@@ -347,6 +347,26 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Ruleset_explain_contracts_lock_in_trace_and_gas_vocabulary()
+    {
+        string explainContractsPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetExplainContracts.cs");
+        string explainContractsText = File.ReadAllText(explainContractsPath);
+        string rulesetContractsPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetContracts.cs");
+        string rulesetContractsText = File.ReadAllText(rulesetContractsPath);
+
+        StringAssert.Contains(explainContractsText, "public sealed record RulesetGasBudget");
+        StringAssert.Contains(explainContractsText, "public sealed record RulesetExecutionOptions");
+        StringAssert.Contains(explainContractsText, "public sealed record RulesetGasUsage");
+        StringAssert.Contains(explainContractsText, "public sealed record RulesetExplainFragment");
+        StringAssert.Contains(explainContractsText, "public sealed record RulesetProviderTrace");
+        StringAssert.Contains(explainContractsText, "public sealed record RulesetExplainTrace");
+        StringAssert.Contains(explainContractsText, "ProviderInstructionLimit");
+        StringAssert.Contains(explainContractsText, "WallClockLimit");
+        StringAssert.Contains(rulesetContractsText, "RulesetExecutionOptions? Options = null");
+        StringAssert.Contains(rulesetContractsText, "RulesetExplainTrace? Explain = null");
+    }
+
+    [TestMethod]
     public void Api_registers_request_owner_context_accessor_with_opt_in_forwarded_owner_support()
     {
         string apiProgramPath = FindPath("Chummer.Api", "Program.cs");

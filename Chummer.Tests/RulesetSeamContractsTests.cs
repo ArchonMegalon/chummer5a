@@ -326,6 +326,117 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Ruleset_explain_contracts_capture_provider_traces_and_gas_usage()
+    {
+        RulesetGasBudget gasBudget = new(
+            ProviderInstructionLimit: 5000,
+            RequestInstructionLimit: 20000,
+            MemoryBytesLimit: 1_048_576,
+            WallClockLimit: TimeSpan.FromSeconds(1));
+        RulesetExecutionOptions options = new(
+            Explain: true,
+            GasBudget: gasBudget);
+        RulesetExplainTrace explainTrace = new(
+            SubjectId: "derive.stat",
+            Providers:
+            [
+                new RulesetProviderTrace(
+                    ProviderId: "sr5/derive.stat.body",
+                    CapabilityId: RulePackCapabilityIds.DeriveStat,
+                    PackId: "house-rules",
+                    Success: true,
+                    ExplainFragments:
+                    [
+                        new RulesetExplainFragment(
+                            Label: "Base Body",
+                            Value: "3",
+                            Reason: "Metatype base value.",
+                            PackId: "sr5-core",
+                            ProviderId: "sr5/derive.stat.body")
+                    ],
+                    GasUsage: new RulesetGasUsage(
+                        ProviderInstructionsConsumed: 120,
+                        RequestInstructionsConsumed: 120,
+                        PeakMemoryBytes: 4096),
+                    Messages: ["Derived body successfully."])
+            ],
+            Messages: ["Trace captured."],
+            AggregateGasUsage: new RulesetGasUsage(
+                ProviderInstructionsConsumed: 120,
+                RequestInstructionsConsumed: 120,
+                PeakMemoryBytes: 4096));
+        RulesetRuleEvaluationRequest ruleRequest = new(
+            RuleId: "derive.stat.body",
+            Inputs: new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["metatype"] = "human"
+            },
+            Options: options);
+        RulesetRuleEvaluationResult ruleResult = new(
+            Success: true,
+            Outputs: new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["value"] = 3
+            },
+            Messages: ["ok"],
+            Explain: explainTrace);
+        RulesetExplainTrace scriptExplainTrace = new(
+            SubjectId: "session.quick-actions",
+            Providers:
+            [
+                new RulesetProviderTrace(
+                    ProviderId: "sr5/session.quick-actions",
+                    CapabilityId: RulePackCapabilityIds.SessionQuickActions,
+                    PackId: "house-rules",
+                    Success: true,
+                    ExplainFragments:
+                    [
+                        new RulesetExplainFragment(
+                            Label: "Quick Action Set",
+                            Value: "2",
+                            Reason: "Pinned quick actions are session-safe.",
+                            PackId: "house-rules",
+                            ProviderId: "sr5/session.quick-actions")
+                    ],
+                    GasUsage: new RulesetGasUsage(
+                        ProviderInstructionsConsumed: 80,
+                        RequestInstructionsConsumed: 80,
+                        PeakMemoryBytes: 2048),
+                    Messages: ["Prepared quick actions."])
+            ],
+            Messages: ["Script trace captured."],
+            AggregateGasUsage: new RulesetGasUsage(
+                ProviderInstructionsConsumed: 80,
+                RequestInstructionsConsumed: 80,
+                PeakMemoryBytes: 2048));
+        RulesetScriptExecutionRequest scriptRequest = new(
+            ScriptId: "sr5/session.quick-actions",
+            ScriptSource: "-- compiled provider reference",
+            Inputs: new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["runtimeFingerprint"] = "runtime-lock-sha256"
+            },
+            Options: options);
+        RulesetScriptExecutionResult scriptResult = new(
+            Success: true,
+            Error: null,
+            Outputs: new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["quickActions"] = 2
+            },
+            Explain: scriptExplainTrace);
+
+        Assert.IsTrue(ruleRequest.Options?.Explain);
+        Assert.AreEqual(5000, ruleRequest.Options?.GasBudget?.ProviderInstructionLimit);
+        Assert.AreEqual(RulePackCapabilityIds.DeriveStat, ruleResult.Explain?.Providers[0].CapabilityId);
+        Assert.AreEqual(120, ruleResult.Explain?.AggregateGasUsage.RequestInstructionsConsumed);
+        Assert.AreEqual("derive.stat", ruleResult.Explain?.SubjectId);
+        Assert.IsTrue(scriptRequest.Options?.Explain);
+        Assert.AreEqual("sr5/session.quick-actions", scriptResult.Explain?.Providers[0].ProviderId);
+        Assert.AreEqual("house-rules", scriptResult.Explain?.Providers[0].PackId);
+    }
+
+    [TestMethod]
     public void Ruleset_defaults_expose_sr4_sr5_and_sr6_ids()
     {
         Assert.AreEqual(string.Empty, RulesetId.Default.NormalizedValue);
