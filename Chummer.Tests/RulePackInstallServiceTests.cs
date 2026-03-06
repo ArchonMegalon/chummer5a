@@ -56,8 +56,8 @@ public class RulePackInstallServiceTests
         Assert.AreEqual(RulePackInstallOutcomes.Applied, receipt.Outcome);
         Assert.AreEqual(ArtifactInstallStates.Installed, receipt.Install.State);
         Assert.AreEqual("workspace-1", receipt.Install.InstalledTargetId);
-        Assert.AreEqual(1, installStateStore.Upserts.Count);
-        Assert.AreEqual(1, installHistoryStore.Appends.Count);
+        Assert.HasCount(1, installStateStore.Upserts);
+        Assert.HasCount(1, installHistoryStore.Appends);
         Assert.AreEqual(ArtifactInstallHistoryOperations.Install, installHistoryStore.Appends[0].Entry.Operation);
     }
 

@@ -752,8 +752,16 @@ public class MigrationComplianceTests
         string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
         string hubEndpointsPath = FindPath("Chummer.Api", "Endpoints", "HubCatalogEndpoints.cs");
         string hubEndpointsText = File.ReadAllText(hubEndpointsPath);
+        string rulePackEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RulePackRegistryEndpoints.cs");
+        string rulePackEndpointsText = File.ReadAllText(rulePackEndpointsPath);
         string ruleProfileEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RuleProfileRegistryEndpoints.cs");
         string ruleProfileEndpointsText = File.ReadAllText(ruleProfileEndpointsPath);
+        string runtimeInspectorEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RuntimeInspectorEndpoints.cs");
+        string runtimeInspectorEndpointsText = File.ReadAllText(runtimeInspectorEndpointsPath);
+        string runtimeLockEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RuntimeLockRegistryEndpoints.cs");
+        string runtimeLockEndpointsText = File.ReadAllText(runtimeLockEndpointsPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
 
         StringAssert.Contains(apiProgramText, "app.UseRouting();");
         StringAssert.Contains(apiProgramText, "AllowsPublicApiKeyBypass(context)");
@@ -763,9 +771,18 @@ public class MigrationComplianceTests
         StringAssert.Contains(publicApiMetadataText, "AllowPublicApiKeyBypass");
         StringAssert.Contains(infoEndpointsText, "AllowPublicApiKeyBypass()");
         StringAssert.Contains(hubEndpointsText, "AllowPublicApiKeyBypass()");
+        Assert.AreEqual(2, Regex.Count(rulePackEndpointsText, "AllowPublicApiKeyBypass\\(\\)"), "RulePack registry should expose only list/detail as public metadata endpoints.");
+        Assert.AreEqual(3, Regex.Count(ruleProfileEndpointsText, "AllowPublicApiKeyBypass\\(\\)"), "RuleProfile registry should expose list/detail/preview as public metadata endpoints.");
+        Assert.AreEqual(1, Regex.Count(runtimeInspectorEndpointsText, "AllowPublicApiKeyBypass\\(\\)"), "Runtime inspector should expose only the profile projection as public metadata.");
+        Assert.AreEqual(2, Regex.Count(runtimeLockEndpointsText, "AllowPublicApiKeyBypass\\(\\)"), "Runtime lock registry should expose only list/detail as public metadata endpoints.");
+        StringAssert.Contains(rulePackEndpointsText, "\"/api/rulepacks/{packId}/install-preview\"");
+        StringAssert.Contains(rulePackEndpointsText, "\"/api/rulepacks/{packId}/install\"");
         StringAssert.Contains(ruleProfileEndpointsText, "\"/api/profiles/{profileId}/preview\"");
         StringAssert.Contains(ruleProfileEndpointsText, "\"/api/profiles/{profileId}/apply\"");
-        StringAssert.Contains(ruleProfileEndpointsText, "AllowPublicApiKeyBypass()");
+        StringAssert.Contains(runtimeLockEndpointsText, "\"/api/runtime/locks/{lockId}/install-preview\"");
+        StringAssert.Contains(runtimeLockEndpointsText, "\"/api/runtime/locks/{lockId}/install\"");
+        StringAssert.Contains(readmeText, "explicit endpoint metadata");
+        StringAssert.Contains(readmeText, "protected and are not exposed through prefix-based allowlists");
     }
 
     [TestMethod]

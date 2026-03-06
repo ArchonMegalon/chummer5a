@@ -510,6 +510,11 @@ public class ApiIntegrationTests
 
         JsonObject runtimeLocks = await GetRequiredJsonObject(client, "/api/runtime/locks?ruleset=sr5");
         Assert.IsNotNull(runtimeLocks["count"]);
+
+        using HttpResponseMessage hubPreviewResponse = await client.PostAsJsonAsync(
+            "/api/hub/projects/ruleprofile/official.sr5.core/install-preview?ruleset=sr5",
+            target);
+        hubPreviewResponse.EnsureSuccessStatusCode();
     }
 
     [TestMethod]
