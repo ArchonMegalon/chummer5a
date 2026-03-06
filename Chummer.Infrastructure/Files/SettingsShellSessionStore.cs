@@ -24,7 +24,7 @@ public sealed class SettingsShellSessionStore : IShellSessionStore
 
     public ShellSessionState Load(OwnerScope owner)
     {
-        var settings = _settingsStore.Load(SettingsOwnerScope.Resolve(owner));
+        var settings = _settingsStore.Load(owner, SettingsOwnerScope.GlobalSettingsScope);
         string? activeWorkspaceId = settings[ActiveWorkspaceIdKey]?.GetValue<string>();
         string? activeTabId = settings[ActiveTabIdKey]?.GetValue<string>();
         return new ShellSessionState(
@@ -40,8 +40,7 @@ public sealed class SettingsShellSessionStore : IShellSessionStore
 
     public void Save(OwnerScope owner, ShellSessionState session)
     {
-        string scope = SettingsOwnerScope.Resolve(owner);
-        var settings = _settingsStore.Load(scope);
+        var settings = _settingsStore.Load(owner, SettingsOwnerScope.GlobalSettingsScope);
         if (string.IsNullOrWhiteSpace(session.ActiveWorkspaceId))
         {
             settings.Remove(ActiveWorkspaceIdKey);
@@ -61,7 +60,7 @@ public sealed class SettingsShellSessionStore : IShellSessionStore
         }
 
         SaveWorkspaceTabMap(settings, session.ActiveTabsByWorkspace);
-        _settingsStore.Save(scope, settings);
+        _settingsStore.Save(owner, SettingsOwnerScope.GlobalSettingsScope, settings);
     }
 
     private static IReadOnlyDictionary<string, string>? LoadWorkspaceTabMap(JsonObject settings)

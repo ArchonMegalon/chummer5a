@@ -21,7 +21,7 @@ public sealed class SettingsShellPreferencesStore : IShellPreferencesStore
 
     public ShellPreferences Load(OwnerScope owner)
     {
-        var settings = _settingsStore.Load(SettingsOwnerScope.Resolve(owner));
+        var settings = _settingsStore.Load(owner, SettingsOwnerScope.GlobalSettingsScope);
         string preferredRulesetId = settings[PreferredRulesetIdKey]?.GetValue<string>() ?? string.Empty;
         return new ShellPreferences(preferredRulesetId);
     }
@@ -33,9 +33,8 @@ public sealed class SettingsShellPreferencesStore : IShellPreferencesStore
 
     public void Save(OwnerScope owner, ShellPreferences preferences)
     {
-        string scope = SettingsOwnerScope.Resolve(owner);
-        var settings = _settingsStore.Load(scope);
+        var settings = _settingsStore.Load(owner, SettingsOwnerScope.GlobalSettingsScope);
         settings[PreferredRulesetIdKey] = preferences.PreferredRulesetId;
-        _settingsStore.Save(scope, settings);
+        _settingsStore.Save(owner, SettingsOwnerScope.GlobalSettingsScope, settings);
     }
 }

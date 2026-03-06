@@ -223,10 +223,14 @@ public class MigrationComplianceTests
         string workspaceServiceContractText = File.ReadAllText(workspaceServiceContractPath);
         string rosterStoreContractPath = FindPath("Chummer.Application", "Tools", "IRosterStore.cs");
         string rosterStoreContractText = File.ReadAllText(rosterStoreContractPath);
+        string settingsStoreContractPath = FindPath("Chummer.Application", "Tools", "ISettingsStore.cs");
+        string settingsStoreContractText = File.ReadAllText(settingsStoreContractPath);
         string fileWorkspaceStorePath = FindPath("Chummer.Infrastructure", "Workspaces", "FileWorkspaceStore.cs");
         string fileWorkspaceStoreText = File.ReadAllText(fileWorkspaceStorePath);
         string fileRosterStorePath = FindPath("Chummer.Infrastructure", "Files", "FileRosterStore.cs");
         string fileRosterStoreText = File.ReadAllText(fileRosterStorePath);
+        string fileSettingsStorePath = FindPath("Chummer.Infrastructure", "Files", "FileSettingsStore.cs");
+        string fileSettingsStoreText = File.ReadAllText(fileSettingsStorePath);
         string ownerScopedStatePath = FindPath("Chummer.Infrastructure", "Files", "OwnerScopedStatePath.cs");
         string ownerScopedStateText = File.ReadAllText(ownerScopedStatePath);
 
@@ -247,10 +251,14 @@ public class MigrationComplianceTests
         StringAssert.Contains(workspaceServiceContractText, "List(OwnerScope owner, int? maxCount = null)");
         StringAssert.Contains(rosterStoreContractText, "Load(OwnerScope owner)");
         StringAssert.Contains(rosterStoreContractText, "Upsert(OwnerScope owner, RosterEntry entry)");
+        StringAssert.Contains(settingsStoreContractText, "JsonObject Load(OwnerScope owner, string scope)");
+        StringAssert.Contains(settingsStoreContractText, "void Save(OwnerScope owner, string scope, JsonObject settings)");
         StringAssert.Contains(fileWorkspaceStoreText, "OwnerScopedStatePath.ResolveOwnerDirectory");
         StringAssert.Contains(fileWorkspaceStoreText, "OwnerScope.LocalSingleUser");
         StringAssert.Contains(fileRosterStoreText, "OwnerScopedStatePath.ResolveOwnerDirectory");
         StringAssert.Contains(fileRosterStoreText, "OwnerScope.LocalSingleUser");
+        StringAssert.Contains(fileSettingsStoreText, "OwnerScopedStatePath.ResolveOwnerDirectory");
+        StringAssert.Contains(fileSettingsStoreText, "OwnerScope.LocalSingleUser");
         StringAssert.Contains(ownerScopedStateText, "OwnerScope owner");
         StringAssert.Contains(ownerScopedStateText, "Path.Combine(");
     }
@@ -276,6 +284,28 @@ public class MigrationComplianceTests
         StringAssert.Contains(overlayServiceText, "manifest.Checksums");
         StringAssert.Contains(readmeText, "\"checksums\"");
         StringAssert.Contains(readmeText, "CHUMMER_REQUIRE_CONTENT_BUNDLE");
+    }
+
+    [TestMethod]
+    public void Api_registers_request_owner_context_accessor_with_opt_in_forwarded_owner_support()
+    {
+        string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
+        string apiProgramText = File.ReadAllText(apiProgramPath);
+        string requestOwnerAccessorPath = FindPath("Chummer.Api", "Owners", "RequestOwnerContextAccessor.cs");
+        string requestOwnerAccessorText = File.ReadAllText(requestOwnerAccessorPath);
+
+        StringAssert.Contains(apiProgramText, "AddHttpContextAccessor();");
+        StringAssert.Contains(apiProgramText, "CHUMMER_ALLOW_OWNER_HEADER");
+        StringAssert.Contains(apiProgramText, "CHUMMER_OWNER_HEADER_NAME");
+        StringAssert.Contains(apiProgramText, "AddSingleton<IOwnerContextAccessor>(");
+        StringAssert.Contains(apiProgramText, "new RequestOwnerContextAccessor(");
+        StringAssert.Contains(apiProgramText, "\"X-Chummer-Owner\"");
+
+        StringAssert.Contains(requestOwnerAccessorText, "public sealed class RequestOwnerContextAccessor");
+        StringAssert.Contains(requestOwnerAccessorText, "OwnerScope.LocalSingleUser");
+        StringAssert.Contains(requestOwnerAccessorText, "ClaimTypes.NameIdentifier");
+        StringAssert.Contains(requestOwnerAccessorText, "principal.FindFirst(\"sub\")?.Value");
+        StringAssert.Contains(requestOwnerAccessorText, "context.Request.Headers[_headerName].FirstOrDefault()");
     }
 
     [TestMethod]
@@ -1040,9 +1070,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(shellSessionServiceText, "Load(OwnerScope owner)");
         StringAssert.Contains(shellSessionServiceText, "Save(OwnerScope owner, ShellSessionState session)");
         StringAssert.Contains(shellSessionServiceText, "OwnerScope.LocalSingleUser");
-        StringAssert.Contains(shellPreferencesStoreText, "SettingsOwnerScope.Resolve(owner)");
-        StringAssert.Contains(shellSessionStoreText, "SettingsOwnerScope.Resolve(owner)");
-        StringAssert.Contains(settingsOwnerScopeText, "owner.IsLocalSingleUser");
+        StringAssert.Contains(shellPreferencesStoreText, "_settingsStore.Load(owner, SettingsOwnerScope.GlobalSettingsScope)");
+        StringAssert.Contains(shellPreferencesStoreText, "_settingsStore.Save(owner, SettingsOwnerScope.GlobalSettingsScope, settings)");
+        StringAssert.Contains(shellSessionStoreText, "_settingsStore.Load(owner, SettingsOwnerScope.GlobalSettingsScope)");
+        StringAssert.Contains(shellSessionStoreText, "_settingsStore.Save(owner, SettingsOwnerScope.GlobalSettingsScope, settings)");
         StringAssert.Contains(settingsOwnerScopeText, "GlobalSettingsScope");
         StringAssert.Contains(localOwnerContextAccessorText, "OwnerScope.LocalSingleUser");
 
@@ -1056,6 +1087,8 @@ public class MigrationComplianceTests
     [TestMethod]
     public void Owner_context_accessor_routes_api_and_runtime_calls_through_owner_scoped_services()
     {
+        string settingsEndpointsPath = FindPath("Chummer.Api", "Endpoints", "SettingsEndpoints.cs");
+        string settingsEndpointsText = File.ReadAllText(settingsEndpointsPath);
         string workspaceEndpointsPath = FindPath("Chummer.Api", "Endpoints", "WorkspaceEndpoints.cs");
         string workspaceEndpointsText = File.ReadAllText(workspaceEndpointsPath);
         string rosterEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RosterEndpoints.cs");
@@ -1079,6 +1112,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(rosterEndpointsText, "IOwnerContextAccessor ownerContextAccessor");
         StringAssert.Contains(rosterEndpointsText, "rosterStore.Load(owner)");
         StringAssert.Contains(rosterEndpointsText, "rosterStore.Upsert(owner, entry)");
+        StringAssert.Contains(settingsEndpointsText, "IOwnerContextAccessor ownerContextAccessor");
+        StringAssert.Contains(settingsEndpointsText, "settingsStore.Load(owner, normalizedScope)");
+        StringAssert.Contains(settingsEndpointsText, "settingsStore.Save(owner, normalizedScope, settings ?? new JsonObject())");
 
         StringAssert.Contains(inProcessClientText, "private readonly IOwnerContextAccessor _ownerContextAccessor;");
         StringAssert.Contains(inProcessClientText, "_ownerContextAccessor = ownerContextAccessor ?? new LocalOwnerContextAccessor();");

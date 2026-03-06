@@ -81,7 +81,12 @@ public sealed class ShellOwnerScopeTests
             Assert.AreEqual("sr6", store.Load(alice).PreferredRulesetId);
             Assert.AreEqual(string.Empty, store.Load(new OwnerScope("bob@example.com")).PreferredRulesetId);
             Assert.IsTrue(File.Exists(Path.Combine(stateDirectory, "global-settings.json")));
-            Assert.IsTrue(Directory.EnumerateFiles(stateDirectory, "owner-*-settings.json").Any());
+            Assert.IsTrue(File.Exists(Path.Combine(
+                stateDirectory,
+                "owners",
+                Uri.EscapeDataString(alice.NormalizedValue),
+                "settings",
+                "global-settings.json")));
         }
         finally
         {
@@ -106,7 +111,12 @@ public sealed class ShellOwnerScopeTests
             Assert.AreEqual("ws-alice", store.Load(alice).ActiveWorkspaceId);
             Assert.IsNull(store.Load(new OwnerScope("bob@example.com")).ActiveWorkspaceId);
             Assert.IsTrue(File.Exists(Path.Combine(stateDirectory, "global-settings.json")));
-            Assert.IsTrue(Directory.EnumerateFiles(stateDirectory, "owner-*-settings.json").Any());
+            Assert.IsTrue(File.Exists(Path.Combine(
+                stateDirectory,
+                "owners",
+                Uri.EscapeDataString(alice.NormalizedValue),
+                "settings",
+                "global-settings.json")));
         }
         finally
         {

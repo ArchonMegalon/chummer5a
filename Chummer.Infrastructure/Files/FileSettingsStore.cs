@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Chummer.Application.Tools;
+using Chummer.Contracts.Owners;
 
 namespace Chummer.Infrastructure.Files;
 
@@ -16,7 +17,12 @@ public sealed class FileSettingsStore : ISettingsStore
 
     public JsonObject Load(string scope)
     {
-        string path = GetPath(scope);
+        return Load(OwnerScope.LocalSingleUser, scope);
+    }
+
+    public JsonObject Load(OwnerScope owner, string scope)
+    {
+        string path = GetPath(owner, scope);
         if (!File.Exists(path))
             return new JsonObject();
 
@@ -40,7 +46,13 @@ public sealed class FileSettingsStore : ISettingsStore
 
     public void Save(string scope, JsonObject settings)
     {
-        string path = GetPath(scope);
+        Save(OwnerScope.LocalSingleUser, scope, settings);
+    }
+
+    public void Save(OwnerScope owner, string scope, JsonObject settings)
+    {
+        string path = GetPath(owner, scope);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         string json = settings.ToJsonString(new JsonSerializerOptions
         {
             WriteIndented = false
@@ -48,8 +60,16 @@ public sealed class FileSettingsStore : ISettingsStore
         File.WriteAllText(path, json);
     }
 
-    private string GetPath(string scope)
+    private string GetPath(OwnerScope owner, string scope)
     {
-        return Path.Combine(_stateDirectory, $"{scope}-settings.json");
+        if (owner.IsLocalSingleUser || string.IsNullOrWhiteSpace(owner.NormalizedValue))
+        {
+            return Path.Combine(_stateDirectory, $"{scope}-settings.json");
+        }
+
+        return Path.Combine(
+            OwnerScopedStatePath.ResolveOwnerDirectory(_stateDirectory, owner),
+            "settings",
+            $"{scope}-settings.json");
     }
 }

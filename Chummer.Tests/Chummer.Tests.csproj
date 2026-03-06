@@ -165,6 +165,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Chummer.Avalonia\Chummer.Avalonia.csproj" />
+    <ProjectReference Include="..\Chummer.Api\Chummer.Api.csproj" />
     <ProjectReference Include="..\Chummer.Application\Chummer.Application.csproj" />
     <ProjectReference Include="..\Chummer.Blazor\Chummer.Blazor.csproj" />
     <ProjectReference Include="..\Chummer.Contracts\Chummer.Contracts.csproj" />

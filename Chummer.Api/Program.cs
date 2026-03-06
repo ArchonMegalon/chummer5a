@@ -1,12 +1,26 @@
 using System.Security.Cryptography;
 using System.Text;
+using Chummer.Application.Owners;
 using Chummer.Infrastructure.DependencyInjection;
 using Chummer.Api.Endpoints;
+using Chummer.Api.Owners;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddChummerHeadlessCore(AppContext.BaseDirectory, Directory.GetCurrentDirectory(), requireContentBundle: true);
 builder.Services.AddOpenApi();
+builder.Services.AddHttpContextAccessor();
+
+bool allowOwnerHeader = ResolveBoolean(
+    builder.Configuration["Chummer:AllowOwnerHeader"],
+    Environment.GetEnvironmentVariable("CHUMMER_ALLOW_OWNER_HEADER"));
+string ownerHeaderName = ResolveOwnerHeaderName(
+    builder.Configuration["Chummer:OwnerHeaderName"],
+    Environment.GetEnvironmentVariable("CHUMMER_OWNER_HEADER_NAME"));
+builder.Services.AddSingleton<IOwnerContextAccessor>(provider =>
+    new RequestOwnerContextAccessor(
+        provider.GetRequiredService<IHttpContextAccessor>(),
+        allowOwnerHeader ? ownerHeaderName : null));
 
 var app = builder.Build();
 app.UseDefaultFiles();
@@ -103,6 +117,14 @@ static bool ResolveBoolean(string? configuredValue, string? environmentValue)
 {
     string? raw = configuredValue ?? environmentValue;
     return bool.TryParse(raw, out bool parsed) && parsed;
+}
+
+static string ResolveOwnerHeaderName(string? configuredValue, string? environmentValue)
+{
+    string? raw = configuredValue ?? environmentValue;
+    return string.IsNullOrWhiteSpace(raw)
+        ? "X-Chummer-Owner"
+        : raw.Trim();
 }
 
 static bool ConstantTimeEquals(string left, string right)
