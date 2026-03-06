@@ -1119,6 +1119,8 @@ public class MigrationComplianceTests
         string rulesetHostingDiExtensionsText = File.ReadAllText(rulesetHostingDiExtensionsPath);
         string sr5RulesetPluginPath = FindPath("Chummer.Rulesets.Sr5", "Sr5RulesetPlugin.cs");
         string sr5RulesetPluginText = File.ReadAllText(sr5RulesetPluginPath);
+        string sr5ShellCatalogsPath = FindPath("Chummer.Rulesets.Sr5", "Sr5ShellCatalogs.cs");
+        string sr5ShellCatalogsText = File.ReadAllText(sr5ShellCatalogsPath);
         string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
         string infrastructureDiText = File.ReadAllText(infrastructureDiPath);
         string desktopRuntimeDiPath = FindPath("Chummer.Desktop.Runtime", "ServiceCollectionDesktopRuntimeExtensions.cs");
@@ -1152,6 +1154,14 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetDiExtensionsText, "AddSr5Ruleset(this IServiceCollection services)");
         StringAssert.Contains(rulesetDiExtensionsText, "Chummer.Rulesets.Sr5.Sr5RulesetPlugin");
         StringAssert.Contains(sr5RulesetPluginText, "public class Sr5RulesetPlugin");
+        Assert.IsFalse(sr5RulesetPluginText.Contains("AppCommandCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(sr5RulesetPluginText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(sr5RulesetPluginText.Contains("WorkspaceSurfaceActionCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(sr5RulesetPluginText.Contains("DesktopUiControlCatalog.ForRuleset(", StringComparison.Ordinal));
+        StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5AppCommandCatalog");
+        StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5NavigationTabCatalog");
+        StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5WorkspaceSurfaceActionCatalog");
+        StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5DesktopUiControlCatalog");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "AddRulesetInfrastructure(this IServiceCollection services)");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");

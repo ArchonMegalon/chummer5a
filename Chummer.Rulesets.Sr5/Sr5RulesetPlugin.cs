@@ -45,12 +45,12 @@ public class Sr5RulesetShellDefinitionProvider : IRulesetShellDefinitionProvider
 {
     public IReadOnlyList<AppCommandDefinition> GetCommands()
     {
-        return AppCommandCatalog.ForRuleset(RulesetDefaults.Sr5);
+        return Sr5AppCommandCatalog.All;
     }
 
     public IReadOnlyList<NavigationTabDefinition> GetNavigationTabs()
     {
-        return NavigationTabCatalog.ForRuleset(RulesetDefaults.Sr5);
+        return Sr5NavigationTabCatalog.All;
     }
 }
 
@@ -58,12 +58,12 @@ public class Sr5RulesetCatalogProvider : IRulesetCatalogProvider
 {
     public IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions()
     {
-        return WorkspaceSurfaceActionCatalog.ForRuleset(RulesetDefaults.Sr5);
+        return Sr5WorkspaceSurfaceActionCatalog.All;
     }
 
     public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls()
     {
-        return DesktopUiControlCatalog.ForRuleset(RulesetDefaults.Sr5);
+        return Sr5DesktopUiControlCatalog.All;
     }
 }
 
