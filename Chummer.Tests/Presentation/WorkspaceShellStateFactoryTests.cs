@@ -1,5 +1,6 @@
 using System;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -38,6 +39,7 @@ public class WorkspaceShellStateFactoryTests
                     Name: "A",
                     Alias: "AA",
                     LastOpenedUtc: DateTimeOffset.UtcNow,
+                    RulesetId: RulesetDefaults.Sr5,
                     HasSavedWorkspace: true)
             ],
             RecentWorkspaceIds: [new CharacterWorkspaceId("ws-a")]);

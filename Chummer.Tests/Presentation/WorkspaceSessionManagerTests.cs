@@ -43,8 +43,8 @@ public class WorkspaceSessionManagerTests
         WorkspaceSessionManager manager = new();
         OpenWorkspaceState[] existing =
         [
-            new(new CharacterWorkspaceId("ws-1"), "One", "A", DateTimeOffset.UtcNow.AddMinutes(-10)),
-            new(new CharacterWorkspaceId("ws-2"), "Two", "B", DateTimeOffset.UtcNow.AddMinutes(-5))
+            new(new CharacterWorkspaceId("ws-1"), "One", "A", DateTimeOffset.UtcNow.AddMinutes(-10), RulesetDefaults.Sr5),
+            new(new CharacterWorkspaceId("ws-2"), "Two", "B", DateTimeOffset.UtcNow.AddMinutes(-5), RulesetDefaults.Sr5)
         ];
 
         IReadOnlyList<OpenWorkspaceState> updated = manager.Activate(
@@ -99,8 +99,8 @@ public class WorkspaceSessionManagerTests
         WorkspaceSessionManager manager = new();
         OpenWorkspaceState[] existing =
         [
-            new(new CharacterWorkspaceId("ws-top"), "Top", "T", DateTimeOffset.UtcNow),
-            new(new CharacterWorkspaceId("ws-next"), "Next", "N", DateTimeOffset.UtcNow.AddMinutes(-1))
+            new(new CharacterWorkspaceId("ws-top"), "Top", "T", DateTimeOffset.UtcNow, RulesetDefaults.Sr5),
+            new(new CharacterWorkspaceId("ws-next"), "Next", "N", DateTimeOffset.UtcNow.AddMinutes(-1), RulesetDefaults.Sr5)
         ];
 
         IReadOnlyList<OpenWorkspaceState> remaining = manager.Close(existing, new CharacterWorkspaceId("ws-top"));

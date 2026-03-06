@@ -1,5 +1,4 @@
 using Chummer.Contracts.Presentation;
-using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Shell;
@@ -9,8 +8,8 @@ public sealed record ShellBootstrapData(
     IReadOnlyList<AppCommandDefinition> Commands,
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     IReadOnlyList<WorkspaceListItem> Workspaces,
-    string PreferredRulesetId = RulesetDefaults.Sr5,
-    string ActiveRulesetId = RulesetDefaults.Sr5,
+    string PreferredRulesetId,
+    string ActiveRulesetId,
     CharacterWorkspaceId? ActiveWorkspaceId = null,
     string? ActiveTabId = null,
     IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace = null);

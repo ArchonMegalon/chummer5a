@@ -6,6 +6,7 @@ using System.Linq;
 using Bunit;
 using Chummer.Blazor.Components.Shell;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -114,8 +115,8 @@ public sealed class BlazorShellComponentTests
     {
         CharacterWorkspaceId ws1 = new("ws-1");
         CharacterWorkspaceId ws2 = new("ws-2");
-        OpenWorkspaceState dirtyWorkspace = new(ws1, "Ares Runner", "AR", DateTimeOffset.UtcNow, HasSavedWorkspace: false);
-        OpenWorkspaceState savedWorkspace = new(ws2, "Neo Runner", "NR", DateTimeOffset.UtcNow.AddMinutes(-1), HasSavedWorkspace: true);
+        OpenWorkspaceState dirtyWorkspace = new(ws1, "Ares Runner", "AR", DateTimeOffset.UtcNow, RulesetDefaults.Sr5, HasSavedWorkspace: false);
+        OpenWorkspaceState savedWorkspace = new(ws2, "Neo Runner", "NR", DateTimeOffset.UtcNow.AddMinutes(-1), RulesetDefaults.Sr5, HasSavedWorkspace: true);
 
         using var context = new BunitContext();
         IRenderedComponent<MdiStrip> cut = context.Render<MdiStrip>(parameters => parameters
@@ -133,7 +134,7 @@ public sealed class BlazorShellComponentTests
     public void WorkspaceLeftPane_renders_shell_controls_and_invokes_callbacks()
     {
         CharacterWorkspaceId workspaceId = new("ws-1");
-        OpenWorkspaceState openWorkspace = new(workspaceId, "Ares Runner", "AR", DateTimeOffset.UtcNow);
+        OpenWorkspaceState openWorkspace = new(workspaceId, "Ares Runner", "AR", DateTimeOffset.UtcNow, RulesetDefaults.Sr5);
         CharacterOverviewState state = CharacterOverviewState.Empty with
         {
             Session = new WorkspaceSessionState(workspaceId, [openWorkspace], [workspaceId]),
