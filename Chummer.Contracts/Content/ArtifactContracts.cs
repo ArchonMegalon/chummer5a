@@ -46,6 +46,30 @@ public static class RulePackAssetModes
     public const string DisableProvider = "disable-provider";
 }
 
+public static class RulePackCapabilityIds
+{
+    public const string ContentCatalog = "content.catalog";
+    public const string Localization = "localization";
+    public const string DeriveStat = "derive.stat";
+    public const string ValidateCharacter = "validate.character";
+    public const string CreationProfile = "creation.profile";
+    public const string SessionQuickActions = "session.quick-actions";
+}
+
+public static class RulePackExecutionEnvironments
+{
+    public const string DesktopLocal = "desktop-local";
+    public const string HostedServer = "hosted-server";
+    public const string SessionRuntimeBundle = "session-runtime-bundle";
+}
+
+public static class RulePackExecutionPolicyModes
+{
+    public const string Allow = "allow";
+    public const string ReviewRequired = "review-required";
+    public const string Deny = "deny";
+}
+
 public sealed record ArtifactVersionReference(
     string Id,
     string Version);
@@ -64,6 +88,19 @@ public sealed record RulePackAssetDescriptor(
     string RelativePath,
     string Checksum);
 
+public sealed record RulePackCapabilityDescriptor(
+    string CapabilityId,
+    string AssetKind,
+    string AssetMode,
+    bool Explainable = false,
+    bool SessionSafe = false);
+
+public sealed record RulePackExecutionPolicyHint(
+    string Environment,
+    string PolicyMode,
+    string MinimumTrustTier,
+    IReadOnlyList<string> AllowedAssetModes);
+
 public sealed record RulePackManifest(
     string PackId,
     string Version,
@@ -77,6 +114,8 @@ public sealed record RulePackManifest(
     string Visibility,
     string TrustTier,
     IReadOnlyList<RulePackAssetDescriptor> Assets,
+    IReadOnlyList<RulePackCapabilityDescriptor> Capabilities,
+    IReadOnlyList<RulePackExecutionPolicyHint> ExecutionPolicies,
     string? Signature = null);
 
 public sealed record RulePackCatalog(

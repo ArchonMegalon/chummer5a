@@ -214,6 +214,14 @@ public class ContentOverlayCatalogServiceTests
             Assert.IsTrue(rulePack.Assets.Any(asset => string.Equals(asset.Kind, RulePackAssetKinds.Xml, StringComparison.Ordinal)));
             Assert.IsTrue(rulePack.Assets.Any(asset => string.Equals(asset.Kind, RulePackAssetKinds.Localization, StringComparison.Ordinal)));
             Assert.IsTrue(rulePack.Assets.Any(asset => string.Equals(asset.Mode, RulePackAssetModes.MergeCatalog, StringComparison.Ordinal)));
+            Assert.IsTrue(rulePack.Capabilities.Any(capability => string.Equals(capability.CapabilityId, RulePackCapabilityIds.ContentCatalog, StringComparison.Ordinal)));
+            Assert.IsTrue(rulePack.Capabilities.Any(capability => string.Equals(capability.CapabilityId, RulePackCapabilityIds.Localization, StringComparison.Ordinal)));
+            Assert.IsTrue(rulePack.ExecutionPolicies.Any(policy =>
+                string.Equals(policy.Environment, RulePackExecutionEnvironments.DesktopLocal, StringComparison.Ordinal)
+                && string.Equals(policy.PolicyMode, RulePackExecutionPolicyModes.Allow, StringComparison.Ordinal)));
+            Assert.IsTrue(rulePack.ExecutionPolicies.Any(policy =>
+                string.Equals(policy.Environment, RulePackExecutionEnvironments.HostedServer, StringComparison.Ordinal)
+                && string.Equals(policy.PolicyMode, RulePackExecutionPolicyModes.Deny, StringComparison.Ordinal)));
         }
         finally
         {

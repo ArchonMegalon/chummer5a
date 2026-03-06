@@ -302,6 +302,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(artifactContractsText, "public sealed record BuildKitManifest");
         StringAssert.Contains(artifactContractsText, "public sealed record ResolvedRuntimeLock");
         StringAssert.Contains(artifactContractsText, "public static class RulePackAssetModes");
+        StringAssert.Contains(artifactContractsText, "public static class RulePackCapabilityIds");
+        StringAssert.Contains(artifactContractsText, "public static class RulePackExecutionEnvironments");
+        StringAssert.Contains(artifactContractsText, "public static class RulePackExecutionPolicyModes");
+        StringAssert.Contains(artifactContractsText, "public sealed record RulePackCapabilityDescriptor");
+        StringAssert.Contains(artifactContractsText, "public sealed record RulePackExecutionPolicyHint");
         StringAssert.Contains(artifactContractsText, "public static class ArtifactVisibilityModes");
         Assert.IsFalse(artifactContractsText.Contains("public sealed record Pack(", StringComparison.Ordinal));
 
@@ -312,6 +317,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(overlayBridgeText, "ArtifactTrustTiers.LocalOnly");
         StringAssert.Contains(overlayBridgeText, "RulePackAssetKinds.Xml");
         StringAssert.Contains(overlayBridgeText, "RulePackAssetKinds.Localization");
+        StringAssert.Contains(overlayBridgeText, "RulePackCapabilityIds.ContentCatalog");
+        StringAssert.Contains(overlayBridgeText, "RulePackExecutionEnvironments.DesktopLocal");
+        StringAssert.Contains(overlayBridgeText, "RulePackExecutionPolicyModes.Deny");
     }
 
     [TestMethod]

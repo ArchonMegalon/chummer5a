@@ -98,6 +98,23 @@ public class RulesetSeamContractsTests
                     Mode: RulePackAssetModes.MergeCatalog,
                     RelativePath: "data/qualities.xml",
                     Checksum: "sha256:abc")
+            ],
+            Capabilities:
+            [
+                new RulePackCapabilityDescriptor(
+                    CapabilityId: RulePackCapabilityIds.ValidateCharacter,
+                    AssetKind: RulePackAssetKinds.Lua,
+                    AssetMode: RulePackAssetModes.AddProvider,
+                    Explainable: true,
+                    SessionSafe: false)
+            ],
+            ExecutionPolicies:
+            [
+                new RulePackExecutionPolicyHint(
+                    Environment: RulePackExecutionEnvironments.HostedServer,
+                    PolicyMode: RulePackExecutionPolicyModes.ReviewRequired,
+                    MinimumTrustTier: ArtifactTrustTiers.Curated,
+                    AllowedAssetModes: [RulePackAssetModes.AddProvider, RulePackAssetModes.WrapProvider])
             ]);
         BuildKitManifest buildKit = new(
             BuildKitId: "street-sam-starter",
@@ -125,6 +142,8 @@ public class RulesetSeamContractsTests
         Assert.AreEqual("runtime-lock-sha256", runtimeLock.RuntimeFingerprint);
         Assert.AreEqual(RulePackAssetModes.MergeCatalog, rulePack.Assets[0].Mode);
         Assert.AreEqual(RulePackAssetKinds.Xml, rulePack.Assets[0].Kind);
+        Assert.AreEqual(RulePackCapabilityIds.ValidateCharacter, rulePack.Capabilities[0].CapabilityId);
+        Assert.AreEqual(RulePackExecutionEnvironments.HostedServer, rulePack.ExecutionPolicies[0].Environment);
         Assert.AreEqual(ArtifactVisibilityModes.Shared, buildKit.Visibility);
         Assert.AreEqual(ArtifactTrustTiers.Private, rulePack.TrustTier);
     }

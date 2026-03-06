@@ -29,6 +29,7 @@ public static class ContentOverlayRulePackCatalogExtensions
 
         string normalizedRulesetId = RulesetDefaults.NormalizeRequired(rulesetId);
         List<RulePackAssetDescriptor> assets = [];
+        List<RulePackCapabilityDescriptor> capabilities = [];
 
         if (!string.IsNullOrWhiteSpace(overlay.DataPath))
         {
@@ -37,6 +38,12 @@ public static class ContentOverlayRulePackCatalogExtensions
                 Mode: overlay.Mode,
                 RelativePath: "data/",
                 Checksum: string.Empty));
+            capabilities.Add(new RulePackCapabilityDescriptor(
+                CapabilityId: RulePackCapabilityIds.ContentCatalog,
+                AssetKind: RulePackAssetKinds.Xml,
+                AssetMode: overlay.Mode,
+                Explainable: false,
+                SessionSafe: false));
         }
 
         if (!string.IsNullOrWhiteSpace(overlay.LanguagePath))
@@ -46,7 +53,32 @@ public static class ContentOverlayRulePackCatalogExtensions
                 Mode: RulePackAssetModes.ReplaceFile,
                 RelativePath: "lang/",
                 Checksum: string.Empty));
+            capabilities.Add(new RulePackCapabilityDescriptor(
+                CapabilityId: RulePackCapabilityIds.Localization,
+                AssetKind: RulePackAssetKinds.Localization,
+                AssetMode: RulePackAssetModes.ReplaceFile,
+                Explainable: false,
+                SessionSafe: true));
         }
+
+        RulePackExecutionPolicyHint[] executionPolicies =
+        [
+            new(
+                Environment: RulePackExecutionEnvironments.DesktopLocal,
+                PolicyMode: RulePackExecutionPolicyModes.Allow,
+                MinimumTrustTier: ArtifactTrustTiers.LocalOnly,
+                AllowedAssetModes: assets.Select(asset => asset.Mode).Distinct(StringComparer.Ordinal).ToArray()),
+            new(
+                Environment: RulePackExecutionEnvironments.HostedServer,
+                PolicyMode: RulePackExecutionPolicyModes.Deny,
+                MinimumTrustTier: ArtifactTrustTiers.Curated,
+                AllowedAssetModes: []),
+            new(
+                Environment: RulePackExecutionEnvironments.SessionRuntimeBundle,
+                PolicyMode: RulePackExecutionPolicyModes.Deny,
+                MinimumTrustTier: ArtifactTrustTiers.Curated,
+                AllowedAssetModes: [])
+        ];
 
         return new RulePackManifest(
             PackId: overlay.Id,
@@ -60,6 +92,8 @@ public static class ContentOverlayRulePackCatalogExtensions
             ConflictsWith: [],
             Visibility: ArtifactVisibilityModes.LocalOnly,
             TrustTier: ArtifactTrustTiers.LocalOnly,
-            Assets: assets);
+            Assets: assets,
+            Capabilities: capabilities,
+            ExecutionPolicies: executionPolicies);
     }
 }
