@@ -213,6 +213,20 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Runtime_profile_endpoint_returns_runtime_inspector_projection_for_registered_profile()
+    {
+        using var client = CreateClient();
+
+        JsonObject payload = await GetRequiredJsonObject(client, "/api/runtime/profiles/official.sr5.core?ruleset=sr5");
+
+        Assert.AreEqual("runtime-lock", payload["targetKind"]?.GetValue<string>());
+        Assert.AreEqual("official.sr5.core", payload["targetId"]?.GetValue<string>());
+        Assert.IsInstanceOfType<JsonObject>(payload["runtimeLock"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["resolvedRulePacks"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["compatibilityDiagnostics"]);
+    }
+
+    [TestMethod]
     public async Task Health_endpoint_reports_ok()
     {
         using var client = CreateClient();
@@ -253,6 +267,9 @@ public class ApiIntegrationTests
 
         JsonObject profiles = await GetRequiredJsonObject(client, "/api/profiles?ruleset=sr5");
         Assert.IsNotNull(profiles["count"]);
+
+        JsonObject runtime = await GetRequiredJsonObject(client, "/api/runtime/profiles/official.sr5.core?ruleset=sr5");
+        Assert.AreEqual("official.sr5.core", runtime["targetId"]?.GetValue<string>());
     }
 
     [TestMethod]

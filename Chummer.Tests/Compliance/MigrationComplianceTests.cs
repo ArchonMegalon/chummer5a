@@ -327,6 +327,39 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Runtime_inspector_surface_is_exposed_through_runtime_api_seam()
+    {
+        string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
+        string apiProgramText = File.ReadAllText(apiProgramPath);
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string runtimeInspectorEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RuntimeInspectorEndpoints.cs");
+        string runtimeInspectorEndpointsText = File.ReadAllText(runtimeInspectorEndpointsPath);
+        string runtimeInspectorServiceContractPath = FindPath("Chummer.Application", "Content", "IRuntimeInspectorService.cs");
+        string runtimeInspectorServiceContractText = File.ReadAllText(runtimeInspectorServiceContractPath);
+        string defaultRuntimeInspectorServicePath = FindPath("Chummer.Application", "Content", "DefaultRuntimeInspectorService.cs");
+        string defaultRuntimeInspectorServiceText = File.ReadAllText(defaultRuntimeInspectorServicePath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(apiProgramText, "app.MapRuntimeInspectorEndpoints();");
+        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/runtime/profiles\"");
+        StringAssert.Contains(infoEndpointsText, "/api/runtime/profiles/{profileId}");
+        StringAssert.Contains(runtimeInspectorEndpointsText, "/api/runtime/profiles/{profileId}");
+        StringAssert.Contains(runtimeInspectorEndpointsText, "IRuntimeInspectorService");
+        StringAssert.Contains(runtimeInspectorEndpointsText, "runtime_target_not_found");
+        StringAssert.Contains(runtimeInspectorServiceContractText, "public interface IRuntimeInspectorService");
+        StringAssert.Contains(runtimeInspectorServiceContractText, "RuntimeInspectorProjection? GetProfileProjection");
+        StringAssert.Contains(defaultRuntimeInspectorServiceText, "public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService");
+        StringAssert.Contains(defaultRuntimeInspectorServiceText, "IRuleProfileRegistryService");
+        StringAssert.Contains(defaultRuntimeInspectorServiceText, "IRulePackRegistryService");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeInspectorService, DefaultRuntimeInspectorService>()");
+        StringAssert.Contains(readmeText, "/api/runtime/profiles/{profileId}");
+    }
+
+    [TestMethod]
     public void Solution_includes_headless_and_dual_head_projects()
     {
         string solutionPath = FindPath("Chummer.sln");

@@ -18,6 +18,7 @@ public static class InfoEndpoints
                 "/api/content/overlays",
                 "/api/rulepacks",
                 "/api/profiles",
+                "/api/runtime/profiles/{profileId}",
                 "/api/workspaces",
                 "/api/workspaces/import"
             }
