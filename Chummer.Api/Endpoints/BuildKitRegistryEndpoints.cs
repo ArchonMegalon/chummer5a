@@ -16,7 +16,7 @@ public static class BuildKitRegistryEndpoints
                 count = entries.Count,
                 entries
             });
-        });
+        }).AllowPublicApiKeyBypass();
 
         app.MapGet("/api/buildkits/{buildKitId}", (string buildKitId, string? ruleset, IBuildKitRegistryService buildKitRegistryService, IOwnerContextAccessor ownerContextAccessor) =>
         {
@@ -28,7 +28,7 @@ public static class BuildKitRegistryEndpoints
                     buildKitId
                 })
                 : Results.Ok(entry);
-        });
+        }).AllowPublicApiKeyBypass();
 
         return app;
     }

@@ -16,7 +16,7 @@ public static class RuleProfileRegistryEndpoints
                 count = entries.Count,
                 entries
             });
-        });
+        }).AllowPublicApiKeyBypass();
 
         app.MapGet("/api/profiles/{profileId}", (string profileId, string? ruleset, IRuleProfileRegistryService ruleProfileRegistryService, IOwnerContextAccessor ownerContextAccessor) =>
         {
@@ -28,7 +28,7 @@ public static class RuleProfileRegistryEndpoints
                     profileId
                 })
                 : Results.Ok(entry);
-        });
+        }).AllowPublicApiKeyBypass();
 
         app.MapPost("/api/profiles/{profileId}/preview", (string profileId, string? ruleset, RuleProfileApplyTarget target, IRuleProfileApplicationService ruleProfileApplicationService, IOwnerContextAccessor ownerContextAccessor) =>
         {
@@ -40,7 +40,7 @@ public static class RuleProfileRegistryEndpoints
                     profileId
                 })
                 : Results.Ok(preview);
-        });
+        }).AllowPublicApiKeyBypass();
 
         app.MapPost("/api/profiles/{profileId}/apply", (string profileId, string? ruleset, RuleProfileApplyTarget target, IRuleProfileApplicationService ruleProfileApplicationService, IOwnerContextAccessor ownerContextAccessor) =>
         {

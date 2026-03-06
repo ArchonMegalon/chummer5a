@@ -11,7 +11,8 @@ public static class HubCatalogEndpoints
     public static IEndpointRouteBuilder MapHubCatalogEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapPost("/api/hub/search", (BrowseQuery query, IHubCatalogService hubCatalogService, IOwnerContextAccessor ownerContextAccessor) =>
-            Results.Ok(hubCatalogService.Search(ownerContextAccessor.Current, query)));
+            Results.Ok(hubCatalogService.Search(ownerContextAccessor.Current, query)))
+            .AllowPublicApiKeyBypass();
 
         app.MapGet("/api/hub/projects/{kind}/{itemId}", (string kind, string itemId, string? ruleset, IHubCatalogService hubCatalogService, IOwnerContextAccessor ownerContextAccessor) =>
         {
@@ -24,7 +25,7 @@ public static class HubCatalogEndpoints
                     itemId
                 })
                 : Results.Ok(detail);
-        });
+        }).AllowPublicApiKeyBypass();
 
         app.MapPost("/api/hub/projects/{kind}/{itemId}/install-preview", (string kind, string itemId, string? ruleset, RuleProfileApplyTarget target, IHubInstallPreviewService hubInstallPreviewService, IOwnerContextAccessor ownerContextAccessor) =>
         {
@@ -37,7 +38,7 @@ public static class HubCatalogEndpoints
                     itemId
                 })
                 : Results.Ok(preview);
-        });
+        }).AllowPublicApiKeyBypass();
 
         app.MapGet("/api/hub/projects/{kind}/{itemId}/compatibility", (string kind, string itemId, string? ruleset, IHubProjectCompatibilityService hubProjectCompatibilityService, IOwnerContextAccessor ownerContextAccessor) =>
         {
@@ -50,7 +51,7 @@ public static class HubCatalogEndpoints
                     itemId
                 })
                 : Results.Ok(matrix);
-        });
+        }).AllowPublicApiKeyBypass();
 
         return app;
     }

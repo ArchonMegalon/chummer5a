@@ -26,7 +26,7 @@ public static class NavigationEndpoints
             return Results.Ok(new NavigationTabCatalogResponse(
                 Count: tabs.Count,
                 Tabs: tabs));
-        });
+        }).AllowPublicApiKeyBypass();
 
         return app;
     }

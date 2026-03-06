@@ -445,6 +445,10 @@ public class ApiIntegrationTests
         JsonObject profiles = await GetRequiredJsonObject(client, "/api/profiles?ruleset=sr5");
         Assert.IsNotNull(profiles["count"]);
 
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Workspace, "workspace-1");
+        using HttpResponseMessage previewResponse = await client.PostAsJsonAsync("/api/profiles/official.sr5.core/preview?ruleset=sr5", target);
+        previewResponse.EnsureSuccessStatusCode();
+
         JsonObject runtime = await GetRequiredJsonObject(client, "/api/runtime/profiles/official.sr5.core?ruleset=sr5");
         Assert.AreEqual("official.sr5.core", runtime["targetId"]?.GetValue<string>());
 
@@ -495,6 +499,22 @@ public class ApiIntegrationTests
         using var client = CreateClient(includeApiKey: false);
 
         using HttpResponseMessage response = await client.GetAsync("/api/tools/master-index");
+        string content = await response.Content.ReadAsStringAsync();
+        Assert.AreEqual(401, (int)response.StatusCode, content);
+        JsonNode? parsed = JsonNode.Parse(content);
+        Assert.AreEqual("missing_or_invalid_api_key", parsed?["error"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Profile_apply_endpoint_requires_valid_api_key_when_auth_is_enabled()
+    {
+        if (string.IsNullOrWhiteSpace(ApiKey))
+            return;
+
+        using var client = CreateClient(includeApiKey: false);
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Character, "character-1");
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync("/api/profiles/official.sr5.core/apply?ruleset=sr5", target);
         string content = await response.Content.ReadAsStringAsync();
         Assert.AreEqual(401, (int)response.StatusCode, content);
         JsonNode? parsed = JsonNode.Parse(content);

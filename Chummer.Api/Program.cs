@@ -34,6 +34,7 @@ builder.Services.AddSingleton<IOwnerContextAccessor>(provider =>
 var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.UseRouting();
 
 string? configuredApiKey = builder.Configuration["Chummer:ApiKey"];
 string? environmentApiKey = Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
@@ -56,7 +57,7 @@ if (!string.IsNullOrWhiteSpace(apiKey))
         }
 
         if (path.StartsWithSegments("/api", StringComparison.Ordinal)
-            && (IsPublicApiPath(path) || HttpMethods.IsOptions(context.Request.Method)))
+            && (HttpMethods.IsOptions(context.Request.Method) || AllowsPublicApiKeyBypass(context)))
         {
             await next();
             return;
@@ -109,21 +110,9 @@ app.MapWorkspaceEndpoints();
 
 app.Run();
 
-static bool IsPublicApiPath(PathString path)
+static bool AllowsPublicApiKeyBypass(HttpContext context)
 {
-    return path.StartsWithSegments("/api/health", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/info", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/hub/search", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/hub/projects", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/content/overlays", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/buildkits", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/rulepacks", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/profiles", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/runtime/profiles", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/runtime/locks", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/commands", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/navigation-tabs", StringComparison.Ordinal)
-        || path.StartsWithSegments("/api/shell/bootstrap", StringComparison.Ordinal);
+    return context.GetEndpoint()?.Metadata.GetMetadata<PublicApiEndpointMetadata>() is not null;
 }
 
 static bool RequiresApiKey(PathString path, bool protectApiDocs)

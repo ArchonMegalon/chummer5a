@@ -15,7 +15,7 @@ public static class RuntimeLockRegistryEndpoints
                 count = page.TotalCount,
                 entries = page.Entries
             });
-        });
+        }).AllowPublicApiKeyBypass();
 
         app.MapGet("/api/runtime/locks/{lockId}", (string lockId, string? ruleset, IRuntimeLockRegistryService runtimeLockRegistryService, IOwnerContextAccessor ownerContextAccessor) =>
         {
@@ -27,7 +27,7 @@ public static class RuntimeLockRegistryEndpoints
                     lockId
                 })
                 : Results.Ok(entry);
-        });
+        }).AllowPublicApiKeyBypass();
 
         return app;
     }

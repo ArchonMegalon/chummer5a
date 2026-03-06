@@ -288,9 +288,10 @@ public class MigrationComplianceTests
         string readmeText = File.ReadAllText(readmePath);
 
         StringAssert.Contains(apiProgramText, "app.MapBuildKitRegistryEndpoints();");
-        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/buildkits\"");
+        StringAssert.Contains(apiProgramText, "AllowsPublicApiKeyBypass(context)");
         StringAssert.Contains(infoEndpointsText, "/api/buildkits");
         StringAssert.Contains(buildKitRegistryEndpointsText, "/api/buildkits");
+        StringAssert.Contains(buildKitRegistryEndpointsText, "AllowPublicApiKeyBypass()");
         StringAssert.Contains(buildKitRegistryEndpointsText, "IBuildKitRegistryService");
         StringAssert.Contains(buildKitRegistryEndpointsText, "buildKitRegistryService.List");
         StringAssert.Contains(buildKitRegistryEndpointsText, "buildkit_not_found");
@@ -323,9 +324,10 @@ public class MigrationComplianceTests
         string readmeText = File.ReadAllText(readmePath);
 
         StringAssert.Contains(apiProgramText, "app.MapRuleProfileRegistryEndpoints();");
-        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/profiles\"");
+        StringAssert.Contains(apiProgramText, "AllowsPublicApiKeyBypass(context)");
         StringAssert.Contains(infoEndpointsText, "/api/profiles");
         StringAssert.Contains(ruleProfileRegistryEndpointsText, "/api/profiles");
+        StringAssert.Contains(ruleProfileRegistryEndpointsText, "AllowPublicApiKeyBypass()");
         StringAssert.Contains(ruleProfileRegistryEndpointsText, "IRuleProfileRegistryService");
         StringAssert.Contains(ruleProfileRegistryEndpointsText, "ruleProfileRegistryService.List");
         StringAssert.Contains(ruleProfileRegistryEndpointsText, "ruleprofile_not_found");
@@ -384,9 +386,10 @@ public class MigrationComplianceTests
         string readmeText = File.ReadAllText(readmePath);
 
         StringAssert.Contains(apiProgramText, "app.MapRuntimeInspectorEndpoints();");
-        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/runtime/profiles\"");
+        StringAssert.Contains(apiProgramText, "AllowsPublicApiKeyBypass(context)");
         StringAssert.Contains(infoEndpointsText, "/api/runtime/profiles/{profileId}");
         StringAssert.Contains(runtimeInspectorEndpointsText, "/api/runtime/profiles/{profileId}");
+        StringAssert.Contains(runtimeInspectorEndpointsText, "AllowPublicApiKeyBypass()");
         StringAssert.Contains(runtimeInspectorEndpointsText, "IRuntimeInspectorService");
         StringAssert.Contains(runtimeInspectorEndpointsText, "runtime_target_not_found");
         StringAssert.Contains(runtimeInspectorServiceContractText, "public interface IRuntimeInspectorService");
@@ -417,9 +420,10 @@ public class MigrationComplianceTests
         string readmeText = File.ReadAllText(readmePath);
 
         StringAssert.Contains(apiProgramText, "app.MapRuntimeLockRegistryEndpoints();");
-        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/runtime/locks\"");
+        StringAssert.Contains(apiProgramText, "AllowsPublicApiKeyBypass(context)");
         StringAssert.Contains(infoEndpointsText, "/api/runtime/locks");
         StringAssert.Contains(runtimeLockRegistryEndpointsText, "/api/runtime/locks");
+        StringAssert.Contains(runtimeLockRegistryEndpointsText, "AllowPublicApiKeyBypass()");
         StringAssert.Contains(runtimeLockRegistryEndpointsText, "IRuntimeLockRegistryService");
         StringAssert.Contains(runtimeLockRegistryEndpointsText, "runtime_lock_not_found");
         StringAssert.Contains(runtimeLockRegistryServiceContractText, "public interface IRuntimeLockRegistryService");
@@ -450,9 +454,10 @@ public class MigrationComplianceTests
         string readmeText = File.ReadAllText(readmePath);
 
         StringAssert.Contains(apiProgramText, "app.MapHubCatalogEndpoints();");
-        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/hub/search\"");
+        StringAssert.Contains(apiProgramText, "AllowsPublicApiKeyBypass(context)");
         StringAssert.Contains(infoEndpointsText, "/api/hub/search");
         StringAssert.Contains(hubCatalogEndpointsText, "/api/hub/search");
+        StringAssert.Contains(hubCatalogEndpointsText, "AllowPublicApiKeyBypass()");
         StringAssert.Contains(hubCatalogEndpointsText, "IHubCatalogService");
         StringAssert.Contains(hubCatalogServiceContractText, "public interface IHubCatalogService");
         StringAssert.Contains(hubCatalogServiceContractText, "HubCatalogResultPage Search");
@@ -479,9 +484,10 @@ public class MigrationComplianceTests
         string readmePath = FindPath("README.md");
         string readmeText = File.ReadAllText(readmePath);
 
-        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/hub/projects\"");
+        StringAssert.Contains(apiProgramText, "AllowsPublicApiKeyBypass(context)");
         StringAssert.Contains(infoEndpointsText, "/api/hub/projects/{kind}/{itemId}");
         StringAssert.Contains(hubCatalogEndpointsText, "/api/hub/projects/{kind}/{itemId}");
+        StringAssert.Contains(hubCatalogEndpointsText, "AllowPublicApiKeyBypass()");
         StringAssert.Contains(hubCatalogEndpointsText, "hub_project_not_found");
         StringAssert.Contains(hubCatalogServiceContractText, "HubProjectDetailProjection? GetProjectDetail");
         StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectDetailProjection");
@@ -549,6 +555,33 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubCompatibilityContractsText, "public sealed record HubProjectCompatibilityMatrix");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubProjectCompatibilityService, DefaultHubProjectCompatibilityService>()");
         StringAssert.Contains(readmeText, "/api/hub/projects/*/compatibility");
+    }
+
+    [TestMethod]
+    public void Public_api_bypass_is_driven_by_endpoint_metadata_instead_of_path_prefixes()
+    {
+        string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
+        string apiProgramText = File.ReadAllText(apiProgramPath);
+        string publicApiMetadataPath = FindPath("Chummer.Api", "Endpoints", "PublicApiEndpointMetadata.cs");
+        string publicApiMetadataText = File.ReadAllText(publicApiMetadataPath);
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string hubEndpointsPath = FindPath("Chummer.Api", "Endpoints", "HubCatalogEndpoints.cs");
+        string hubEndpointsText = File.ReadAllText(hubEndpointsPath);
+        string ruleProfileEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RuleProfileRegistryEndpoints.cs");
+        string ruleProfileEndpointsText = File.ReadAllText(ruleProfileEndpointsPath);
+
+        StringAssert.Contains(apiProgramText, "app.UseRouting();");
+        StringAssert.Contains(apiProgramText, "AllowsPublicApiKeyBypass(context)");
+        StringAssert.Contains(apiProgramText, "PublicApiEndpointMetadata");
+        Assert.IsFalse(apiProgramText.Contains("IsPublicApiPath(", StringComparison.Ordinal));
+        StringAssert.Contains(publicApiMetadataText, "internal sealed class PublicApiEndpointMetadata");
+        StringAssert.Contains(publicApiMetadataText, "AllowPublicApiKeyBypass");
+        StringAssert.Contains(infoEndpointsText, "AllowPublicApiKeyBypass()");
+        StringAssert.Contains(hubEndpointsText, "AllowPublicApiKeyBypass()");
+        StringAssert.Contains(ruleProfileEndpointsText, "\"/api/profiles/{profileId}/preview\"");
+        StringAssert.Contains(ruleProfileEndpointsText, "\"/api/profiles/{profileId}/apply\"");
+        StringAssert.Contains(ruleProfileEndpointsText, "AllowPublicApiKeyBypass()");
     }
 
     [TestMethod]

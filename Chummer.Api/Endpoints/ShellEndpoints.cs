@@ -78,7 +78,7 @@ public static class ShellEndpoints
                 ActiveWorkspaceId: activeWorkspaceId?.Value,
                 ActiveTabId: session.ActiveTabId,
                 ActiveTabsByWorkspace: session.ActiveTabsByWorkspace));
-        });
+        }).AllowPublicApiKeyBypass();
 
         return app;
     }

@@ -37,12 +37,13 @@ public static class InfoEndpoints
             runtime = "net10.0",
             platform = "linux-native",
             content = ToOverlayResponse(overlays.GetCatalog())
-        }));
+        })).AllowPublicApiKeyBypass();
 
         app.MapGet("/api/content/overlays", (IContentOverlayCatalogService overlays) =>
-            Results.Ok(ToOverlayResponse(overlays.GetCatalog())));
+            Results.Ok(ToOverlayResponse(overlays.GetCatalog()))).AllowPublicApiKeyBypass();
 
-        app.MapGet("/api/health", () => Results.Ok(new { ok = true, utc = DateTimeOffset.UtcNow }));
+        app.MapGet("/api/health", () => Results.Ok(new { ok = true, utc = DateTimeOffset.UtcNow }))
+            .AllowPublicApiKeyBypass();
 
         app.MapPost("/api/xml/is-empty", (string xml) =>
         {

@@ -18,7 +18,7 @@ public static class RuntimeInspectorEndpoints
                     targetId = profileId
                 })
                 : Results.Ok(projection);
-        });
+        }).AllowPublicApiKeyBypass();
 
         return app;
     }

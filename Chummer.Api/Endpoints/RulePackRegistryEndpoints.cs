@@ -16,7 +16,7 @@ public static class RulePackRegistryEndpoints
                 count = entries.Count,
                 entries
             });
-        });
+        }).AllowPublicApiKeyBypass();
 
         app.MapGet("/api/rulepacks/{packId}", (string packId, string? ruleset, IRulePackRegistryService rulePackRegistryService, IOwnerContextAccessor ownerContextAccessor) =>
         {
@@ -28,7 +28,7 @@ public static class RulePackRegistryEndpoints
                     packId
                 })
                 : Results.Ok(entry);
-        });
+        }).AllowPublicApiKeyBypass();
 
         return app;
     }

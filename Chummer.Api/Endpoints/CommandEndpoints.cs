@@ -26,7 +26,7 @@ public static class CommandEndpoints
             return Results.Ok(new AppCommandCatalogResponse(
                 Count: commands.Count,
                 Commands: commands));
-        });
+        }).AllowPublicApiKeyBypass();
 
         return app;
     }
