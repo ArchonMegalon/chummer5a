@@ -2706,6 +2706,8 @@ public class RulesetSeamContractsTests
 
         Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetCommands().Count);
         Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetNavigationTabs().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetDesktopUiControls().Count);
 
@@ -2750,6 +2752,8 @@ public class RulesetSeamContractsTests
         Assert.AreEqual("Ghost", summary.Alias);
         Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetCommands().Count);
         Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetNavigationTabs().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetDesktopUiControls().Count);
 
@@ -2802,6 +2806,8 @@ public class RulesetSeamContractsTests
         Assert.AreEqual("Switchback", summary.Alias);
         Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetCommands().Count);
         Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetNavigationTabs().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetDesktopUiControls().Count);
 

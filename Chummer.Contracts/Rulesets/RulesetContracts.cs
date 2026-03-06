@@ -78,6 +78,10 @@ public interface IRulesetShellDefinitionProvider
 
 public interface IRulesetCatalogProvider
 {
+    IReadOnlyList<WorkflowDefinition> GetWorkflowDefinitions() => System.Array.Empty<WorkflowDefinition>();
+
+    IReadOnlyList<WorkflowSurfaceDefinition> GetWorkflowSurfaces() => System.Array.Empty<WorkflowSurfaceDefinition>();
+
     IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions();
 
     IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls();

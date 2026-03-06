@@ -94,6 +94,16 @@ public sealed class RulesetShellCatalogResolverService : IRulesetShellCatalogRes
         return ResolveRequiredPlugin(rulesetId).ShellDefinitions.GetNavigationTabs();
     }
 
+    public IReadOnlyList<WorkflowDefinition> ResolveWorkflowDefinitions(string? rulesetId)
+    {
+        return ResolveRequiredPlugin(rulesetId).Catalogs.GetWorkflowDefinitions();
+    }
+
+    public IReadOnlyList<WorkflowSurfaceDefinition> ResolveWorkflowSurfaces(string? rulesetId)
+    {
+        return ResolveRequiredPlugin(rulesetId).Catalogs.GetWorkflowSurfaces();
+    }
+
     public IReadOnlyList<WorkspaceSurfaceActionDefinition> ResolveWorkspaceActionsForTab(string? tabId, string? rulesetId)
     {
         return SelectTabActions(ResolveRequiredPlugin(rulesetId).Catalogs.GetWorkspaceActions(), tabId);

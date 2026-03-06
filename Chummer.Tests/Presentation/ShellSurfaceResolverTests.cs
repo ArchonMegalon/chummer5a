@@ -222,6 +222,10 @@ public sealed class ShellSurfaceResolverTests
 
         public IReadOnlyList<NavigationTabDefinition> ResolveNavigationTabs(string? rulesetId) => [];
 
+        public IReadOnlyList<WorkflowDefinition> ResolveWorkflowDefinitions(string? rulesetId) => [];
+
+        public IReadOnlyList<WorkflowSurfaceDefinition> ResolveWorkflowSurfaces(string? rulesetId) => [];
+
         public IReadOnlyList<WorkspaceSurfaceActionDefinition> ResolveWorkspaceActionsForTab(string? tabId, string? rulesetId)
         {
             LastWorkspaceActionTabId = tabId;

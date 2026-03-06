@@ -24,6 +24,10 @@ public interface IRulesetShellCatalogResolver
 
     IReadOnlyList<NavigationTabDefinition> ResolveNavigationTabs(string? rulesetId);
 
+    IReadOnlyList<WorkflowDefinition> ResolveWorkflowDefinitions(string? rulesetId);
+
+    IReadOnlyList<WorkflowSurfaceDefinition> ResolveWorkflowSurfaces(string? rulesetId);
+
     IReadOnlyList<WorkspaceSurfaceActionDefinition> ResolveWorkspaceActionsForTab(string? tabId, string? rulesetId);
 
     IReadOnlyList<DesktopUiControlDefinition> ResolveDesktopUiControlsForTab(string? tabId, string? rulesetId);

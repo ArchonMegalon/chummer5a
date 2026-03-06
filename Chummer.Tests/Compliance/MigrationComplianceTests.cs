@@ -2794,6 +2794,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetPluginRegistry");
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetSelectionPolicy");
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetShellCatalogResolver");
+        StringAssert.Contains(rulesetServicesText, "ResolveWorkflowDefinitions");
+        StringAssert.Contains(rulesetServicesText, "ResolveWorkflowSurfaces");
         Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetPluginRegistry", StringComparison.Ordinal));
         Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetShellCatalogResolverService", StringComparison.Ordinal));
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Rulesets", "RulesetShellCatalogResolver.cs"));
@@ -2811,6 +2813,8 @@ public class MigrationComplianceTests
         Assert.IsFalse(sr5RulesetPluginText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr5RulesetPluginText.Contains("WorkspaceSurfaceActionCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr5RulesetPluginText.Contains("DesktopUiControlCatalog.ForRuleset(", StringComparison.Ordinal));
+        StringAssert.Contains(sr5RulesetPluginText, "GetWorkflowDefinitions()");
+        StringAssert.Contains(sr5RulesetPluginText, "GetWorkflowSurfaces()");
         StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5AppCommandCatalog");
         StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5NavigationTabCatalog");
         StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5WorkspaceSurfaceActionCatalog");
@@ -2824,6 +2828,8 @@ public class MigrationComplianceTests
         Assert.IsFalse(sr4RulesetPluginText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr4RulesetPluginText.Contains("WorkspaceSurfaceActionCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr4RulesetPluginText.Contains("DesktopUiControlCatalog.ForRuleset(", StringComparison.Ordinal));
+        StringAssert.Contains(sr4RulesetPluginText, "GetWorkflowDefinitions()");
+        StringAssert.Contains(sr4RulesetPluginText, "GetWorkflowSurfaces()");
         StringAssert.Contains(sr4RulesetPluginText, "SR4 rules engine is not implemented; this ruleset remains experimental.");
         StringAssert.Contains(sr4RulesetPluginText, "Success: false");
         Assert.IsFalse(sr4RulesetPluginText.Contains("no-op evaluation applied", StringComparison.Ordinal));
@@ -2840,6 +2846,8 @@ public class MigrationComplianceTests
         Assert.IsFalse(sr6RulesetPluginText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr6RulesetPluginText.Contains("WorkspaceSurfaceActionCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr6RulesetPluginText.Contains("DesktopUiControlCatalog.ForRuleset(", StringComparison.Ordinal));
+        StringAssert.Contains(sr6RulesetPluginText, "GetWorkflowDefinitions()");
+        StringAssert.Contains(sr6RulesetPluginText, "GetWorkflowSurfaces()");
         StringAssert.Contains(sr6RulesetPluginText, "SR6 rules engine is not implemented; this ruleset remains experimental.");
         StringAssert.Contains(sr6RulesetPluginText, "Success: false");
         Assert.IsFalse(sr6RulesetPluginText.Contains("no-op evaluation applied", StringComparison.Ordinal));

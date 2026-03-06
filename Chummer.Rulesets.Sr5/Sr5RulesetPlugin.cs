@@ -56,6 +56,16 @@ public class Sr5RulesetShellDefinitionProvider : IRulesetShellDefinitionProvider
 
 public class Sr5RulesetCatalogProvider : IRulesetCatalogProvider
 {
+    public IReadOnlyList<WorkflowDefinition> GetWorkflowDefinitions()
+    {
+        return Sr5WorkflowCatalog.Definitions;
+    }
+
+    public IReadOnlyList<WorkflowSurfaceDefinition> GetWorkflowSurfaces()
+    {
+        return Sr5WorkflowCatalog.Surfaces;
+    }
+
     public IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions()
     {
         return Sr5WorkspaceSurfaceActionCatalog.All;
@@ -65,6 +75,28 @@ public class Sr5RulesetCatalogProvider : IRulesetCatalogProvider
     {
         return Sr5DesktopUiControlCatalog.All;
     }
+}
+
+internal static class Sr5WorkflowCatalog
+{
+    public static readonly IReadOnlyList<WorkflowDefinition> Definitions =
+    [
+        new(WorkflowDefinitionIds.LibraryShell, "Library Shell", ["sr5.shell.menu", "sr5.shell.toolbar"], false),
+        new(WorkflowDefinitionIds.CareerWorkbench, "Career Workbench", ["sr5.career.section"], true),
+        new(WorkflowDefinitionIds.SelectionDialog, "Selection Dialog", ["sr5.selection.dialog"], false),
+        new(WorkflowDefinitionIds.DiceTool, "Dice Tool", ["sr5.tool.dice"], false),
+        new(WorkflowDefinitionIds.SessionDashboard, "Session Dashboard", ["sr5.session.summary"], true, true)
+    ];
+
+    public static readonly IReadOnlyList<WorkflowSurfaceDefinition> Surfaces =
+    [
+        new("sr5.shell.menu", WorkflowDefinitionIds.LibraryShell, WorkflowSurfaceKinds.ShellRegion, ShellRegionIds.MenuBar, WorkflowLayoutTokens.ShellFrame, ["file", "edit", "tools"]),
+        new("sr5.shell.toolbar", WorkflowDefinitionIds.LibraryShell, WorkflowSurfaceKinds.ShellRegion, ShellRegionIds.ToolStrip, WorkflowLayoutTokens.ShellFrame, ["new_character", "open_character", "save_character"]),
+        new("sr5.career.section", WorkflowDefinitionIds.CareerWorkbench, WorkflowSurfaceKinds.Workbench, ShellRegionIds.SectionPane, WorkflowLayoutTokens.CareerWorkbench, ["tab-info.summary", "tab-info.profile", "tab-skills.skills"]),
+        new("sr5.selection.dialog", WorkflowDefinitionIds.SelectionDialog, WorkflowSurfaceKinds.Dialog, ShellRegionIds.DialogHost, WorkflowLayoutTokens.SelectionDialog, ["tab-gear.inventory"]),
+        new("sr5.tool.dice", WorkflowDefinitionIds.DiceTool, WorkflowSurfaceKinds.Tool, ShellRegionIds.DialogHost, WorkflowLayoutTokens.ToolPanel, ["dice_roller"]),
+        new("sr5.session.summary", WorkflowDefinitionIds.SessionDashboard, WorkflowSurfaceKinds.Dashboard, ShellRegionIds.SummaryHeader, WorkflowLayoutTokens.SessionDashboard, ["tab-info.summary", "tab-info.validate"])
+    ];
 }
 
 public class NoOpRulesetRuleHost : IRulesetRuleHost
