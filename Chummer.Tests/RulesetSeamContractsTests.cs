@@ -1302,6 +1302,66 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Runtime_lock_registry_contracts_define_catalog_compatibility_and_install_candidate_vocabulary()
+    {
+        ResolvedRuntimeLock runtimeLock = new(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles:
+            [
+                new ContentBundleDescriptor(
+                    BundleId: "sr5-core",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Version: "2026.03.06",
+                    Title: "SR5 Core",
+                    Description: "Official base rules.",
+                    AssetPaths: ["data/", "lang/"])
+            ],
+            RulePacks: [new ArtifactVersionReference("official-errata", "1.0.0")],
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["session.quick-actions"] = "official-errata/session.quick-actions"
+            },
+            EngineApiVersion: "rulepack-v1",
+            RuntimeFingerprint: "runtime-lock-sha256");
+        RuntimeLockRegistryEntry entry = new(
+            LockId: "runtime-lock-1",
+            Owner: new OwnerScope("user-1"),
+            Title: "Campaign Runtime",
+            Visibility: ArtifactVisibilityModes.CampaignShared,
+            CatalogKind: RuntimeLockCatalogKinds.Published,
+            RuntimeLock: runtimeLock,
+            UpdatedAtUtc: DateTimeOffset.UtcNow,
+            Description: "Shared runtime for campaign seven.");
+        RuntimeLockInstallCandidate candidate = new(
+            TargetKind: RuntimeLockTargetKinds.CharacterVersion,
+            TargetId: "charv-1",
+            Entry: entry,
+            Diagnostics:
+            [
+                new RuntimeLockCompatibilityDiagnostic(
+                    State: RuntimeLockCompatibilityStates.Compatible,
+                    Message: "Exact runtime match."),
+                new RuntimeLockCompatibilityDiagnostic(
+                    State: RuntimeLockCompatibilityStates.RebindRequired,
+                    Message: "Quick-action providers changed.",
+                    RequiredRulesetId: RulesetDefaults.Sr5,
+                    RequiredRuntimeFingerprint: runtimeLock.RuntimeFingerprint)
+            ],
+            CanInstall: true);
+        RuntimeLockRegistryPage page = new(
+            Entries: [entry],
+            TotalCount: 1,
+            ContinuationToken: null);
+
+        Assert.AreEqual(RuntimeLockCatalogKinds.Published, entry.CatalogKind);
+        Assert.AreEqual(RuntimeLockCompatibilityStates.Compatible, candidate.Diagnostics[0].State);
+        Assert.AreEqual(RuntimeLockCompatibilityStates.RebindRequired, candidate.Diagnostics[1].State);
+        Assert.AreEqual(RuntimeLockTargetKinds.CharacterVersion, candidate.TargetKind);
+        Assert.IsTrue(candidate.CanInstall);
+        Assert.AreEqual(1, page.TotalCount);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

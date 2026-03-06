@@ -636,6 +636,27 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Runtime_lock_registry_contracts_lock_in_catalog_compatibility_and_candidate_vocabulary()
+    {
+        string runtimeLockRegistryContractsPath = FindPath("Chummer.Contracts", "Content", "RuntimeLockRegistryContracts.cs");
+        string runtimeLockRegistryContractsText = File.ReadAllText(runtimeLockRegistryContractsPath);
+
+        StringAssert.Contains(runtimeLockRegistryContractsText, "public static class RuntimeLockCatalogKinds");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "public static class RuntimeLockCompatibilityStates");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "public sealed record RuntimeLockRegistryEntry");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "public sealed record RuntimeLockCompatibilityDiagnostic");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "public sealed record RuntimeLockInstallCandidate");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "public sealed record RuntimeLockRegistryPage");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "published");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "rebind-required");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "engine-api-mismatch");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "ResolvedRuntimeLock RuntimeLock");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "OwnerScope Owner");
+        Assert.IsFalse(runtimeLockRegistryContractsText.Contains("HttpContext", StringComparison.Ordinal));
+        Assert.IsFalse(runtimeLockRegistryContractsText.Contains("ClaimsPrincipal", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
