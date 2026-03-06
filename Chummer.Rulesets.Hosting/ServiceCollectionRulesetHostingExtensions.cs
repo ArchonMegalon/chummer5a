@@ -1,3 +1,4 @@
+using Chummer.Application.Workspaces;
 using Chummer.Contracts.Rulesets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -12,6 +13,7 @@ public static class ServiceCollectionRulesetHostingExtensions
 
         services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
         services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
+        services.TryAddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();
         return services;
     }
 }

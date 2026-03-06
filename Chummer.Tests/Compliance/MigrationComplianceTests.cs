@@ -1111,6 +1111,8 @@ public class MigrationComplianceTests
     {
         string rulesetServicesPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetShellServices.cs");
         string rulesetServicesText = File.ReadAllText(rulesetServicesPath);
+        string rulesetHostingServicesPath = FindPath("Chummer.Rulesets.Hosting", "RulesetShellServices.cs");
+        string rulesetHostingServicesText = File.ReadAllText(rulesetHostingServicesPath);
         string rulesetDiExtensionsPath = FindPath("Chummer.Rulesets.Sr5", "ServiceCollectionRulesetExtensions.cs");
         string rulesetDiExtensionsText = File.ReadAllText(rulesetDiExtensionsPath);
         string rulesetHostingDiExtensionsPath = FindPath("Chummer.Rulesets.Hosting", "ServiceCollectionRulesetHostingExtensions.cs");
@@ -1140,7 +1142,10 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetPluginRegistry");
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetShellCatalogResolver");
-        StringAssert.Contains(rulesetServicesText, "public sealed class RulesetShellCatalogResolverService");
+        Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetPluginRegistry", StringComparison.Ordinal));
+        Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetShellCatalogResolverService", StringComparison.Ordinal));
+        StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetPluginRegistry");
+        StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetShellCatalogResolverService");
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Rulesets", "Sr5RulesetPlugin.cs"));
 
         StringAssert.Contains(rulesetDiExtensionsText, "AddSr5Ruleset(this IServiceCollection services)");
@@ -1149,6 +1154,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetHostingDiExtensionsText, "AddRulesetInfrastructure(this IServiceCollection services)");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
+        StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();");
         StringAssert.Contains(infrastructureDiText, "services.AddRulesetInfrastructure();");
         StringAssert.Contains(infrastructureDiText, "services.AddSr5Ruleset();");
         StringAssert.Contains(desktopRuntimeDiText, "services.AddRulesetInfrastructure();");
@@ -1210,8 +1216,14 @@ public class MigrationComplianceTests
 
         string rulesetServicesPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetShellServices.cs");
         string rulesetServicesText = File.ReadAllText(rulesetServicesPath);
+        string rulesetHostingServicesPath = FindPath("Chummer.Rulesets.Hosting", "RulesetShellServices.cs");
+        string rulesetHostingServicesText = File.ReadAllText(rulesetHostingServicesPath);
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetPluginRegistry");
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetShellCatalogResolver");
+        Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetPluginRegistry", StringComparison.Ordinal));
+        Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetShellCatalogResolverService", StringComparison.Ordinal));
+        StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetPluginRegistry");
+        StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetShellCatalogResolverService");
 
         StringAssert.Contains(workspaceModelsText, "string RulesetId = RulesetDefaults.Sr5");
         StringAssert.Contains(workspaceApiModelsText, "string RulesetId = RulesetDefaults.Sr5");
@@ -1234,7 +1246,7 @@ public class MigrationComplianceTests
     [TestMethod]
     public void Workspace_service_routes_behavior_through_ruleset_codec_seam()
     {
-        string workspaceServicePath = FindPath("Chummer.Infrastructure", "Workspaces", "WorkspaceService.cs");
+        string workspaceServicePath = FindPath("Chummer.Application", "Workspaces", "WorkspaceService.cs");
         string workspaceServiceText = File.ReadAllText(workspaceServicePath);
         string workspaceModelsPath = FindPath("Chummer.Contracts", "Workspaces", "CharacterWorkspaceModels.cs");
         string workspaceModelsText = File.ReadAllText(workspaceModelsPath);
@@ -1244,10 +1256,14 @@ public class MigrationComplianceTests
         string codecContractText = File.ReadAllText(codecContractPath);
         string codecResolverContractPath = FindPath("Chummer.Application", "Workspaces", "IRulesetWorkspaceCodecResolver.cs");
         string codecResolverContractText = File.ReadAllText(codecResolverContractPath);
-        string sr5CodecPath = FindPath("Chummer.Infrastructure", "Workspaces", "Sr5WorkspaceCodec.cs");
+        string codecResolverPath = FindPath("Chummer.Rulesets.Hosting", "RulesetWorkspaceCodecResolver.cs");
+        string codecResolverText = File.ReadAllText(codecResolverPath);
+        string sr5CodecPath = FindPath("Chummer.Rulesets.Sr5", "Sr5WorkspaceCodec.cs");
         string sr5CodecText = File.ReadAllText(sr5CodecPath);
         string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
         string infrastructureDiText = File.ReadAllText(infrastructureDiPath);
+        string sr5RulesetDiPath = FindPath("Chummer.Rulesets.Sr5", "ServiceCollectionRulesetExtensions.cs");
+        string sr5RulesetDiText = File.ReadAllText(sr5RulesetDiPath);
 
         StringAssert.Contains(codecContractText, "public interface IRulesetWorkspaceCodec");
         StringAssert.Contains(codecContractText, "WrapImport");
@@ -1259,6 +1275,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(codecContractText, "WorkspaceDownloadReceipt BuildDownload");
         StringAssert.Contains(codecContractText, "DataExportBundle BuildExportBundle");
         StringAssert.Contains(codecResolverContractText, "public interface IRulesetWorkspaceCodecResolver");
+        StringAssert.Contains(codecResolverText, "public sealed class RulesetWorkspaceCodecResolver");
         StringAssert.Contains(workspaceModelsText, "public sealed record WorkspaceDocumentState");
         StringAssert.Contains(workspaceModelsText, "WorkspaceDocumentState State");
         StringAssert.Contains(workspaceModelsText, "public WorkspacePayloadEnvelope PayloadEnvelope => State.ToEnvelope();");
@@ -1286,8 +1303,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(sr5CodecText, "WorkspaceDownloadReceipt BuildDownload");
         StringAssert.Contains(sr5CodecText, "DataExportBundle BuildExportBundle");
 
-        StringAssert.Contains(infrastructureDiText, "AddSingleton<IRulesetWorkspaceCodec, Sr5WorkspaceCodec>();");
-        StringAssert.Contains(infrastructureDiText, "AddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();");
+        Assert.IsFalse(infrastructureDiText.Contains("AddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();", StringComparison.Ordinal));
+        StringAssert.Contains(sr5RulesetDiText, "TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetWorkspaceCodec, Sr5WorkspaceCodec>());");
     }
 
     [TestMethod]
@@ -1347,6 +1364,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(runbookText, "DOCKER_TESTS_BUILD");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_SOFT_FAIL");
         StringAssert.Contains(runbookText, "DOCKER_TESTS_PREFLIGHT_LOG");
+        StringAssert.Contains(runbookText, "COMPOSE_FILE=\"$REPO_ROOT/docker-compose.yml\"");
+        StringAssert.Contains(runbookText, "CHUMMER_RUNBOOK_INCLUDE_LOCAL_COMPOSE_OVERRIDE");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file");
         StringAssert.Contains(runbookText, "resolve_runbook_dir");
         StringAssert.Contains(runbookText, "resolve_runbook_log_file migration-loop-runbook");

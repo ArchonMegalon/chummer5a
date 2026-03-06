@@ -71,8 +71,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IShellSessionStore, SettingsShellSessionStore>();
         services.AddSingleton<IShellSessionService, ShellSessionService>();
         services.AddSingleton<IRosterStore>(_ => new FileRosterStore(stateDirectory));
-        services.AddSingleton<IRulesetWorkspaceCodec, Sr5WorkspaceCodec>();
-        services.AddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();
         services.AddSingleton<IWorkspaceStore>(_ =>
         {
             string? workspaceDirectory = Environment.GetEnvironmentVariable(WorkspaceStorePathEnvironmentVariable);

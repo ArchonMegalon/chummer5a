@@ -6,7 +6,7 @@ using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using System.Text;
 
-namespace Chummer.Infrastructure.Workspaces;
+namespace Chummer.Rulesets.Sr5;
 
 public sealed class Sr5WorkspaceCodec : IRulesetWorkspaceCodec
 {

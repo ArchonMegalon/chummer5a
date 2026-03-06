@@ -4,6 +4,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+if [[ -z "${COMPOSE_FILE:-}" ]]; then
+  COMPOSE_FILE="$REPO_ROOT/docker-compose.yml"
+  if [[ "${CHUMMER_RUNBOOK_INCLUDE_LOCAL_COMPOSE_OVERRIDE:-0}" == "1" && -f "$REPO_ROOT/docker-compose.override.yml" ]]; then
+    COMPOSE_FILE="${COMPOSE_FILE}:$REPO_ROOT/docker-compose.override.yml"
+  fi
+  export COMPOSE_FILE
+fi
+
 RUNBOOK_MODE="${RUNBOOK_MODE:-${1:-tunnel}}"
 RUNBOOK_ARG_FRAMEWORK="${2:-}"
 RUNBOOK_ARG_FILTER="${3:-}"

@@ -3,44 +3,23 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Chummer.Contracts.Api;
-using Chummer.Application.Characters;
-using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace Chummer.Infrastructure.Workspaces;
+namespace Chummer.Application.Workspaces;
 
 public sealed class WorkspaceService : IWorkspaceService
 {
     private readonly IWorkspaceStore _workspaceStore;
     private readonly IRulesetWorkspaceCodecResolver _workspaceCodecResolver;
 
-    [ActivatorUtilitiesConstructor]
     public WorkspaceService(
         IWorkspaceStore workspaceStore,
         IRulesetWorkspaceCodecResolver workspaceCodecResolver)
     {
         _workspaceStore = workspaceStore;
         _workspaceCodecResolver = workspaceCodecResolver;
-    }
-
-    private WorkspaceService(
-        IWorkspaceStore workspaceStore,
-        ICharacterFileQueries characterFileQueries,
-        ICharacterSectionQueries characterSectionQueries,
-        ICharacterMetadataCommands characterMetadataCommands)
-        : this(
-            workspaceStore,
-            new RulesetWorkspaceCodecResolver(
-            [
-                new Sr5WorkspaceCodec(
-                    characterFileQueries,
-                    characterSectionQueries,
-                    characterMetadataCommands)
-            ]))
-    {
     }
 
     public WorkspaceImportResult Import(WorkspaceImportDocument document)

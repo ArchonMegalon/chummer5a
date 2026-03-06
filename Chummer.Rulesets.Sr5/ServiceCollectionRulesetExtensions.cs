@@ -1,4 +1,5 @@
 using Chummer.Contracts.Rulesets;
+using Chummer.Application.Workspaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -10,6 +11,7 @@ public static class ServiceCollectionRulesetExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetWorkspaceCodec, Sr5WorkspaceCodec>());
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetPlugin, Chummer.Rulesets.Sr5.Sr5RulesetPlugin>());
         return services;
     }
