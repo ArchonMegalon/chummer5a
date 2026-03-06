@@ -5,6 +5,7 @@ namespace Chummer.Contracts.Rulesets;
 public static class RulesetDefaults
 {
     public const string Sr5 = "sr5";
+    public const string Sr6 = "sr6";
 
     public static string? NormalizeOptional(string? value)
     {

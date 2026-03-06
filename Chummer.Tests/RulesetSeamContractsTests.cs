@@ -5,10 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Rulesets.Sr5;
+using Chummer.Rulesets.Sr6;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;
@@ -94,6 +96,13 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Ruleset_defaults_expose_sr5_and_sr6_ids()
+    {
+        Assert.AreEqual("sr5", new RulesetId(RulesetDefaults.Sr5).NormalizedValue);
+        Assert.AreEqual("sr6", new RulesetId(RulesetDefaults.Sr6).NormalizedValue);
+    }
+
+    [TestMethod]
     public async Task Sr5_plugin_adapters_expose_existing_shell_catalogs_without_behavior_change()
     {
         Sr5RulesetPlugin plugin = new();
@@ -129,5 +138,55 @@ public class RulesetSeamContractsTests
             CancellationToken.None);
         Assert.IsTrue(scriptResult.Success);
         Assert.AreEqual("noop", scriptResult.Outputs["mode"]);
+    }
+
+    [TestMethod]
+    public async Task Sr6_plugin_skeleton_exposes_independent_catalogs_and_codec_contracts()
+    {
+        Sr6RulesetPlugin plugin = new();
+        Sr6WorkspaceCodec codec = new();
+
+        Assert.AreEqual(RulesetDefaults.Sr6, plugin.Id.NormalizedValue);
+        Assert.AreEqual("Shadowrun 6", plugin.DisplayName);
+        Assert.AreEqual(RulesetDefaults.Sr6, plugin.Serializer.RulesetId.NormalizedValue);
+        Assert.AreEqual(Sr6WorkspaceCodec.SchemaVersion, plugin.Serializer.SchemaVersion);
+        Assert.AreEqual(RulesetDefaults.Sr6, codec.RulesetId);
+        Assert.AreEqual(Sr6WorkspaceCodec.Sr6PayloadKind, codec.PayloadKind);
+
+        WorkspacePayloadEnvelope wrapped = codec.WrapImport(
+            RulesetDefaults.Sr6,
+            new WorkspaceImportDocument("<character><name>Switchback</name><alias>Ghost</alias></character>", RulesetDefaults.Sr6));
+        CharacterFileSummary summary = codec.ParseSummary(wrapped);
+
+        Assert.AreEqual(RulesetDefaults.Sr6, wrapped.RulesetId);
+        Assert.AreEqual("Switchback", summary.Name);
+        Assert.AreEqual("Ghost", summary.Alias);
+        Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetCommands().Count);
+        Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetNavigationTabs().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetDesktopUiControls().Count);
+
+        WorkspaceDownloadReceipt download = codec.BuildDownload(
+            new CharacterWorkspaceId("ws-sr6"),
+            wrapped,
+            WorkspaceDocumentFormat.NativeXml);
+        Assert.AreEqual("ws-sr6.chum6", download.FileName);
+
+        RulesetRuleEvaluationResult ruleResult = await plugin.Rules.EvaluateAsync(
+            new RulesetRuleEvaluationRequest(
+                RuleId: "sr6.noop",
+                Inputs: new Dictionary<string, object?> { ["edge"] = 2 }),
+            CancellationToken.None);
+        Assert.IsTrue(ruleResult.Success);
+        Assert.IsTrue(ruleResult.Outputs.ContainsKey("edge"));
+
+        RulesetScriptExecutionResult scriptResult = await plugin.Scripts.ExecuteAsync(
+            new RulesetScriptExecutionRequest(
+                ScriptId: "sr6.noop",
+                ScriptSource: "// noop",
+                Inputs: new Dictionary<string, object?> { ["essence"] = 5.8m }),
+            CancellationToken.None);
+        Assert.IsTrue(scriptResult.Success);
+        Assert.AreEqual(RulesetDefaults.Sr6, scriptResult.Outputs["rulesetId"]);
     }
 }

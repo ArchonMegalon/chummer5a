@@ -174,7 +174,10 @@ public class MigrationComplianceTests
             @"Chummer.Avalonia\Chummer.Avalonia.csproj",
             @"Chummer.Avalonia.Browser\Chummer.Avalonia.Browser.csproj",
             @"Chummer.Blazor\Chummer.Blazor.csproj",
-            @"Chummer.Blazor.Desktop\Chummer.Blazor.Desktop.csproj"
+            @"Chummer.Blazor.Desktop\Chummer.Blazor.Desktop.csproj",
+            @"Chummer.Rulesets.Hosting\Chummer.Rulesets.Hosting.csproj",
+            @"Chummer.Rulesets.Sr5\Chummer.Rulesets.Sr5.csproj",
+            @"Chummer.Rulesets.Sr6\Chummer.Rulesets.Sr6.csproj"
         };
 
         foreach (string requiredProject in requiredProjects)
@@ -1121,6 +1124,12 @@ public class MigrationComplianceTests
         string sr5RulesetPluginText = File.ReadAllText(sr5RulesetPluginPath);
         string sr5ShellCatalogsPath = FindPath("Chummer.Rulesets.Sr5", "Sr5ShellCatalogs.cs");
         string sr5ShellCatalogsText = File.ReadAllText(sr5ShellCatalogsPath);
+        string sr6RulesetPluginPath = FindPath("Chummer.Rulesets.Sr6", "Sr6RulesetPlugin.cs");
+        string sr6RulesetPluginText = File.ReadAllText(sr6RulesetPluginPath);
+        string sr6ShellCatalogsPath = FindPath("Chummer.Rulesets.Sr6", "Sr6ShellCatalogs.cs");
+        string sr6ShellCatalogsText = File.ReadAllText(sr6ShellCatalogsPath);
+        string sr6RulesetDiPath = FindPath("Chummer.Rulesets.Sr6", "ServiceCollectionRulesetExtensions.cs");
+        string sr6RulesetDiText = File.ReadAllText(sr6RulesetDiPath);
         string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
         string infrastructureDiText = File.ReadAllText(infrastructureDiPath);
         string desktopRuntimeDiPath = FindPath("Chummer.Desktop.Runtime", "ServiceCollectionDesktopRuntimeExtensions.cs");
@@ -1162,6 +1171,18 @@ public class MigrationComplianceTests
         StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5NavigationTabCatalog");
         StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5WorkspaceSurfaceActionCatalog");
         StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5DesktopUiControlCatalog");
+        StringAssert.Contains(sr6RulesetDiText, "AddSr6Ruleset(this IServiceCollection services)");
+        StringAssert.Contains(sr6RulesetDiText, "Chummer.Rulesets.Sr6.Sr6RulesetPlugin");
+        StringAssert.Contains(sr6RulesetPluginText, "public class Sr6RulesetPlugin");
+        StringAssert.Contains(sr6RulesetPluginText, "public string DisplayName => \"Shadowrun 6\";");
+        Assert.IsFalse(sr6RulesetPluginText.Contains("AppCommandCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(sr6RulesetPluginText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(sr6RulesetPluginText.Contains("WorkspaceSurfaceActionCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(sr6RulesetPluginText.Contains("DesktopUiControlCatalog.ForRuleset(", StringComparison.Ordinal));
+        StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6AppCommandCatalog");
+        StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6NavigationTabCatalog");
+        StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6WorkspaceSurfaceActionCatalog");
+        StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6DesktopUiControlCatalog");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "AddRulesetInfrastructure(this IServiceCollection services)");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
@@ -1220,6 +1241,7 @@ public class MigrationComplianceTests
         string fileWorkspaceStoreText = File.ReadAllText(fileWorkspaceStorePath);
 
         StringAssert.Contains(rulesetContractsText, "public static class RulesetDefaults");
+        StringAssert.Contains(rulesetContractsText, "public const string Sr6 = \"sr6\";");
         StringAssert.Contains(rulesetContractsText, "public readonly record struct RulesetId");
         StringAssert.Contains(rulesetContractsText, "public sealed record WorkspacePayloadEnvelope");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetPlugin");
@@ -1298,10 +1320,14 @@ public class MigrationComplianceTests
         string codecResolverText = File.ReadAllText(codecResolverPath);
         string sr5CodecPath = FindPath("Chummer.Rulesets.Sr5", "Sr5WorkspaceCodec.cs");
         string sr5CodecText = File.ReadAllText(sr5CodecPath);
+        string sr6CodecPath = FindPath("Chummer.Rulesets.Sr6", "Sr6WorkspaceCodec.cs");
+        string sr6CodecText = File.ReadAllText(sr6CodecPath);
         string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
         string infrastructureDiText = File.ReadAllText(infrastructureDiPath);
         string sr5RulesetDiPath = FindPath("Chummer.Rulesets.Sr5", "ServiceCollectionRulesetExtensions.cs");
         string sr5RulesetDiText = File.ReadAllText(sr5RulesetDiPath);
+        string sr6RulesetDiPath = FindPath("Chummer.Rulesets.Sr6", "ServiceCollectionRulesetExtensions.cs");
+        string sr6RulesetDiText = File.ReadAllText(sr6RulesetDiPath);
 
         StringAssert.Contains(codecContractText, "public interface IRulesetWorkspaceCodec");
         StringAssert.Contains(codecContractText, "WrapImport");
@@ -1342,9 +1368,14 @@ public class MigrationComplianceTests
         StringAssert.Contains(sr5CodecText, "UpdateMetadata");
         StringAssert.Contains(sr5CodecText, "WorkspaceDownloadReceipt BuildDownload");
         StringAssert.Contains(sr5CodecText, "DataExportBundle BuildExportBundle");
+        StringAssert.Contains(sr6CodecText, "public sealed class Sr6WorkspaceCodec");
+        StringAssert.Contains(sr6CodecText, "public const string Sr6PayloadKind = \"sr6/chum6-xml\"");
+        StringAssert.Contains(sr6CodecText, "WorkspaceDownloadReceipt BuildDownload");
+        StringAssert.Contains(sr6CodecText, "DataExportBundle BuildExportBundle");
 
         Assert.IsFalse(infrastructureDiText.Contains("AddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();", StringComparison.Ordinal));
         StringAssert.Contains(sr5RulesetDiText, "TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetWorkspaceCodec, Sr5WorkspaceCodec>());");
+        StringAssert.Contains(sr6RulesetDiText, "TryAddEnumerable(ServiceDescriptor.Singleton<IRulesetWorkspaceCodec, Sr6WorkspaceCodec>());");
     }
 
     [TestMethod]
@@ -1587,6 +1618,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(dockerfileText, "COPY Chummer.Desktop.Runtime/ Chummer.Desktop.Runtime/");
         StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj Chummer.Blazor.Desktop/");
         StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/ Chummer.Blazor.Desktop/");
+        StringAssert.Contains(dockerfileText, "COPY Chummer.Rulesets.Sr6/Chummer.Rulesets.Sr6.csproj Chummer.Rulesets.Sr6/");
+        StringAssert.Contains(dockerfileText, "COPY Chummer.Rulesets.Sr6/ Chummer.Rulesets.Sr6/");
         StringAssert.Contains(dockerfileText, "COPY README.md ./");
         StringAssert.Contains(dockerfileText, "COPY docs/ docs/");
         StringAssert.Contains(dockerfileText, "COPY .github/PULL_REQUEST_TEMPLATE.md .github/");
