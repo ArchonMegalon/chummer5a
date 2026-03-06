@@ -21,7 +21,7 @@ namespace Chummer.Tests;
 public class HubCatalogServiceTests
 {
     [TestMethod]
-    public void Hub_catalog_service_aggregates_rulepacks_profiles_and_runtime_locks()
+    public void Hub_catalog_service_aggregates_rulepacks_buildkits_profiles_and_runtime_locks()
     {
         DefaultHubCatalogService service = new(
             new RulesetPluginRegistry(
@@ -81,6 +81,25 @@ public class HubCatalogServiceTests
                         Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
                         Shares: []))
             ]),
+            new BuildKitRegistryServiceStub(
+            [
+                new BuildKitRegistryEntry(
+                    new BuildKitManifest(
+                        BuildKitId: "street-sam-starter",
+                        Version: "1.0.0",
+                        Title: "Street Sam Starter",
+                        Description: "Starter template.",
+                        Targets: [RulesetDefaults.Sr5],
+                        RuntimeRequirements: [],
+                        Prompts: [],
+                        Actions: [],
+                        Visibility: ArtifactVisibilityModes.Public,
+                        TrustTier: ArtifactTrustTiers.Curated),
+                    Owner: new OwnerScope("system"),
+                    Visibility: ArtifactVisibilityModes.Public,
+                    PublicationStatus: BuildKitPublicationStatuses.Published,
+                    UpdatedAtUtc: DateTimeOffset.UtcNow)
+            ]),
             new RuntimeLockRegistryServiceStub(
                 new RuntimeLockRegistryPage(
                 [
@@ -108,9 +127,10 @@ public class HubCatalogServiceTests
                 FacetSelections: new Dictionary<string, IReadOnlyList<string>>(),
                 SortId: HubCatalogSortIds.Title));
 
-        Assert.AreEqual(3, page.TotalCount);
+        Assert.AreEqual(5, page.TotalCount);
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.RulePack));
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.RuleProfile));
+        Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.BuildKit));
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.RuntimeLock));
         Assert.IsTrue(page.Facets.Any(facet => facet.FacetId == HubCatalogFacetIds.Kind));
     }
@@ -166,6 +186,21 @@ public class HubCatalogServiceTests
 
         public RuntimeLockRegistryEntry? Get(OwnerScope owner, string lockId, string? rulesetId = null) =>
             _page.Entries.FirstOrDefault(entry => entry.LockId == lockId);
+    }
+
+    private sealed class BuildKitRegistryServiceStub : IBuildKitRegistryService
+    {
+        private readonly IReadOnlyList<BuildKitRegistryEntry> _entries;
+
+        public BuildKitRegistryServiceStub(IReadOnlyList<BuildKitRegistryEntry> entries)
+        {
+            _entries = entries;
+        }
+
+        public IReadOnlyList<BuildKitRegistryEntry> List(OwnerScope owner, string? rulesetId = null) => _entries;
+
+        public BuildKitRegistryEntry? Get(OwnerScope owner, string buildKitId, string? rulesetId = null) =>
+            _entries.FirstOrDefault(entry => entry.Manifest.BuildKitId == buildKitId);
     }
 
     private sealed class HubRulesetPluginStub : IRulesetPlugin

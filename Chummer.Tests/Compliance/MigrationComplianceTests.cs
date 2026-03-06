@@ -266,6 +266,45 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Buildkit_registry_surface_is_separate_from_rulepack_and_profile_surfaces()
+    {
+        string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
+        string apiProgramText = File.ReadAllText(apiProgramPath);
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string buildKitRegistryEndpointsPath = FindPath("Chummer.Api", "Endpoints", "BuildKitRegistryEndpoints.cs");
+        string buildKitRegistryEndpointsText = File.ReadAllText(buildKitRegistryEndpointsPath);
+        string buildKitRegistryServiceContractPath = FindPath("Chummer.Application", "Content", "IBuildKitRegistryService.cs");
+        string buildKitRegistryServiceContractText = File.ReadAllText(buildKitRegistryServiceContractPath);
+        string defaultBuildKitRegistryServicePath = FindPath("Chummer.Application", "Content", "DefaultBuildKitRegistryService.cs");
+        string defaultBuildKitRegistryServiceText = File.ReadAllText(defaultBuildKitRegistryServicePath);
+        string hubCatalogContractsPath = FindPath("Chummer.Contracts", "Hub", "HubCatalogContracts.cs");
+        string hubCatalogContractsText = File.ReadAllText(hubCatalogContractsPath);
+        string hubCatalogServicePath = FindPath("Chummer.Application", "Hub", "DefaultHubCatalogService.cs");
+        string hubCatalogServiceText = File.ReadAllText(hubCatalogServicePath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(apiProgramText, "app.MapBuildKitRegistryEndpoints();");
+        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/buildkits\"");
+        StringAssert.Contains(infoEndpointsText, "/api/buildkits");
+        StringAssert.Contains(buildKitRegistryEndpointsText, "/api/buildkits");
+        StringAssert.Contains(buildKitRegistryEndpointsText, "IBuildKitRegistryService");
+        StringAssert.Contains(buildKitRegistryEndpointsText, "buildKitRegistryService.List");
+        StringAssert.Contains(buildKitRegistryEndpointsText, "buildkit_not_found");
+        StringAssert.Contains(buildKitRegistryServiceContractText, "public interface IBuildKitRegistryService");
+        StringAssert.Contains(buildKitRegistryServiceContractText, "IReadOnlyList<BuildKitRegistryEntry> List");
+        StringAssert.Contains(defaultBuildKitRegistryServiceText, "public sealed class DefaultBuildKitRegistryService : IBuildKitRegistryService");
+        StringAssert.Contains(hubCatalogContractsText, "public const string BuildKit = \"buildkit\";");
+        StringAssert.Contains(hubCatalogServiceText, "_buildKitRegistryService");
+        StringAssert.Contains(hubCatalogServiceText, "HubCatalogItemKinds.BuildKit");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IBuildKitRegistryService, DefaultBuildKitRegistryService>()");
+        StringAssert.Contains(readmeText, "/api/buildkits/*");
+    }
+
+    [TestMethod]
     public void Ruleprofile_registry_surface_is_separate_from_rulepack_registry_surface()
     {
         string apiProgramPath = FindPath("Chummer.Api", "Program.cs");

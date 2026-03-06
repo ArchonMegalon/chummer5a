@@ -91,6 +91,7 @@ app.MapGet("/docs", () => Results.Redirect("/docs/index.html"));
 
 app.MapInfoEndpoints();
 app.MapHubCatalogEndpoints();
+app.MapBuildKitRegistryEndpoints();
 app.MapRulePackRegistryEndpoints();
 app.MapRuleProfileRegistryEndpoints();
 app.MapRuntimeInspectorEndpoints();
@@ -114,6 +115,7 @@ static bool IsPublicApiPath(PathString path)
         || path.StartsWithSegments("/api/info", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/hub/search", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/content/overlays", StringComparison.Ordinal)
+        || path.StartsWithSegments("/api/buildkits", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/rulepacks", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/profiles", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/runtime/profiles", StringComparison.Ordinal)

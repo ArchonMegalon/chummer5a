@@ -215,3 +215,4 @@ FakesAssemblies/
 
 # Local agent runtime state
 AGENT_MEMORY.md
+WORK_QUEUE.md

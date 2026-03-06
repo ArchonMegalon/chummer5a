@@ -139,6 +139,31 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Buildkits_endpoint_reports_registry_entries_for_registered_rulesets()
+    {
+        using var client = CreateClient();
+
+        JsonObject buildkits = await GetRequiredJsonObject(client, "/api/buildkits?ruleset=sr5");
+        Assert.IsNotNull(buildkits["count"]);
+        Assert.IsInstanceOfType<JsonArray>(buildkits["entries"]);
+    }
+
+    [TestMethod]
+    public async Task Buildkit_detail_endpoint_returns_not_found_for_unknown_buildkit()
+    {
+        using var client = CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync("/api/buildkits/missing-buildkit?ruleset=sr5");
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual("buildkit_not_found", payload["error"]?.GetValue<string>());
+        Assert.AreEqual("missing-buildkit", payload["buildKitId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Rulepacks_endpoint_reports_registry_entries_and_expected_overlay_pack_when_configured()
     {
         using var client = CreateClient();

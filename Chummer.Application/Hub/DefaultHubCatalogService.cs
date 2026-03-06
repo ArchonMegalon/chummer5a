@@ -13,17 +13,20 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
     private readonly IRulesetPluginRegistry _rulesetPluginRegistry;
     private readonly IRulePackRegistryService _rulePackRegistryService;
     private readonly IRuleProfileRegistryService _ruleProfileRegistryService;
+    private readonly IBuildKitRegistryService _buildKitRegistryService;
     private readonly IRuntimeLockRegistryService _runtimeLockRegistryService;
 
     public DefaultHubCatalogService(
         IRulesetPluginRegistry rulesetPluginRegistry,
         IRulePackRegistryService rulePackRegistryService,
         IRuleProfileRegistryService ruleProfileRegistryService,
+        IBuildKitRegistryService buildKitRegistryService,
         IRuntimeLockRegistryService runtimeLockRegistryService)
     {
         _rulesetPluginRegistry = rulesetPluginRegistry;
         _rulePackRegistryService = rulePackRegistryService;
         _ruleProfileRegistryService = ruleProfileRegistryService;
+        _buildKitRegistryService = buildKitRegistryService;
         _runtimeLockRegistryService = runtimeLockRegistryService;
     }
 
@@ -67,6 +70,20 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
                     Visibility: entry.Publication.Visibility,
                     TrustTier: entry.Manifest.TrustTier,
                     LinkTarget: $"/hub/rulepacks/{entry.Manifest.PackId}",
+                    Version: entry.Manifest.Version);
+            }
+
+            foreach (BuildKitRegistryEntry entry in _buildKitRegistryService.List(owner, rulesetId))
+            {
+                yield return new HubCatalogItem(
+                    ItemId: entry.Manifest.BuildKitId,
+                    Kind: HubCatalogItemKinds.BuildKit,
+                    Title: entry.Manifest.Title,
+                    Description: entry.Manifest.Description,
+                    RulesetId: rulesetId,
+                    Visibility: entry.Visibility,
+                    TrustTier: entry.Manifest.TrustTier,
+                    LinkTarget: $"/hub/buildkits/{entry.Manifest.BuildKitId}",
                     Version: entry.Manifest.Version);
             }
         }
