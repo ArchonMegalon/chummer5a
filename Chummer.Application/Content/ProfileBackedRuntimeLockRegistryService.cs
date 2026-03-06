@@ -7,23 +7,35 @@ namespace Chummer.Application.Content;
 public sealed class ProfileBackedRuntimeLockRegistryService : IRuntimeLockRegistryService
 {
     private readonly IRuleProfileRegistryService _ruleProfileRegistryService;
+    private readonly IRuntimeLockStore _runtimeLockStore;
 
-    public ProfileBackedRuntimeLockRegistryService(IRuleProfileRegistryService ruleProfileRegistryService)
+    public ProfileBackedRuntimeLockRegistryService(
+        IRuleProfileRegistryService ruleProfileRegistryService,
+        IRuntimeLockStore runtimeLockStore)
     {
         _ruleProfileRegistryService = ruleProfileRegistryService;
+        _runtimeLockStore = runtimeLockStore;
     }
 
     public RuntimeLockRegistryPage List(OwnerScope owner, string? rulesetId = null)
     {
-        RuntimeLockRegistryEntry[] entries = _ruleProfileRegistryService.List(owner, rulesetId)
+        Dictionary<string, RuntimeLockRegistryEntry> entries = _ruleProfileRegistryService.List(owner, rulesetId)
             .GroupBy(profile => profile.Manifest.RuntimeLock.RuntimeFingerprint, StringComparer.Ordinal)
             .Select(group => ToRegistryEntry(group.First()))
+            .ToDictionary(entry => entry.LockId, StringComparer.Ordinal);
+
+        foreach (RuntimeLockRegistryEntry persisted in _runtimeLockStore.List(owner, rulesetId).Entries)
+        {
+            entries[persisted.LockId] = persisted;
+        }
+
+        RuntimeLockRegistryEntry[] orderedEntries = entries.Values
             .OrderBy(entry => entry.Title, StringComparer.Ordinal)
             .ToArray();
 
         return new RuntimeLockRegistryPage(
-            Entries: entries,
-            TotalCount: entries.Length);
+            Entries: orderedEntries,
+            TotalCount: orderedEntries.Length);
     }
 
     public RuntimeLockRegistryEntry? Get(OwnerScope owner, string lockId, string? rulesetId = null)

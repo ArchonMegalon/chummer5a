@@ -443,8 +443,12 @@ public class MigrationComplianceTests
         string runtimeLockRegistryEndpointsText = File.ReadAllText(runtimeLockRegistryEndpointsPath);
         string runtimeLockRegistryServiceContractPath = FindPath("Chummer.Application", "Content", "IRuntimeLockRegistryService.cs");
         string runtimeLockRegistryServiceContractText = File.ReadAllText(runtimeLockRegistryServiceContractPath);
+        string runtimeLockStoreContractPath = FindPath("Chummer.Application", "Content", "IRuntimeLockStore.cs");
+        string runtimeLockStoreContractText = File.ReadAllText(runtimeLockStoreContractPath);
         string runtimeLockRegistryServicePath = FindPath("Chummer.Application", "Content", "ProfileBackedRuntimeLockRegistryService.cs");
         string runtimeLockRegistryServiceText = File.ReadAllText(runtimeLockRegistryServicePath);
+        string fileRuntimeLockStorePath = FindPath("Chummer.Infrastructure", "Files", "FileRuntimeLockStore.cs");
+        string fileRuntimeLockStoreText = File.ReadAllText(fileRuntimeLockStorePath);
         string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
         string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
         string readmePath = FindPath("README.md");
@@ -459,9 +463,15 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeLockRegistryEndpointsText, "runtime_lock_not_found");
         StringAssert.Contains(runtimeLockRegistryServiceContractText, "public interface IRuntimeLockRegistryService");
         StringAssert.Contains(runtimeLockRegistryServiceContractText, "RuntimeLockRegistryPage List");
+        StringAssert.Contains(runtimeLockStoreContractText, "public interface IRuntimeLockStore");
+        StringAssert.Contains(runtimeLockStoreContractText, "RuntimeLockRegistryEntry Upsert");
         StringAssert.Contains(runtimeLockRegistryServiceText, "public sealed class ProfileBackedRuntimeLockRegistryService : IRuntimeLockRegistryService");
+        StringAssert.Contains(runtimeLockRegistryServiceText, "IRuntimeLockStore");
         StringAssert.Contains(runtimeLockRegistryServiceText, "RuntimeLockCatalogKinds.Published");
         StringAssert.Contains(runtimeLockRegistryServiceText, "RuntimeLockCatalogKinds.Derived");
+        StringAssert.Contains(fileRuntimeLockStoreText, "public sealed class FileRuntimeLockStore : IRuntimeLockStore");
+        StringAssert.Contains(fileRuntimeLockStoreText, "OwnerScopedStatePath.ResolveOwnerDirectory");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeLockStore>(_ => new FileRuntimeLockStore(stateDirectory))");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeLockRegistryService, ProfileBackedRuntimeLockRegistryService>()");
         StringAssert.Contains(readmeText, "/api/runtime/locks/*");
     }
