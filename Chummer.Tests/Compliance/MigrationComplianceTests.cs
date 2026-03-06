@@ -568,6 +568,28 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Owner_repository_contracts_lock_in_scope_filter_page_and_receipt_vocabulary()
+    {
+        string ownerRepositoryContractsPath = FindPath("Chummer.Contracts", "Owners", "OwnerRepositoryContracts.cs");
+        string ownerRepositoryContractsText = File.ReadAllText(ownerRepositoryContractsPath);
+
+        StringAssert.Contains(ownerRepositoryContractsText, "public static class OwnerRepositoryAssetKinds");
+        StringAssert.Contains(ownerRepositoryContractsText, "public static class OwnerRepositoryScopeModes");
+        StringAssert.Contains(ownerRepositoryContractsText, "public static class OwnerRepositorySortModes");
+        StringAssert.Contains(ownerRepositoryContractsText, "public sealed record OwnerRepositoryQuery");
+        StringAssert.Contains(ownerRepositoryContractsText, "public sealed record OwnerRepositoryEntry");
+        StringAssert.Contains(ownerRepositoryContractsText, "public sealed record OwnerRepositoryPage");
+        StringAssert.Contains(ownerRepositoryContractsText, "public sealed record OwnerRepositoryQueryReceipt");
+        StringAssert.Contains(ownerRepositoryContractsText, "shared-with-me");
+        StringAssert.Contains(ownerRepositoryContractsText, "public-catalog");
+        StringAssert.Contains(ownerRepositoryContractsText, "updated-desc");
+        StringAssert.Contains(ownerRepositoryContractsText, "OwnerScope Owner");
+        StringAssert.Contains(ownerRepositoryContractsText, "bool CanShare = false");
+        Assert.IsFalse(ownerRepositoryContractsText.Contains("HttpContext", StringComparison.Ordinal));
+        Assert.IsFalse(ownerRepositoryContractsText.Contains("ClaimsPrincipal", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");

@@ -1141,6 +1141,49 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Owner_repository_contracts_define_scope_filter_page_and_receipt_vocabulary()
+    {
+        OwnerRepositoryQuery query = new(
+            ScopeMode: OwnerRepositoryScopeModes.SharedWithMe,
+            AssetKind: OwnerRepositoryAssetKinds.RulePack,
+            Search: "errata",
+            CampaignId: "campaign-7",
+            Visibility: ArtifactVisibilityModes.CampaignShared,
+            SortMode: OwnerRepositorySortModes.UpdatedDesc,
+            Offset: 0,
+            Limit: 25);
+        OwnerRepositoryEntry entry = new(
+            AssetKind: OwnerRepositoryAssetKinds.RulePack,
+            AssetId: "official-errata",
+            Title: "Official Errata",
+            Owner: new OwnerScope("user-2"),
+            Visibility: ArtifactVisibilityModes.CampaignShared,
+            UpdatedAtUtc: DateTimeOffset.UtcNow,
+            VersionId: "1.0.0",
+            Summary: "Campaign-approved rules corrections.",
+            CanEdit: false,
+            CanShare: true);
+        OwnerRepositoryPage page = new(
+            ScopeMode: query.ScopeMode,
+            AssetKind: query.AssetKind,
+            Entries: [entry],
+            TotalCount: 1,
+            ContinuationToken: null);
+        OwnerRepositoryQueryReceipt receipt = new(
+            Query: query,
+            ReturnedCount: page.Entries.Count,
+            TotalCount: page.TotalCount,
+            ContinuationToken: page.ContinuationToken);
+
+        Assert.AreEqual(OwnerRepositoryScopeModes.SharedWithMe, receipt.Query.ScopeMode);
+        Assert.AreEqual(OwnerRepositoryAssetKinds.RulePack, page.AssetKind);
+        Assert.AreEqual(OwnerRepositorySortModes.UpdatedDesc, receipt.Query.SortMode);
+        Assert.AreEqual(ArtifactVisibilityModes.CampaignShared, page.Entries[0].Visibility);
+        Assert.IsFalse(page.Entries[0].CanEdit);
+        Assert.IsTrue(page.Entries[0].CanShare);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);
