@@ -22,12 +22,12 @@ public sealed class BlazorShellComponentTests
     {
         IReadOnlyList<AppCommandDefinition> menuRoots =
         [
-            new AppCommandDefinition("file", "menu.file", "menu", false, true)
+            new AppCommandDefinition("file", "menu.file", "menu", false, true, RulesetDefaults.Sr5)
         ];
         IReadOnlyList<AppCommandDefinition> menuCommands =
         [
-            new AppCommandDefinition("save_character", "command.save", "file", true, true),
-            new AppCommandDefinition("close_character", "command.close", "file", true, true)
+            new AppCommandDefinition("save_character", "command.save", "file", true, true, RulesetDefaults.Sr5),
+            new AppCommandDefinition("close_character", "command.close", "file", true, true, RulesetDefaults.Sr5)
         ];
 
         using var context = new BunitContext();
@@ -61,14 +61,14 @@ public sealed class BlazorShellComponentTests
         IRenderedComponent<MenuBar> cut = context.Render<MenuBar>(parameters => parameters
             .Add(component => component.MenuRoots,
             [
-                new AppCommandDefinition("file", "menu.file", "menu", false, true)
+                new AppCommandDefinition("file", "menu.file", "menu", false, true, RulesetDefaults.Sr5)
             ])
             .Add(component => component.OpenMenuId, "file")
             .Add(component => component.MenuCommands, menuId =>
                 string.Equals(menuId, "file", StringComparison.Ordinal)
                     ? new[]
                     {
-                        new AppCommandDefinition("save_character", "command.save", "file", true, true)
+                        new AppCommandDefinition("save_character", "command.save", "file", true, true, RulesetDefaults.Sr5)
                     }
                     : Array.Empty<AppCommandDefinition>())
             .Add(component => component.IsCommandEnabled, _ => true)
@@ -91,8 +91,8 @@ public sealed class BlazorShellComponentTests
         IRenderedComponent<ToolStrip> cut = context.Render<ToolStrip>(parameters => parameters
             .Add(component => component.Commands,
             [
-                new AppCommandDefinition("save_character", "command.save", "file", true, true),
-                new AppCommandDefinition("print_character", "command.print", "file", true, true)
+                new AppCommandDefinition("save_character", "command.save", "file", true, true, RulesetDefaults.Sr5),
+                new AppCommandDefinition("print_character", "command.print", "file", true, true, RulesetDefaults.Sr5)
             ])
             .Add(component => component.LastCommandId, "print_character")
             .Add(component => component.IsBusy, false)
@@ -158,14 +158,16 @@ public sealed class BlazorShellComponentTests
             Kind: WorkspaceSurfaceActionKind.Summary,
             TargetId: "summary",
             RequiresOpenCharacter: true,
-            EnabledByDefault: true);
+            EnabledByDefault: true,
+            RulesetId: RulesetDefaults.Sr5);
 
         DesktopUiControlDefinition diceControl = new(
             Id: "ui-roll-dice",
             Label: "Roll Dice",
             TabId: "tab-info",
             RequiresOpenCharacter: true,
-            EnabledByDefault: true);
+            EnabledByDefault: true,
+            RulesetId: RulesetDefaults.Sr5);
 
         using var context = new BunitContext();
         IRenderedComponent<WorkspaceLeftPane> cut = context.Render<WorkspaceLeftPane>(parameters => parameters
@@ -175,8 +177,8 @@ public sealed class BlazorShellComponentTests
             .Add(component => component.ActiveTabId, "tab-info")
             .Add(component => component.NavigationTabs,
             [
-                new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true),
-                new NavigationTabDefinition("tab-skills", "Skills", "skills", "character", true, true)
+                new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true, RulesetDefaults.Sr5),
+                new NavigationTabDefinition("tab-skills", "Skills", "skills", "character", true, true, RulesetDefaults.Sr5)
             ])
             .Add(component => component.ActiveWorkspaceActions, [summaryAction])
             .Add(component => component.ActiveUiControls, [diceControl])

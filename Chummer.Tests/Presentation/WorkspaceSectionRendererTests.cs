@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -53,7 +54,8 @@ public class WorkspaceSectionRendererTests
             Kind: WorkspaceSurfaceActionKind.Summary,
             TargetId: "summary",
             RequiresOpenCharacter: true,
-            EnabledByDefault: true);
+            EnabledByDefault: true,
+            RulesetId: RulesetDefaults.Sr5);
 
         WorkspaceSectionRenderResult result = await renderer.RenderSummaryAsync(
             client,
@@ -80,7 +82,8 @@ public class WorkspaceSectionRendererTests
             Kind: WorkspaceSurfaceActionKind.Validate,
             TargetId: "validate",
             RequiresOpenCharacter: true,
-            EnabledByDefault: true);
+            EnabledByDefault: true,
+            RulesetId: RulesetDefaults.Sr5);
 
         WorkspaceSectionRenderResult result = await renderer.RenderValidationAsync(
             client,

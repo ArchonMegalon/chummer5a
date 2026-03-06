@@ -1,5 +1,3 @@
-using Chummer.Contracts.Rulesets;
-
 namespace Chummer.Contracts.Presentation;
 
 public sealed record NavigationTabDefinition(
@@ -9,4 +7,4 @@ public sealed record NavigationTabDefinition(
     string Group,
     bool RequiresOpenCharacter,
     bool EnabledByDefault,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);

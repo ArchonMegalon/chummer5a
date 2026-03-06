@@ -17,17 +17,18 @@ namespace Chummer.Tests;
 public class RulesetSeamContractsTests
 {
     [TestMethod]
-    public void Workspace_models_default_to_sr5_ruleset_and_expose_document_state()
+    public void Workspace_models_keep_document_defaults_but_require_explicit_receipt_and_list_rulesets()
     {
         WorkspaceDocument workspaceDocument = new("<character />");
         WorkspaceImportDocument importDocument = new("<character />");
-        WorkspaceSaveReceipt saveReceipt = new(new CharacterWorkspaceId("ws-1"), DocumentLength: 128);
+        WorkspaceSaveReceipt saveReceipt = new(new CharacterWorkspaceId("ws-1"), DocumentLength: 128, RulesetId: RulesetDefaults.Sr5);
         WorkspaceDownloadReceipt downloadReceipt = new(
             new CharacterWorkspaceId("ws-1"),
             WorkspaceDocumentFormat.Chum5Xml,
             ContentBase64: "PGNoYXJhY3RlciAvPg==",
             FileName: "ws-1.chum5",
-            DocumentLength: 128);
+            DocumentLength: 128,
+            RulesetId: RulesetDefaults.Sr5);
         WorkspaceListItem listItem = new(
             new CharacterWorkspaceId("ws-1"),
             Summary: new Chummer.Contracts.Characters.CharacterFileSummary(
@@ -40,7 +41,8 @@ public class RulesetSeamContractsTests
                 Karma: 0m,
                 Nuyen: 0m,
                 Created: true),
-            LastUpdatedUtc: DateTimeOffset.UtcNow);
+            LastUpdatedUtc: DateTimeOffset.UtcNow,
+            RulesetId: RulesetDefaults.Sr5);
         WorkspacePayloadEnvelope envelope = new(RulesetDefaults.Sr5, SchemaVersion: 1, PayloadKind: "workspace", Payload: "{}");
 
         Assert.AreEqual(RulesetDefaults.Sr5, workspaceDocument.State.RulesetId);

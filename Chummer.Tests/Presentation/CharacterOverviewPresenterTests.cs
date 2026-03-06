@@ -791,13 +791,13 @@ public class CharacterOverviewPresenterTests
         public WorkspaceImportDocument? LastImportedDocument { get; private set; }
         public static IReadOnlyList<AppCommandDefinition> Commands { get; } =
         [
-            new("new_character", "command.new_character", "file", false, true),
-            new("save_character", "command.save_character", "file", true, true)
+            new("new_character", "command.new_character", "file", false, true, RulesetDefaults.Sr5),
+            new("save_character", "command.save_character", "file", true, true, RulesetDefaults.Sr5)
         ];
         public static IReadOnlyList<NavigationTabDefinition> Tabs { get; } =
         [
-            new("tab-info", "Info", "profile", "character", true, true),
-            new("tab-gear", "Gear", "gear", "character", true, true)
+            new("tab-info", "Info", "profile", "character", true, true, RulesetDefaults.Sr5),
+            new("tab-gear", "Gear", "gear", "character", true, true, RulesetDefaults.Sr5)
         ];
 
         public Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct)
@@ -1174,7 +1174,8 @@ public class CharacterOverviewPresenterTests
                 Success: true,
                 Value: new WorkspaceSaveReceipt(
                     Id: id,
-                    DocumentLength: 64),
+                    DocumentLength: 64,
+                    RulesetId: RulesetDefaults.Sr5),
                 Error: null));
         }
 
@@ -1189,7 +1190,8 @@ public class CharacterOverviewPresenterTests
                     Format: WorkspaceDocumentFormat.Chum5Xml,
                     ContentBase64: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<character><name>Download</name></character>")),
                     FileName: $"{id.Value}.chum5",
-                    DocumentLength: 41),
+                    DocumentLength: 41,
+                    RulesetId: RulesetDefaults.Sr5),
                 Error: null));
         }
 

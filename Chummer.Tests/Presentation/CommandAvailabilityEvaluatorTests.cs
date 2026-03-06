@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
@@ -13,7 +14,7 @@ public class CommandAvailabilityEvaluatorTests
     public void IsCommandEnabled_requires_open_workspace_when_flagged()
     {
         DefaultCommandAvailabilityEvaluator evaluator = new();
-        AppCommandDefinition command = new("save_character", "Save", "file", true, true);
+        AppCommandDefinition command = new("save_character", "Save", "file", true, true, RulesetDefaults.Sr5);
 
         bool withoutWorkspace = evaluator.IsCommandEnabled(command, CharacterOverviewState.Empty);
         bool withWorkspace = evaluator.IsCommandEnabled(
@@ -28,7 +29,7 @@ public class CommandAvailabilityEvaluatorTests
     public void IsNavigationTabEnabled_honors_enabled_flag()
     {
         DefaultCommandAvailabilityEvaluator evaluator = new();
-        NavigationTabDefinition tab = new("tab-skills", "Skills", "skills", "character", true, false);
+        NavigationTabDefinition tab = new("tab-skills", "Skills", "skills", "character", true, false, RulesetDefaults.Sr5);
 
         bool enabled = evaluator.IsNavigationTabEnabled(
             tab,
@@ -48,7 +49,8 @@ public class CommandAvailabilityEvaluatorTests
             Kind: WorkspaceSurfaceActionKind.Summary,
             TargetId: "summary",
             RequiresOpenCharacter: true,
-            EnabledByDefault: true);
+            EnabledByDefault: true,
+            RulesetId: RulesetDefaults.Sr5);
 
         bool withoutWorkspace = evaluator.IsWorkspaceActionEnabled(action, CharacterOverviewState.Empty);
         bool withWorkspace = evaluator.IsWorkspaceActionEnabled(
@@ -63,7 +65,7 @@ public class CommandAvailabilityEvaluatorTests
     public void IsUiControlEnabled_requires_open_workspace_when_flagged()
     {
         DefaultCommandAvailabilityEvaluator evaluator = new();
-        DesktopUiControlDefinition control = new("gear_add", "Add Gear", "tab-gear", true, true);
+        DesktopUiControlDefinition control = new("gear_add", "Add Gear", "tab-gear", true, true, RulesetDefaults.Sr5);
 
         bool withoutWorkspace = evaluator.IsUiControlEnabled(control, CharacterOverviewState.Empty);
         bool withWorkspace = evaluator.IsUiControlEnabled(

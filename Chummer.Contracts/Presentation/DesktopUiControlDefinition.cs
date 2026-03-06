@@ -1,5 +1,3 @@
-using Chummer.Contracts.Rulesets;
-
 namespace Chummer.Contracts.Presentation;
 
 public sealed record DesktopUiControlDefinition(
@@ -8,4 +6,4 @@ public sealed record DesktopUiControlDefinition(
     string TabId,
     bool RequiresOpenCharacter,
     bool EnabledByDefault,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);

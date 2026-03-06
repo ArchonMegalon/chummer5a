@@ -76,7 +76,7 @@ public class WorkspacePersistenceServiceTests
         {
             SaveResult = new CommandResult<WorkspaceSaveReceipt>(
                 Success: true,
-                Value: new WorkspaceSaveReceipt(new CharacterWorkspaceId("ws-persist"), 42),
+                Value: new WorkspaceSaveReceipt(new CharacterWorkspaceId("ws-persist"), 42, "sr5"),
                 Error: null)
         };
 
@@ -102,7 +102,8 @@ public class WorkspacePersistenceServiceTests
                     Format: WorkspaceDocumentFormat.Chum5Xml,
                     ContentBase64: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<character />")),
                     FileName: "ws-persist.chum5",
-                    DocumentLength: 12),
+                    DocumentLength: 12,
+                    RulesetId: "sr5"),
                 Error: null)
         };
 
@@ -151,7 +152,7 @@ public class WorkspacePersistenceServiceTests
     private sealed class PersistenceClientStub : IChummerClient
     {
         public CommandResult<CharacterProfileSection> MetadataResult { get; set; } = new(true, BuildProfile("Default", "DEF"), null);
-        public CommandResult<WorkspaceSaveReceipt> SaveResult { get; set; } = new(true, new WorkspaceSaveReceipt(new CharacterWorkspaceId("ws"), 1), null);
+        public CommandResult<WorkspaceSaveReceipt> SaveResult { get; set; } = new(true, new WorkspaceSaveReceipt(new CharacterWorkspaceId("ws"), 1, "sr5"), null);
         public CommandResult<WorkspaceDownloadReceipt> DownloadResult { get; set; } = new(
             true,
             new WorkspaceDownloadReceipt(
@@ -159,7 +160,8 @@ public class WorkspacePersistenceServiceTests
                 WorkspaceDocumentFormat.Chum5Xml,
                 Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<character />")),
                 "ws.chum5",
-                12),
+                12,
+                "sr5"),
             null);
 
         public Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct) => throw new NotImplementedException();

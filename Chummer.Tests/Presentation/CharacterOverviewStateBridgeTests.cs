@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Text;
 using Chummer.Blazor;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -103,7 +104,8 @@ public class CharacterOverviewStateBridgeTests
             Kind: WorkspaceSurfaceActionKind.Summary,
             TargetId: "summary",
             RequiresOpenCharacter: true,
-            EnabledByDefault: true);
+            EnabledByDefault: true,
+            RulesetId: RulesetDefaults.Sr5);
 
         await bridge.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
 

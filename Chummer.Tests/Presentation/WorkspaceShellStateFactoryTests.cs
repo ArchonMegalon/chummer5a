@@ -16,8 +16,8 @@ public class WorkspaceShellStateFactoryTests
         var factory = new WorkspaceShellStateFactory();
         CharacterOverviewState current = CharacterOverviewState.Empty with
         {
-            Commands = [new AppCommandDefinition("save_character", "Save", "file", true, true)],
-            NavigationTabs = [new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true)],
+            Commands = [new AppCommandDefinition("save_character", "Save", "file", true, true, RulesetDefaults.Sr5)],
+            NavigationTabs = [new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true, RulesetDefaults.Sr5)],
             LastCommandId = "save_character",
             Preferences = new DesktopPreferenceState(
                 UiScalePercent: 125,

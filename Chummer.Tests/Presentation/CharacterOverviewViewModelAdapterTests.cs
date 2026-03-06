@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Text;
 using Chummer.Avalonia;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -101,7 +102,8 @@ public class CharacterOverviewViewModelAdapterTests
             Kind: WorkspaceSurfaceActionKind.Summary,
             TargetId: "summary",
             RequiresOpenCharacter: true,
-            EnabledByDefault: true);
+            EnabledByDefault: true,
+            RulesetId: RulesetDefaults.Sr5);
 
         await adapter.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
 

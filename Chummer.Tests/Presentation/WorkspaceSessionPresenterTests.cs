@@ -171,7 +171,8 @@ public class WorkspaceSessionPresenterTests
                 Karma: 0m,
                 Nuyen: 0m,
                 Created: true),
-            LastUpdatedUtc: lastUpdatedUtc);
+            LastUpdatedUtc: lastUpdatedUtc,
+            RulesetId: "sr5");
     }
 
     private static CharacterProfileSection CreateProfile(string name, string alias)

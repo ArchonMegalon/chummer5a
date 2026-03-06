@@ -1227,10 +1227,10 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(workspaceModelsText, "string RulesetId = RulesetDefaults.Sr5");
         Assert.IsFalse(workspaceApiModelsText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
-        StringAssert.Contains(commandDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
-        StringAssert.Contains(tabDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
-        StringAssert.Contains(actionDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
-        StringAssert.Contains(controlDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
+        Assert.IsFalse(commandDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
+        Assert.IsFalse(tabDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
+        Assert.IsFalse(actionDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
+        Assert.IsFalse(controlDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
 
         StringAssert.Contains(commandCatalogText, "ForRuleset(string? rulesetId)");
         StringAssert.Contains(tabCatalogText, "ForRuleset(string? rulesetId)");
@@ -1238,6 +1238,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(actionCatalogText, "ForTab(string? tabId, string? rulesetId)");
         StringAssert.Contains(controlCatalogText, "ForRuleset(string? rulesetId)");
         StringAssert.Contains(controlCatalogText, "ForTab(string? tabId, string? rulesetId)");
+        StringAssert.Contains(commandCatalogText, "RulesetDefaults.Sr5");
+        StringAssert.Contains(tabCatalogText, "RulesetDefaults.Sr5");
+        StringAssert.Contains(actionCatalogText, "RulesetDefaults.Sr5");
+        StringAssert.Contains(controlCatalogText, "RulesetDefaults.Sr5");
         StringAssert.Contains(fileWorkspaceStoreText, "WorkspacePayloadEnvelope");
         StringAssert.Contains(fileWorkspaceStoreText, "PayloadKind");
         StringAssert.Contains(fileWorkspaceStoreText, "Envelope");

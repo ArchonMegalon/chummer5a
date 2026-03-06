@@ -106,7 +106,7 @@ public sealed record WorkspaceImportDocument(
 public sealed record WorkspaceSaveReceipt(
     CharacterWorkspaceId Id,
     int DocumentLength,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);
 
 public sealed record WorkspaceDownloadReceipt(
     CharacterWorkspaceId Id,
@@ -114,7 +114,7 @@ public sealed record WorkspaceDownloadReceipt(
     string ContentBase64,
     string FileName,
     int DocumentLength,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);
 
 public sealed record WorkspaceExportReceipt(
     CharacterWorkspaceId Id,
@@ -122,7 +122,7 @@ public sealed record WorkspaceExportReceipt(
     string ContentBase64,
     string FileName,
     int DocumentLength,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);
 
 public sealed record WorkspacePrintReceipt(
     CharacterWorkspaceId Id,
@@ -131,13 +131,13 @@ public sealed record WorkspacePrintReceipt(
     string MimeType,
     int DocumentLength,
     string Title,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);
 
 public sealed record WorkspaceListItem(
     CharacterWorkspaceId Id,
     CharacterFileSummary Summary,
     DateTimeOffset LastUpdatedUtc,
-    string RulesetId = RulesetDefaults.Sr5,
+    string RulesetId,
     bool HasSavedWorkspace = false);
 
 public sealed record UpdateWorkspaceMetadata(

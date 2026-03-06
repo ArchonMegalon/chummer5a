@@ -4,53 +4,7 @@ namespace Chummer.Contracts.Presentation;
 
 public static class DesktopUiControlCatalog
 {
-    public static readonly IReadOnlyList<DesktopUiControlDefinition> All =
-    [
-        new("create_entry", "Add", "tab-info", true, true),
-        new("edit_entry", "Edit", "tab-info", true, true),
-        new("delete_entry", "Delete", "tab-info", true, true),
-        new("move_up", "Up", "tab-info", true, true),
-        new("move_down", "Down", "tab-info", true, true),
-        new("toggle_free_paid", "Free/Paid", "tab-info", true, true),
-        new("show_source", "Source", "tab-info", true, true),
-        new("open_notes", "Notes", "tab-info", true, true),
-
-        new("gear_add", "Add Gear", "tab-gear", true, true),
-        new("gear_edit", "Edit Gear", "tab-gear", true, true),
-        new("gear_delete", "Delete Gear", "tab-gear", true, true),
-        new("gear_mount", "Mount", "tab-gear", true, true),
-        new("gear_source", "Source", "tab-gear", true, true),
-
-        new("magic_add", "Add Spell/Power", "tab-magician", true, true),
-        new("magic_delete", "Delete", "tab-magician", true, true),
-        new("magic_bind", "Bind/Link", "tab-magician", true, true),
-        new("magic_source", "Source", "tab-magician", true, true),
-
-        new("magic_add", "Add Spell/Power", "tab-adept", true, true),
-        new("magic_delete", "Delete", "tab-adept", true, true),
-        new("magic_bind", "Bind/Link", "tab-adept", true, true),
-        new("magic_source", "Source", "tab-adept", true, true),
-
-        new("magic_add", "Add Spell/Power", "tab-technomancer", true, true),
-        new("magic_delete", "Delete", "tab-technomancer", true, true),
-        new("magic_bind", "Bind/Link", "tab-technomancer", true, true),
-        new("magic_source", "Source", "tab-technomancer", true, true),
-
-        new("skill_add", "Add Skill", "tab-skills", true, true),
-        new("skill_specialize", "Specialize", "tab-skills", true, true),
-        new("skill_remove", "Remove", "tab-skills", true, true),
-        new("skill_group", "Group", "tab-skills", true, true),
-
-        new("combat_add_weapon", "Add Weapon", "tab-combat", true, true),
-        new("combat_add_armor", "Add Armor", "tab-combat", true, true),
-        new("combat_reload", "Reload", "tab-combat", true, true),
-        new("combat_damage_track", "Damage Track", "tab-combat", true, true),
-
-        new("contact_add", "Add Contact", "tab-contacts", true, true),
-        new("contact_edit", "Edit Contact", "tab-contacts", true, true),
-        new("contact_remove", "Remove Contact", "tab-contacts", true, true),
-        new("contact_connection", "Connection/Loyalty", "tab-contacts", true, true)
-    ];
+    public static readonly IReadOnlyList<DesktopUiControlDefinition> All = CreateSr5Catalog();
 
     public static IReadOnlyList<DesktopUiControlDefinition> ForRuleset(string? rulesetId)
     {
@@ -78,4 +32,63 @@ public static class DesktopUiControlCatalog
             .Where(control => string.Equals(control.TabId, "tab-info", StringComparison.Ordinal))
             .ToArray();
     }
+
+    private static IReadOnlyList<DesktopUiControlDefinition> CreateSr5Catalog()
+    {
+        return
+        [
+            Sr5("create_entry", "Add", "tab-info", true, true),
+            Sr5("edit_entry", "Edit", "tab-info", true, true),
+            Sr5("delete_entry", "Delete", "tab-info", true, true),
+            Sr5("move_up", "Up", "tab-info", true, true),
+            Sr5("move_down", "Down", "tab-info", true, true),
+            Sr5("toggle_free_paid", "Free/Paid", "tab-info", true, true),
+            Sr5("show_source", "Source", "tab-info", true, true),
+            Sr5("open_notes", "Notes", "tab-info", true, true),
+
+            Sr5("gear_add", "Add Gear", "tab-gear", true, true),
+            Sr5("gear_edit", "Edit Gear", "tab-gear", true, true),
+            Sr5("gear_delete", "Delete Gear", "tab-gear", true, true),
+            Sr5("gear_mount", "Mount", "tab-gear", true, true),
+            Sr5("gear_source", "Source", "tab-gear", true, true),
+
+            Sr5("magic_add", "Add Spell/Power", "tab-magician", true, true),
+            Sr5("magic_delete", "Delete", "tab-magician", true, true),
+            Sr5("magic_bind", "Bind/Link", "tab-magician", true, true),
+            Sr5("magic_source", "Source", "tab-magician", true, true),
+
+            Sr5("magic_add", "Add Spell/Power", "tab-adept", true, true),
+            Sr5("magic_delete", "Delete", "tab-adept", true, true),
+            Sr5("magic_bind", "Bind/Link", "tab-adept", true, true),
+            Sr5("magic_source", "Source", "tab-adept", true, true),
+
+            Sr5("magic_add", "Add Spell/Power", "tab-technomancer", true, true),
+            Sr5("magic_delete", "Delete", "tab-technomancer", true, true),
+            Sr5("magic_bind", "Bind/Link", "tab-technomancer", true, true),
+            Sr5("magic_source", "Source", "tab-technomancer", true, true),
+
+            Sr5("skill_add", "Add Skill", "tab-skills", true, true),
+            Sr5("skill_specialize", "Specialize", "tab-skills", true, true),
+            Sr5("skill_remove", "Remove", "tab-skills", true, true),
+            Sr5("skill_group", "Group", "tab-skills", true, true),
+
+            Sr5("combat_add_weapon", "Add Weapon", "tab-combat", true, true),
+            Sr5("combat_add_armor", "Add Armor", "tab-combat", true, true),
+            Sr5("combat_reload", "Reload", "tab-combat", true, true),
+            Sr5("combat_damage_track", "Damage Track", "tab-combat", true, true),
+
+            Sr5("contact_add", "Add Contact", "tab-contacts", true, true),
+            Sr5("contact_edit", "Edit Contact", "tab-contacts", true, true),
+            Sr5("contact_remove", "Remove Contact", "tab-contacts", true, true),
+            Sr5("contact_connection", "Connection/Loyalty", "tab-contacts", true, true)
+        ];
+    }
+
+    private static DesktopUiControlDefinition Sr5(
+        string id,
+        string label,
+        string tabId,
+        bool requiresOpenCharacter,
+        bool enabledByDefault)
+        => new(id, label, tabId, requiresOpenCharacter, enabledByDefault, RulesetDefaults.Sr5);
 }

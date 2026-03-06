@@ -161,8 +161,8 @@ public class ShellPresenterTests
         {
             NavigationTabs =
             [
-                new NavigationTabDefinition("tab-enabled", "Enabled", "profile", "character", true, true),
-                new NavigationTabDefinition("tab-disabled", "Disabled", "profile", "character", true, false)
+                new NavigationTabDefinition("tab-enabled", "Enabled", "profile", "character", true, true, RulesetDefaults.Sr5),
+                new NavigationTabDefinition("tab-disabled", "Disabled", "profile", "character", true, false, RulesetDefaults.Sr5)
             ]
         };
         var presenter = new ShellPresenter(client);
@@ -271,8 +271,8 @@ public class ShellPresenterTests
             Workspaces = Array.Empty<WorkspaceListItem>(),
             NavigationTabs =
             [
-                new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true),
-                new NavigationTabDefinition("tab-rules", "Rules", "rules", "character", true, true)
+                new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true, RulesetDefaults.Sr5),
+                new NavigationTabDefinition("tab-rules", "Rules", "rules", "character", true, true, RulesetDefaults.Sr5)
             ],
             Session = new ShellSessionState(ActiveTabId: "tab-rules")
         };

@@ -93,8 +93,8 @@ public sealed class DesktopShellStartupSyncTests
 
     private static ShellState CreateShellState(CharacterWorkspaceId workspaceId)
     {
-        AppCommandDefinition menuRoot = new("file", "menu.file", "menu", false, true);
-        NavigationTabDefinition infoTab = new("tab-info", "Info", "profile", "character", true, true);
+        AppCommandDefinition menuRoot = new("file", "menu.file", "menu", false, true, RulesetDefaults.Sr5);
+        NavigationTabDefinition infoTab = new("tab-info", "Info", "profile", "character", true, true, RulesetDefaults.Sr5);
         ShellWorkspaceState openWorkspace = new(
             Id: workspaceId,
             Name: "Runner",

@@ -1,5 +1,3 @@
-using Chummer.Contracts.Rulesets;
-
 namespace Chummer.Contracts.Presentation;
 
 public enum WorkspaceSurfaceActionKind
@@ -19,4 +17,4 @@ public sealed record WorkspaceSurfaceActionDefinition(
     string TargetId,
     bool RequiresOpenCharacter,
     bool EnabledByDefault,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);

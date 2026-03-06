@@ -20,7 +20,8 @@ public class WorkspaceSessionManagerTests
             new(
                 new CharacterWorkspaceId("ws-old"),
                 CreateSummary("Old", "O"),
-                DateTimeOffset.UtcNow.AddMinutes(-10)),
+                DateTimeOffset.UtcNow.AddMinutes(-10),
+                RulesetDefaults.Sr5),
             new(
                 new CharacterWorkspaceId("ws-new"),
                 CreateSummary("New", "N"),
