@@ -9,11 +9,13 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Chummer.Api.Endpoints;
 using Chummer.Api.Owners;
+using Chummer.Application.Hub;
 using Chummer.Application.Owners;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Hub;
 using Chummer.Contracts.Owners;
 using Chummer.Contracts.Workspaces;
 using Microsoft.AspNetCore.Builder;
@@ -105,6 +107,38 @@ public sealed class OwnerScopedApiEndpointTests
         Assert.AreEqual(0, local["count"]?.GetValue<int>());
     }
 
+    [TestMethod]
+    public async Task Hub_publication_endpoints_isolate_drafts_by_forwarded_owner_header()
+    {
+        await using WebApplication app = await CreateAppAsync();
+        using HttpClient client = app.GetTestClient();
+
+        await PostRequiredJsonObject(client, "/api/hub/publish/drafts", new JsonObject
+        {
+            ["projectKind"] = HubCatalogItemKinds.RulePack,
+            ["projectId"] = "alice.pack",
+            ["rulesetId"] = "sr5",
+            ["title"] = "Alice Pack"
+        }, "alice@example.com");
+        await PostRequiredJsonObject(client, "/api/hub/publish/drafts", new JsonObject
+        {
+            ["projectKind"] = HubCatalogItemKinds.RulePack,
+            ["projectId"] = "bob.pack",
+            ["rulesetId"] = "sr5",
+            ["title"] = "Bob Pack"
+        }, "bob@example.com");
+
+        JsonObject alice = await GetRequiredJsonObject(client, "/api/hub/publish/drafts?ruleset=sr5", "alice@example.com");
+        JsonObject bob = await GetRequiredJsonObject(client, "/api/hub/publish/drafts?ruleset=sr5", "bob@example.com");
+        JsonObject local = await GetRequiredJsonObject(client, "/api/hub/publish/drafts?ruleset=sr5");
+
+        Assert.AreEqual(1, alice["items"]?.AsArray().Count);
+        Assert.AreEqual("alice.pack", alice["items"]?[0]?["projectId"]?.GetValue<string>());
+        Assert.AreEqual(1, bob["items"]?.AsArray().Count);
+        Assert.AreEqual("bob.pack", bob["items"]?[0]?["projectId"]?.GetValue<string>());
+        Assert.AreEqual(0, local["items"]?.AsArray().Count);
+    }
+
     private static async Task<WebApplication> CreateAppAsync()
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
@@ -115,11 +149,16 @@ public sealed class OwnerScopedApiEndpointTests
             new RequestOwnerContextAccessor(
                 provider.GetRequiredService<IHttpContextAccessor>(),
                 OwnerHeaderName));
+        builder.Services.AddSingleton<IHubDraftStore, InMemoryHubDraftStore>();
+        builder.Services.AddSingleton<IHubModerationCaseStore, InMemoryHubModerationCaseStore>();
+        builder.Services.AddSingleton<IHubPublicationService, DefaultHubPublicationService>();
+        builder.Services.AddSingleton<IHubModerationService, DefaultHubModerationService>();
         builder.Services.AddSingleton<ISettingsStore, InMemorySettingsStore>();
         builder.Services.AddSingleton<IRosterStore, InMemoryRosterStore>();
         builder.Services.AddSingleton<IWorkspaceService, InMemoryWorkspaceService>();
 
         WebApplication app = builder.Build();
+        app.MapHubPublicationEndpoints();
         app.MapSettingsEndpoints();
         app.MapRosterEndpoints();
         app.MapWorkspaceEndpoints();
@@ -342,5 +381,97 @@ public sealed class OwnerScopedApiEndpointTests
         public CommandResult<WorkspacePrintReceipt> Print(CharacterWorkspaceId id) => throw new NotSupportedException();
 
         public CommandResult<WorkspacePrintReceipt> Print(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+    }
+
+    private sealed class InMemoryHubDraftStore : IHubDraftStore
+    {
+        private readonly Dictionary<string, List<HubDraftRecord>> _recordsByOwner = new(StringComparer.Ordinal);
+
+        public IReadOnlyList<HubDraftRecord> List(OwnerScope owner, string? kind = null, string? rulesetId = null, string? state = null)
+        {
+            return _recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubDraftRecord>? records)
+                ? records
+                    .Where(record => kind is null || string.Equals(record.ProjectKind, kind, StringComparison.Ordinal))
+                    .Where(record => rulesetId is null || string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal))
+                    .Where(record => state is null || string.Equals(record.State, state, StringComparison.Ordinal))
+                    .ToArray()
+                : Array.Empty<HubDraftRecord>();
+        }
+
+        public HubDraftRecord? Get(OwnerScope owner, string kind, string projectId, string rulesetId)
+        {
+            return List(owner, kind, rulesetId).FirstOrDefault(record => string.Equals(record.ProjectId, projectId, StringComparison.Ordinal));
+        }
+
+        public HubDraftRecord Upsert(OwnerScope owner, HubDraftRecord record)
+        {
+            if (!_recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubDraftRecord>? records))
+            {
+                records = [];
+                _recordsByOwner[owner.NormalizedValue] = records;
+            }
+
+            int existingIndex = records.FindIndex(current =>
+                string.Equals(current.ProjectKind, record.ProjectKind, StringComparison.Ordinal)
+                && string.Equals(current.ProjectId, record.ProjectId, StringComparison.Ordinal)
+                && string.Equals(current.RulesetId, record.RulesetId, StringComparison.Ordinal));
+            HubDraftRecord normalizedRecord = record with { OwnerId = owner.NormalizedValue };
+            if (existingIndex >= 0)
+            {
+                records[existingIndex] = normalizedRecord;
+            }
+            else
+            {
+                records.Add(normalizedRecord);
+            }
+
+            return normalizedRecord;
+        }
+    }
+
+    private sealed class InMemoryHubModerationCaseStore : IHubModerationCaseStore
+    {
+        private readonly Dictionary<string, List<HubModerationCaseRecord>> _recordsByOwner = new(StringComparer.Ordinal);
+
+        public IReadOnlyList<HubModerationCaseRecord> List(OwnerScope owner, string? kind = null, string? rulesetId = null, string? state = null)
+        {
+            return _recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubModerationCaseRecord>? records)
+                ? records
+                    .Where(record => kind is null || string.Equals(record.ProjectKind, kind, StringComparison.Ordinal))
+                    .Where(record => rulesetId is null || string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal))
+                    .Where(record => state is null || string.Equals(record.State, state, StringComparison.Ordinal))
+                    .ToArray()
+                : Array.Empty<HubModerationCaseRecord>();
+        }
+
+        public HubModerationCaseRecord? Get(OwnerScope owner, string kind, string projectId, string rulesetId)
+        {
+            return List(owner, kind, rulesetId).FirstOrDefault(record => string.Equals(record.ProjectId, projectId, StringComparison.Ordinal));
+        }
+
+        public HubModerationCaseRecord Upsert(OwnerScope owner, HubModerationCaseRecord record)
+        {
+            if (!_recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubModerationCaseRecord>? records))
+            {
+                records = [];
+                _recordsByOwner[owner.NormalizedValue] = records;
+            }
+
+            int existingIndex = records.FindIndex(current =>
+                string.Equals(current.ProjectKind, record.ProjectKind, StringComparison.Ordinal)
+                && string.Equals(current.ProjectId, record.ProjectId, StringComparison.Ordinal)
+                && string.Equals(current.RulesetId, record.RulesetId, StringComparison.Ordinal));
+            HubModerationCaseRecord normalizedRecord = record with { OwnerId = owner.NormalizedValue };
+            if (existingIndex >= 0)
+            {
+                records[existingIndex] = normalizedRecord;
+            }
+            else
+            {
+                records.Add(normalizedRecord);
+            }
+
+            return normalizedRecord;
+        }
     }
 }

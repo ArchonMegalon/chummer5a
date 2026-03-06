@@ -8,8 +8,22 @@ public static class HubPublicationEndpoints
 {
     public static IEndpointRouteBuilder MapHubPublicationEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/api/hub/publish/drafts", (string? kind, string? ruleset, string? state, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
+            ToResult(hubPublicationService.ListDrafts(ownerContextAccessor.Current, kind, ruleset, state)));
+
         app.MapPost("/api/hub/publish/drafts", (HubPublishDraftRequest? request, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
-            ToResult(hubPublicationService.CreateDraft(ownerContextAccessor.Current, request)));
+        {
+            if (request is null)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "hub_publish_request_required",
+                    operation = HubPublicationOperations.CreateDraft
+                });
+            }
+
+            return ToResult(hubPublicationService.CreateDraft(ownerContextAccessor.Current, request));
+        });
 
         app.MapPost("/api/hub/publish/{kind}/{itemId}/submit", (string kind, string itemId, string? ruleset, HubSubmitProjectRequest? request, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(hubPublicationService.SubmitForReview(ownerContextAccessor.Current, kind, itemId, ruleset, request)));

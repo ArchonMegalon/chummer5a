@@ -2,6 +2,7 @@ namespace Chummer.Contracts.Hub;
 
 public static class HubPublicationOperations
 {
+    public const string ListDrafts = "list-drafts";
     public const string CreateDraft = "create-draft";
     public const string SubmitProject = "submit-project";
     public const string ListModerationQueue = "list-moderation-queue";
@@ -34,25 +35,36 @@ public sealed record HubPublishDraftReceipt(
     string RulesetId,
     string Title,
     string OwnerId,
-    string State);
+    string State,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? SubmittedAtUtc = null);
+
+public sealed record HubPublishDraftList(
+    IReadOnlyList<HubPublishDraftReceipt> Items);
 
 public sealed record HubSubmitProjectRequest(
     string? Notes = null);
 
 public sealed record HubProjectSubmissionReceipt(
+    string DraftId,
+    string CaseId,
     string ProjectKind,
     string ProjectId,
     string RulesetId,
     string OwnerId,
     string State,
     string ReviewState,
-    string? Notes = null);
+    string? Notes = null,
+    DateTimeOffset? SubmittedAtUtc = null);
 
 public sealed record HubModerationQueueItem(
     string CaseId,
+    string DraftId,
     string ProjectKind,
     string ProjectId,
     string RulesetId,
+    string Title,
     string OwnerId,
     string State,
     DateTimeOffset CreatedAtUtc,
@@ -60,6 +72,32 @@ public sealed record HubModerationQueueItem(
 
 public sealed record HubModerationQueue(
     IReadOnlyList<HubModerationQueueItem> Items);
+
+public sealed record HubDraftRecord(
+    string DraftId,
+    string ProjectKind,
+    string ProjectId,
+    string RulesetId,
+    string Title,
+    string OwnerId,
+    string State,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? SubmittedAtUtc = null);
+
+public sealed record HubModerationCaseRecord(
+    string CaseId,
+    string DraftId,
+    string ProjectKind,
+    string ProjectId,
+    string RulesetId,
+    string Title,
+    string OwnerId,
+    string State,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    string? Summary = null,
+    string? Notes = null);
 
 public sealed record HubPublicationNotImplementedReceipt(
     string Error,

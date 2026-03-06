@@ -1,0 +1,171 @@
+using Chummer.Contracts.Hub;
+using Chummer.Contracts.Owners;
+using Chummer.Contracts.Rulesets;
+
+namespace Chummer.Application.Hub;
+
+public sealed class DefaultHubPublicationService : IHubPublicationService
+{
+    private readonly IHubDraftStore _draftStore;
+    private readonly IHubModerationCaseStore _moderationCaseStore;
+
+    public DefaultHubPublicationService(
+        IHubDraftStore draftStore,
+        IHubModerationCaseStore moderationCaseStore)
+    {
+        _draftStore = draftStore;
+        _moderationCaseStore = moderationCaseStore;
+    }
+
+    public HubPublicationResult<HubPublishDraftList> ListDrafts(OwnerScope owner, string? kind = null, string? rulesetId = null, string? state = null)
+    {
+        IReadOnlyList<HubPublishDraftReceipt> items = _draftStore
+            .List(owner, NormalizeKindOptional(kind), RulesetDefaults.NormalizeOptional(rulesetId), NormalizeStateOptional(state))
+            .OrderByDescending(record => record.UpdatedAtUtc)
+            .Select(ToReceipt)
+            .ToArray();
+
+        return HubPublicationResult<HubPublishDraftList>.Implemented(new HubPublishDraftList(items));
+    }
+
+    public HubPublicationResult<HubPublishDraftReceipt> CreateDraft(OwnerScope owner, HubPublishDraftRequest? request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        string normalizedKind = NormalizeKindRequired(request.ProjectKind);
+        string normalizedProjectId = NormalizeProjectId(request.ProjectId);
+        string normalizedTitle = NormalizeTitle(request.Title);
+        string normalizedRulesetId = RulesetDefaults.NormalizeRequired(request.RulesetId);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        HubDraftRecord? existing = _draftStore.Get(owner, normalizedKind, normalizedProjectId, normalizedRulesetId);
+
+        HubDraftRecord persisted = _draftStore.Upsert(
+            owner,
+            new HubDraftRecord(
+                DraftId: existing?.DraftId ?? $"draft-{Guid.NewGuid():N}",
+                ProjectKind: normalizedKind,
+                ProjectId: normalizedProjectId,
+                RulesetId: normalizedRulesetId,
+                Title: normalizedTitle,
+                OwnerId: owner.NormalizedValue,
+                State: existing?.State ?? HubPublicationStates.Draft,
+                CreatedAtUtc: existing?.CreatedAtUtc ?? now,
+                UpdatedAtUtc: now,
+                SubmittedAtUtc: existing?.SubmittedAtUtc));
+
+        return HubPublicationResult<HubPublishDraftReceipt>.Implemented(ToReceipt(persisted));
+    }
+
+    public HubPublicationResult<HubProjectSubmissionReceipt> SubmitForReview(OwnerScope owner, string kind, string itemId, string? rulesetId, HubSubmitProjectRequest? request)
+    {
+        string normalizedKind = NormalizeKindRequired(kind);
+        string normalizedItemId = NormalizeProjectId(itemId);
+        string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+        HubDraftRecord? existing = ResolveDraft(owner, normalizedKind, normalizedItemId, normalizedRulesetId);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+
+        HubDraftRecord draft = _draftStore.Upsert(
+            owner,
+            new HubDraftRecord(
+                DraftId: existing?.DraftId ?? $"draft-{Guid.NewGuid():N}",
+                ProjectKind: normalizedKind,
+                ProjectId: normalizedItemId,
+                RulesetId: existing?.RulesetId ?? normalizedRulesetId ?? throw new InvalidOperationException("Ruleset id is required when submitting a project without an existing draft."),
+                Title: existing?.Title ?? normalizedItemId,
+                OwnerId: owner.NormalizedValue,
+                State: HubPublicationStates.Submitted,
+                CreatedAtUtc: existing?.CreatedAtUtc ?? now,
+                UpdatedAtUtc: now,
+                SubmittedAtUtc: now));
+
+        HubModerationCaseRecord? existingCase = _moderationCaseStore.Get(owner, normalizedKind, normalizedItemId, draft.RulesetId);
+        HubModerationCaseRecord moderationCase = _moderationCaseStore.Upsert(
+            owner,
+            new HubModerationCaseRecord(
+                CaseId: existingCase?.CaseId ?? $"case-{Guid.NewGuid():N}",
+                DraftId: draft.DraftId,
+                ProjectKind: draft.ProjectKind,
+                ProjectId: draft.ProjectId,
+                RulesetId: draft.RulesetId,
+                Title: draft.Title,
+                OwnerId: owner.NormalizedValue,
+                State: HubModerationStates.PendingReview,
+                CreatedAtUtc: existingCase?.CreatedAtUtc ?? now,
+                UpdatedAtUtc: now,
+                Summary: request?.Notes,
+                Notes: request?.Notes));
+
+        return HubPublicationResult<HubProjectSubmissionReceipt>.Implemented(
+            new HubProjectSubmissionReceipt(
+                DraftId: draft.DraftId,
+                CaseId: moderationCase.CaseId,
+                ProjectKind: draft.ProjectKind,
+                ProjectId: draft.ProjectId,
+                RulesetId: draft.RulesetId,
+                OwnerId: draft.OwnerId,
+                State: draft.State,
+                ReviewState: moderationCase.State,
+                Notes: request?.Notes,
+                SubmittedAtUtc: draft.SubmittedAtUtc));
+    }
+
+    private HubDraftRecord? ResolveDraft(OwnerScope owner, string kind, string itemId, string? rulesetId)
+    {
+        if (rulesetId is not null)
+        {
+            return _draftStore.Get(owner, kind, itemId, rulesetId);
+        }
+
+        HubDraftRecord[] candidates = _draftStore.List(owner, kind: kind, state: null)
+            .Where(record => string.Equals(record.ProjectId, itemId.Trim(), StringComparison.Ordinal))
+            .ToArray();
+
+        return candidates.Length switch
+        {
+            0 => null,
+            1 => candidates[0],
+            _ => throw new InvalidOperationException("Multiple drafts matched the submission request; specify a ruleset id explicitly.")
+        };
+    }
+
+    private static HubPublishDraftReceipt ToReceipt(HubDraftRecord record)
+        => new(
+            DraftId: record.DraftId,
+            ProjectKind: record.ProjectKind,
+            ProjectId: record.ProjectId,
+            RulesetId: record.RulesetId,
+            Title: record.Title,
+            OwnerId: record.OwnerId,
+            State: record.State,
+            CreatedAtUtc: record.CreatedAtUtc,
+            UpdatedAtUtc: record.UpdatedAtUtc,
+            SubmittedAtUtc: record.SubmittedAtUtc);
+
+    private static string NormalizeKindRequired(string value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+        return value.Trim().ToLowerInvariant();
+    }
+
+    private static string NormalizeProjectId(string value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+        return value.Trim();
+    }
+
+    private static string NormalizeTitle(string value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+        return value.Trim();
+    }
+
+    private static string? NormalizeKindOptional(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? null
+            : NormalizeKindRequired(value);
+
+    private static string? NormalizeStateOptional(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim().ToLowerInvariant();
+}

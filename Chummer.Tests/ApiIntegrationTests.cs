@@ -220,52 +220,88 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
-    public async Task Hub_publish_draft_endpoint_returns_not_implemented_receipt()
+    public async Task Hub_publish_draft_endpoint_persists_owner_draft_receipt()
     {
         using var client = CreateClient();
+        string projectId = $"campaign.shadowops.{Guid.NewGuid():N}";
         HubPublishDraftRequest request = new(
             ProjectKind: HubCatalogItemKinds.RulePack,
-            ProjectId: "campaign.shadowops",
+            ProjectId: projectId,
             RulesetId: RulesetDefaults.Sr5,
             Title: "Campaign ShadowOps");
 
         using HttpResponseMessage response = await client.PostAsJsonAsync("/api/hub/publish/drafts", request);
-        Assert.AreEqual(HttpStatusCode.NotImplemented, response.StatusCode);
+        response.EnsureSuccessStatusCode();
         JsonObject payload = await ParseRequiredJsonObject(response);
 
-        Assert.AreEqual("hub_publication_not_implemented", payload["error"]?.GetValue<string>());
-        Assert.AreEqual(HubPublicationOperations.CreateDraft, payload["operation"]?.GetValue<string>());
+        Assert.IsNotNull(payload["draftId"]?.GetValue<string>());
         Assert.AreEqual(HubCatalogItemKinds.RulePack, payload["projectKind"]?.GetValue<string>());
-        Assert.AreEqual("campaign.shadowops", payload["projectId"]?.GetValue<string>());
+        Assert.AreEqual(projectId, payload["projectId"]?.GetValue<string>());
+        Assert.AreEqual(HubPublicationStates.Draft, payload["state"]?.GetValue<string>());
     }
 
     [TestMethod]
-    public async Task Hub_publish_submit_endpoint_returns_not_implemented_receipt()
+    public async Task Hub_publish_drafts_endpoint_lists_persisted_owner_drafts()
     {
         using var client = CreateClient();
-        HubSubmitProjectRequest request = new("submit for moderation");
+        string projectId = $"campaign.shadowops.{Guid.NewGuid():N}";
 
-        using HttpResponseMessage response = await client.PostAsJsonAsync("/api/hub/publish/rulepack/campaign.shadowops/submit?ruleset=sr5", request);
-        Assert.AreEqual(HttpStatusCode.NotImplemented, response.StatusCode);
-        JsonObject payload = await ParseRequiredJsonObject(response);
+        using HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/hub/publish/drafts", new HubPublishDraftRequest(
+            ProjectKind: HubCatalogItemKinds.RulePack,
+            ProjectId: projectId,
+            RulesetId: RulesetDefaults.Sr5,
+            Title: "Campaign ShadowOps"));
+        createResponse.EnsureSuccessStatusCode();
 
-        Assert.AreEqual("hub_publication_not_implemented", payload["error"]?.GetValue<string>());
-        Assert.AreEqual(HubPublicationOperations.SubmitProject, payload["operation"]?.GetValue<string>());
-        Assert.AreEqual(HubCatalogItemKinds.RulePack, payload["projectKind"]?.GetValue<string>());
-        Assert.AreEqual("campaign.shadowops", payload["projectId"]?.GetValue<string>());
+        JsonObject payload = await GetRequiredJsonObject(client, "/api/hub/publish/drafts?kind=rulepack&ruleset=sr5");
+        JsonArray items = (JsonArray)payload["items"]!;
+        bool found = items.OfType<JsonObject>()
+            .Any(item => string.Equals(item["projectId"]?.GetValue<string>(), projectId, StringComparison.Ordinal));
+
+        Assert.IsTrue(found, $"Expected owner draft '{projectId}' to be listed.");
     }
 
     [TestMethod]
-    public async Task Hub_moderation_queue_endpoint_returns_not_implemented_receipt()
+    public async Task Hub_publish_submit_endpoint_persists_submission_receipt_and_queue_entry()
+    {
+        using var client = CreateClient();
+        string projectId = $"campaign.shadowops.{Guid.NewGuid():N}";
+        using HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/hub/publish/drafts", new HubPublishDraftRequest(
+            ProjectKind: HubCatalogItemKinds.RulePack,
+            ProjectId: projectId,
+            RulesetId: RulesetDefaults.Sr5,
+            Title: "Campaign ShadowOps"));
+        createResponse.EnsureSuccessStatusCode();
+        HubSubmitProjectRequest request = new("submit for moderation");
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync($"/api/hub/publish/rulepack/{projectId}/submit?ruleset=sr5", request);
+        response.EnsureSuccessStatusCode();
+        JsonObject payload = await ParseRequiredJsonObject(response);
+
+        Assert.IsNotNull(payload["draftId"]?.GetValue<string>());
+        Assert.IsNotNull(payload["caseId"]?.GetValue<string>());
+        Assert.AreEqual(HubCatalogItemKinds.RulePack, payload["projectKind"]?.GetValue<string>());
+        Assert.AreEqual(projectId, payload["projectId"]?.GetValue<string>());
+        Assert.AreEqual(HubPublicationStates.Submitted, payload["state"]?.GetValue<string>());
+        Assert.AreEqual(HubModerationStates.PendingReview, payload["reviewState"]?.GetValue<string>());
+
+        JsonObject queue = await GetRequiredJsonObject(client, "/api/hub/moderation/queue?state=pending-review");
+        JsonArray items = (JsonArray)queue["items"]!;
+        bool found = items.OfType<JsonObject>()
+            .Any(item => string.Equals(item["projectId"]?.GetValue<string>(), projectId, StringComparison.Ordinal));
+        Assert.IsTrue(found, $"Expected moderation queue to include '{projectId}'.");
+    }
+
+    [TestMethod]
+    public async Task Hub_moderation_queue_endpoint_returns_queue_payload()
     {
         using var client = CreateClient();
 
         using HttpResponseMessage response = await client.GetAsync("/api/hub/moderation/queue");
-        Assert.AreEqual(HttpStatusCode.NotImplemented, response.StatusCode);
+        response.EnsureSuccessStatusCode();
         JsonObject payload = await ParseRequiredJsonObject(response);
 
-        Assert.AreEqual("hub_publication_not_implemented", payload["error"]?.GetValue<string>());
-        Assert.AreEqual(HubPublicationOperations.ListModerationQueue, payload["operation"]?.GetValue<string>());
+        Assert.IsInstanceOfType<JsonArray>(payload["items"]);
     }
 
     [TestMethod]
