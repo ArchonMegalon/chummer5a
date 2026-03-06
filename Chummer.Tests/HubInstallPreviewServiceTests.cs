@@ -1,6 +1,7 @@
 #nullable enable annotations
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Application.Content;
@@ -23,6 +24,32 @@ public class HubInstallPreviewServiceTests
     {
         DefaultHubInstallPreviewService service = new(
             CreatePluginRegistry(),
+            new RuleProfileRegistryServiceStub(
+                new RuleProfileRegistryEntry(
+                    new RuleProfileManifest(
+                        ProfileId: "official.sr5.core",
+                        Title: "Official SR5 Core",
+                        Description: "Curated runtime.",
+                        RulesetId: RulesetDefaults.Sr5,
+                        Audience: RuleProfileAudienceKinds.General,
+                        CatalogKind: RuleProfileCatalogKinds.Official,
+                        RulePacks: [],
+                        DefaultToggles: [],
+                        RuntimeLock: new ResolvedRuntimeLock(
+                            RulesetId: RulesetDefaults.Sr5,
+                            ContentBundles: [],
+                            RulePacks: [],
+                            ProviderBindings: new Dictionary<string, string>(),
+                            EngineApiVersion: "rulepack-v1",
+                            RuntimeFingerprint: "sha256:core"),
+                        UpdateChannel: RuleProfileUpdateChannels.Stable),
+                    new RuleProfilePublicationMetadata(
+                        OwnerId: "system",
+                        Visibility: ArtifactVisibilityModes.Public,
+                        PublicationStatus: RuleProfilePublicationStatuses.Published,
+                        Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                        Shares: []),
+                    new ArtifactInstallState(ArtifactInstallStates.Pinned, InstalledTargetKind: RuleProfileApplyTargetKinds.Workspace, InstalledTargetId: "workspace-1"))),
             new RuleProfileApplicationServiceStub(
                 new RuleProfilePreviewReceipt(
                     ProfileId: "official.sr5.core",
@@ -65,6 +92,8 @@ public class HubInstallPreviewServiceTests
         Assert.AreEqual("sha256:core", preview.RuntimeFingerprint);
         Assert.AreEqual(HubProjectInstallPreviewChangeKinds.RuntimeLockPinned, preview.Changes[0].Kind);
         Assert.AreEqual(RuntimeInspectorWarningKinds.Trust, preview.Diagnostics[0].Kind);
+        Assert.IsTrue(preview.Diagnostics.Any(diagnostic => diagnostic.Kind == HubProjectInstallPreviewDiagnosticKinds.InstallState));
+        Assert.IsTrue(preview.RequiresConfirmation);
     }
 
     [TestMethod]
@@ -72,6 +101,7 @@ public class HubInstallPreviewServiceTests
     {
         DefaultHubInstallPreviewService service = new(
             CreatePluginRegistry(),
+            new RuleProfileRegistryServiceStub(null),
             new RuleProfileApplicationServiceStub(null),
             new RuntimeLockRegistryServiceStub(
                 new RuntimeLockRegistryEntry(
@@ -110,6 +140,7 @@ public class HubInstallPreviewServiceTests
     {
         DefaultHubInstallPreviewService service = new(
             CreatePluginRegistry(),
+            new RuleProfileRegistryServiceStub(null),
             new RuleProfileApplicationServiceStub(null),
             new RuntimeLockRegistryServiceStub(null),
             new RulePackRegistryServiceStub([]),
@@ -146,6 +177,58 @@ public class HubInstallPreviewServiceTests
         Assert.AreEqual(HubProjectInstallPreviewChangeKinds.InstallDeferred, preview.Changes[0].Kind);
     }
 
+    [TestMethod]
+    public void Hub_install_preview_service_includes_install_state_for_deferred_rulepack_previews()
+    {
+        DefaultHubInstallPreviewService service = new(
+            CreatePluginRegistry(),
+            new RuleProfileRegistryServiceStub(null),
+            new RuleProfileApplicationServiceStub(null),
+            new RuntimeLockRegistryServiceStub(null),
+            new RulePackRegistryServiceStub(
+            [
+                new RulePackRegistryEntry(
+                    new RulePackManifest(
+                        PackId: "house-rules",
+                        Version: "overlay-v1",
+                        Title: "House Rules",
+                        Author: "GM",
+                        Description: "Campaign overlay.",
+                        Targets: [RulesetDefaults.Sr5],
+                        EngineApiVersion: "rulepack-v1",
+                        DependsOn: [],
+                        ConflictsWith: [],
+                        Visibility: ArtifactVisibilityModes.LocalOnly,
+                        TrustTier: ArtifactTrustTiers.LocalOnly,
+                        Assets: [],
+                        Capabilities: [],
+                        ExecutionPolicies: []),
+                    new RulePackPublicationMetadata(
+                        OwnerId: "alice",
+                        Visibility: ArtifactVisibilityModes.Private,
+                        PublicationStatus: RulePackPublicationStatuses.Published,
+                        Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                        Shares: []),
+                    new ArtifactInstallState(
+                        ArtifactInstallStates.Installed,
+                        InstalledTargetKind: RuleProfileApplyTargetKinds.Workspace,
+                        InstalledTargetId: "workspace-1"))
+            ]),
+            new BuildKitRegistryServiceStub([]));
+
+        HubProjectInstallPreviewReceipt? preview = service.Preview(
+            new OwnerScope("alice"),
+            HubCatalogItemKinds.RulePack,
+            "house-rules",
+            new RuleProfileApplyTarget(RuleProfileApplyTargetKinds.Workspace, "workspace-1"),
+            RulesetDefaults.Sr5);
+
+        Assert.IsNotNull(preview);
+        Assert.AreEqual(HubProjectInstallPreviewStates.Deferred, preview.State);
+        Assert.IsTrue(preview.Diagnostics.Any(diagnostic => diagnostic.Kind == HubProjectInstallPreviewDiagnosticKinds.InstallState));
+        Assert.IsTrue(preview.RequiresConfirmation);
+    }
+
     private static RulesetPluginRegistry CreatePluginRegistry() =>
         new(
         [
@@ -165,6 +248,20 @@ public class HubInstallPreviewServiceTests
         public RuleProfilePreviewReceipt? Preview(OwnerScope owner, string profileId, RuleProfileApplyTarget target, string? rulesetId = null) => _preview;
 
         public RuleProfileApplyReceipt? Apply(OwnerScope owner, string profileId, RuleProfileApplyTarget target, string? rulesetId = null) => null;
+    }
+
+    private sealed class RuleProfileRegistryServiceStub : IRuleProfileRegistryService
+    {
+        private readonly RuleProfileRegistryEntry? _entry;
+
+        public RuleProfileRegistryServiceStub(RuleProfileRegistryEntry? entry)
+        {
+            _entry = entry;
+        }
+
+        public IReadOnlyList<RuleProfileRegistryEntry> List(OwnerScope owner, string? rulesetId = null) => _entry is null ? [] : [_entry];
+
+        public RuleProfileRegistryEntry? Get(OwnerScope owner, string profileId, string? rulesetId = null) => _entry;
     }
 
     private sealed class RuntimeLockRegistryServiceStub : IRuntimeLockRegistryService
@@ -193,7 +290,8 @@ public class HubInstallPreviewServiceTests
 
         public IReadOnlyList<RulePackRegistryEntry> List(OwnerScope owner, string? rulesetId = null) => _entries;
 
-        public RulePackRegistryEntry? Get(OwnerScope owner, string packId, string? rulesetId = null) => null;
+        public RulePackRegistryEntry? Get(OwnerScope owner, string packId, string? rulesetId = null) =>
+            _entries.Count == 0 ? null : _entries[0];
     }
 
     private sealed class BuildKitRegistryServiceStub : IBuildKitRegistryService

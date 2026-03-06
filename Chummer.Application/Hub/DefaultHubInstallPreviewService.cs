@@ -9,6 +9,7 @@ namespace Chummer.Application.Hub;
 public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
 {
     private readonly IRulesetPluginRegistry _rulesetPluginRegistry;
+    private readonly IRuleProfileRegistryService _ruleProfileRegistryService;
     private readonly IRuleProfileApplicationService _ruleProfileApplicationService;
     private readonly IRuntimeLockRegistryService _runtimeLockRegistryService;
     private readonly IRulePackRegistryService _rulePackRegistryService;
@@ -16,12 +17,14 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
 
     public DefaultHubInstallPreviewService(
         IRulesetPluginRegistry rulesetPluginRegistry,
+        IRuleProfileRegistryService ruleProfileRegistryService,
         IRuleProfileApplicationService ruleProfileApplicationService,
         IRuntimeLockRegistryService runtimeLockRegistryService,
         IRulePackRegistryService rulePackRegistryService,
         IBuildKitRegistryService buildKitRegistryService)
     {
         _rulesetPluginRegistry = rulesetPluginRegistry;
+        _ruleProfileRegistryService = ruleProfileRegistryService;
         _ruleProfileApplicationService = ruleProfileApplicationService;
         _runtimeLockRegistryService = runtimeLockRegistryService;
         _rulePackRegistryService = rulePackRegistryService;
@@ -53,15 +56,26 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
             return null;
         }
 
+        List<HubProjectInstallPreviewDiagnostic> diagnostics = preview.Warnings
+            .Select(warning => new HubProjectInstallPreviewDiagnostic(warning.Kind, warning.Severity, warning.Message, warning.SubjectId))
+            .ToList();
+        bool requiresConfirmation = preview.RequiresConfirmation;
+        RuleProfileRegistryEntry? entry = _ruleProfileRegistryService.Get(owner, itemId, rulesetId);
+        if (entry is not null && !string.Equals(entry.Install.State, ArtifactInstallStates.Available, StringComparison.Ordinal))
+        {
+            diagnostics.Add(CreateInstallStateDiagnostic(entry.Install, itemId));
+            requiresConfirmation = true;
+        }
+
         return new HubProjectInstallPreviewReceipt(
             Kind: HubCatalogItemKinds.RuleProfile,
             ItemId: itemId,
             Target: target,
             State: HubProjectInstallPreviewStates.Ready,
             Changes: preview.Changes.Select(change => new HubProjectInstallPreviewChange(change.Kind, change.Summary, change.SubjectId ?? itemId, change.RequiresConfirmation)).ToArray(),
-            Diagnostics: preview.Warnings.Select(warning => new HubProjectInstallPreviewDiagnostic(warning.Kind, warning.Severity, warning.Message, warning.SubjectId)).ToArray(),
+            Diagnostics: diagnostics,
             RuntimeFingerprint: preview.RuntimeLock.RuntimeFingerprint,
-            RequiresConfirmation: preview.RequiresConfirmation);
+            RequiresConfirmation: requiresConfirmation);
     }
 
     private HubProjectInstallPreviewReceipt? PreviewRuntimeLock(OwnerScope owner, string itemId, RuleProfileApplyTarget target, string? rulesetId)
@@ -120,12 +134,36 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
                 continue;
             }
 
-            return CreateDeferredReceipt(
-                kind: HubCatalogItemKinds.RulePack,
-                itemId: itemId,
-                target: target,
-                deferredReason: "hub_rulepack_install_preview_not_implemented",
-                message: $"RulePack install preview is not implemented yet for '{entry.Manifest.PackId}'.");
+            List<HubProjectInstallPreviewDiagnostic> diagnostics =
+            [
+                new HubProjectInstallPreviewDiagnostic(
+                    Kind: HubProjectInstallPreviewDiagnosticKinds.Installability,
+                    Severity: HubProjectInstallPreviewDiagnosticSeverityLevels.Info,
+                    Message: $"RulePack install preview is not implemented yet for '{entry.Manifest.PackId}'.",
+                    SubjectId: itemId)
+            ];
+            bool requiresConfirmation = false;
+            if (!string.Equals(entry.Install.State, ArtifactInstallStates.Available, StringComparison.Ordinal))
+            {
+                diagnostics.Add(CreateInstallStateDiagnostic(entry.Install, itemId));
+                requiresConfirmation = true;
+            }
+
+            return new HubProjectInstallPreviewReceipt(
+                Kind: HubCatalogItemKinds.RulePack,
+                ItemId: itemId,
+                Target: target,
+                State: HubProjectInstallPreviewStates.Deferred,
+                Changes:
+                [
+                    new HubProjectInstallPreviewChange(
+                        Kind: HubProjectInstallPreviewChangeKinds.InstallDeferred,
+                        Summary: $"RulePack install preview is not implemented yet for '{entry.Manifest.PackId}'.",
+                        SubjectId: itemId)
+                ],
+                Diagnostics: diagnostics,
+                DeferredReason: "hub_rulepack_install_preview_not_implemented",
+                RequiresConfirmation: requiresConfirmation);
         }
 
         return null;
@@ -195,5 +233,21 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
                     SubjectId: itemId)
             ],
             DeferredReason: deferredReason);
+    }
+
+    private static HubProjectInstallPreviewDiagnostic CreateInstallStateDiagnostic(ArtifactInstallState install, string itemId)
+    {
+        string message = install.State switch
+        {
+            ArtifactInstallStates.Pinned => $"Artifact is already pinned for target '{install.InstalledTargetId ?? itemId}'.",
+            ArtifactInstallStates.Installed => $"Artifact is already installed for target '{install.InstalledTargetId ?? itemId}'.",
+            _ => $"Artifact install state is '{install.State}'."
+        };
+
+        return new HubProjectInstallPreviewDiagnostic(
+            Kind: HubProjectInstallPreviewDiagnosticKinds.InstallState,
+            Severity: HubProjectInstallPreviewDiagnosticSeverityLevels.Info,
+            Message: message,
+            SubjectId: itemId);
     }
 }

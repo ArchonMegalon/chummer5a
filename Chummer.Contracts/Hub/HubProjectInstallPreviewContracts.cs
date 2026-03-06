@@ -21,6 +21,7 @@ public static class HubProjectInstallPreviewDiagnosticKinds
     public const string Trust = "trust";
     public const string ProviderBinding = "provider-binding";
     public const string Installability = "installability";
+    public const string InstallState = "install-state";
 }
 
 public static class HubProjectInstallPreviewDiagnosticSeverityLevels
