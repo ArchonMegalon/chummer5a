@@ -8,10 +8,15 @@ public static class NavigationTabCatalog
 
     public static IReadOnlyList<NavigationTabDefinition> ForRuleset(string? rulesetId)
     {
-        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
+        string effectiveRulesetId = ResolveCompatibilityRulesetId(rulesetId);
         return All
             .Where(tab => string.Equals(tab.RulesetId, effectiveRulesetId, StringComparison.OrdinalIgnoreCase))
             .ToArray();
+    }
+
+    private static string ResolveCompatibilityRulesetId(string? rulesetId)
+    {
+        return RulesetDefaults.NormalizeOptional(rulesetId) ?? RulesetDefaults.Sr5;
     }
 
     private static IReadOnlyList<NavigationTabDefinition> CreateSr5Catalog()

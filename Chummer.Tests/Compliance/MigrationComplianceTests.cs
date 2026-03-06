@@ -1530,6 +1530,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(tabCatalogText, "RulesetDefaults.Sr5");
         StringAssert.Contains(actionCatalogText, "RulesetDefaults.Sr5");
         StringAssert.Contains(controlCatalogText, "RulesetDefaults.Sr5");
+        Assert.IsFalse(commandCatalogText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
+        Assert.IsFalse(tabCatalogText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
+        Assert.IsFalse(actionCatalogText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
+        Assert.IsFalse(controlCatalogText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
         Assert.IsFalse(dialogFactoryText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(overviewCommandDispatcherText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         string workspaceSessionManagerPath = FindPath("Chummer.Presentation", "Overview", "WorkspaceSessionManager.cs");

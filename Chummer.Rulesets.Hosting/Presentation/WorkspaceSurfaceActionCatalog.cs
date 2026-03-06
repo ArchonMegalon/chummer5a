@@ -8,7 +8,7 @@ public static class WorkspaceSurfaceActionCatalog
 
     public static IReadOnlyList<WorkspaceSurfaceActionDefinition> ForRuleset(string? rulesetId)
     {
-        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
+        string effectiveRulesetId = ResolveCompatibilityRulesetId(rulesetId);
         return All
             .Where(action => string.Equals(action.RulesetId, effectiveRulesetId, StringComparison.OrdinalIgnoreCase))
             .ToArray();
@@ -31,6 +31,11 @@ public static class WorkspaceSurfaceActionCatalog
         return rulesetScopedActions
             .Where(action => string.Equals(action.TabId, "tab-info", StringComparison.Ordinal))
             .ToArray();
+    }
+
+    private static string ResolveCompatibilityRulesetId(string? rulesetId)
+    {
+        return RulesetDefaults.NormalizeOptional(rulesetId) ?? RulesetDefaults.Sr5;
     }
 
     private static IReadOnlyList<WorkspaceSurfaceActionDefinition> CreateSr5Catalog()

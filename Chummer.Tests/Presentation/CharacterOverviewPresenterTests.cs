@@ -1480,7 +1480,7 @@ public class CharacterOverviewPresenterTests
 
         public Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct)
         {
-            LastPreferredRulesetId = RulesetDefaults.Normalize(rulesetId);
+            LastPreferredRulesetId = RulesetDefaults.NormalizeRequired(rulesetId);
             State = State with
             {
                 PreferredRulesetId = LastPreferredRulesetId,

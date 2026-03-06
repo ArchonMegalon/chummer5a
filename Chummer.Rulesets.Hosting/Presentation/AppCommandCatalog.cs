@@ -8,10 +8,15 @@ public static class AppCommandCatalog
 
     public static IReadOnlyList<AppCommandDefinition> ForRuleset(string? rulesetId)
     {
-        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
+        string effectiveRulesetId = ResolveCompatibilityRulesetId(rulesetId);
         return All
             .Where(command => string.Equals(command.RulesetId, effectiveRulesetId, StringComparison.OrdinalIgnoreCase))
             .ToArray();
+    }
+
+    private static string ResolveCompatibilityRulesetId(string? rulesetId)
+    {
+        return RulesetDefaults.NormalizeOptional(rulesetId) ?? RulesetDefaults.Sr5;
     }
 
     private static IReadOnlyList<AppCommandDefinition> CreateSr5Catalog()

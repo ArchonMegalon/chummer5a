@@ -8,7 +8,7 @@ public static class DesktopUiControlCatalog
 
     public static IReadOnlyList<DesktopUiControlDefinition> ForRuleset(string? rulesetId)
     {
-        string effectiveRulesetId = RulesetDefaults.Normalize(rulesetId);
+        string effectiveRulesetId = ResolveCompatibilityRulesetId(rulesetId);
         return All
             .Where(control => string.Equals(control.RulesetId, effectiveRulesetId, StringComparison.OrdinalIgnoreCase))
             .ToArray();
@@ -31,6 +31,11 @@ public static class DesktopUiControlCatalog
         return rulesetScopedControls
             .Where(control => string.Equals(control.TabId, "tab-info", StringComparison.Ordinal))
             .ToArray();
+    }
+
+    private static string ResolveCompatibilityRulesetId(string? rulesetId)
+    {
+        return RulesetDefaults.NormalizeOptional(rulesetId) ?? RulesetDefaults.Sr5;
     }
 
     private static IReadOnlyList<DesktopUiControlDefinition> CreateSr5Catalog()
