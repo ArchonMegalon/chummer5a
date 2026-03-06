@@ -165,6 +165,10 @@ public class MigrationComplianceTests
         string sessionEndpointsText = File.ReadAllText(sessionEndpointsPath);
         string sessionApiContractsPath = FindPath("Chummer.Contracts", "Session", "SessionApiContracts.cs");
         string sessionApiContractsText = File.ReadAllText(sessionApiContractsPath);
+        string sessionServiceContractPath = FindPath("Chummer.Application", "Session", "ISessionService.cs");
+        string sessionServiceContractText = File.ReadAllText(sessionServiceContractPath);
+        string notImplementedSessionServicePath = FindPath("Chummer.Application", "Session", "NotImplementedSessionService.cs");
+        string notImplementedSessionServiceText = File.ReadAllText(notImplementedSessionServicePath);
         string sessionClientContractPath = FindPath("Chummer.Presentation", "ISessionClient.cs");
         string sessionClientContractText = File.ReadAllText(sessionClientContractPath);
         string workbenchClientContractPath = FindPath("Chummer.Presentation", "IChummerClient.cs");
@@ -177,6 +181,8 @@ public class MigrationComplianceTests
         string blazorProgramText = File.ReadAllText(blazorProgramPath);
         string desktopRuntimeExtensionsPath = FindPath("Chummer.Desktop.Runtime", "ServiceCollectionDesktopRuntimeExtensions.cs");
         string desktopRuntimeExtensionsText = File.ReadAllText(desktopRuntimeExtensionsPath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
         string readmePath = FindPath("README.md");
         string readmeText = File.ReadAllText(readmePath);
 
@@ -187,23 +193,33 @@ public class MigrationComplianceTests
         StringAssert.Contains(sessionEndpointsText, "/api/session/characters/{characterId}/sync");
         StringAssert.Contains(sessionEndpointsText, "/api/session/rulepacks");
         StringAssert.Contains(sessionEndpointsText, "/api/session/pins");
-        StringAssert.Contains(sessionEndpointsText, "session_not_implemented");
         StringAssert.Contains(sessionEndpointsText, "StatusCodes.Status501NotImplemented");
         StringAssert.Contains(sessionApiContractsText, "public static class SessionApiOperations");
         StringAssert.Contains(sessionApiContractsText, "public sealed record SessionCharacterCatalog");
         StringAssert.Contains(sessionApiContractsText, "public sealed record SessionApiResult<T>");
         StringAssert.Contains(sessionApiContractsText, "public sealed record SessionNotImplementedReceipt");
+        StringAssert.Contains(sessionServiceContractText, "public interface ISessionService");
+        StringAssert.Contains(sessionServiceContractText, "SessionApiResult<SessionCharacterCatalog> ListCharacters");
+        StringAssert.Contains(sessionServiceContractText, "SessionApiResult<SessionSyncReceipt> SyncCharacterLedger");
+        StringAssert.Contains(notImplementedSessionServiceText, "public sealed class NotImplementedSessionService : ISessionService");
+        StringAssert.Contains(notImplementedSessionServiceText, "session_not_implemented");
         StringAssert.Contains(sessionClientContractText, "public interface ISessionClient");
         StringAssert.Contains(sessionClientContractText, "ListCharactersAsync");
         StringAssert.Contains(sessionClientContractText, "GetCharacterProjectionAsync");
         StringAssert.Contains(sessionClientContractText, "SyncCharacterLedgerAsync");
+        StringAssert.Contains(sessionEndpointsText, "ISessionService sessionService");
+        StringAssert.Contains(sessionEndpointsText, "sessionService.ListCharacters(ownerContextAccessor.Current)");
+        StringAssert.Contains(sessionEndpointsText, "sessionService.SyncCharacterLedger(ownerContextAccessor.Current, characterId, batch)");
+        StringAssert.Contains(sessionEndpointsText, "ToResult(");
         StringAssert.Contains(httpSessionClientText, "/api/session/characters");
         StringAssert.Contains(httpSessionClientText, "SessionApiResult<T>.FromNotImplemented");
-        StringAssert.Contains(inProcessSessionClientText, "session_not_implemented");
+        StringAssert.Contains(inProcessSessionClientText, "ISessionService");
+        StringAssert.Contains(inProcessSessionClientText, "_sessionService.SyncCharacterLedger");
         StringAssert.Contains(blazorProgramText, "AddHttpClient<ISessionClient, HttpSessionClient>");
         StringAssert.Contains(desktopRuntimeExtensionsText, "RemoveAll<ISessionClient>()");
         StringAssert.Contains(desktopRuntimeExtensionsText, "TryAddSingleton<ISessionClient, HttpSessionClient>()");
         StringAssert.Contains(desktopRuntimeExtensionsText, "TryAddSingleton<ISessionClient, InProcessSessionClient>()");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<ISessionService, NotImplementedSessionService>()");
         Assert.IsFalse(
             workbenchClientContractText.Contains("SessionDashboardProjection", StringComparison.Ordinal),
             "IChummerClient should stay workbench-scoped; session/mobile operations belong on ISessionClient.");

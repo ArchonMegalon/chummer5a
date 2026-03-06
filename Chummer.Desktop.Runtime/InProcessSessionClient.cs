@@ -1,4 +1,5 @@
 using Chummer.Application.Owners;
+using Chummer.Application.Session;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Session;
 using Chummer.Infrastructure.Owners;
@@ -8,37 +9,30 @@ namespace Chummer.Desktop.Runtime;
 
 public sealed class InProcessSessionClient : ISessionClient
 {
+    private readonly ISessionService _sessionService;
     private readonly IOwnerContextAccessor _ownerContextAccessor;
 
-    public InProcessSessionClient(IOwnerContextAccessor? ownerContextAccessor = null)
+    public InProcessSessionClient(ISessionService? sessionService = null, IOwnerContextAccessor? ownerContextAccessor = null)
     {
+        _sessionService = sessionService ?? new NotImplementedSessionService();
         _ownerContextAccessor = ownerContextAccessor ?? new LocalOwnerContextAccessor();
     }
 
     public Task<SessionApiResult<SessionCharacterCatalog>> ListCharactersAsync(CancellationToken ct)
-        => Task.FromResult(NotImplemented<SessionCharacterCatalog>(SessionApiOperations.ListCharacters));
+        => Task.FromResult(_sessionService.ListCharacters(_ownerContextAccessor.Current));
 
     public Task<SessionApiResult<SessionDashboardProjection>> GetCharacterProjectionAsync(string characterId, CancellationToken ct)
-        => Task.FromResult(NotImplemented<SessionDashboardProjection>(SessionApiOperations.GetCharacterProjection, characterId));
+        => Task.FromResult(_sessionService.GetCharacterProjection(_ownerContextAccessor.Current, characterId));
 
     public Task<SessionApiResult<SessionOverlaySnapshot>> ApplyCharacterPatchesAsync(string characterId, SessionPatchRequest request, CancellationToken ct)
-        => Task.FromResult(NotImplemented<SessionOverlaySnapshot>(SessionApiOperations.ApplyCharacterPatches, characterId));
+        => Task.FromResult(_sessionService.ApplyCharacterPatches(_ownerContextAccessor.Current, characterId, request));
 
     public Task<SessionApiResult<SessionSyncReceipt>> SyncCharacterLedgerAsync(string characterId, SessionSyncBatch batch, CancellationToken ct)
-        => Task.FromResult(NotImplemented<SessionSyncReceipt>(SessionApiOperations.SyncCharacterLedger, characterId));
+        => Task.FromResult(_sessionService.SyncCharacterLedger(_ownerContextAccessor.Current, characterId, batch));
 
     public Task<SessionApiResult<RulePackCatalog>> ListRulePacksAsync(CancellationToken ct)
-        => Task.FromResult(NotImplemented<RulePackCatalog>(SessionApiOperations.ListRulePacks));
+        => Task.FromResult(_sessionService.ListRulePacks(_ownerContextAccessor.Current));
 
     public Task<SessionApiResult<SessionOverlaySnapshot>> UpdatePinsAsync(SessionPinUpdateRequest request, CancellationToken ct)
-        => Task.FromResult(NotImplemented<SessionOverlaySnapshot>(SessionApiOperations.UpdatePins, request.BaseCharacterVersion.CharacterId));
-
-    private SessionApiResult<T> NotImplemented<T>(string operation, string? characterId = null)
-        => SessionApiResult<T>.FromNotImplemented(
-            new SessionNotImplementedReceipt(
-                Error: "session_not_implemented",
-                Operation: operation,
-                Message: "The dedicated session/mobile surface is not implemented yet.",
-                CharacterId: characterId,
-                OwnerId: _ownerContextAccessor.Current.NormalizedValue));
+        => Task.FromResult(_sessionService.UpdatePins(_ownerContextAccessor.Current, request));
 }

@@ -2,6 +2,7 @@ using Chummer.Application.Characters;
 using Chummer.Application.Content;
 using Chummer.Application.Owners;
 using Chummer.Application.LifeModules;
+using Chummer.Application.Session;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
 using Chummer.Infrastructure.Files;
@@ -75,6 +76,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
         services.AddSingleton<IShellSessionStore, SettingsShellSessionStore>();
         services.AddSingleton<IShellSessionService, ShellSessionService>();
+        services.AddSingleton<ISessionService, NotImplementedSessionService>();
         services.AddSingleton<IRosterStore>(_ => new FileRosterStore(stateDirectory));
         services.AddSingleton<IWorkspaceStore>(_ =>
         {
