@@ -72,6 +72,37 @@ public class HubPublicationServiceTests
         Assert.AreEqual("Campaign Runtime", queue.Payload.Items[0].Title);
     }
 
+    [TestMethod]
+    public void Default_publication_service_returns_draft_detail_with_latest_moderation_state()
+    {
+        InMemoryHubDraftStore draftStore = new();
+        InMemoryHubModerationCaseStore moderationCaseStore = new();
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        OwnerScope owner = new("alice");
+
+        HubPublishDraftReceipt draft = publicationService.CreateDraft(
+            owner,
+            new HubPublishDraftRequest(
+                ProjectKind: HubCatalogItemKinds.RulePack,
+                ProjectId: "campaign.shadowops",
+                RulesetId: RulesetDefaults.Sr5,
+                Title: "Campaign ShadowOps")).Payload!;
+        publicationService.SubmitForReview(
+            owner,
+            HubCatalogItemKinds.RulePack,
+            "campaign.shadowops",
+            RulesetDefaults.Sr5,
+            new HubSubmitProjectRequest("ready"));
+
+        HubDraftDetailProjection? detail = publicationService.GetDraft(owner, draft.DraftId).Payload;
+
+        Assert.IsNotNull(detail);
+        Assert.AreEqual(draft.DraftId, detail.Draft.DraftId);
+        Assert.IsNotNull(detail.Moderation);
+        Assert.AreEqual(HubModerationStates.PendingReview, detail.Moderation.State);
+        Assert.AreEqual("ready", detail.LatestModerationNotes);
+    }
+
     private sealed class InMemoryHubDraftStore : IHubDraftStore
     {
         private readonly List<HubDraftRecord> _records = [];
@@ -89,6 +120,11 @@ public class HubPublicationServiceTests
         public HubDraftRecord? Get(OwnerScope owner, string kind, string projectId, string rulesetId)
         {
             return List(owner, kind, rulesetId).FirstOrDefault(record => string.Equals(record.ProjectId, projectId, StringComparison.Ordinal));
+        }
+
+        public HubDraftRecord? Get(OwnerScope owner, string draftId)
+        {
+            return List(owner).FirstOrDefault(record => string.Equals(record.DraftId, draftId, StringComparison.Ordinal));
         }
 
         public HubDraftRecord Upsert(OwnerScope owner, HubDraftRecord record)
@@ -129,6 +165,11 @@ public class HubPublicationServiceTests
         public HubModerationCaseRecord? Get(OwnerScope owner, string kind, string projectId, string rulesetId)
         {
             return List(owner, kind, rulesetId).FirstOrDefault(record => string.Equals(record.ProjectId, projectId, StringComparison.Ordinal));
+        }
+
+        public HubModerationCaseRecord? GetByDraftId(OwnerScope owner, string draftId)
+        {
+            return List(owner).FirstOrDefault(record => string.Equals(record.DraftId, draftId, StringComparison.Ordinal));
         }
 
         public HubModerationCaseRecord Upsert(OwnerScope owner, HubModerationCaseRecord record)

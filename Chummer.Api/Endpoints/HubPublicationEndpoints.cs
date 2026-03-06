@@ -11,6 +11,18 @@ public static class HubPublicationEndpoints
         app.MapGet("/api/hub/publish/drafts", (string? kind, string? ruleset, string? state, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(hubPublicationService.ListDrafts(ownerContextAccessor.Current, kind, ruleset, state)));
 
+        app.MapGet("/api/hub/publish/drafts/{draftId}", (string draftId, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            HubDraftDetailProjection? detail = hubPublicationService.GetDraft(ownerContextAccessor.Current, draftId).Payload;
+            return detail is null
+                ? Results.NotFound(new
+                {
+                    error = "hub_publish_draft_not_found",
+                    draftId
+                })
+                : Results.Ok(detail);
+        });
+
         app.MapPost("/api/hub/publish/drafts", (HubPublishDraftRequest? request, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
         {
             if (request is null)

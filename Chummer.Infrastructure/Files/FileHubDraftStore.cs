@@ -29,6 +29,14 @@ public sealed class FileHubDraftStore : IHubDraftStore
             .ToArray();
     }
 
+    public HubDraftRecord? Get(OwnerScope owner, string draftId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(draftId);
+
+        return Load(owner).FirstOrDefault(record =>
+            string.Equals(record.DraftId, draftId.Trim(), StringComparison.Ordinal));
+    }
+
     public HubDraftRecord? Get(OwnerScope owner, string kind, string projectId, string rulesetId)
     {
         string normalizedKind = NormalizeRequired(kind);

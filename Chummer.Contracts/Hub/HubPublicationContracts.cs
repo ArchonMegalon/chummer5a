@@ -43,6 +43,12 @@ public sealed record HubPublishDraftReceipt(
 public sealed record HubPublishDraftList(
     IReadOnlyList<HubPublishDraftReceipt> Items);
 
+public sealed record HubDraftDetailProjection(
+    HubPublishDraftReceipt Draft,
+    HubModerationQueueItem? Moderation,
+    string? LatestModerationNotes = null,
+    DateTimeOffset? LatestModerationUpdatedAtUtc = null);
+
 public sealed record HubSubmitProjectRequest(
     string? Notes = null);
 

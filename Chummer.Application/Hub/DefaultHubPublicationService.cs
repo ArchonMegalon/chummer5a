@@ -28,6 +28,39 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
         return HubPublicationResult<HubPublishDraftList>.Implemented(new HubPublishDraftList(items));
     }
 
+    public HubPublicationResult<HubDraftDetailProjection?> GetDraft(OwnerScope owner, string draftId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(draftId);
+
+        HubDraftRecord? draft = _draftStore.Get(owner, draftId);
+        if (draft is null)
+        {
+            return HubPublicationResult<HubDraftDetailProjection?>.Implemented(null);
+        }
+
+        HubModerationCaseRecord? moderationCase = _moderationCaseStore.GetByDraftId(owner, draft.DraftId);
+        HubModerationQueueItem? moderation = moderationCase is null
+            ? null
+            : new HubModerationQueueItem(
+                CaseId: moderationCase.CaseId,
+                DraftId: moderationCase.DraftId,
+                ProjectKind: moderationCase.ProjectKind,
+                ProjectId: moderationCase.ProjectId,
+                RulesetId: moderationCase.RulesetId,
+                Title: moderationCase.Title,
+                OwnerId: moderationCase.OwnerId,
+                State: moderationCase.State,
+                CreatedAtUtc: moderationCase.CreatedAtUtc,
+                Summary: moderationCase.Summary);
+
+        return HubPublicationResult<HubDraftDetailProjection?>.Implemented(
+            new HubDraftDetailProjection(
+                Draft: ToReceipt(draft),
+                Moderation: moderation,
+                LatestModerationNotes: moderationCase?.Notes,
+                LatestModerationUpdatedAtUtc: moderationCase?.UpdatedAtUtc));
+    }
+
     public HubPublicationResult<HubPublishDraftReceipt> CreateDraft(OwnerScope owner, HubPublishDraftRequest? request)
     {
         ArgumentNullException.ThrowIfNull(request);

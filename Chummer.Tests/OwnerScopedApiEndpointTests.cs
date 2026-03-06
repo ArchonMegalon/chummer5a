@@ -139,6 +139,30 @@ public sealed class OwnerScopedApiEndpointTests
         Assert.AreEqual(0, local["items"]?.AsArray().Count);
     }
 
+    [TestMethod]
+    public async Task Hub_publication_detail_endpoint_respects_forwarded_owner_scope()
+    {
+        await using WebApplication app = await CreateAppAsync();
+        using HttpClient client = app.GetTestClient();
+
+        JsonObject aliceDraft = await PostRequiredJsonObject(client, "/api/hub/publish/drafts", new JsonObject
+        {
+            ["projectKind"] = HubCatalogItemKinds.RulePack,
+            ["projectId"] = "alice.pack.detail",
+            ["rulesetId"] = "sr5",
+            ["title"] = "Alice Pack Detail"
+        }, "alice@example.com");
+        string draftId = aliceDraft["draftId"]?.GetValue<string>() ?? string.Empty;
+
+        JsonObject alice = await GetRequiredJsonObject(client, $"/api/hub/publish/drafts/{draftId}", "alice@example.com");
+        Assert.AreEqual(draftId, alice["draft"]?["draftId"]?.GetValue<string>());
+
+        using HttpRequestMessage request = new(HttpMethod.Get, $"/api/hub/publish/drafts/{draftId}");
+        request.Headers.Add(OwnerHeaderName, "bob@example.com");
+        using HttpResponseMessage response = await client.SendAsync(request);
+        Assert.AreEqual(StatusCodes.Status404NotFound, (int)response.StatusCode);
+    }
+
     private static async Task<WebApplication> CreateAppAsync()
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
@@ -403,6 +427,11 @@ public sealed class OwnerScopedApiEndpointTests
             return List(owner, kind, rulesetId).FirstOrDefault(record => string.Equals(record.ProjectId, projectId, StringComparison.Ordinal));
         }
 
+        public HubDraftRecord? Get(OwnerScope owner, string draftId)
+        {
+            return List(owner).FirstOrDefault(record => string.Equals(record.DraftId, draftId, StringComparison.Ordinal));
+        }
+
         public HubDraftRecord Upsert(OwnerScope owner, HubDraftRecord record)
         {
             if (!_recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubDraftRecord>? records))
@@ -447,6 +476,11 @@ public sealed class OwnerScopedApiEndpointTests
         public HubModerationCaseRecord? Get(OwnerScope owner, string kind, string projectId, string rulesetId)
         {
             return List(owner, kind, rulesetId).FirstOrDefault(record => string.Equals(record.ProjectId, projectId, StringComparison.Ordinal));
+        }
+
+        public HubModerationCaseRecord? GetByDraftId(OwnerScope owner, string draftId)
+        {
+            return List(owner).FirstOrDefault(record => string.Equals(record.DraftId, draftId, StringComparison.Ordinal));
         }
 
         public HubModerationCaseRecord Upsert(OwnerScope owner, HubModerationCaseRecord record)

@@ -262,6 +262,27 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_publish_draft_detail_endpoint_returns_persisted_draft_projection()
+    {
+        using var client = CreateClient();
+        string projectId = $"campaign.shadowops.{Guid.NewGuid():N}";
+
+        using HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/hub/publish/drafts", new HubPublishDraftRequest(
+            ProjectKind: HubCatalogItemKinds.RulePack,
+            ProjectId: projectId,
+            RulesetId: RulesetDefaults.Sr5,
+            Title: "Campaign ShadowOps"));
+        createResponse.EnsureSuccessStatusCode();
+        JsonObject created = await ParseRequiredJsonObject(createResponse);
+        string draftId = created["draftId"]?.GetValue<string>() ?? string.Empty;
+
+        JsonObject detail = await GetRequiredJsonObject(client, $"/api/hub/publish/drafts/{draftId}");
+
+        Assert.AreEqual(draftId, detail["draft"]?["draftId"]?.GetValue<string>());
+        Assert.AreEqual(projectId, detail["draft"]?["projectId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Hub_publish_submit_endpoint_persists_submission_receipt_and_queue_entry()
     {
         using var client = CreateClient();
