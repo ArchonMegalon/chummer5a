@@ -360,6 +360,39 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Runtime_lock_registry_surface_is_exposed_through_runtime_api_seam()
+    {
+        string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
+        string apiProgramText = File.ReadAllText(apiProgramPath);
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string runtimeLockRegistryEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RuntimeLockRegistryEndpoints.cs");
+        string runtimeLockRegistryEndpointsText = File.ReadAllText(runtimeLockRegistryEndpointsPath);
+        string runtimeLockRegistryServiceContractPath = FindPath("Chummer.Application", "Content", "IRuntimeLockRegistryService.cs");
+        string runtimeLockRegistryServiceContractText = File.ReadAllText(runtimeLockRegistryServiceContractPath);
+        string runtimeLockRegistryServicePath = FindPath("Chummer.Application", "Content", "ProfileBackedRuntimeLockRegistryService.cs");
+        string runtimeLockRegistryServiceText = File.ReadAllText(runtimeLockRegistryServicePath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(apiProgramText, "app.MapRuntimeLockRegistryEndpoints();");
+        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/runtime/locks\"");
+        StringAssert.Contains(infoEndpointsText, "/api/runtime/locks");
+        StringAssert.Contains(runtimeLockRegistryEndpointsText, "/api/runtime/locks");
+        StringAssert.Contains(runtimeLockRegistryEndpointsText, "IRuntimeLockRegistryService");
+        StringAssert.Contains(runtimeLockRegistryEndpointsText, "runtime_lock_not_found");
+        StringAssert.Contains(runtimeLockRegistryServiceContractText, "public interface IRuntimeLockRegistryService");
+        StringAssert.Contains(runtimeLockRegistryServiceContractText, "RuntimeLockRegistryPage List");
+        StringAssert.Contains(runtimeLockRegistryServiceText, "public sealed class ProfileBackedRuntimeLockRegistryService : IRuntimeLockRegistryService");
+        StringAssert.Contains(runtimeLockRegistryServiceText, "RuntimeLockCatalogKinds.Published");
+        StringAssert.Contains(runtimeLockRegistryServiceText, "RuntimeLockCatalogKinds.Derived");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeLockRegistryService, ProfileBackedRuntimeLockRegistryService>()");
+        StringAssert.Contains(readmeText, "/api/runtime/locks/*");
+    }
+
+    [TestMethod]
     public void Solution_includes_headless_and_dual_head_projects()
     {
         string solutionPath = FindPath("Chummer.sln");

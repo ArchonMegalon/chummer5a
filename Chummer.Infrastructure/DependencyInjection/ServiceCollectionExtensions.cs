@@ -63,6 +63,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuleProfileRegistryService, DefaultRuleProfileRegistryService>();
         services.AddSingleton<IRuleProfileApplicationService, DefaultRuleProfileApplicationService>();
         services.AddSingleton<IRuntimeInspectorService, DefaultRuntimeInspectorService>();
+        services.AddSingleton<IRuntimeLockRegistryService, ProfileBackedRuntimeLockRegistryService>();
 
         services.AddSingleton<ILifeModulesCatalogService>(provider =>
         {

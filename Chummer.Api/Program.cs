@@ -93,6 +93,7 @@ app.MapInfoEndpoints();
 app.MapRulePackRegistryEndpoints();
 app.MapRuleProfileRegistryEndpoints();
 app.MapRuntimeInspectorEndpoints();
+app.MapRuntimeLockRegistryEndpoints();
 app.MapCharacterEndpoints();
 app.MapLifeModulesEndpoints();
 app.MapToolsEndpoints();
@@ -114,6 +115,7 @@ static bool IsPublicApiPath(PathString path)
         || path.StartsWithSegments("/api/rulepacks", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/profiles", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/runtime/profiles", StringComparison.Ordinal)
+        || path.StartsWithSegments("/api/runtime/locks", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/commands", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/navigation-tabs", StringComparison.Ordinal)
         || path.StartsWithSegments("/api/shell/bootstrap", StringComparison.Ordinal);

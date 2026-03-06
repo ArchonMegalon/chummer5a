@@ -227,6 +227,32 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Runtime_locks_endpoint_returns_runtime_lock_catalog_for_registered_profiles()
+    {
+        using var client = CreateClient();
+
+        JsonObject payload = await GetRequiredJsonObject(client, "/api/runtime/locks?ruleset=sr5");
+
+        Assert.IsNotNull(payload["count"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["entries"]);
+    }
+
+    [TestMethod]
+    public async Task Runtime_lock_detail_endpoint_returns_not_found_for_unknown_lock()
+    {
+        using var client = CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync("/api/runtime/locks/missing-lock?ruleset=sr5");
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual("runtime_lock_not_found", payload["error"]?.GetValue<string>());
+        Assert.AreEqual("missing-lock", payload["lockId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Health_endpoint_reports_ok()
     {
         using var client = CreateClient();
@@ -270,6 +296,9 @@ public class ApiIntegrationTests
 
         JsonObject runtime = await GetRequiredJsonObject(client, "/api/runtime/profiles/official.sr5.core?ruleset=sr5");
         Assert.AreEqual("official.sr5.core", runtime["targetId"]?.GetValue<string>());
+
+        JsonObject runtimeLocks = await GetRequiredJsonObject(client, "/api/runtime/locks?ruleset=sr5");
+        Assert.IsNotNull(runtimeLocks["count"]);
     }
 
     [TestMethod]

@@ -19,6 +19,7 @@ public static class InfoEndpoints
                 "/api/rulepacks",
                 "/api/profiles",
                 "/api/runtime/profiles/{profileId}",
+                "/api/runtime/locks",
                 "/api/workspaces",
                 "/api/workspaces/import"
             }
