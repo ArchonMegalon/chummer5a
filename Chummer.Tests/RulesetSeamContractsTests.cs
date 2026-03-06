@@ -1184,6 +1184,69 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Owner_repository_mutation_contracts_define_create_share_fork_archive_and_delete_receipts()
+    {
+        OwnerScope actor = new("user-1");
+        OwnerRepositoryMutationReceipt createReceipt = new(
+            MutationKind: OwnerRepositoryMutationKinds.Create,
+            Status: OwnerRepositoryMutationStatuses.Applied,
+            AssetKind: OwnerRepositoryAssetKinds.BuildKit,
+            AssetId: "street-sam-starter",
+            Actor: actor,
+            AppliedAtUtc: DateTimeOffset.UtcNow,
+            VersionId: "1.0.0",
+            RequiresReindex: true);
+        OwnerRepositoryShareReceipt shareReceipt = new(
+            AssetKind: OwnerRepositoryAssetKinds.RulePack,
+            AssetId: "official-errata",
+            Actor: actor,
+            Grants:
+            [
+                new OwnerRepositoryShareGrant(
+                    SubjectKind: RulePackShareSubjectKinds.Campaign,
+                    SubjectId: "campaign-7",
+                    AccessLevel: OwnerRepositoryShareAccessLevels.Install),
+                new OwnerRepositoryShareGrant(
+                    SubjectKind: RulePackShareSubjectKinds.User,
+                    SubjectId: "user-2",
+                    AccessLevel: OwnerRepositoryShareAccessLevels.Fork)
+            ],
+            Status: OwnerRepositoryMutationStatuses.Applied,
+            SharedAtUtc: DateTimeOffset.UtcNow);
+        OwnerRepositoryForkReceipt forkReceipt = new(
+            AssetKind: OwnerRepositoryAssetKinds.RulePack,
+            SourceAssetId: "official-errata",
+            SourceVersionId: "1.0.0",
+            ForkedAssetId: "official-errata-user-1",
+            Actor: actor,
+            Status: OwnerRepositoryMutationStatuses.Applied,
+            ForkedAtUtc: DateTimeOffset.UtcNow);
+        OwnerRepositoryArchiveReceipt archiveReceipt = new(
+            AssetKind: OwnerRepositoryAssetKinds.LinkedAsset,
+            AssetId: "contact-1",
+            Mode: OwnerRepositoryArchiveModes.RetainHistory,
+            Actor: actor,
+            Status: OwnerRepositoryMutationStatuses.Applied,
+            ArchivedAtUtc: DateTimeOffset.UtcNow,
+            RetainsHistory: true);
+        OwnerRepositoryMutationReceipt deleteReceipt = new(
+            MutationKind: OwnerRepositoryMutationKinds.Delete,
+            Status: OwnerRepositoryMutationStatuses.Applied,
+            AssetKind: OwnerRepositoryAssetKinds.SessionLedger,
+            AssetId: "overlay-1",
+            Actor: actor,
+            AppliedAtUtc: DateTimeOffset.UtcNow,
+            Message: "User requested ledger removal.");
+
+        Assert.AreEqual(OwnerRepositoryMutationKinds.Create, createReceipt.MutationKind);
+        Assert.IsTrue(createReceipt.RequiresReindex);
+        Assert.AreEqual(OwnerRepositoryShareAccessLevels.Install, shareReceipt.Grants[0].AccessLevel);
+        Assert.AreEqual(OwnerRepositoryMutationStatuses.Applied, forkReceipt.Status);
+        Assert.AreEqual(OwnerRepositoryArchiveModes.RetainHistory, archiveReceipt.Mode);
+        Assert.AreEqual(OwnerRepositoryMutationKinds.Delete, deleteReceipt.MutationKind);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

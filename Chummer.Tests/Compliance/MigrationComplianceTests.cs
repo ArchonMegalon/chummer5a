@@ -590,6 +590,29 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Owner_repository_mutation_contracts_lock_in_share_fork_archive_and_delete_vocabulary()
+    {
+        string ownerRepositoryMutationContractsPath = FindPath("Chummer.Contracts", "Owners", "OwnerRepositoryMutationContracts.cs");
+        string ownerRepositoryMutationContractsText = File.ReadAllText(ownerRepositoryMutationContractsPath);
+
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "public static class OwnerRepositoryMutationKinds");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "public static class OwnerRepositoryMutationStatuses");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "public static class OwnerRepositoryArchiveModes");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "public static class OwnerRepositoryShareAccessLevels");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "public sealed record OwnerRepositoryShareGrant");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "public sealed record OwnerRepositoryMutationReceipt");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "public sealed record OwnerRepositoryShareReceipt");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "public sealed record OwnerRepositoryForkReceipt");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "public sealed record OwnerRepositoryArchiveReceipt");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "retain-history");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "soft-delete");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "RequiresReindex = false");
+        StringAssert.Contains(ownerRepositoryMutationContractsText, "OwnerScope Actor");
+        Assert.IsFalse(ownerRepositoryMutationContractsText.Contains("HttpContext", StringComparison.Ordinal));
+        Assert.IsFalse(ownerRepositoryMutationContractsText.Contains("ClaimsPrincipal", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
