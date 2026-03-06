@@ -2009,6 +2009,69 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Journal_panel_contracts_define_notes_ledger_and_timeline_panel_vocabulary()
+    {
+        JournalPanelProjection projection = new(
+            ScopeKind: JournalScopeKinds.Character,
+            ScopeId: "char-1",
+            Sections:
+            [
+                new JournalPanelSection(
+                    SectionId: JournalPanelSurfaceIds.NotesPanel,
+                    Kind: JournalPanelSectionKinds.Notes,
+                    Title: "Notes",
+                    ItemCount: 2),
+                new JournalPanelSection(
+                    SectionId: JournalPanelSurfaceIds.LedgerPanel,
+                    Kind: JournalPanelSectionKinds.Ledger,
+                    Title: "Ledger",
+                    ItemCount: 1),
+                new JournalPanelSection(
+                    SectionId: JournalPanelSurfaceIds.TimelinePanel,
+                    Kind: JournalPanelSectionKinds.Timeline,
+                    Title: "Timeline",
+                    ItemCount: 1)
+            ],
+            Notes:
+            [
+                new NoteListItem(
+                    NoteId: "note-1",
+                    Title: "Tacoma Meeting",
+                    ScopeKind: JournalScopeKinds.Character,
+                    BlockCount: 2,
+                    UpdatedAtUtc: DateTimeOffset.UtcNow)
+            ],
+            LedgerEntries:
+            [
+                new LedgerEntryView(
+                    EntryId: "ledger-1",
+                    Kind: LedgerEntryKinds.Nuyen,
+                    Label: "Ares Alpha",
+                    Amount: -2500m,
+                    Currency: "nuyen",
+                    OccurredAtUtc: DateTimeOffset.UtcNow,
+                    NoteId: "note-1")
+            ],
+            TimelineEvents:
+            [
+                new TimelineEventView(
+                    EventId: "timeline-1",
+                    Kind: TimelineEventKinds.Training,
+                    Title: "Longarms 4 -> 5",
+                    StartsAtUtc: DateTimeOffset.UtcNow.AddDays(1),
+                    EndsAtUtc: DateTimeOffset.UtcNow.AddDays(10),
+                    NoteId: "note-1",
+                    LedgerEntryId: "ledger-1")
+            ]);
+
+        Assert.AreEqual(JournalPanelSectionKinds.Notes, projection.Sections[0].Kind);
+        Assert.AreEqual(JournalPanelSurfaceIds.LedgerPanel, projection.Sections[1].SectionId);
+        Assert.AreEqual(LedgerEntryKinds.Nuyen, projection.LedgerEntries[0].Kind);
+        Assert.AreEqual(TimelineEventKinds.Training, projection.TimelineEvents[0].Kind);
+        Assert.AreEqual("note-1", projection.TimelineEvents[0].NoteId);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

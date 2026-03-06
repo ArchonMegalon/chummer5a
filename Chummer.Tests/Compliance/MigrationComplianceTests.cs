@@ -823,6 +823,26 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Journal_panel_contracts_lock_in_notes_ledger_and_timeline_panel_vocabulary()
+    {
+        string journalPanelContractsPath = FindPath("Chummer.Contracts", "Presentation", "JournalPanelContracts.cs");
+        string journalPanelContractsText = File.ReadAllText(journalPanelContractsPath);
+
+        StringAssert.Contains(journalPanelContractsText, "public static class JournalPanelSurfaceIds");
+        StringAssert.Contains(journalPanelContractsText, "public static class JournalPanelSectionKinds");
+        StringAssert.Contains(journalPanelContractsText, "public sealed record NoteListItem");
+        StringAssert.Contains(journalPanelContractsText, "public sealed record LedgerEntryView");
+        StringAssert.Contains(journalPanelContractsText, "public sealed record TimelineEventView");
+        StringAssert.Contains(journalPanelContractsText, "public sealed record JournalPanelSection");
+        StringAssert.Contains(journalPanelContractsText, "public sealed record JournalPanelProjection");
+        StringAssert.Contains(journalPanelContractsText, "notes-panel");
+        StringAssert.Contains(journalPanelContractsText, "campaign-journal-panel");
+        StringAssert.Contains(journalPanelContractsText, "string? LedgerEntryId = null");
+        Assert.IsFalse(journalPanelContractsText.Contains("Avalonia", StringComparison.Ordinal));
+        Assert.IsFalse(journalPanelContractsText.Contains("Blazor", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
