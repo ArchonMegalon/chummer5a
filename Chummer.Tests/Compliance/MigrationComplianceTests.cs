@@ -942,6 +942,8 @@ public class MigrationComplianceTests
     {
         string shellContractsPath = FindPath("Chummer.Contracts", "Presentation", "ShellBootstrapContracts.cs");
         string shellContractsText = File.ReadAllText(shellContractsPath);
+        string ownerScopePath = FindPath("Chummer.Contracts", "Owners", "OwnerScope.cs");
+        string ownerScopeText = File.ReadAllText(ownerScopePath);
         string clientContractPath = FindPath("Chummer.Presentation", "IChummerClient.cs");
         string clientContractText = File.ReadAllText(clientContractPath);
         string shellEndpointsPath = FindPath("Chummer.Api", "Endpoints", "ShellEndpoints.cs");
@@ -950,9 +952,21 @@ public class MigrationComplianceTests
         string shellPresenterText = File.ReadAllText(shellPresenterPath);
         string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
         string infrastructureDiText = File.ReadAllText(infrastructureDiPath);
+        string shellPreferencesServicePath = FindPath("Chummer.Application", "Tools", "ShellPreferencesService.cs");
+        string shellPreferencesServiceText = File.ReadAllText(shellPreferencesServicePath);
+        string shellSessionServicePath = FindPath("Chummer.Application", "Tools", "ShellSessionService.cs");
+        string shellSessionServiceText = File.ReadAllText(shellSessionServicePath);
+        string shellPreferencesStorePath = FindPath("Chummer.Infrastructure", "Files", "SettingsShellPreferencesStore.cs");
+        string shellPreferencesStoreText = File.ReadAllText(shellPreferencesStorePath);
+        string shellSessionStorePath = FindPath("Chummer.Infrastructure", "Files", "SettingsShellSessionStore.cs");
+        string shellSessionStoreText = File.ReadAllText(shellSessionStorePath);
+        string settingsOwnerScopePath = FindPath("Chummer.Infrastructure", "Files", "SettingsOwnerScope.cs");
+        string settingsOwnerScopeText = File.ReadAllText(settingsOwnerScopePath);
 
         StringAssert.Contains(shellContractsText, "public sealed record ShellPreferences");
         StringAssert.Contains(shellContractsText, "public sealed record ShellSessionState");
+        StringAssert.Contains(ownerScopeText, "public readonly record struct OwnerScope");
+        StringAssert.Contains(ownerScopeText, "LocalSingleUser");
         StringAssert.Contains(shellContractsText, "string? ActiveTabId");
         StringAssert.Contains(shellContractsText, "IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace");
         Assert.IsFalse(shellContractsText.Contains("ShellUserPreferences", StringComparison.Ordinal));
@@ -982,6 +996,16 @@ public class MigrationComplianceTests
         StringAssert.Contains(shellPresenterText, "_activeTabsByWorkspace");
         StringAssert.Contains(shellPresenterText, "BuildUpdatedWorkspaceTabMap");
         Assert.IsFalse(shellPresenterText.Contains("new ShellUserPreferences", StringComparison.Ordinal));
+        StringAssert.Contains(shellPreferencesServiceText, "Load(OwnerScope owner)");
+        StringAssert.Contains(shellPreferencesServiceText, "Save(OwnerScope owner, ShellPreferences preferences)");
+        StringAssert.Contains(shellPreferencesServiceText, "OwnerScope.LocalSingleUser");
+        StringAssert.Contains(shellSessionServiceText, "Load(OwnerScope owner)");
+        StringAssert.Contains(shellSessionServiceText, "Save(OwnerScope owner, ShellSessionState session)");
+        StringAssert.Contains(shellSessionServiceText, "OwnerScope.LocalSingleUser");
+        StringAssert.Contains(shellPreferencesStoreText, "SettingsOwnerScope.Resolve(owner)");
+        StringAssert.Contains(shellSessionStoreText, "SettingsOwnerScope.Resolve(owner)");
+        StringAssert.Contains(settingsOwnerScopeText, "owner.IsLocalSingleUser");
+        StringAssert.Contains(settingsOwnerScopeText, "GlobalSettingsScope");
 
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellPreferencesStore, SettingsShellPreferencesStore>();");
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellSessionStore, SettingsShellSessionStore>();");

@@ -1,11 +1,11 @@
 using Chummer.Application.Tools;
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Presentation;
 
 namespace Chummer.Infrastructure.Files;
 
 public sealed class SettingsShellPreferencesStore : IShellPreferencesStore
 {
-    private const string GlobalSettingsScope = "global";
     private const string PreferredRulesetIdKey = "preferredRulesetId";
     private readonly ISettingsStore _settingsStore;
 
@@ -16,15 +16,26 @@ public sealed class SettingsShellPreferencesStore : IShellPreferencesStore
 
     public ShellPreferences Load()
     {
-        var settings = _settingsStore.Load(GlobalSettingsScope);
+        return Load(OwnerScope.LocalSingleUser);
+    }
+
+    public ShellPreferences Load(OwnerScope owner)
+    {
+        var settings = _settingsStore.Load(SettingsOwnerScope.Resolve(owner));
         string preferredRulesetId = settings[PreferredRulesetIdKey]?.GetValue<string>() ?? string.Empty;
         return new ShellPreferences(preferredRulesetId);
     }
 
     public void Save(ShellPreferences preferences)
     {
-        var settings = _settingsStore.Load(GlobalSettingsScope);
+        Save(OwnerScope.LocalSingleUser, preferences);
+    }
+
+    public void Save(OwnerScope owner, ShellPreferences preferences)
+    {
+        string scope = SettingsOwnerScope.Resolve(owner);
+        var settings = _settingsStore.Load(scope);
         settings[PreferredRulesetIdKey] = preferences.PreferredRulesetId;
-        _settingsStore.Save(GlobalSettingsScope, settings);
+        _settingsStore.Save(scope, settings);
     }
 }

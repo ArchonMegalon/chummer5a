@@ -4,6 +4,7 @@ using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -371,31 +372,61 @@ public sealed class InProcessChummerClient : IChummerClient
 
     private sealed class InMemoryShellPreferencesStore : IShellPreferencesStore
     {
-        private ShellPreferences _preferences = ShellPreferences.Default;
+        private readonly Dictionary<string, ShellPreferences> _preferencesByOwner = new(StringComparer.Ordinal)
+        {
+            [OwnerScope.LocalSingleUser.NormalizedValue] = ShellPreferences.Default
+        };
 
         public ShellPreferences Load()
         {
-            return _preferences;
+            return Load(OwnerScope.LocalSingleUser);
+        }
+
+        public ShellPreferences Load(OwnerScope owner)
+        {
+            return _preferencesByOwner.GetValueOrDefault(
+                owner.NormalizedValue,
+                ShellPreferences.Default);
         }
 
         public void Save(ShellPreferences preferences)
         {
-            _preferences = preferences;
+            Save(OwnerScope.LocalSingleUser, preferences);
+        }
+
+        public void Save(OwnerScope owner, ShellPreferences preferences)
+        {
+            _preferencesByOwner[owner.NormalizedValue] = preferences;
         }
     }
 
     private sealed class InMemoryShellSessionStore : IShellSessionStore
     {
-        private ShellSessionState _session = ShellSessionState.Default;
+        private readonly Dictionary<string, ShellSessionState> _sessionsByOwner = new(StringComparer.Ordinal)
+        {
+            [OwnerScope.LocalSingleUser.NormalizedValue] = ShellSessionState.Default
+        };
 
         public ShellSessionState Load()
         {
-            return _session;
+            return Load(OwnerScope.LocalSingleUser);
+        }
+
+        public ShellSessionState Load(OwnerScope owner)
+        {
+            return _sessionsByOwner.GetValueOrDefault(
+                owner.NormalizedValue,
+                ShellSessionState.Default);
         }
 
         public void Save(ShellSessionState session)
         {
-            _session = new ShellSessionState(
+            Save(OwnerScope.LocalSingleUser, session);
+        }
+
+        public void Save(OwnerScope owner, ShellSessionState session)
+        {
+            _sessionsByOwner[owner.NormalizedValue] = new ShellSessionState(
                 ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
                 ActiveTabId: NormalizeTabId(session.ActiveTabId),
                 ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace));

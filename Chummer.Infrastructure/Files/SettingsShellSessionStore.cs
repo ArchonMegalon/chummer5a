@@ -1,4 +1,5 @@
 using Chummer.Application.Tools;
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Presentation;
 using System.Text.Json.Nodes;
 
@@ -6,7 +7,6 @@ namespace Chummer.Infrastructure.Files;
 
 public sealed class SettingsShellSessionStore : IShellSessionStore
 {
-    private const string GlobalSettingsScope = "global";
     private const string ActiveWorkspaceIdKey = "activeWorkspaceId";
     private const string ActiveTabIdKey = "activeTabId";
     private const string ActiveTabsByWorkspaceKey = "activeTabsByWorkspace";
@@ -19,7 +19,12 @@ public sealed class SettingsShellSessionStore : IShellSessionStore
 
     public ShellSessionState Load()
     {
-        var settings = _settingsStore.Load(GlobalSettingsScope);
+        return Load(OwnerScope.LocalSingleUser);
+    }
+
+    public ShellSessionState Load(OwnerScope owner)
+    {
+        var settings = _settingsStore.Load(SettingsOwnerScope.Resolve(owner));
         string? activeWorkspaceId = settings[ActiveWorkspaceIdKey]?.GetValue<string>();
         string? activeTabId = settings[ActiveTabIdKey]?.GetValue<string>();
         return new ShellSessionState(
@@ -30,7 +35,13 @@ public sealed class SettingsShellSessionStore : IShellSessionStore
 
     public void Save(ShellSessionState session)
     {
-        var settings = _settingsStore.Load(GlobalSettingsScope);
+        Save(OwnerScope.LocalSingleUser, session);
+    }
+
+    public void Save(OwnerScope owner, ShellSessionState session)
+    {
+        string scope = SettingsOwnerScope.Resolve(owner);
+        var settings = _settingsStore.Load(scope);
         if (string.IsNullOrWhiteSpace(session.ActiveWorkspaceId))
         {
             settings.Remove(ActiveWorkspaceIdKey);
@@ -50,7 +61,7 @@ public sealed class SettingsShellSessionStore : IShellSessionStore
         }
 
         SaveWorkspaceTabMap(settings, session.ActiveTabsByWorkspace);
-        _settingsStore.Save(GlobalSettingsScope, settings);
+        _settingsStore.Save(scope, settings);
     }
 
     private static IReadOnlyDictionary<string, string>? LoadWorkspaceTabMap(JsonObject settings)

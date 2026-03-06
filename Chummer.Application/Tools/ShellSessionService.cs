@@ -1,3 +1,4 @@
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Presentation;
 
 namespace Chummer.Application.Tools;
@@ -13,7 +14,12 @@ public sealed class ShellSessionService : IShellSessionService
 
     public ShellSessionState Load()
     {
-        ShellSessionState stored = _store.Load();
+        return Load(OwnerScope.LocalSingleUser);
+    }
+
+    public ShellSessionState Load(OwnerScope owner)
+    {
+        ShellSessionState stored = _store.Load(owner);
         return new ShellSessionState(
             ActiveWorkspaceId: NormalizeWorkspaceId(stored.ActiveWorkspaceId),
             ActiveTabId: NormalizeTabId(stored.ActiveTabId),
@@ -22,11 +28,16 @@ public sealed class ShellSessionService : IShellSessionService
 
     public void Save(ShellSessionState session)
     {
+        Save(OwnerScope.LocalSingleUser, session);
+    }
+
+    public void Save(OwnerScope owner, ShellSessionState session)
+    {
         ShellSessionState normalized = new(
             ActiveWorkspaceId: NormalizeWorkspaceId(session.ActiveWorkspaceId),
             ActiveTabId: NormalizeTabId(session.ActiveTabId),
             ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace));
-        _store.Save(normalized);
+        _store.Save(owner, normalized);
     }
 
     private static string? NormalizeWorkspaceId(string? workspaceId)

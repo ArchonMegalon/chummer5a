@@ -1,3 +1,4 @@
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 
@@ -14,15 +15,25 @@ public sealed class ShellPreferencesService : IShellPreferencesService
 
     public ShellPreferences Load()
     {
-        ShellPreferences stored = _store.Load();
+        return Load(OwnerScope.LocalSingleUser);
+    }
+
+    public ShellPreferences Load(OwnerScope owner)
+    {
+        ShellPreferences stored = _store.Load(owner);
         return new ShellPreferences(
             PreferredRulesetId: RulesetDefaults.NormalizeOptional(stored.PreferredRulesetId) ?? string.Empty);
     }
 
     public void Save(ShellPreferences preferences)
     {
+        Save(OwnerScope.LocalSingleUser, preferences);
+    }
+
+    public void Save(OwnerScope owner, ShellPreferences preferences)
+    {
         ShellPreferences normalized = new(
             PreferredRulesetId: RulesetDefaults.NormalizeOptional(preferences.PreferredRulesetId) ?? string.Empty);
-        _store.Save(normalized);
+        _store.Save(owner, normalized);
     }
 }
