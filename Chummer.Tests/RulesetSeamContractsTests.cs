@@ -680,6 +680,59 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Session_merge_and_rebind_contracts_define_event_family_policies_and_replay_outcomes()
+    {
+        SessionMergePolicy trackerPolicy = new(
+            Family: SessionMergeFamilies.Tracker,
+            Mode: SessionMergePolicyModes.Additive,
+            EventTypes: [SessionEventTypes.TrackerIncrement, SessionEventTypes.TrackerDecrement]);
+        SessionMergePolicy notesPolicy = new(
+            Family: SessionMergeFamilies.Notes,
+            Mode: SessionMergePolicyModes.ConflictMarker,
+            EventTypes: [SessionEventTypes.NoteAppend, SessionEventTypes.NoteReplace]);
+        CharacterVersionReference priorVersion = new(
+            CharacterId: "char-1",
+            VersionId: "charv-1",
+            RulesetId: RulesetDefaults.Sr5,
+            RuntimeFingerprint: "runtime-lock-v1");
+        CharacterVersionReference appliedVersion = new(
+            CharacterId: "char-1",
+            VersionId: "charv-2",
+            RulesetId: RulesetDefaults.Sr5,
+            RuntimeFingerprint: "runtime-lock-v2");
+        SessionRebindReceipt rebind = new(
+            PriorCharacterVersion: priorVersion,
+            AppliedCharacterVersion: appliedVersion,
+            Outcome: SessionRebindOutcomes.ManualResolutionRequired,
+            Diagnostics:
+            [
+                new SessionRebindDiagnostic(
+                    Family: SessionMergeFamilies.Selection,
+                    Outcome: SessionRebindOutcomes.ReboundToNewRuntime,
+                    Message: "Selection events replayed against the new runtime.",
+                    PriorRuntimeFingerprint: priorVersion.RuntimeFingerprint,
+                    NewRuntimeFingerprint: appliedVersion.RuntimeFingerprint),
+                new SessionRebindDiagnostic(
+                    Family: SessionMergeFamilies.Notes,
+                    Outcome: SessionRebindOutcomes.ManualResolutionRequired,
+                    Message: "Concurrent note replacements need conflict markers.",
+                    PriorRuntimeFingerprint: priorVersion.RuntimeFingerprint,
+                    NewRuntimeFingerprint: appliedVersion.RuntimeFingerprint)
+            ],
+            RuntimeFingerprintChanged: true,
+            BaseCharacterChanged: true);
+
+        Assert.AreEqual(SessionMergeFamilies.Tracker, trackerPolicy.Family);
+        Assert.AreEqual(SessionMergePolicyModes.Additive, trackerPolicy.Mode);
+        Assert.AreEqual(SessionMergePolicyModes.ConflictMarker, notesPolicy.Mode);
+        Assert.AreEqual(SessionRebindOutcomes.ManualResolutionRequired, rebind.Outcome);
+        Assert.IsTrue(rebind.RuntimeFingerprintChanged);
+        Assert.IsTrue(rebind.BaseCharacterChanged);
+        Assert.AreEqual(SessionMergeFamilies.Notes, rebind.Diagnostics[1].Family);
+        Assert.AreEqual("runtime-lock-v2", rebind.Diagnostics[0].NewRuntimeFingerprint);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

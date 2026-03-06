@@ -414,6 +414,27 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Session_merge_contracts_lock_in_family_policy_and_rebind_vocabulary()
+    {
+        string sessionMergeContractsPath = FindPath("Chummer.Contracts", "Session", "SessionMergeContracts.cs");
+        string sessionMergeContractsText = File.ReadAllText(sessionMergeContractsPath);
+
+        StringAssert.Contains(sessionMergeContractsText, "public static class SessionMergeFamilies");
+        StringAssert.Contains(sessionMergeContractsText, "public static class SessionMergePolicyModes");
+        StringAssert.Contains(sessionMergeContractsText, "public static class SessionRebindOutcomes");
+        StringAssert.Contains(sessionMergeContractsText, "public sealed record SessionMergePolicy");
+        StringAssert.Contains(sessionMergeContractsText, "public sealed record SessionRebindDiagnostic");
+        StringAssert.Contains(sessionMergeContractsText, "public sealed record SessionRebindReceipt");
+        StringAssert.Contains(sessionMergeContractsText, "Tracker");
+        StringAssert.Contains(sessionMergeContractsText, "QuickAction");
+        StringAssert.Contains(sessionMergeContractsText, "ConflictMarker");
+        StringAssert.Contains(sessionMergeContractsText, "ReboundToNewRuntime");
+        StringAssert.Contains(sessionMergeContractsText, "ManualResolutionRequired");
+        StringAssert.Contains(sessionMergeContractsText, "bool RuntimeFingerprintChanged = false");
+        StringAssert.Contains(sessionMergeContractsText, "bool BaseCharacterChanged = false");
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
