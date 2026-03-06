@@ -1581,6 +1581,12 @@ public class MigrationComplianceTests
         string codecContractText = File.ReadAllText(codecContractPath);
         string codecResolverContractPath = FindPath("Chummer.Application", "Workspaces", "IRulesetWorkspaceCodecResolver.cs");
         string codecResolverContractText = File.ReadAllText(codecResolverContractPath);
+        string importDetectorContractPath = FindPath("Chummer.Application", "Workspaces", "IWorkspaceImportRulesetDetector.cs");
+        string importDetectorContractText = File.ReadAllText(importDetectorContractPath);
+        string importDetectorPath = FindPath("Chummer.Application", "Workspaces", "WorkspaceImportRulesetDetector.cs");
+        string importDetectorText = File.ReadAllText(importDetectorPath);
+        string rulesetDetectionPath = FindPath("Chummer.Application", "Workspaces", "WorkspaceRulesetDetection.cs");
+        string rulesetDetectionText = File.ReadAllText(rulesetDetectionPath);
         string codecResolverPath = FindPath("Chummer.Rulesets.Hosting", "RulesetWorkspaceCodecResolver.cs");
         string codecResolverText = File.ReadAllText(codecResolverPath);
         string sr5CodecPath = FindPath("Chummer.Rulesets.Sr5", "Sr5WorkspaceCodec.cs");
@@ -1608,6 +1614,12 @@ public class MigrationComplianceTests
         StringAssert.Contains(codecContractText, "WorkspaceDownloadReceipt BuildDownload");
         StringAssert.Contains(codecContractText, "DataExportBundle BuildExportBundle");
         StringAssert.Contains(codecResolverContractText, "public interface IRulesetWorkspaceCodecResolver");
+        StringAssert.Contains(importDetectorContractText, "public interface IWorkspaceImportRulesetDetector");
+        StringAssert.Contains(importDetectorText, "WorkspaceRulesetDetection.Detect(");
+        StringAssert.Contains(rulesetDetectionText, "public static class WorkspaceRulesetDetection");
+        StringAssert.Contains(rulesetDetectionText, "RulesetDefaults.Sr4");
+        StringAssert.Contains(rulesetDetectionText, "RulesetDefaults.Sr5");
+        StringAssert.Contains(rulesetDetectionText, "RulesetDefaults.Sr6");
         StringAssert.Contains(codecResolverText, "public sealed class RulesetWorkspaceCodecResolver");
         StringAssert.Contains(codecResolverText, "RulesetDefaults.NormalizeOptional(rulesetId)");
         StringAssert.Contains(codecResolverText, "RulesetDefaults.NormalizeRequired(codec.RulesetId)");
@@ -1616,12 +1628,18 @@ public class MigrationComplianceTests
         Assert.IsFalse(codecResolverText.Contains("return _fallbackCodec", StringComparison.Ordinal));
         StringAssert.Contains(codecResolverText, "Workspace ruleset id is required to resolve a workspace codec.");
         StringAssert.Contains(codecResolverText, "No workspace codec is registered for ruleset");
+        StringAssert.Contains(workspaceServiceText, "IWorkspaceImportRulesetDetector");
+        StringAssert.Contains(workspaceServiceText, "_workspaceImportRulesetDetector.Detect(document)");
+        StringAssert.Contains(workspaceServiceText, "Workspace ruleset is required or must be detectable from import content.");
         StringAssert.Contains(workspaceModelsText, "public sealed record WorkspaceDocumentState");
         StringAssert.Contains(workspaceModelsText, "WorkspaceDocumentState State");
         StringAssert.Contains(workspaceModelsText, "public WorkspacePayloadEnvelope PayloadEnvelope => State.ToEnvelope();");
         StringAssert.Contains(workspaceModelsText, "public string Content => State.Payload;");
         StringAssert.Contains(workspaceStoreText, "WorkspaceDocumentState state = ResolveState(record, content, rulesetId);");
         StringAssert.Contains(workspaceStoreText, "Envelope = NormalizeEnvelope(document.State)");
+        StringAssert.Contains(workspaceStoreText, "WorkspaceRulesetDetection.Detect(");
+        Assert.IsFalse(workspaceStoreText.Contains("private static string? DetectRulesetId(", StringComparison.Ordinal));
+        StringAssert.Contains(infrastructureDiText, "services.AddSingleton<IWorkspaceImportRulesetDetector, WorkspaceImportRulesetDetector>();");
 
         StringAssert.Contains(workspaceServiceText, "IRulesetWorkspaceCodecResolver _workspaceCodecResolver");
         StringAssert.Contains(workspaceServiceText, "_workspaceCodecResolver.Resolve");

@@ -14,13 +14,16 @@ public sealed class WorkspaceService : IWorkspaceService
 {
     private readonly IWorkspaceStore _workspaceStore;
     private readonly IRulesetWorkspaceCodecResolver _workspaceCodecResolver;
+    private readonly IWorkspaceImportRulesetDetector _workspaceImportRulesetDetector;
 
     public WorkspaceService(
         IWorkspaceStore workspaceStore,
-        IRulesetWorkspaceCodecResolver workspaceCodecResolver)
+        IRulesetWorkspaceCodecResolver workspaceCodecResolver,
+        IWorkspaceImportRulesetDetector workspaceImportRulesetDetector)
     {
         _workspaceStore = workspaceStore;
         _workspaceCodecResolver = workspaceCodecResolver;
+        _workspaceImportRulesetDetector = workspaceImportRulesetDetector;
     }
 
     public WorkspaceImportResult Import(WorkspaceImportDocument document)
@@ -30,9 +33,10 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public WorkspaceImportResult Import(OwnerScope owner, WorkspaceImportDocument document)
     {
-        string? rulesetId = RulesetDefaults.NormalizeOptional(document.RulesetId);
+        string? rulesetId = RulesetDefaults.NormalizeOptional(document.RulesetId)
+            ?? _workspaceImportRulesetDetector.Detect(document);
         if (rulesetId is null)
-            throw new InvalidOperationException("Workspace ruleset is required.");
+            throw new InvalidOperationException("Workspace ruleset is required or must be detectable from import content.");
 
         IRulesetWorkspaceCodec codec = _workspaceCodecResolver.Resolve(rulesetId);
         WorkspacePayloadEnvelope envelope = codec.WrapImport(rulesetId, document);

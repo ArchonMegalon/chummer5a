@@ -132,7 +132,8 @@ public class RestartSafeWorkspacePersistenceTests
         IShellSessionService sessionService = new ShellSessionService(new SettingsShellSessionStore(settingsStore));
         IWorkspaceService workspaceService = new WorkspaceService(
             new FileWorkspaceStore(stateDirectory),
-            new RulesetWorkspaceCodecResolver([new RestartSafeWorkspaceCodec()]));
+            new RulesetWorkspaceCodecResolver([new RestartSafeWorkspaceCodec()]),
+            new WorkspaceImportRulesetDetector());
         RulesetPluginRegistry pluginRegistry = new(
         [
             new Sr5RulesetPlugin(),

@@ -151,6 +151,36 @@ public class WorkspaceStoreTests
     }
 
     [TestMethod]
+    public void File_workspace_store_detects_sr4_ruleset_from_legacy_payload_content()
+    {
+        string stateDirectory = CreateTempStateDirectory();
+        try
+        {
+            FileWorkspaceStore store = new(stateDirectory);
+            CharacterWorkspaceId id = new("legacysr4");
+            string persistedPath = Path.Combine(stateDirectory, "workspaces", $"{id.Value}.json");
+            File.WriteAllText(
+                persistedPath,
+                """
+                {
+                  "Content": "<character><name>Starter Shadow</name><gameedition>SR4</gameedition></character>",
+                  "Format": "NativeXml"
+                }
+                """);
+
+            bool found = store.TryGet(id, out WorkspaceDocument loaded);
+
+            Assert.IsTrue(found);
+            Assert.AreEqual(RulesetDefaults.Sr4, loaded.PayloadEnvelope.RulesetId);
+            StringAssert.Contains(loaded.PayloadEnvelope.Payload, "Starter Shadow");
+        }
+        finally
+        {
+            Directory.Delete(stateDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public void File_workspace_store_rejects_invalid_ids()
     {
         string stateDirectory = CreateTempStateDirectory();

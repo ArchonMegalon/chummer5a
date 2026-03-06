@@ -83,6 +83,7 @@ public static class ServiceCollectionExtensions
                 ? new FileWorkspaceStore(stateDirectory)
                 : new FileWorkspaceStore(workspaceDirectory);
         });
+        services.AddSingleton<IWorkspaceImportRulesetDetector, WorkspaceImportRulesetDetector>();
         services.AddSingleton<IWorkspaceService, WorkspaceService>();
 
         return services;

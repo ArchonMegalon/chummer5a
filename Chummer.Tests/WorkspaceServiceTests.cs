@@ -13,7 +13,9 @@ using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Infrastructure.Xml;
 using Chummer.Infrastructure.Workspaces;
+using Chummer.Rulesets.Sr4;
 using Chummer.Rulesets.Sr5;
+using Chummer.Rulesets.Sr6;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;
@@ -70,13 +72,13 @@ public class WorkspaceServiceTests
         ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
         WorkspaceService workspaceService = CreateWorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
 
-        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, RulesetId: "SR6", Format: WorkspaceDocumentFormat.NativeXml));
+        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, RulesetId: RulesetDefaults.Sr5, Format: WorkspaceDocumentFormat.NativeXml));
         Assert.IsFalse(string.IsNullOrWhiteSpace(imported.Id.Value));
         Assert.AreEqual("Neo", imported.Summary.Name);
-        Assert.AreEqual("sr6", imported.RulesetId);
+        Assert.AreEqual("sr5", imported.RulesetId);
         IReadOnlyList<WorkspaceListItem> listed = workspaceService.List();
         Assert.IsTrue(listed.Any(item => string.Equals(item.Id.Value, imported.Id.Value, StringComparison.Ordinal)));
-        Assert.AreEqual("sr6", listed.First(item => string.Equals(item.Id.Value, imported.Id.Value, StringComparison.Ordinal)).RulesetId);
+        Assert.AreEqual("sr5", listed.First(item => string.Equals(item.Id.Value, imported.Id.Value, StringComparison.Ordinal)).RulesetId);
 
         var profile = workspaceService.GetProfile(imported.Id);
         Assert.IsNotNull(profile);
@@ -110,11 +112,11 @@ public class WorkspaceServiceTests
         Assert.IsTrue(save.Success);
         Assert.AreEqual(imported.Id, save.Value?.Id);
         Assert.IsGreaterThan(0, save.Value?.DocumentLength ?? 0);
-        Assert.AreEqual("sr6", save.Value?.RulesetId);
+        Assert.AreEqual("sr5", save.Value?.RulesetId);
 
         var download = workspaceService.Download(imported.Id);
         Assert.IsTrue(download.Success);
-        Assert.AreEqual("sr6", download.Value?.RulesetId);
+        Assert.AreEqual("sr5", download.Value?.RulesetId);
 
         bool closed = workspaceService.Close(imported.Id);
         Assert.IsTrue(closed);
@@ -139,7 +141,35 @@ public class WorkspaceServiceTests
     }
 
     [TestMethod]
-    public void Import_requires_explicit_ruleset()
+    public void Import_detects_sr4_ruleset_from_starter_fixture_when_ruleset_id_is_blank()
+    {
+        const string xml = "<character><name>Starter Shadow</name><alias>Starter</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>4.0</createdversion><appversion>4.0</appversion><karma>0</karma><nuyen>5000</nuyen><created>True</created><gameedition>SR4</gameedition></character>";
+
+        IWorkspaceStore store = new InMemoryWorkspaceStore();
+        ICharacterFileQueries fileQueries = new XmlCharacterFileQueries(new CharacterFileService());
+        ICharacterSectionQueries sectionQueries = new XmlCharacterSectionQueries(new CharacterSectionService());
+        ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
+        WorkspaceService workspaceService = CreateWorkspaceService(
+            store,
+            fileQueries,
+            sectionQueries,
+            metadataCommands,
+            new Sr4WorkspaceCodec());
+
+        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(
+            xml,
+            string.Empty,
+            WorkspaceDocumentFormat.NativeXml));
+
+        Assert.AreEqual("sr4", imported.RulesetId);
+        Assert.AreEqual("Starter Shadow", imported.Summary.Name);
+        CharacterRulesSection? rules = workspaceService.GetRules(imported.Id);
+        Assert.IsNotNull(rules);
+        Assert.AreEqual("SR4", rules.GameEdition);
+    }
+
+    [TestMethod]
+    public void Import_requires_explicit_or_detectable_ruleset()
     {
         IWorkspaceStore store = new InMemoryWorkspaceStore();
         ICharacterFileQueries fileQueries = new XmlCharacterFileQueries(new CharacterFileService());
@@ -153,7 +183,7 @@ public class WorkspaceServiceTests
                 string.Empty,
                 WorkspaceDocumentFormat.NativeXml)));
 
-        Assert.AreEqual("Workspace ruleset is required.", ex.Message);
+        Assert.AreEqual("Workspace ruleset is required or must be detectable from import content.", ex.Message);
     }
 
     [TestMethod]
@@ -190,7 +220,7 @@ public class WorkspaceServiceTests
                 Payload: "<codec-payload/>"),
             Format: WorkspaceDocumentFormat.NativeXml));
         RecordingWorkspaceCodec codec = new();
-        WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
+        WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]), new WorkspaceImportRulesetDetector());
 
         CharacterFileSummary? summary = workspaceService.GetSummary(id);
 
@@ -214,7 +244,7 @@ public class WorkspaceServiceTests
                 Payload: "<codec-download/>"),
             Format: WorkspaceDocumentFormat.NativeXml));
         RecordingWorkspaceCodec codec = new();
-        WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
+        WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]), new WorkspaceImportRulesetDetector());
 
         CommandResult<WorkspaceDownloadReceipt> result = workspaceService.Download(id);
 
@@ -240,7 +270,7 @@ public class WorkspaceServiceTests
                 Payload: "<codec-export/>"),
             Format: WorkspaceDocumentFormat.NativeXml));
         RecordingWorkspaceCodec codec = new();
-        WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
+        WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]), new WorkspaceImportRulesetDetector());
 
         CommandResult<WorkspaceExportReceipt> result = workspaceService.Export(id);
 
@@ -350,16 +380,21 @@ public class WorkspaceServiceTests
         IWorkspaceStore workspaceStore,
         ICharacterFileQueries fileQueries,
         ICharacterSectionQueries sectionQueries,
-        ICharacterMetadataCommands metadataCommands)
+        ICharacterMetadataCommands metadataCommands,
+        params IRulesetWorkspaceCodec[] additionalCodecs)
     {
-        IRulesetWorkspaceCodecResolver resolver = new RulesetWorkspaceCodecResolver(
+        IRulesetWorkspaceCodec[] codecs =
         [
             new Sr5WorkspaceCodec(
                 fileQueries,
                 sectionQueries,
-                metadataCommands)
-        ]);
-        return new WorkspaceService(workspaceStore, resolver);
+                metadataCommands),
+            new Sr6WorkspaceCodec(),
+            .. additionalCodecs
+        ];
+        IRulesetWorkspaceCodecResolver resolver = new RulesetWorkspaceCodecResolver(
+            codecs);
+        return new WorkspaceService(workspaceStore, resolver, new WorkspaceImportRulesetDetector());
     }
 
     private sealed class RecordingWorkspaceCodec : IRulesetWorkspaceCodec
