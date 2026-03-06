@@ -379,6 +379,23 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Design_token_contracts_define_shared_renderer_preferences()
+    {
+        DesignTokenSet designTokens = new(
+            Theme: ThemeModes.Dark,
+            TypographyScale: TypographyScales.Large,
+            Density: DensityModes.Comfortable,
+            Contrast: ContrastModes.High,
+            TouchTargetSize: TouchTargetModes.Large);
+
+        Assert.AreEqual(ThemeModes.Dark, designTokens.Theme);
+        Assert.AreEqual(TypographyScales.Large, designTokens.TypographyScale);
+        Assert.AreEqual(DensityModes.Comfortable, designTokens.Density);
+        Assert.AreEqual(ContrastModes.High, designTokens.Contrast);
+        Assert.AreEqual(TouchTargetModes.Large, designTokens.TouchTargetSize);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

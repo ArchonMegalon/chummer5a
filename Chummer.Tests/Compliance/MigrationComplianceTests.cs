@@ -379,6 +379,22 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Design_token_contracts_lock_in_shared_theme_scale_and_touch_vocabulary()
+    {
+        string designTokenContractsPath = FindPath("Chummer.Contracts", "Presentation", "DesignTokenContracts.cs");
+        string designTokenContractsText = File.ReadAllText(designTokenContractsPath);
+
+        StringAssert.Contains(designTokenContractsText, "public static class ThemeModes");
+        StringAssert.Contains(designTokenContractsText, "public static class TypographyScales");
+        StringAssert.Contains(designTokenContractsText, "public static class DensityModes");
+        StringAssert.Contains(designTokenContractsText, "public static class ContrastModes");
+        StringAssert.Contains(designTokenContractsText, "public static class TouchTargetModes");
+        StringAssert.Contains(designTokenContractsText, "public sealed record DesignTokenSet");
+        Assert.IsFalse(designTokenContractsText.Contains("Avalonia", StringComparison.Ordinal));
+        Assert.IsFalse(designTokenContractsText.Contains("Blazor", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Ruleset_explain_contracts_lock_in_trace_and_gas_vocabulary()
     {
         string explainContractsPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetExplainContracts.cs");
