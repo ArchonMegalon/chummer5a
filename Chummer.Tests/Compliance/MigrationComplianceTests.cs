@@ -393,6 +393,38 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Hub_catalog_surface_is_exposed_through_hub_search_api_seam()
+    {
+        string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
+        string apiProgramText = File.ReadAllText(apiProgramPath);
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string hubCatalogEndpointsPath = FindPath("Chummer.Api", "Endpoints", "HubCatalogEndpoints.cs");
+        string hubCatalogEndpointsText = File.ReadAllText(hubCatalogEndpointsPath);
+        string hubCatalogServiceContractPath = FindPath("Chummer.Application", "Hub", "IHubCatalogService.cs");
+        string hubCatalogServiceContractText = File.ReadAllText(hubCatalogServiceContractPath);
+        string hubCatalogServicePath = FindPath("Chummer.Application", "Hub", "DefaultHubCatalogService.cs");
+        string hubCatalogServiceText = File.ReadAllText(hubCatalogServicePath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(apiProgramText, "app.MapHubCatalogEndpoints();");
+        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/hub/search\"");
+        StringAssert.Contains(infoEndpointsText, "/api/hub/search");
+        StringAssert.Contains(hubCatalogEndpointsText, "/api/hub/search");
+        StringAssert.Contains(hubCatalogEndpointsText, "IHubCatalogService");
+        StringAssert.Contains(hubCatalogServiceContractText, "public interface IHubCatalogService");
+        StringAssert.Contains(hubCatalogServiceContractText, "HubCatalogResultPage Search");
+        StringAssert.Contains(hubCatalogServiceText, "IRulePackRegistryService");
+        StringAssert.Contains(hubCatalogServiceText, "IRuleProfileRegistryService");
+        StringAssert.Contains(hubCatalogServiceText, "IRuntimeLockRegistryService");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubCatalogService, DefaultHubCatalogService>()");
+        StringAssert.Contains(readmeText, "/api/hub/search");
+    }
+
+    [TestMethod]
     public void Solution_includes_headless_and_dual_head_projects()
     {
         string solutionPath = FindPath("Chummer.sln");
@@ -766,6 +798,22 @@ public class MigrationComplianceTests
         StringAssert.Contains(ruleProfileApplicationContractsText, "public sealed record RuleProfileApplyReceipt");
         StringAssert.Contains(ruleProfileApplicationContractsText, "RuntimeLockInstallReceipt? InstallReceipt = null");
         StringAssert.Contains(ruleProfileApplicationContractsText, "string? DeferredReason = null");
+    }
+
+    [TestMethod]
+    public void Hub_catalog_contracts_lock_in_item_kind_facet_sort_and_result_vocabulary()
+    {
+        string hubCatalogContractsPath = FindPath("Chummer.Contracts", "Hub", "HubCatalogContracts.cs");
+        string hubCatalogContractsText = File.ReadAllText(hubCatalogContractsPath);
+
+        StringAssert.Contains(hubCatalogContractsText, "public static class HubCatalogItemKinds");
+        StringAssert.Contains(hubCatalogContractsText, "public static class HubCatalogFacetIds");
+        StringAssert.Contains(hubCatalogContractsText, "public static class HubCatalogSortIds");
+        StringAssert.Contains(hubCatalogContractsText, "public sealed record HubCatalogItem");
+        StringAssert.Contains(hubCatalogContractsText, "public sealed record HubCatalogResultPage");
+        StringAssert.Contains(hubCatalogContractsText, "BrowseQuery Query");
+        StringAssert.Contains(hubCatalogContractsText, "IReadOnlyList<FacetDefinition> Facets");
+        StringAssert.Contains(hubCatalogContractsText, "IReadOnlyList<SortDefinition> Sorts");
     }
 
     [TestMethod]

@@ -1,5 +1,6 @@
 using Chummer.Application.Characters;
 using Chummer.Application.Content;
+using Chummer.Application.Hub;
 using Chummer.Application.Owners;
 using Chummer.Application.LifeModules;
 using Chummer.Application.Session;
@@ -64,6 +65,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuleProfileApplicationService, DefaultRuleProfileApplicationService>();
         services.AddSingleton<IRuntimeInspectorService, DefaultRuntimeInspectorService>();
         services.AddSingleton<IRuntimeLockRegistryService, ProfileBackedRuntimeLockRegistryService>();
+        services.AddSingleton<IHubCatalogService, DefaultHubCatalogService>();
 
         services.AddSingleton<ILifeModulesCatalogService>(provider =>
         {

@@ -1,6 +1,7 @@
 #nullable enable annotations
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -10,6 +11,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Chummer.Contracts.Content;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Session;
 using Chummer.Presentation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -113,6 +115,27 @@ public class ApiIntegrationTests
                 .Any(item => string.Equals(item["id"]?.GetValue<string>(), ExpectedAmendId, StringComparison.Ordinal));
             Assert.IsTrue(found, $"Expected overlay id '{ExpectedAmendId}' was not found.");
         }
+    }
+
+    [TestMethod]
+    public async Task Hub_search_endpoint_returns_mixed_catalog_items_for_rulepacks_profiles_and_runtime_locks()
+    {
+        using var client = CreateClient();
+        BrowseQuery query = new(
+            QueryText: string.Empty,
+            FacetSelections: new Dictionary<string, IReadOnlyList<string>>(),
+            SortId: "title");
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync("/api/hub/search", query);
+        response.EnsureSuccessStatusCode();
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.IsNotNull(payload["totalCount"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["items"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["facets"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["sorts"]);
     }
 
     [TestMethod]
@@ -287,6 +310,13 @@ public class ApiIntegrationTests
 
         JsonObject info = await GetRequiredJsonObject(client, "/api/info");
         Assert.AreEqual("Chummer", info["service"]?.GetValue<string>());
+
+        BrowseQuery hubQuery = new(
+            QueryText: string.Empty,
+            FacetSelections: new Dictionary<string, IReadOnlyList<string>>(),
+            SortId: "title");
+        using HttpResponseMessage hubResponse = await client.PostAsJsonAsync("/api/hub/search", hubQuery);
+        hubResponse.EnsureSuccessStatusCode();
 
         JsonObject rulepacks = await GetRequiredJsonObject(client, "/api/rulepacks?ruleset=sr5");
         Assert.IsNotNull(rulepacks["count"]);
