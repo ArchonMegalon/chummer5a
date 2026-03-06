@@ -83,6 +83,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IHubCatalogService, DefaultHubCatalogService>();
         services.AddSingleton<IHubInstallPreviewService, DefaultHubInstallPreviewService>();
         services.AddSingleton<IHubProjectCompatibilityService, DefaultHubProjectCompatibilityService>();
+        services.AddSingleton<IHubPublisherStore>(_ => new FileHubPublisherStore(stateDirectory));
+        services.AddSingleton<IHubPublisherService, DefaultHubPublisherService>();
         services.AddSingleton<IHubDraftStore>(_ => new FileHubDraftStore(stateDirectory));
         services.AddSingleton<IHubModerationCaseStore>(_ => new FileHubModerationCaseStore(stateDirectory));
         services.AddSingleton<IHubPublicationService, DefaultHubPublicationService>();

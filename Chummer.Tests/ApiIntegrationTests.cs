@@ -220,6 +220,31 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_publisher_endpoints_upsert_and_list_owner_profiles()
+    {
+        using var client = CreateClient();
+        string publisherId = $"shadowops-{Guid.NewGuid():N}";
+
+        JsonObject updated = await PutRequiredJsonObject(client, $"/api/hub/publishers/{publisherId}", new JsonObject
+        {
+            ["displayName"] = "ShadowOps",
+            ["slug"] = "shadowops",
+            ["description"] = "Campaign runtime publisher",
+            ["websiteUrl"] = "https://example.invalid/shadowops"
+        });
+        JsonObject detail = await GetRequiredJsonObject(client, $"/api/hub/publishers/{publisherId}");
+        JsonObject list = await GetRequiredJsonObject(client, "/api/hub/publishers");
+
+        Assert.AreEqual(publisherId, updated["publisherId"]?.GetValue<string>());
+        Assert.AreEqual("ShadowOps", detail["displayName"]?.GetValue<string>());
+        Assert.AreEqual(HubPublisherVerificationStates.Unverified, detail["verificationState"]?.GetValue<string>());
+        bool found = list["items"]?.AsArray().OfType<JsonObject>()
+            .Any(item => string.Equals(item["publisherId"]?.GetValue<string>(), publisherId, StringComparison.Ordinal))
+            ?? false;
+        Assert.IsTrue(found, $"Expected publisher catalog to include '{publisherId}'.");
+    }
+
+    [TestMethod]
     public async Task Hub_publish_draft_endpoint_persists_owner_draft_receipt()
     {
         using var client = CreateClient();

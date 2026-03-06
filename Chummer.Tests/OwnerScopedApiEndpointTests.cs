@@ -274,6 +274,32 @@ public sealed class OwnerScopedApiEndpointTests
         Assert.AreEqual(StatusCodes.Status404NotFound, (int)rejectResponse.StatusCode);
     }
 
+    [TestMethod]
+    public async Task Hub_publisher_endpoints_respect_forwarded_owner_scope()
+    {
+        await using WebApplication app = await CreateAppAsync();
+        using HttpClient client = app.GetTestClient();
+
+        JsonObject alicePublisher = await PutRequiredJsonObject(client, "/api/hub/publishers/shadowops", new JsonObject
+        {
+            ["displayName"] = "ShadowOps",
+            ["slug"] = "shadowops",
+            ["description"] = "Campaign runtime publisher"
+        }, "alice@example.com");
+        Assert.AreEqual("shadowops", alicePublisher["publisherId"]?.GetValue<string>());
+
+        JsonObject aliceList = await GetRequiredJsonObject(client, "/api/hub/publishers", "alice@example.com");
+        JsonObject bobList = await GetRequiredJsonObject(client, "/api/hub/publishers", "bob@example.com");
+
+        Assert.AreEqual(1, aliceList["items"]?.AsArray().Count);
+        Assert.AreEqual(0, bobList["items"]?.AsArray().Count);
+
+        using HttpRequestMessage request = new(HttpMethod.Get, "/api/hub/publishers/shadowops");
+        request.Headers.Add(OwnerHeaderName, "bob@example.com");
+        using HttpResponseMessage response = await client.SendAsync(request);
+        Assert.AreEqual(StatusCodes.Status404NotFound, (int)response.StatusCode);
+    }
+
     private static async Task<WebApplication> CreateAppAsync()
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
@@ -284,6 +310,8 @@ public sealed class OwnerScopedApiEndpointTests
             new RequestOwnerContextAccessor(
                 provider.GetRequiredService<IHttpContextAccessor>(),
                 OwnerHeaderName));
+        builder.Services.AddSingleton<IHubPublisherStore, InMemoryHubPublisherStore>();
+        builder.Services.AddSingleton<IHubPublisherService, DefaultHubPublisherService>();
         builder.Services.AddSingleton<IHubDraftStore, InMemoryHubDraftStore>();
         builder.Services.AddSingleton<IHubModerationCaseStore, InMemoryHubModerationCaseStore>();
         builder.Services.AddSingleton<IHubPublicationService, DefaultHubPublicationService>();
@@ -293,6 +321,7 @@ public sealed class OwnerScopedApiEndpointTests
         builder.Services.AddSingleton<IWorkspaceService, InMemoryWorkspaceService>();
 
         WebApplication app = builder.Build();
+        app.MapHubPublisherEndpoints();
         app.MapHubPublicationEndpoints();
         app.MapSettingsEndpoints();
         app.MapRosterEndpoints();
@@ -595,6 +624,46 @@ public sealed class OwnerScopedApiEndpointTests
             }
 
             return records.RemoveAll(record => string.Equals(record.DraftId, draftId, StringComparison.Ordinal)) > 0;
+        }
+    }
+
+    private sealed class InMemoryHubPublisherStore : IHubPublisherStore
+    {
+        private readonly Dictionary<string, List<HubPublisherRecord>> _recordsByOwner = new(StringComparer.Ordinal);
+
+        public IReadOnlyList<HubPublisherRecord> List(OwnerScope owner)
+        {
+            return _recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubPublisherRecord>? records)
+                ? records.ToArray()
+                : Array.Empty<HubPublisherRecord>();
+        }
+
+        public HubPublisherRecord? Get(OwnerScope owner, string publisherId)
+        {
+            return List(owner).FirstOrDefault(record => string.Equals(record.PublisherId, publisherId, StringComparison.Ordinal));
+        }
+
+        public HubPublisherRecord Upsert(OwnerScope owner, HubPublisherRecord record)
+        {
+            if (!_recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubPublisherRecord>? records))
+            {
+                records = [];
+                _recordsByOwner[owner.NormalizedValue] = records;
+            }
+
+            int existingIndex = records.FindIndex(current =>
+                string.Equals(current.PublisherId, record.PublisherId, StringComparison.Ordinal));
+            HubPublisherRecord normalizedRecord = record with { OwnerId = owner.NormalizedValue };
+            if (existingIndex >= 0)
+            {
+                records[existingIndex] = normalizedRecord;
+            }
+            else
+            {
+                records.Add(normalizedRecord);
+            }
+
+            return normalizedRecord;
         }
     }
 
