@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Trackers;
 
 namespace Chummer.Contracts.Session;
 
@@ -49,22 +50,6 @@ public sealed record SessionLedger(
     string? BaselineSnapshotId = null,
     long NextSequence = 0);
 
-public sealed record SessionTrackerDefinition(
-    string TrackerId,
-    string Label,
-    int DefaultValue,
-    int? MinimumValue,
-    int? MaximumValue,
-    IReadOnlyList<int> Thresholds);
-
-public sealed record SessionTrackerValue(
-    string TrackerId,
-    string Label,
-    int CurrentValue,
-    int? MinimumValue,
-    int? MaximumValue,
-    string? ThresholdState = null);
-
 public sealed record SessionEffectState(
     string EffectId,
     string Label,
@@ -87,7 +72,7 @@ public sealed record SessionSyncState(
 public sealed record SessionOverlaySnapshot(
     string OverlayId,
     CharacterVersionReference BaseCharacterVersion,
-    IReadOnlyList<SessionTrackerValue> Trackers,
+    IReadOnlyList<TrackerSnapshot> Trackers,
     IReadOnlyList<SessionEffectState> ActiveEffects,
     IReadOnlyList<SessionQuickActionPin> PinnedQuickActions,
     IReadOnlyList<string> Notes,
@@ -100,5 +85,5 @@ public sealed record SessionRuntimeBundle(
     DateTimeOffset SignedAtUtc,
     string Signature,
     IReadOnlyList<SessionQuickActionPin> QuickActions,
-    IReadOnlyList<SessionTrackerDefinition> Trackers,
+    IReadOnlyList<TrackerDefinition> Trackers,
     IReadOnlyDictionary<string, string> ReducerBindings);

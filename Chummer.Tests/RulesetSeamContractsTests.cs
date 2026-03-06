@@ -13,6 +13,7 @@ using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Session;
+using Chummer.Contracts.Trackers;
 using Chummer.Contracts.Workspaces;
 using Chummer.Infrastructure.Xml;
 using Chummer.Rulesets.Sr4;
@@ -215,12 +216,23 @@ public class RulesetSeamContractsTests
             BaseCharacterVersion: baseCharacterVersion,
             Trackers:
             [
-                new SessionTrackerValue(
-                    TrackerId: "stun",
-                    Label: "Stun",
+                new TrackerSnapshot(
+                    Definition: new TrackerDefinition(
+                        TrackerId: "stun",
+                        Category: TrackerCategories.Condition,
+                        Label: "Stun",
+                        DefaultValue: 0,
+                        MinimumValue: 0,
+                        MaximumValue: 10,
+                        Thresholds:
+                        [
+                            new TrackerThresholdDefinition(
+                                ThresholdId: "healthy",
+                                Value: 3,
+                                Label: "Healthy",
+                                Status: "ok")
+                        ]),
                     CurrentValue: 1,
-                    MinimumValue: 0,
-                    MaximumValue: 10,
                     ThresholdState: "healthy")
             ],
             ActiveEffects:
@@ -258,13 +270,19 @@ public class RulesetSeamContractsTests
             ],
             Trackers:
             [
-                new SessionTrackerDefinition(
+                new TrackerDefinition(
                     TrackerId: "stun",
+                    Category: TrackerCategories.Condition,
                     Label: "Stun",
                     DefaultValue: 0,
                     MinimumValue: 0,
                     MaximumValue: 10,
-                    Thresholds: [3, 6, 9])
+                    Thresholds:
+                    [
+                        new TrackerThresholdDefinition("healthy", 3, "Healthy", "ok"),
+                        new TrackerThresholdDefinition("wounded", 6, "Wounded", "warn"),
+                        new TrackerThresholdDefinition("critical", 9, "Critical", "critical")
+                    ])
             ],
             ReducerBindings: new Dictionary<string, string>(StringComparer.Ordinal)
             {
@@ -278,6 +296,7 @@ public class RulesetSeamContractsTests
         Assert.AreEqual("overlay-1", snapshot.OverlayId);
         Assert.AreEqual("char-1", snapshot.BaseCharacterVersion.CharacterId);
         Assert.AreEqual(SessionSyncStatuses.PendingSync, snapshot.SyncState.Status);
+        Assert.AreEqual(TrackerCategories.Condition, snapshot.Trackers[0].Definition.Category);
         Assert.AreEqual("session-bundle-1", runtimeBundle.BundleId);
         Assert.AreEqual("runtime-lock-sha256", runtimeBundle.BaseCharacterVersion.RuntimeFingerprint);
         Assert.AreEqual(10, runtimeBundle.Trackers[0].MaximumValue);

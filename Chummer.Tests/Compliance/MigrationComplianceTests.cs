@@ -327,6 +327,8 @@ public class MigrationComplianceTests
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
         string characterVersionContractsText = File.ReadAllText(characterVersionContractsPath);
+        string trackerContractsPath = FindPath("Chummer.Contracts", "Trackers", "TrackerContracts.cs");
+        string trackerContractsText = File.ReadAllText(trackerContractsPath);
         string sessionContractsPath = FindPath("Chummer.Contracts", "Session", "SessionContracts.cs");
         string sessionContractsText = File.ReadAllText(sessionContractsPath);
 
@@ -334,6 +336,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(characterVersionContractsText, "public sealed record CharacterVersion");
         StringAssert.Contains(characterVersionContractsText, "ResolvedRuntimeLock RuntimeLock");
         StringAssert.Contains(characterVersionContractsText, "WorkspacePayloadEnvelope PayloadEnvelope");
+        StringAssert.Contains(trackerContractsText, "public static class TrackerCategories");
+        StringAssert.Contains(trackerContractsText, "public sealed record TrackerThresholdDefinition");
+        StringAssert.Contains(trackerContractsText, "public sealed record TrackerDefinition");
+        StringAssert.Contains(trackerContractsText, "public sealed record TrackerSnapshot");
         StringAssert.Contains(sessionContractsText, "public static class SessionEventTypes");
         StringAssert.Contains(sessionContractsText, "public static class SessionSyncStatuses");
         StringAssert.Contains(sessionContractsText, "public sealed record SessionEvent");
@@ -341,7 +347,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(sessionContractsText, "public sealed record SessionOverlaySnapshot");
         StringAssert.Contains(sessionContractsText, "public sealed record SessionRuntimeBundle");
         StringAssert.Contains(sessionContractsText, "CharacterVersionReference BaseCharacterVersion");
+        StringAssert.Contains(sessionContractsText, "IReadOnlyList<TrackerSnapshot> Trackers");
+        StringAssert.Contains(sessionContractsText, "IReadOnlyList<TrackerDefinition> Trackers");
         StringAssert.Contains(sessionContractsText, "SignedAtUtc");
+        Assert.IsFalse(sessionContractsText.Contains("public sealed record SessionTrackerDefinition", StringComparison.Ordinal));
         Assert.IsFalse(sessionContractsText.Contains("public sealed record SessionOverlay(", StringComparison.Ordinal));
         Assert.IsFalse(sessionContractsText.Contains("LuaSource", StringComparison.Ordinal));
     }
