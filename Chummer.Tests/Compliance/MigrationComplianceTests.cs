@@ -2191,11 +2191,20 @@ public class MigrationComplianceTests
 
         string catalogOnlyResolverPath = FindPath("Chummer.Presentation", "Shell", "CatalogOnlyRulesetShellCatalogResolver.cs");
         string catalogOnlyResolverText = File.ReadAllText(catalogOnlyResolverPath);
+        StringAssert.Contains(catalogOnlyResolverText, "using Chummer.Rulesets.Hosting.Presentation;");
         StringAssert.Contains(catalogOnlyResolverText, "AppCommandCatalog.ForRuleset(");
         StringAssert.Contains(catalogOnlyResolverText, "NavigationTabCatalog.ForRuleset(");
         StringAssert.Contains(catalogOnlyResolverText, "WorkspaceSurfaceActionCatalog.ForTab(");
         StringAssert.Contains(catalogOnlyResolverText, "DesktopUiControlCatalog.ForTab(");
 
+        StringAssert.Contains(commandCatalogText, "namespace Chummer.Rulesets.Hosting.Presentation;");
+        StringAssert.Contains(tabCatalogText, "namespace Chummer.Rulesets.Hosting.Presentation;");
+        StringAssert.Contains(actionCatalogText, "namespace Chummer.Rulesets.Hosting.Presentation;");
+        StringAssert.Contains(controlCatalogText, "namespace Chummer.Rulesets.Hosting.Presentation;");
+        Assert.IsFalse(commandCatalogText.Contains("namespace Chummer.Contracts.Presentation;", StringComparison.Ordinal));
+        Assert.IsFalse(tabCatalogText.Contains("namespace Chummer.Contracts.Presentation;", StringComparison.Ordinal));
+        Assert.IsFalse(actionCatalogText.Contains("namespace Chummer.Contracts.Presentation;", StringComparison.Ordinal));
+        Assert.IsFalse(controlCatalogText.Contains("namespace Chummer.Contracts.Presentation;", StringComparison.Ordinal));
         Assert.IsFalse(workspaceModelsText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(workspaceApiModelsText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(commandDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));

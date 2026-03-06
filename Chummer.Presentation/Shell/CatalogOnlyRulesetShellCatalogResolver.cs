@@ -1,5 +1,6 @@
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
+using Chummer.Rulesets.Hosting.Presentation;
 
 namespace Chummer.Presentation.Shell;
 

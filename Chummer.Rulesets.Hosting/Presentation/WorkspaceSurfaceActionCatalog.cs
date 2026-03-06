@@ -1,6 +1,7 @@
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 
-namespace Chummer.Contracts.Presentation;
+namespace Chummer.Rulesets.Hosting.Presentation;
 
 public static class WorkspaceSurfaceActionCatalog
 {
