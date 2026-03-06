@@ -9,6 +9,7 @@ using Chummer.Application.Characters;
 using Chummer.Application.Content;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Assets;
+using Chummer.Contracts.Campaign;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Diagnostics;
@@ -1793,6 +1794,119 @@ public class RulesetSeamContractsTests
         Assert.AreEqual(RulePackDependencyEdgeKinds.DependsOn, graph.Edges[0].Kind);
         Assert.AreEqual(DeclarativeRuleOverrideModes.OverrideThreshold, overrideEditor.Overrides[0].Mode);
         Assert.IsFalse(validationPanel.HasBlockingIssues);
+    }
+
+    [TestMethod]
+    public void Campaign_and_gm_board_contracts_define_party_roster_tracker_board_and_round_marker_vocabulary()
+    {
+        OwnerScope owner = new("user-1");
+        TrackerDefinition trackerDefinition = new(
+            TrackerId: "stun",
+            Category: TrackerCategories.Condition,
+            Label: "Stun",
+            DefaultValue: 0,
+            MinimumValue: 0,
+            MaximumValue: 10,
+            Thresholds: []);
+        NoteDocument note = new(
+            NoteId: "note-1",
+            Owner: owner,
+            ScopeKind: JournalScopeKinds.Campaign,
+            ScopeId: "campaign-7",
+            Title: "Round Notes",
+            Blocks:
+            [
+                new NoteBlock(
+                    BlockId: "block-1",
+                    Kind: NoteBlockKinds.Paragraph,
+                    Content: "Suppressive fire on the east stairwell.",
+                    CreatedAtUtc: DateTimeOffset.UtcNow)
+            ],
+            UpdatedAtUtc: DateTimeOffset.UtcNow);
+        GmBoardProjection projection = new(
+            Campaign: new CampaignDescriptor(
+                Owner: owner,
+                CampaignId: "campaign-7",
+                Title: "Seattle Nights",
+                Visibility: ArtifactVisibilityModes.CampaignShared,
+                Description: "Weekly SR5 game."),
+            Roster:
+            [
+                new PartyRosterEntry(
+                    ParticipantId: "participant-1",
+                    DisplayName: "Razor",
+                    Role: CampaignParticipantRoles.Player,
+                    CharacterId: "char-1",
+                    OverlayId: "overlay-1",
+                    IsConnected: true)
+            ],
+            InitiativeOrder:
+            [
+                new InitiativeOrderEntry(
+                    ParticipantId: "participant-1",
+                    Label: "Razor",
+                    Order: 1,
+                    PassLabel: "Pass 1",
+                    IsCurrentTurn: true)
+            ],
+            Participants:
+            [
+                new ParticipantSessionTile(
+                    ParticipantId: "participant-1",
+                    CharacterId: "char-1",
+                    DisplayName: "Razor",
+                    Role: CampaignParticipantRoles.Player,
+                    Trackers:
+                    [
+                        new TrackerSnapshot(
+                            Definition: trackerDefinition,
+                            CurrentValue: 3,
+                            ThresholdState: "wounded")
+                    ],
+                    ActiveEffects: ["Blinded"],
+                    SyncBanner: new SessionSyncBanner(
+                        BannerId: "sync-1",
+                        Status: SessionSyncBannerStates.PendingSync,
+                        Message: "Waiting for reconnect.",
+                        PendingEventCount: 2,
+                        RequiresAttention: true),
+                    ExplainEntryId: "explain-participant-1",
+                    RequiresAttention: true)
+            ],
+            TrackerBoard:
+            [
+                new GmTrackerBoardTile(
+                    TileId: "tracker-1",
+                    ParticipantId: "participant-1",
+                    Label: "Razor Conditions",
+                    Trackers:
+                    [
+                        new TrackerSnapshot(
+                            Definition: trackerDefinition,
+                            CurrentValue: 3,
+                            ThresholdState: "wounded")
+                    ],
+                    ExplainEntryId: "explain-tracker-1")
+            ],
+            RoundMarkers:
+            [
+                new CombatRoundMarker(
+                    MarkerId: "round-3",
+                    RoundNumber: 3,
+                    Label: "Round 3",
+                    State: CombatRoundMarkerStates.Active,
+                    StartedAtUtc: DateTimeOffset.UtcNow)
+            ],
+            Notes: [note],
+            ActiveRoundMarkerId: "round-3");
+
+        Assert.AreEqual(CampaignParticipantRoles.Player, projection.Roster[0].Role);
+        Assert.IsTrue(projection.Roster[0].IsConnected);
+        Assert.AreEqual(1, projection.InitiativeOrder[0].Order);
+        Assert.AreEqual(SessionSyncBannerStates.PendingSync, projection.Participants[0].SyncBanner!.Status);
+        Assert.AreEqual("Blinded", projection.Participants[0].ActiveEffects[0]);
+        Assert.AreEqual(CombatRoundMarkerStates.Active, projection.RoundMarkers[0].State);
+        Assert.AreEqual(JournalScopeKinds.Campaign, projection.Notes[0].ScopeKind);
     }
 
     [TestMethod]

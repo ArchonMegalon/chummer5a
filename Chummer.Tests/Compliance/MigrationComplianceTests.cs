@@ -777,6 +777,29 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Campaign_and_gm_board_contracts_lock_in_party_roster_tracker_board_and_round_marker_vocabulary()
+    {
+        string campaignProjectionContractsPath = FindPath("Chummer.Contracts", "Campaign", "CampaignProjectionContracts.cs");
+        string campaignProjectionContractsText = File.ReadAllText(campaignProjectionContractsPath);
+
+        StringAssert.Contains(campaignProjectionContractsText, "public static class CampaignParticipantRoles");
+        StringAssert.Contains(campaignProjectionContractsText, "public static class CombatRoundMarkerStates");
+        StringAssert.Contains(campaignProjectionContractsText, "public sealed record CampaignDescriptor");
+        StringAssert.Contains(campaignProjectionContractsText, "public sealed record PartyRosterEntry");
+        StringAssert.Contains(campaignProjectionContractsText, "public sealed record InitiativeOrderEntry");
+        StringAssert.Contains(campaignProjectionContractsText, "public sealed record ParticipantSessionTile");
+        StringAssert.Contains(campaignProjectionContractsText, "public sealed record GmTrackerBoardTile");
+        StringAssert.Contains(campaignProjectionContractsText, "public sealed record CombatRoundMarker");
+        StringAssert.Contains(campaignProjectionContractsText, "public sealed record GmBoardProjection");
+        StringAssert.Contains(campaignProjectionContractsText, "game-master");
+        StringAssert.Contains(campaignProjectionContractsText, "string Visibility");
+        StringAssert.Contains(campaignProjectionContractsText, "SessionSyncBanner? SyncBanner = null");
+        StringAssert.Contains(campaignProjectionContractsText, "IReadOnlyList<NoteDocument> Notes");
+        Assert.IsFalse(campaignProjectionContractsText.Contains("Avalonia", StringComparison.Ordinal));
+        Assert.IsFalse(campaignProjectionContractsText.Contains("Blazor", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
