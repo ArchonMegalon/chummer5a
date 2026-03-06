@@ -843,6 +843,28 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Browse_workspace_contracts_lock_in_workspace_and_selection_dialog_vocabulary()
+    {
+        string browseWorkspaceContractsPath = FindPath("Chummer.Contracts", "Presentation", "BrowseWorkspaceContracts.cs");
+        string browseWorkspaceContractsText = File.ReadAllText(browseWorkspaceContractsPath);
+
+        StringAssert.Contains(browseWorkspaceContractsText, "public static class BrowseWorkspaceSurfaceIds");
+        StringAssert.Contains(browseWorkspaceContractsText, "public static class BrowseWorkspaceSectionKinds");
+        StringAssert.Contains(browseWorkspaceContractsText, "public static class SelectionDialogModes");
+        StringAssert.Contains(browseWorkspaceContractsText, "public sealed record BrowseWorkspaceSection");
+        StringAssert.Contains(browseWorkspaceContractsText, "public sealed record BrowseItemDetail");
+        StringAssert.Contains(browseWorkspaceContractsText, "public sealed record SelectionSummaryItem");
+        StringAssert.Contains(browseWorkspaceContractsText, "public sealed record BrowseWorkspaceProjection");
+        StringAssert.Contains(browseWorkspaceContractsText, "public sealed record SelectionDialogProjection");
+        StringAssert.Contains(browseWorkspaceContractsText, "browse-workspace");
+        StringAssert.Contains(browseWorkspaceContractsText, "selection-summary");
+        StringAssert.Contains(browseWorkspaceContractsText, "BrowseResultPage Results");
+        StringAssert.Contains(browseWorkspaceContractsText, "BrowseWorkspaceProjection Workspace");
+        Assert.IsFalse(browseWorkspaceContractsText.Contains("Avalonia", StringComparison.Ordinal));
+        Assert.IsFalse(browseWorkspaceContractsText.Contains("Blazor", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");

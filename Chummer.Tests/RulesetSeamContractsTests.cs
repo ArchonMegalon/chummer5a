@@ -2072,6 +2072,112 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Browse_workspace_contracts_define_renderer_neutral_workspace_and_selection_dialog_vocabulary()
+    {
+        BrowseQuery query = new(
+            QueryText: "smartgun",
+            FacetSelections: new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
+            {
+                ["category"] = ["weapon"]
+            },
+            SortId: "name");
+        BrowseResultPage results = new(
+            Query: query,
+            Items:
+            [
+                new BrowseResultItem(
+                    ItemId: "weapon-ares-alpha",
+                    Title: "Ares Alpha",
+                    ColumnValues: new Dictionary<string, string>(StringComparer.Ordinal)
+                    {
+                        ["availability"] = "12R"
+                    },
+                    FacetValues: ["weapon"])
+            ],
+            Columns:
+            [
+                new BrowseColumnDefinition(
+                    ColumnId: "name",
+                    Label: "Name",
+                    ValueKind: BrowseValueKinds.Text,
+                    IsPrimary: true)
+            ],
+            Facets:
+            [
+                new FacetDefinition(
+                    FacetId: "category",
+                    Label: "Category",
+                    Kind: BrowseFacetKinds.MultiSelect,
+                    Options:
+                    [
+                        new FacetOptionDefinition(
+                            Value: "weapon",
+                            Label: "Weapons",
+                            Count: 42,
+                            Selected: true)
+                    ])
+            ],
+            Sorts:
+            [
+                new SortDefinition(
+                    SortId: "name",
+                    Label: "Name",
+                    Direction: BrowseSortDirections.Ascending,
+                    IsDefault: true)
+            ],
+            ViewPresets: [],
+            DisableReasons: [],
+            TotalCount: 1);
+        BrowseWorkspaceProjection workspace = new(
+            WorkspaceId: "browse-gear",
+            WorkflowId: WorkflowDefinitionIds.SelectionDialog,
+            Results: results,
+            Sections:
+            [
+                new BrowseWorkspaceSection(
+                    SectionId: BrowseWorkspaceSurfaceIds.FacetPanel,
+                    Kind: BrowseWorkspaceSectionKinds.Facets,
+                    Title: "Facets"),
+                new BrowseWorkspaceSection(
+                    SectionId: BrowseWorkspaceSurfaceIds.ResultGrid,
+                    Kind: BrowseWorkspaceSectionKinds.Results,
+                    Title: "Results"),
+                new BrowseWorkspaceSection(
+                    SectionId: BrowseWorkspaceSurfaceIds.DetailPane,
+                    Kind: BrowseWorkspaceSectionKinds.Detail,
+                    Title: "Detail")
+            ],
+            SelectedItems:
+            [
+                new SelectionSummaryItem(
+                    ItemId: "weapon-ares-alpha",
+                    Title: "Ares Alpha",
+                    Detail: "12R")
+            ],
+            ActiveDetail: new BrowseItemDetail(
+                ItemId: "weapon-ares-alpha",
+                Title: "Ares Alpha",
+                SummaryLines: ["11P", "AP -2"],
+                ExplainEntryId: "explain-weapon-1"),
+            ActiveSurfaceId: BrowseWorkspaceSurfaceIds.ResultGrid);
+        SelectionDialogProjection dialog = new(
+            DialogId: "dialog-gear",
+            Title: "Select Gear",
+            Mode: SelectionDialogModes.SingleSelect,
+            Workspace: workspace,
+            CanConfirm: true,
+            ConfirmActionId: "select",
+            CancelActionId: "cancel");
+
+        Assert.AreEqual(WorkflowDefinitionIds.SelectionDialog, workspace.WorkflowId);
+        Assert.AreEqual(BrowseWorkspaceSurfaceIds.ResultGrid, workspace.ActiveSurfaceId);
+        Assert.AreEqual(BrowseWorkspaceSectionKinds.Results, workspace.Sections[1].Kind);
+        Assert.AreEqual("weapon-ares-alpha", dialog.Workspace.SelectedItems[0].ItemId);
+        Assert.AreEqual(SelectionDialogModes.SingleSelect, dialog.Mode);
+        Assert.IsTrue(dialog.CanConfirm);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);
