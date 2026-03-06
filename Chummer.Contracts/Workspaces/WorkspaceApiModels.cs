@@ -12,18 +12,18 @@ public sealed record WorkspaceImportRequest(
 public sealed record WorkspaceImportResult(
     CharacterWorkspaceId Id,
     CharacterFileSummary Summary,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);
 
 public sealed record WorkspaceImportResponse(
     string Id,
     CharacterFileSummary Summary,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);
 
 public sealed record WorkspaceListItemResponse(
     string Id,
     CharacterFileSummary Summary,
     DateTimeOffset LastUpdatedUtc,
-    string RulesetId = RulesetDefaults.Sr5,
+    string RulesetId,
     bool HasSavedWorkspace = false);
 
 public sealed record WorkspaceListResponse(
@@ -36,7 +36,7 @@ public sealed record WorkspaceMetadataResponse(
 public sealed record WorkspaceSaveResponse(
     string Id,
     int DocumentLength,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);
 
 public sealed record WorkspaceDownloadResponse(
     string Id,
@@ -44,7 +44,7 @@ public sealed record WorkspaceDownloadResponse(
     string ContentBase64,
     string FileName,
     int DocumentLength,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);
 
 public sealed record WorkspaceExportResponse(
     string Id,
@@ -52,7 +52,7 @@ public sealed record WorkspaceExportResponse(
     string ContentBase64,
     string FileName,
     int DocumentLength,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);
 
 public sealed record WorkspacePrintResponse(
     string Id,
@@ -61,4 +61,4 @@ public sealed record WorkspacePrintResponse(
     string MimeType,
     int DocumentLength,
     string Title,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId);

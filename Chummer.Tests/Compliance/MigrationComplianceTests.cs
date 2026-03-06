@@ -1226,7 +1226,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetShellCatalogResolverService");
 
         StringAssert.Contains(workspaceModelsText, "string RulesetId = RulesetDefaults.Sr5");
-        StringAssert.Contains(workspaceApiModelsText, "string RulesetId = RulesetDefaults.Sr5");
+        Assert.IsFalse(workspaceApiModelsText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         StringAssert.Contains(commandDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
         StringAssert.Contains(tabDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
         StringAssert.Contains(actionDefinitionText, "string RulesetId = RulesetDefaults.Sr5");
