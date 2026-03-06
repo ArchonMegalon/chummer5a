@@ -361,6 +361,24 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Linked_asset_contracts_lock_in_contact_library_vocabulary()
+    {
+        string linkedAssetContractsPath = FindPath("Chummer.Contracts", "Assets", "LinkedAssetContracts.cs");
+        string linkedAssetContractsText = File.ReadAllText(linkedAssetContractsPath);
+        string sectionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterSectionModels.cs");
+        string sectionContractsText = File.ReadAllText(sectionContractsPath);
+
+        StringAssert.Contains(linkedAssetContractsText, "public static class LinkedAssetVisibilityModes");
+        StringAssert.Contains(linkedAssetContractsText, "public sealed record LinkedAssetReference");
+        StringAssert.Contains(linkedAssetContractsText, "public sealed record ContactAsset");
+        StringAssert.Contains(linkedAssetContractsText, "public sealed record ContactLinkOverride");
+        StringAssert.Contains(linkedAssetContractsText, "public sealed record CharacterContactLink");
+        StringAssert.Contains(sectionContractsText, "public sealed record CharacterContactSummary");
+        StringAssert.Contains(sectionContractsText, "public sealed record CharacterContactsSection");
+        Assert.IsFalse(linkedAssetContractsText.Contains("public sealed record ContactSection", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Ruleset_explain_contracts_lock_in_trace_and_gas_vocabulary()
     {
         string explainContractsPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetExplainContracts.cs");

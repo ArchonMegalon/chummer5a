@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Chummer.Application.Characters;
 using Chummer.Application.Content;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Assets;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
@@ -332,6 +333,49 @@ public class RulesetSeamContractsTests
         Assert.AreEqual("runtime-lock-sha256", runtimeBundle.BaseCharacterVersion.RuntimeFingerprint);
         Assert.AreEqual(10, runtimeBundle.Trackers[0].MaximumValue);
         Assert.AreEqual("session-runtime/stun.increment", runtimeBundle.ReducerBindings["tracker.increment"]);
+    }
+
+    [TestMethod]
+    public void Linked_asset_taxonomy_distinguishes_contact_assets_from_character_sections()
+    {
+        LinkedAssetReference assetReference = new(
+            AssetId: "contact-1",
+            VersionId: "contactv-1",
+            AssetType: "contact",
+            Visibility: LinkedAssetVisibilityModes.Private);
+        ContactAsset contactAsset = new(
+            Reference: assetReference,
+            Name: "Nines",
+            Role: "Fixer",
+            Location: "Seattle",
+            Connection: 4,
+            Loyalty: 3,
+            Notes: "Reusable campaign contact.");
+        CharacterContactLink contactLink = new(
+            CharacterId: "char-1",
+            Contact: assetReference,
+            Overrides: new ContactLinkOverride(
+                DisplayName: "Nines (Runner Team)",
+                Loyalty: 4),
+            IsFavorite: true);
+        CharacterContactsSection contactsSection = new(
+            Count: 1,
+            Contacts:
+            [
+                new CharacterContactSummary(
+                    Name: "Nines",
+                    Role: "Fixer",
+                    Location: "Seattle",
+                    Connection: 4,
+                    Loyalty: 3)
+            ]);
+
+        Assert.AreEqual("contact", contactAsset.Reference.AssetType);
+        Assert.AreEqual("contact-1", contactLink.Contact.AssetId);
+        Assert.IsTrue(contactLink.IsFavorite);
+        Assert.AreEqual("Nines (Runner Team)", contactLink.Overrides.DisplayName);
+        Assert.AreEqual(1, contactsSection.Count);
+        Assert.AreEqual("Nines", contactsSection.Contacts[0].Name);
     }
 
     [TestMethod]
