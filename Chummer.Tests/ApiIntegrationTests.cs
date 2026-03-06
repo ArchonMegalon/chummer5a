@@ -750,28 +750,38 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
-    public async Task Session_http_client_uses_explicit_not_implemented_boundary_for_runtime_bundle_and_profile_selection()
+    public async Task Session_http_client_exposes_owner_backed_profile_selection_and_runtime_bundle_receipts()
     {
         using var http = CreateClient();
         HttpSessionClient sessionClient = new(http);
+        SessionApiResult<SessionProfileCatalog> profilesResult = await sessionClient.ListProfilesAsync(default);
+        SessionApiResult<RulePackCatalog> rulePackResult = await sessionClient.ListRulePacksAsync(default);
 
-        SessionApiResult<SessionRuntimeBundleIssueReceipt> bundleResult = await sessionClient.GetRuntimeBundleAsync("char-1", default);
         SessionApiResult<SessionProfileSelectionReceipt> profileResult = await sessionClient.SelectProfileAsync(
             "char-1",
             new SessionProfileSelectionRequest("official.sr5.core"),
             default);
+        SessionApiResult<SessionRuntimeBundleIssueReceipt> bundleResult = await sessionClient.GetRuntimeBundleAsync("char-1", default);
 
-        Assert.IsFalse(bundleResult.IsImplemented);
-        Assert.IsNotNull(bundleResult.NotImplemented);
-        Assert.AreEqual("session_not_implemented", bundleResult.NotImplemented.Error);
-        Assert.AreEqual(SessionApiOperations.GetRuntimeBundle, bundleResult.NotImplemented.Operation);
-        Assert.AreEqual("char-1", bundleResult.NotImplemented.CharacterId);
+        Assert.IsTrue(profilesResult.IsImplemented);
+        Assert.IsNotNull(profilesResult.Payload);
+        Assert.IsNotEmpty(profilesResult.Payload.Profiles);
+        Assert.AreEqual("official.sr5.core", profilesResult.Payload.ActiveProfileId);
 
-        Assert.IsFalse(profileResult.IsImplemented);
-        Assert.IsNotNull(profileResult.NotImplemented);
-        Assert.AreEqual("session_not_implemented", profileResult.NotImplemented.Error);
-        Assert.AreEqual(SessionApiOperations.SelectProfile, profileResult.NotImplemented.Operation);
-        Assert.AreEqual("char-1", profileResult.NotImplemented.CharacterId);
+        Assert.IsTrue(rulePackResult.IsImplemented);
+        Assert.IsNotNull(rulePackResult.Payload);
+
+        Assert.IsTrue(profileResult.IsImplemented);
+        Assert.IsNotNull(profileResult.Payload);
+        Assert.AreEqual(SessionProfileSelectionOutcomes.Selected, profileResult.Payload.Outcome);
+        Assert.AreEqual("char-1", profileResult.Payload.CharacterId);
+        Assert.AreEqual("official.sr5.core", profileResult.Payload.ProfileId);
+
+        Assert.IsTrue(bundleResult.IsImplemented);
+        Assert.IsNotNull(bundleResult.Payload);
+        Assert.AreEqual(SessionRuntimeBundleIssueOutcomes.Issued, bundleResult.Payload.Outcome);
+        Assert.AreEqual("char-1", bundleResult.Payload.Bundle.BaseCharacterVersion.CharacterId);
+        Assert.AreEqual(profileResult.Payload.RuntimeFingerprint, bundleResult.Payload.Bundle.BaseCharacterVersion.RuntimeFingerprint);
     }
 
     [TestMethod]
@@ -1201,28 +1211,44 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
-    public async Task Session_runtime_bundle_and_profile_endpoints_return_not_implemented_receipts()
+    public async Task Session_runtime_bundle_and_profile_endpoints_return_owner_backed_receipts()
     {
         using var client = CreateClient();
+        string characterId = $"session-char-{Guid.NewGuid():N}";
 
-        using HttpResponseMessage bundleResponse = await client.GetAsync("/api/session/characters/char-1/runtime-bundle");
-        Assert.AreEqual(HttpStatusCode.NotImplemented, bundleResponse.StatusCode);
+        using HttpResponseMessage profilesResponse = await client.GetAsync("/api/session/profiles");
+        Assert.AreEqual(HttpStatusCode.OK, profilesResponse.StatusCode);
+        JsonNode profilesParsed = JsonNode.Parse(await profilesResponse.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(profilesParsed);
+        JsonObject profilesPayload = (JsonObject)profilesParsed!;
+        Assert.IsNotNull(profilesPayload["profiles"]);
+
+        using HttpResponseMessage bundleResponse = await client.GetAsync($"/api/session/characters/{characterId}/runtime-bundle");
+        Assert.AreEqual(HttpStatusCode.OK, bundleResponse.StatusCode);
         JsonNode bundleParsed = JsonNode.Parse(await bundleResponse.Content.ReadAsStringAsync());
         Assert.IsInstanceOfType<JsonObject>(bundleParsed);
         JsonObject bundlePayload = (JsonObject)bundleParsed!;
-        Assert.AreEqual("session_not_implemented", bundlePayload["error"]?.GetValue<string>());
-        Assert.AreEqual("get-runtime-bundle", bundlePayload["operation"]?.GetValue<string>());
-        Assert.AreEqual("char-1", bundlePayload["characterId"]?.GetValue<string>());
+        Assert.AreEqual("blocked", bundlePayload["outcome"]?.GetValue<string>());
+        Assert.AreEqual("inline", bundlePayload["deliveryMode"]?.GetValue<string>());
+        Assert.IsNotNull(bundlePayload["diagnostics"]);
 
         using var profileRequest = new StringContent("{\"profileId\":\"official.sr5.core\"}", Encoding.UTF8, "application/json");
-        using HttpResponseMessage profileResponse = await client.PostAsync("/api/session/characters/char-1/profile", profileRequest);
-        Assert.AreEqual(HttpStatusCode.NotImplemented, profileResponse.StatusCode);
+        using HttpResponseMessage profileResponse = await client.PostAsync($"/api/session/characters/{characterId}/profile", profileRequest);
+        Assert.AreEqual(HttpStatusCode.OK, profileResponse.StatusCode);
         JsonNode profileParsed = JsonNode.Parse(await profileResponse.Content.ReadAsStringAsync());
         Assert.IsInstanceOfType<JsonObject>(profileParsed);
         JsonObject profilePayload = (JsonObject)profileParsed!;
-        Assert.AreEqual("session_not_implemented", profilePayload["error"]?.GetValue<string>());
-        Assert.AreEqual("select-profile", profilePayload["operation"]?.GetValue<string>());
-        Assert.AreEqual("char-1", profilePayload["characterId"]?.GetValue<string>());
+        Assert.AreEqual("selected", profilePayload["outcome"]?.GetValue<string>());
+        Assert.AreEqual(characterId, profilePayload["characterId"]?.GetValue<string>());
+
+        using HttpResponseMessage selectedBundleResponse = await client.GetAsync($"/api/session/characters/{characterId}/runtime-bundle");
+        Assert.AreEqual(HttpStatusCode.OK, selectedBundleResponse.StatusCode);
+        JsonNode selectedBundleParsed = JsonNode.Parse(await selectedBundleResponse.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(selectedBundleParsed);
+        JsonObject selectedBundlePayload = (JsonObject)selectedBundleParsed!;
+        Assert.AreEqual("issued", selectedBundlePayload["outcome"]?.GetValue<string>());
+        Assert.IsNotNull(selectedBundlePayload["bundle"]);
+        Assert.AreEqual(characterId, selectedBundlePayload["bundle"]?["baseCharacterVersion"]?["characterId"]?.GetValue<string>());
     }
 
     [TestMethod]

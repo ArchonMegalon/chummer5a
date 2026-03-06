@@ -104,7 +104,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
         services.AddSingleton<IShellSessionStore, SettingsShellSessionStore>();
         services.AddSingleton<IShellSessionService, ShellSessionService>();
-        services.AddSingleton<ISessionService, NotImplementedSessionService>();
+        services.AddSingleton<ISessionProfileSelectionStore>(_ => new FileSessionProfileSelectionStore(stateDirectory));
+        services.AddSingleton<ISessionRuntimeBundleStore>(_ => new FileSessionRuntimeBundleStore(stateDirectory));
+        services.AddSingleton<ISessionService, OwnerScopedSessionService>();
         services.AddSingleton<IRosterStore>(_ => new FileRosterStore(stateDirectory));
         services.AddSingleton<IWorkspaceStore>(_ =>
         {

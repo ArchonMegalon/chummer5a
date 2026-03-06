@@ -164,7 +164,7 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
-    public void Session_routes_define_explicit_mobile_boundary_with_placeholder_receipts()
+    public void Session_routes_define_explicit_mobile_boundary_with_owner_backed_profile_and_bundle_seams()
     {
         string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
         string apiProgramText = File.ReadAllText(apiProgramPath);
@@ -174,8 +174,16 @@ public class MigrationComplianceTests
         string sessionApiContractsText = File.ReadAllText(sessionApiContractsPath);
         string sessionServiceContractPath = FindPath("Chummer.Application", "Session", "ISessionService.cs");
         string sessionServiceContractText = File.ReadAllText(sessionServiceContractPath);
+        string ownerScopedSessionServicePath = FindPath("Chummer.Application", "Session", "OwnerScopedSessionService.cs");
+        string ownerScopedSessionServiceText = File.ReadAllText(ownerScopedSessionServicePath);
         string notImplementedSessionServicePath = FindPath("Chummer.Application", "Session", "NotImplementedSessionService.cs");
         string notImplementedSessionServiceText = File.ReadAllText(notImplementedSessionServicePath);
+        string sessionProfileSelectionStoreContractPath = FindPath("Chummer.Application", "Session", "ISessionProfileSelectionStore.cs");
+        string sessionProfileSelectionStoreContractText = File.ReadAllText(sessionProfileSelectionStoreContractPath);
+        string sessionRuntimeBundleStoreContractPath = FindPath("Chummer.Application", "Session", "ISessionRuntimeBundleStore.cs");
+        string sessionRuntimeBundleStoreContractText = File.ReadAllText(sessionRuntimeBundleStoreContractPath);
+        string sessionRuntimeStateContractsPath = FindPath("Chummer.Contracts", "Session", "SessionRuntimeStateContracts.cs");
+        string sessionRuntimeStateContractsText = File.ReadAllText(sessionRuntimeStateContractsPath);
         string sessionClientContractPath = FindPath("Chummer.Presentation", "ISessionClient.cs");
         string sessionClientContractText = File.ReadAllText(sessionClientContractPath);
         string workbenchClientContractPath = FindPath("Chummer.Presentation", "IChummerClient.cs");
@@ -217,8 +225,19 @@ public class MigrationComplianceTests
         StringAssert.Contains(sessionServiceContractText, "SessionApiResult<SessionProfileCatalog> ListProfiles");
         StringAssert.Contains(sessionServiceContractText, "SessionApiResult<SessionRuntimeBundleIssueReceipt> GetRuntimeBundle");
         StringAssert.Contains(sessionServiceContractText, "SessionApiResult<SessionProfileSelectionReceipt> SelectProfile");
+        StringAssert.Contains(ownerScopedSessionServiceText, "public sealed class OwnerScopedSessionService : ISessionService");
+        StringAssert.Contains(ownerScopedSessionServiceText, "SessionApiResult<SessionProfileCatalog>.Implemented");
+        StringAssert.Contains(ownerScopedSessionServiceText, "SessionRuntimeBundleIssueOutcomes.Blocked");
+        StringAssert.Contains(ownerScopedSessionServiceText, "SessionRuntimeBundleDeliveryModes.Cached");
+        StringAssert.Contains(ownerScopedSessionServiceText, "_profileSelectionStore.Upsert");
         StringAssert.Contains(notImplementedSessionServiceText, "public sealed class NotImplementedSessionService : ISessionService");
         StringAssert.Contains(notImplementedSessionServiceText, "session_not_implemented");
+        StringAssert.Contains(sessionProfileSelectionStoreContractText, "public interface ISessionProfileSelectionStore");
+        StringAssert.Contains(sessionProfileSelectionStoreContractText, "SessionProfileBinding Upsert");
+        StringAssert.Contains(sessionRuntimeBundleStoreContractText, "public interface ISessionRuntimeBundleStore");
+        StringAssert.Contains(sessionRuntimeBundleStoreContractText, "SessionRuntimeBundleRecord Upsert");
+        StringAssert.Contains(sessionRuntimeStateContractsText, "public sealed record SessionProfileBinding");
+        StringAssert.Contains(sessionRuntimeStateContractsText, "public sealed record SessionRuntimeBundleRecord");
         StringAssert.Contains(sessionClientContractText, "public interface ISessionClient");
         StringAssert.Contains(sessionClientContractText, "ListCharactersAsync");
         StringAssert.Contains(sessionClientContractText, "GetCharacterProjectionAsync");
@@ -247,7 +266,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(desktopRuntimeExtensionsText, "RemoveAll<ISessionClient>()");
         StringAssert.Contains(desktopRuntimeExtensionsText, "TryAddSingleton<ISessionClient, HttpSessionClient>()");
         StringAssert.Contains(desktopRuntimeExtensionsText, "TryAddSingleton<ISessionClient, InProcessSessionClient>()");
-        StringAssert.Contains(serviceRegistrationText, "AddSingleton<ISessionService, NotImplementedSessionService>()");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<ISessionProfileSelectionStore>(_ => new FileSessionProfileSelectionStore(stateDirectory))");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<ISessionRuntimeBundleStore>(_ => new FileSessionRuntimeBundleStore(stateDirectory))");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<ISessionService, OwnerScopedSessionService>()");
         Assert.IsFalse(
             workbenchClientContractText.Contains("SessionDashboardProjection", StringComparison.Ordinal),
             "IChummerClient should stay workbench-scoped; session/mobile operations belong on ISessionClient.");
@@ -259,7 +280,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(sessionApiContractsText, "GetRuntimeBundle = \"get-runtime-bundle\"");
         StringAssert.Contains(sessionApiContractsText, "SelectProfile = \"select-profile\"");
         StringAssert.Contains(readmeText, "/api/session/*");
-        StringAssert.Contains(readmeText, "Current session routes return explicit `session_not_implemented` receipts");
+        StringAssert.Contains(readmeText, "owner-backed session profile catalog/selection");
+        StringAssert.Contains(readmeText, "runtime-bundle issuance");
+        StringAssert.Contains(readmeText, "character projection, ledger sync, patch mutation, and pin mutation paths remain explicit `session_not_implemented` receipts");
         StringAssert.Contains(readmeText, "runtime-bundle routes");
         StringAssert.Contains(readmeText, "dedicated `ISessionClient` seam");
     }
@@ -3568,6 +3591,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(dockerfileText, "COPY Chummer.Rulesets.Sr6/ Chummer.Rulesets.Sr6/");
         StringAssert.Contains(dockerfileText, "COPY README.md ./");
         StringAssert.Contains(dockerfileText, "COPY docs/ docs/");
+        StringAssert.Contains(dockerfileText, "COPY ChummerHub/ ChummerHub/");
         StringAssert.Contains(dockerfileText, "COPY .github/PULL_REQUEST_TEMPLATE.md .github/");
         StringAssert.Contains(dockerfileText, "COPY Docker/Amends/ Docker/Amends/");
         StringAssert.Contains(dockerfileText, "COPY Docker/Downloads/ Docker/Downloads/");
@@ -3580,6 +3604,16 @@ public class MigrationComplianceTests
         string solutionText = File.ReadAllText(solutionPath);
         string readmePath = FindPath("README.md");
         string readmeText = File.ReadAllText(readmePath);
+        string legacyHubReadmePath = FindPath("ChummerHub", "README.md");
+        string legacyHubReadmeText = File.ReadAllText(legacyHubReadmePath);
+        string legacyHubProgramPath = FindPath("ChummerHub", "Program.cs");
+        string legacyHubProgramText = File.ReadAllText(legacyHubProgramPath);
+        string legacyHubAppSettingsPath = FindPath("ChummerHub", "appsettings.json");
+        string legacyHubAppSettingsText = File.ReadAllText(legacyHubAppSettingsPath);
+        string legacyHubInsightsConfigPath = FindPath("ChummerHub", "ApplicationInsights.config");
+        string legacyHubInsightsConfigText = File.ReadAllText(legacyHubInsightsConfigPath);
+        string legacyHubProjectPath = FindPath("ChummerHub", "ChummerHub.csproj");
+        string legacyHubProjectText = File.ReadAllText(legacyHubProjectPath);
         string backlogPath = FindPath("docs", "MIGRATION_BACKLOG.md");
         string backlogText = File.ReadAllText(backlogPath);
         string prTemplatePath = FindPath(".github", "PULL_REQUEST_TEMPLATE.md");
@@ -3596,6 +3630,15 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "Legacy hub policy: `ChummerHub` and `ChummerHub.Client` are archived compatibility assets only.");
         StringAssert.Contains(readmeText, "They are not part of the active solution, public runtime, or future ChummerHub product path;");
         StringAssert.Contains(readmeText, "all public-edge and hub work belongs behind `Chummer.Portal`.");
+        StringAssert.Contains(legacyHubReadmeText, "This project is an archived compatibility asset only.");
+        StringAssert.Contains(legacyHubReadmeText, "It is not part of the active solution or public runtime.");
+        StringAssert.Contains(legacyHubReadmeText, "Active hub, portal, and public-edge work belongs behind `Chummer.Portal`");
+        Assert.IsFalse(legacyHubProgramText.Contains("logging.AddApplicationInsights(\"", StringComparison.Ordinal));
+        Assert.IsFalse(legacyHubAppSettingsText.Contains("95c486ab-aeb7-4361-8667-409b7bf62713", StringComparison.Ordinal));
+        Assert.IsFalse(legacyHubAppSettingsText.Contains("1/-zsfciq55d9xfAYQ_-U1tmpsMiwHT7oKf1fEO8bm9hQ", StringComparison.Ordinal));
+        Assert.IsFalse(legacyHubInsightsConfigText.Contains("8a551326-7224-4b2d-a0d1-81a7b0415824", StringComparison.Ordinal));
+        Assert.IsFalse(legacyHubProjectText.Contains("<ApplicationInsightsResourceId>", StringComparison.Ordinal));
+        Assert.IsFalse(legacyHubProjectText.Contains("<ApplicationInsightsAnnotationResourceId>", StringComparison.Ordinal));
 
         StringAssert.Contains(backlogText, "Exit state: `Chummer` (WinForms) and `Chummer.Web` are oracle/parity assets only.");
         StringAssert.Contains(backlogText, "Net-new user-facing behavior must land in the shared seam and active heads;");
