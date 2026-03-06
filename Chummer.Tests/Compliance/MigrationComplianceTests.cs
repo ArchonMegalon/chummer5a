@@ -176,6 +176,7 @@ public class MigrationComplianceTests
             @"Chummer.Blazor\Chummer.Blazor.csproj",
             @"Chummer.Blazor.Desktop\Chummer.Blazor.Desktop.csproj",
             @"Chummer.Rulesets.Hosting\Chummer.Rulesets.Hosting.csproj",
+            @"Chummer.Rulesets.Sr4\Chummer.Rulesets.Sr4.csproj",
             @"Chummer.Rulesets.Sr5\Chummer.Rulesets.Sr5.csproj",
             @"Chummer.Rulesets.Sr6\Chummer.Rulesets.Sr6.csproj"
         };
