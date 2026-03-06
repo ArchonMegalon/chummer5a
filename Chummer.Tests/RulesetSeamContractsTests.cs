@@ -396,6 +396,116 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Session_sync_contracts_define_batch_replay_and_conflict_vocabulary()
+    {
+        CharacterVersionReference baseCharacterVersion = new(
+            CharacterId: "char-1",
+            VersionId: "charv-1",
+            RulesetId: RulesetDefaults.Sr5,
+            RuntimeFingerprint: "runtime-lock-sha256");
+        SessionEvent sessionEvent = new(
+            EventId: "evt-1",
+            OverlayId: "overlay-1",
+            BaseCharacterVersion: baseCharacterVersion,
+            DeviceId: "device-1",
+            ActorId: "user-1",
+            Sequence: 1,
+            EventType: SessionEventTypes.TrackerIncrement,
+            PayloadJson: "{\"trackerId\":\"stun\",\"amount\":1}",
+            CreatedAtUtc: DateTimeOffset.UtcNow);
+        SessionSyncBatch batch = new(
+            OverlayId: "overlay-1",
+            BaseCharacterVersion: baseCharacterVersion,
+            Events: [sessionEvent],
+            ClientCursor: "cursor-1");
+        SessionReplayReceipt replay = new(
+            AppliedCharacterVersion: baseCharacterVersion,
+            AcceptedEventCount: 1,
+            ReplayedEventCount: 1,
+            RuntimeRebindRequired: false,
+            ManualResolutionRequired: false);
+        SessionSyncReceipt receipt = new(
+            OverlayId: "overlay-1",
+            Replay: replay,
+            PendingEvents:
+            [
+                new SessionPendingEventState(
+                    EventId: "evt-1",
+                    Sequence: 1,
+                    Status: SessionSyncStatuses.Synced,
+                    CreatedAtUtc: sessionEvent.CreatedAtUtc)
+            ],
+            Conflicts:
+            [
+                new SessionConflictDiagnostic(
+                    EventId: "evt-2",
+                    Kind: SessionConflictKinds.RuntimeFingerprintMismatch,
+                    Message: "Runtime lock changed before replay.",
+                    RequiresManualResolution: true,
+                    ConflictingEventId: "evt-server-1")
+            ],
+            ServerCursor: "cursor-2");
+
+        Assert.AreEqual("overlay-1", batch.OverlayId);
+        Assert.AreEqual("cursor-1", batch.ClientCursor);
+        Assert.AreEqual(1, receipt.Replay.AcceptedEventCount);
+        Assert.AreEqual(SessionSyncStatuses.Synced, receipt.PendingEvents[0].Status);
+        Assert.AreEqual(SessionConflictKinds.RuntimeFingerprintMismatch, receipt.Conflicts[0].Kind);
+        Assert.IsTrue(receipt.Conflicts[0].RequiresManualResolution);
+        Assert.AreEqual("cursor-2", receipt.ServerCursor);
+    }
+
+    [TestMethod]
+    public void Declarative_rule_override_contracts_distinguish_packable_rule_changes_from_rulepack_assets_and_buildkits()
+    {
+        DeclarativeRuleOverrideSet overrideSet = new(
+            SetId: "street-scum-overrides",
+            RulesetId: RulesetDefaults.Sr5,
+            Overrides:
+            [
+                new DeclarativeRuleOverride(
+                    OverrideId: "street-scum-starting-nuyen",
+                    Mode: DeclarativeRuleOverrideModes.ModifyCap,
+                    Target: new DeclarativeRuleTarget(
+                        TargetKind: DeclarativeRuleTargetKinds.Cap,
+                        TargetId: "starting-nuyen",
+                        Path: "creation.starting-nuyen",
+                        Scope: "chargen"),
+                    Value: new DeclarativeRuleValue(
+                        ValueKind: DeclarativeRuleValueKinds.Number,
+                        Value: "6000"),
+                    Conditions:
+                    [
+                        new DeclarativeRuleCondition(
+                            Field: "creationProfile",
+                            Operator: DeclarativeRuleConditionOperators.EqualTo,
+                            Value: "street-scum",
+                            ValueKind: DeclarativeRuleValueKinds.String)
+                    ],
+                    CapabilityIds: [RulePackCapabilityIds.CreationProfile])
+            ]);
+        RulePackAssetDescriptor asset = new(
+            Kind: RulePackAssetKinds.DeclarativeRules,
+            Mode: RulePackAssetModes.ModifyCap,
+            RelativePath: "rules/street-scum.json",
+            Checksum: "sha256:def");
+        BuildKitActionDescriptor buildKitAction = new(
+            ActionId: "grant-starting-bundle",
+            Kind: BuildKitActionKinds.AddBundle,
+            TargetId: "starter/street-scum");
+
+        Assert.AreEqual("street-scum-overrides", overrideSet.SetId);
+        Assert.AreEqual(DeclarativeRuleOverrideModes.ModifyCap, overrideSet.Overrides[0].Mode);
+        Assert.AreEqual(DeclarativeRuleTargetKinds.Cap, overrideSet.Overrides[0].Target.TargetKind);
+        Assert.AreEqual(DeclarativeRuleConditionOperators.EqualTo, overrideSet.Overrides[0].Conditions[0].Operator);
+        Assert.AreEqual(DeclarativeRuleValueKinds.Number, overrideSet.Overrides[0].Value.ValueKind);
+        Assert.AreEqual(RulePackAssetKinds.DeclarativeRules, asset.Kind);
+        Assert.AreEqual(DeclarativeRuleOverrideModes.ModifyCap, asset.Mode);
+        Assert.AreEqual(BuildKitActionKinds.AddBundle, buildKitAction.Kind);
+        Assert.AreNotEqual(buildKitAction.Kind, overrideSet.Overrides[0].Mode);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

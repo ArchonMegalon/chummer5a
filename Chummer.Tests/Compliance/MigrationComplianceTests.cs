@@ -292,6 +292,8 @@ public class MigrationComplianceTests
     {
         string artifactContractsPath = FindPath("Chummer.Contracts", "Content", "ArtifactContracts.cs");
         string artifactContractsText = File.ReadAllText(artifactContractsPath);
+        string declarativeRuleContractsPath = FindPath("Chummer.Contracts", "Content", "DeclarativeRuleContracts.cs");
+        string declarativeRuleContractsText = File.ReadAllText(declarativeRuleContractsPath);
         string overlayContractsPath = FindPath("Chummer.Application", "Content", "IContentOverlayCatalogService.cs");
         string overlayContractsText = File.ReadAllText(overlayContractsPath);
         string overlayBridgePath = FindPath("Chummer.Application", "Content", "ContentOverlayRulePackCatalogExtensions.cs");
@@ -314,6 +316,15 @@ public class MigrationComplianceTests
         StringAssert.Contains(artifactContractsText, "public sealed record BuildKitActionDescriptor");
         StringAssert.Contains(artifactContractsText, "public static class ArtifactVisibilityModes");
         Assert.IsFalse(artifactContractsText.Contains("public sealed record Pack(", StringComparison.Ordinal));
+        StringAssert.Contains(declarativeRuleContractsText, "public static class DeclarativeRuleOverrideModes");
+        StringAssert.Contains(declarativeRuleContractsText, "public static class DeclarativeRuleTargetKinds");
+        StringAssert.Contains(declarativeRuleContractsText, "public static class DeclarativeRuleValueKinds");
+        StringAssert.Contains(declarativeRuleContractsText, "public static class DeclarativeRuleConditionOperators");
+        StringAssert.Contains(declarativeRuleContractsText, "public sealed record DeclarativeRuleTarget");
+        StringAssert.Contains(declarativeRuleContractsText, "public sealed record DeclarativeRuleCondition");
+        StringAssert.Contains(declarativeRuleContractsText, "public sealed record DeclarativeRuleValue");
+        StringAssert.Contains(declarativeRuleContractsText, "public sealed record DeclarativeRuleOverride");
+        StringAssert.Contains(declarativeRuleContractsText, "public sealed record DeclarativeRuleOverrideSet");
 
         StringAssert.Contains(overlayContractsText, "public sealed record ContentOverlayPack");
         StringAssert.Contains(overlayBridgeText, "public static RulePackCatalog ToRulePackCatalog(");
@@ -325,6 +336,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(overlayBridgeText, "RulePackCapabilityIds.ContentCatalog");
         StringAssert.Contains(overlayBridgeText, "RulePackExecutionEnvironments.DesktopLocal");
         StringAssert.Contains(overlayBridgeText, "RulePackExecutionPolicyModes.Deny");
+        StringAssert.Contains(artifactContractsText, "DeclarativeRuleOverrideModes.SetConstant");
+        StringAssert.Contains(artifactContractsText, "DeclarativeRuleOverrideModes.ModifyCap");
+        Assert.IsFalse(declarativeRuleContractsText.Contains("BuildKitActionDescriptor", StringComparison.Ordinal));
     }
 
     [TestMethod]
@@ -392,6 +406,23 @@ public class MigrationComplianceTests
         StringAssert.Contains(designTokenContractsText, "public sealed record DesignTokenSet");
         Assert.IsFalse(designTokenContractsText.Contains("Avalonia", StringComparison.Ordinal));
         Assert.IsFalse(designTokenContractsText.Contains("Blazor", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void Session_sync_contracts_lock_in_batch_receipt_and_conflict_vocabulary()
+    {
+        string sessionSyncContractsPath = FindPath("Chummer.Contracts", "Session", "SessionSyncContracts.cs");
+        string sessionSyncContractsText = File.ReadAllText(sessionSyncContractsPath);
+
+        StringAssert.Contains(sessionSyncContractsText, "public static class SessionConflictKinds");
+        StringAssert.Contains(sessionSyncContractsText, "public sealed record SessionPendingEventState");
+        StringAssert.Contains(sessionSyncContractsText, "public sealed record SessionSyncBatch");
+        StringAssert.Contains(sessionSyncContractsText, "public sealed record SessionReplayReceipt");
+        StringAssert.Contains(sessionSyncContractsText, "public sealed record SessionConflictDiagnostic");
+        StringAssert.Contains(sessionSyncContractsText, "public sealed record SessionSyncReceipt");
+        StringAssert.Contains(sessionSyncContractsText, "CharacterVersionReference BaseCharacterVersion");
+        StringAssert.Contains(sessionSyncContractsText, "IReadOnlyList<SessionEvent> Events");
+        Assert.IsFalse(sessionSyncContractsText.Contains("last-write-wins", StringComparison.OrdinalIgnoreCase));
     }
 
     [TestMethod]
