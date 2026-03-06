@@ -37,6 +37,27 @@ public static class HubPublicationEndpoints
             return ToResult(hubPublicationService.CreateDraft(ownerContextAccessor.Current, request));
         });
 
+        app.MapPut("/api/hub/publish/drafts/{draftId}", (string draftId, HubUpdateDraftRequest? request, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            if (request is null)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "hub_publish_request_required",
+                    operation = HubPublicationOperations.UpdateDraft
+                });
+            }
+
+            HubPublishDraftReceipt? updated = hubPublicationService.UpdateDraft(ownerContextAccessor.Current, draftId, request).Payload;
+            return updated is null
+                ? Results.NotFound(new
+                {
+                    error = "hub_publish_draft_not_found",
+                    draftId
+                })
+                : Results.Ok(updated);
+        });
+
         app.MapPost("/api/hub/publish/{kind}/{itemId}/submit", (string kind, string itemId, string? ruleset, HubSubmitProjectRequest? request, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(hubPublicationService.SubmitForReview(ownerContextAccessor.Current, kind, itemId, ruleset, request)));
 

@@ -163,6 +163,43 @@ public sealed class OwnerScopedApiEndpointTests
         Assert.AreEqual(StatusCodes.Status404NotFound, (int)response.StatusCode);
     }
 
+    [TestMethod]
+    public async Task Hub_publication_update_endpoint_respects_forwarded_owner_scope()
+    {
+        await using WebApplication app = await CreateAppAsync();
+        using HttpClient client = app.GetTestClient();
+
+        JsonObject aliceDraft = await PostRequiredJsonObject(client, "/api/hub/publish/drafts", new JsonObject
+        {
+            ["projectKind"] = HubCatalogItemKinds.RulePack,
+            ["projectId"] = "alice.pack.update",
+            ["rulesetId"] = "sr5",
+            ["title"] = "Alice Pack Update"
+        }, "alice@example.com");
+        string draftId = aliceDraft["draftId"]?.GetValue<string>() ?? string.Empty;
+
+        JsonObject updated = await PutRequiredJsonObject(client, $"/api/hub/publish/drafts/{draftId}", new JsonObject
+        {
+            ["title"] = "Alice Pack Updated",
+            ["summary"] = "Street-level runtime",
+            ["description"] = "Campaign-specific SR5 publication draft."
+        }, "alice@example.com");
+        Assert.AreEqual("Alice Pack Updated", updated["title"]?.GetValue<string>());
+        Assert.AreEqual("Street-level runtime", updated["summary"]?.GetValue<string>());
+
+        using HttpRequestMessage request = new(HttpMethod.Put, $"/api/hub/publish/drafts/{draftId}")
+        {
+            Content = JsonContent.Create(new JsonObject
+            {
+                ["title"] = "Bob Cannot Update This",
+                ["summary"] = "blocked"
+            })
+        };
+        request.Headers.Add(OwnerHeaderName, "bob@example.com");
+        using HttpResponseMessage response = await client.SendAsync(request);
+        Assert.AreEqual(StatusCodes.Status404NotFound, (int)response.StatusCode);
+    }
+
     private static async Task<WebApplication> CreateAppAsync()
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
@@ -220,6 +257,25 @@ public sealed class OwnerScopedApiEndpointTests
         using HttpResponseMessage response = await client.SendAsync(request);
         string content = await response.Content.ReadAsStringAsync();
         Assert.IsTrue(response.IsSuccessStatusCode, $"POST {relativePath} failed with {(int)response.StatusCode}: {content}");
+        JsonNode? parsed = JsonNode.Parse(content);
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        return (JsonObject)parsed;
+    }
+
+    private static async Task<JsonObject> PutRequiredJsonObject(HttpClient client, string relativePath, JsonObject payload, string? owner = null)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Put, relativePath)
+        {
+            Content = JsonContent.Create(payload)
+        };
+        if (!string.IsNullOrWhiteSpace(owner))
+        {
+            request.Headers.Add(OwnerHeaderName, owner);
+        }
+
+        using HttpResponseMessage response = await client.SendAsync(request);
+        string content = await response.Content.ReadAsStringAsync();
+        Assert.IsTrue(response.IsSuccessStatusCode, $"PUT {relativePath} failed with {(int)response.StatusCode}: {content}");
         JsonNode? parsed = JsonNode.Parse(content);
         Assert.IsInstanceOfType<JsonObject>(parsed);
         return (JsonObject)parsed;

@@ -4,6 +4,7 @@ public static class HubPublicationOperations
 {
     public const string ListDrafts = "list-drafts";
     public const string CreateDraft = "create-draft";
+    public const string UpdateDraft = "update-draft";
     public const string SubmitProject = "submit-project";
     public const string ListModerationQueue = "list-moderation-queue";
 }
@@ -26,7 +27,14 @@ public sealed record HubPublishDraftRequest(
     string ProjectKind,
     string ProjectId,
     string RulesetId,
-    string Title);
+    string Title,
+    string? Summary = null,
+    string? Description = null);
+
+public sealed record HubUpdateDraftRequest(
+    string Title,
+    string? Summary = null,
+    string? Description = null);
 
 public sealed record HubPublishDraftReceipt(
     string DraftId,
@@ -34,6 +42,7 @@ public sealed record HubPublishDraftReceipt(
     string ProjectId,
     string RulesetId,
     string Title,
+    string? Summary,
     string OwnerId,
     string State,
     DateTimeOffset CreatedAtUtc,
@@ -46,6 +55,7 @@ public sealed record HubPublishDraftList(
 public sealed record HubDraftDetailProjection(
     HubPublishDraftReceipt Draft,
     HubModerationQueueItem? Moderation,
+    string? Description = null,
     string? LatestModerationNotes = null,
     DateTimeOffset? LatestModerationUpdatedAtUtc = null);
 
@@ -89,7 +99,9 @@ public sealed record HubDraftRecord(
     string State,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
-    DateTimeOffset? SubmittedAtUtc = null);
+    DateTimeOffset? SubmittedAtUtc = null,
+    string? Summary = null,
+    string? Description = null);
 
 public sealed record HubModerationCaseRecord(
     string CaseId,

@@ -58,6 +58,8 @@ public sealed class FileHubDraftStore : IHubDraftStore
             ProjectId = NormalizeProjectId(record.ProjectId),
             RulesetId = RulesetDefaults.NormalizeRequired(record.RulesetId),
             Title = record.Title.Trim(),
+            Summary = NormalizeOptional(record.Summary),
+            Description = NormalizeOptional(record.Description),
             OwnerId = owner.NormalizedValue,
             State = NormalizeRequired(record.State)
         };
@@ -122,5 +124,5 @@ public sealed class FileHubDraftStore : IHubDraftStore
     private static string? NormalizeOptional(string? value)
         => string.IsNullOrWhiteSpace(value)
             ? null
-            : NormalizeRequired(value);
+            : value.Trim();
 }

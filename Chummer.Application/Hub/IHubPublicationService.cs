@@ -11,5 +11,7 @@ public interface IHubPublicationService
 
     HubPublicationResult<HubPublishDraftReceipt> CreateDraft(OwnerScope owner, HubPublishDraftRequest? request);
 
+    HubPublicationResult<HubPublishDraftReceipt?> UpdateDraft(OwnerScope owner, string draftId, HubUpdateDraftRequest? request);
+
     HubPublicationResult<HubProjectSubmissionReceipt> SubmitForReview(OwnerScope owner, string kind, string itemId, string? rulesetId, HubSubmitProjectRequest? request);
 }

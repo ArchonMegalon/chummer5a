@@ -26,16 +26,52 @@ public class HubPublicationServiceTests
                 ProjectKind: HubCatalogItemKinds.RulePack,
                 ProjectId: "campaign.shadowops",
                 RulesetId: RulesetDefaults.Sr5,
-                Title: "Campaign ShadowOps"));
+                Title: "Campaign ShadowOps",
+                Summary: "Street-level runtime",
+                Description: "Campaign-specific SR5 publication draft."));
         HubPublicationResult<HubPublishDraftList> listed = service.ListDrafts(new OwnerScope("alice"), HubCatalogItemKinds.RulePack, RulesetDefaults.Sr5);
         HubPublicationResult<HubPublishDraftList> hiddenFromBob = service.ListDrafts(new OwnerScope("bob"), HubCatalogItemKinds.RulePack, RulesetDefaults.Sr5);
 
         Assert.IsTrue(created.IsImplemented);
         Assert.IsNotNull(created.Payload);
         Assert.AreEqual(HubPublicationStates.Draft, created.Payload.State);
+        Assert.AreEqual("Street-level runtime", created.Payload.Summary);
         Assert.HasCount(1, listed.Payload!.Items);
         Assert.AreEqual("campaign.shadowops", listed.Payload.Items[0].ProjectId);
+        Assert.AreEqual("Street-level runtime", listed.Payload.Items[0].Summary);
         Assert.IsEmpty(hiddenFromBob.Payload!.Items);
+    }
+
+    [TestMethod]
+    public void Default_publication_service_updates_owner_draft_metadata_by_draft_id()
+    {
+        InMemoryHubDraftStore draftStore = new();
+        DefaultHubPublicationService service = new(draftStore, new InMemoryHubModerationCaseStore());
+        OwnerScope owner = new("alice");
+
+        HubPublishDraftReceipt created = service.CreateDraft(
+            owner,
+            new HubPublishDraftRequest(
+                ProjectKind: HubCatalogItemKinds.RulePack,
+                ProjectId: "campaign.shadowops",
+                RulesetId: RulesetDefaults.Sr5,
+                Title: "Campaign ShadowOps")).Payload!;
+
+        HubPublishDraftReceipt? updated = service.UpdateDraft(
+            owner,
+            created.DraftId,
+            new HubUpdateDraftRequest(
+                Title: "Campaign ShadowOps Updated",
+                Summary: "Street-level runtime",
+                Description: "Campaign-specific SR5 publication draft.")).Payload;
+        HubDraftDetailProjection? detail = service.GetDraft(owner, created.DraftId).Payload;
+
+        Assert.IsNotNull(updated);
+        Assert.AreEqual("Campaign ShadowOps Updated", updated.Title);
+        Assert.AreEqual("Street-level runtime", updated.Summary);
+        Assert.IsNotNull(detail);
+        Assert.AreEqual("Street-level runtime", detail.Draft.Summary);
+        Assert.AreEqual("Campaign-specific SR5 publication draft.", detail.Description);
     }
 
     [TestMethod]
@@ -86,7 +122,9 @@ public class HubPublicationServiceTests
                 ProjectKind: HubCatalogItemKinds.RulePack,
                 ProjectId: "campaign.shadowops",
                 RulesetId: RulesetDefaults.Sr5,
-                Title: "Campaign ShadowOps")).Payload!;
+                Title: "Campaign ShadowOps",
+                Summary: "Street-level runtime",
+                Description: "Campaign-specific SR5 publication draft.")).Payload!;
         publicationService.SubmitForReview(
             owner,
             HubCatalogItemKinds.RulePack,
@@ -98,6 +136,8 @@ public class HubPublicationServiceTests
 
         Assert.IsNotNull(detail);
         Assert.AreEqual(draft.DraftId, detail.Draft.DraftId);
+        Assert.AreEqual("Street-level runtime", detail.Draft.Summary);
+        Assert.AreEqual("Campaign-specific SR5 publication draft.", detail.Description);
         Assert.IsNotNull(detail.Moderation);
         Assert.AreEqual(HubModerationStates.PendingReview, detail.Moderation.State);
         Assert.AreEqual("ready", detail.LatestModerationNotes);

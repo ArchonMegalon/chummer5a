@@ -228,7 +228,9 @@ public class ApiIntegrationTests
             ProjectKind: HubCatalogItemKinds.RulePack,
             ProjectId: projectId,
             RulesetId: RulesetDefaults.Sr5,
-            Title: "Campaign ShadowOps");
+            Title: "Campaign ShadowOps",
+            Summary: "Street-level runtime",
+            Description: "Campaign-specific SR5 publication draft.");
 
         using HttpResponseMessage response = await client.PostAsJsonAsync("/api/hub/publish/drafts", request);
         response.EnsureSuccessStatusCode();
@@ -237,6 +239,7 @@ public class ApiIntegrationTests
         Assert.IsNotNull(payload["draftId"]?.GetValue<string>());
         Assert.AreEqual(HubCatalogItemKinds.RulePack, payload["projectKind"]?.GetValue<string>());
         Assert.AreEqual(projectId, payload["projectId"]?.GetValue<string>());
+        Assert.AreEqual("Street-level runtime", payload["summary"]?.GetValue<string>());
         Assert.AreEqual(HubPublicationStates.Draft, payload["state"]?.GetValue<string>());
     }
 
@@ -250,7 +253,9 @@ public class ApiIntegrationTests
             ProjectKind: HubCatalogItemKinds.RulePack,
             ProjectId: projectId,
             RulesetId: RulesetDefaults.Sr5,
-            Title: "Campaign ShadowOps"));
+            Title: "Campaign ShadowOps",
+            Summary: "Street-level runtime",
+            Description: "Campaign-specific SR5 publication draft."));
         createResponse.EnsureSuccessStatusCode();
 
         JsonObject payload = await GetRequiredJsonObject(client, "/api/hub/publish/drafts?kind=rulepack&ruleset=sr5");
@@ -271,7 +276,9 @@ public class ApiIntegrationTests
             ProjectKind: HubCatalogItemKinds.RulePack,
             ProjectId: projectId,
             RulesetId: RulesetDefaults.Sr5,
-            Title: "Campaign ShadowOps"));
+            Title: "Campaign ShadowOps",
+            Summary: "Street-level runtime",
+            Description: "Campaign-specific SR5 publication draft."));
         createResponse.EnsureSuccessStatusCode();
         JsonObject created = await ParseRequiredJsonObject(createResponse);
         string draftId = created["draftId"]?.GetValue<string>() ?? string.Empty;
@@ -280,6 +287,38 @@ public class ApiIntegrationTests
 
         Assert.AreEqual(draftId, detail["draft"]?["draftId"]?.GetValue<string>());
         Assert.AreEqual(projectId, detail["draft"]?["projectId"]?.GetValue<string>());
+        Assert.AreEqual("Street-level runtime", detail["draft"]?["summary"]?.GetValue<string>());
+        Assert.AreEqual("Campaign-specific SR5 publication draft.", detail["description"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Hub_publish_draft_update_endpoint_updates_persisted_draft_metadata()
+    {
+        using var client = CreateClient();
+        string projectId = $"campaign.shadowops.{Guid.NewGuid():N}";
+
+        using HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/hub/publish/drafts", new HubPublishDraftRequest(
+            ProjectKind: HubCatalogItemKinds.RulePack,
+            ProjectId: projectId,
+            RulesetId: RulesetDefaults.Sr5,
+            Title: "Campaign ShadowOps"));
+        createResponse.EnsureSuccessStatusCode();
+        JsonObject created = await ParseRequiredJsonObject(createResponse);
+        string draftId = created["draftId"]?.GetValue<string>() ?? string.Empty;
+
+        JsonObject updated = await PutRequiredJsonObject(client, $"/api/hub/publish/drafts/{draftId}", new JsonObject
+        {
+            ["title"] = "Campaign ShadowOps Updated",
+            ["summary"] = "Street-level runtime",
+            ["description"] = "Campaign-specific SR5 publication draft."
+        });
+        JsonObject detail = await GetRequiredJsonObject(client, $"/api/hub/publish/drafts/{draftId}");
+
+        Assert.AreEqual("Campaign ShadowOps Updated", updated["title"]?.GetValue<string>());
+        Assert.AreEqual("Street-level runtime", updated["summary"]?.GetValue<string>());
+        Assert.AreEqual("Campaign ShadowOps Updated", detail["draft"]?["title"]?.GetValue<string>());
+        Assert.AreEqual("Street-level runtime", detail["draft"]?["summary"]?.GetValue<string>());
+        Assert.AreEqual("Campaign-specific SR5 publication draft.", detail["description"]?.GetValue<string>());
     }
 
     [TestMethod]
@@ -1516,6 +1555,19 @@ public class ApiIntegrationTests
         using HttpResponseMessage response = await client.SendAsync(request);
         string content = await response.Content.ReadAsStringAsync();
         Assert.IsTrue(response.IsSuccessStatusCode, $"PATCH {relativePath} failed with {(int)response.StatusCode}: {content}");
+
+        return ParseRequiredJsonObject(content);
+    }
+
+    private static async Task<JsonObject> PutRequiredJsonObject(HttpClient client, string relativePath, JsonObject payload)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, relativePath)
+        {
+            Content = new StringContent(payload.ToJsonString(), Encoding.UTF8, "application/json")
+        };
+        using HttpResponseMessage response = await client.SendAsync(request);
+        string content = await response.Content.ReadAsStringAsync();
+        Assert.IsTrue(response.IsSuccessStatusCode, $"PUT {relativePath} failed with {(int)response.StatusCode}: {content}");
 
         return ParseRequiredJsonObject(content);
     }

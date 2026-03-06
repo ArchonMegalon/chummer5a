@@ -57,6 +57,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
             new HubDraftDetailProjection(
                 Draft: ToReceipt(draft),
                 Moderation: moderation,
+                Description: draft.Description,
                 LatestModerationNotes: moderationCase?.Notes,
                 LatestModerationUpdatedAtUtc: moderationCase?.UpdatedAtUtc));
     }
@@ -68,6 +69,8 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
         string normalizedKind = NormalizeKindRequired(request.ProjectKind);
         string normalizedProjectId = NormalizeProjectId(request.ProjectId);
         string normalizedTitle = NormalizeTitle(request.Title);
+        string? normalizedSummary = NormalizeOptionalText(request.Summary);
+        string? normalizedDescription = NormalizeOptionalText(request.Description);
         string normalizedRulesetId = RulesetDefaults.NormalizeRequired(request.RulesetId);
         DateTimeOffset now = DateTimeOffset.UtcNow;
         HubDraftRecord? existing = _draftStore.Get(owner, normalizedKind, normalizedProjectId, normalizedRulesetId);
@@ -80,6 +83,8 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
                 ProjectId: normalizedProjectId,
                 RulesetId: normalizedRulesetId,
                 Title: normalizedTitle,
+                Summary: normalizedSummary,
+                Description: normalizedDescription,
                 OwnerId: owner.NormalizedValue,
                 State: existing?.State ?? HubPublicationStates.Draft,
                 CreatedAtUtc: existing?.CreatedAtUtc ?? now,
@@ -87,6 +92,30 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
                 SubmittedAtUtc: existing?.SubmittedAtUtc));
 
         return HubPublicationResult<HubPublishDraftReceipt>.Implemented(ToReceipt(persisted));
+    }
+
+    public HubPublicationResult<HubPublishDraftReceipt?> UpdateDraft(OwnerScope owner, string draftId, HubUpdateDraftRequest? request)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(draftId);
+        ArgumentNullException.ThrowIfNull(request);
+
+        HubDraftRecord? existing = _draftStore.Get(owner, draftId);
+        if (existing is null)
+        {
+            return HubPublicationResult<HubPublishDraftReceipt?>.Implemented(null);
+        }
+
+        HubDraftRecord persisted = _draftStore.Upsert(
+            owner,
+            existing with
+            {
+                Title = NormalizeTitle(request.Title),
+                Summary = NormalizeOptionalText(request.Summary),
+                Description = NormalizeOptionalText(request.Description),
+                UpdatedAtUtc = DateTimeOffset.UtcNow
+            });
+
+        return HubPublicationResult<HubPublishDraftReceipt?>.Implemented(ToReceipt(persisted));
     }
 
     public HubPublicationResult<HubProjectSubmissionReceipt> SubmitForReview(OwnerScope owner, string kind, string itemId, string? rulesetId, HubSubmitProjectRequest? request)
@@ -105,6 +134,8 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
                 ProjectId: normalizedItemId,
                 RulesetId: existing?.RulesetId ?? normalizedRulesetId ?? throw new InvalidOperationException("Ruleset id is required when submitting a project without an existing draft."),
                 Title: existing?.Title ?? normalizedItemId,
+                Summary: existing?.Summary,
+                Description: existing?.Description,
                 OwnerId: owner.NormalizedValue,
                 State: HubPublicationStates.Submitted,
                 CreatedAtUtc: existing?.CreatedAtUtc ?? now,
@@ -168,6 +199,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
             ProjectId: record.ProjectId,
             RulesetId: record.RulesetId,
             Title: record.Title,
+            Summary: record.Summary,
             OwnerId: record.OwnerId,
             State: record.State,
             CreatedAtUtc: record.CreatedAtUtc,
@@ -191,6 +223,11 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
         ArgumentException.ThrowIfNullOrWhiteSpace(value);
         return value.Trim();
     }
+
+    private static string? NormalizeOptionalText(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
 
     private static string? NormalizeKindOptional(string? value)
         => string.IsNullOrWhiteSpace(value)

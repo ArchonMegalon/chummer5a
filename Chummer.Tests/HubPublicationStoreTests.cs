@@ -30,7 +30,9 @@ public class HubPublicationStoreTests
                 OwnerId: "alice",
                 State: HubPublicationStates.Draft,
                 CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
-                UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:05:00+00:00"));
+                UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:05:00+00:00"),
+                Summary: "Street-level campaign",
+                Description: "Campaign-specific SR5 publication draft.");
 
             store.Upsert(new OwnerScope("alice"), record);
 
@@ -39,6 +41,8 @@ public class HubPublicationStoreTests
 
             Assert.IsNotNull(reloaded);
             Assert.AreEqual("Campaign ShadowOps", reloaded.Title);
+            Assert.AreEqual("Street-level campaign", reloaded.Summary);
+            Assert.AreEqual("Campaign-specific SR5 publication draft.", reloaded.Description);
             Assert.AreEqual(HubPublicationStates.Draft, reloaded.State);
             Assert.IsNull(hiddenFromBob);
         }

@@ -778,6 +778,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubPublicationEndpointsText, "public static class HubPublicationEndpoints");
         StringAssert.Contains(hubPublicationEndpointsText, "MapGet(\"/api/hub/publish/drafts\"");
         StringAssert.Contains(hubPublicationEndpointsText, "MapGet(\"/api/hub/publish/drafts/{draftId}\"");
+        StringAssert.Contains(hubPublicationEndpointsText, "MapPut(\"/api/hub/publish/drafts/{draftId}\"");
         StringAssert.Contains(hubPublicationEndpointsText, "IHubPublicationService");
         StringAssert.Contains(hubPublicationEndpointsText, "IHubModerationService");
         StringAssert.Contains(hubDraftStoreContractText, "public interface IHubDraftStore");
@@ -790,14 +791,17 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubPublicationServiceContractText, "HubPublicationResult<HubPublishDraftList> ListDrafts");
         StringAssert.Contains(hubPublicationServiceContractText, "HubPublicationResult<HubDraftDetailProjection?> GetDraft");
         StringAssert.Contains(hubPublicationServiceContractText, "HubPublicationResult<HubPublishDraftReceipt> CreateDraft");
+        StringAssert.Contains(hubPublicationServiceContractText, "HubPublicationResult<HubPublishDraftReceipt?> UpdateDraft");
         StringAssert.Contains(hubPublicationServiceContractText, "HubPublicationResult<HubProjectSubmissionReceipt> SubmitForReview");
         StringAssert.Contains(hubPublicationServiceText, "public sealed class DefaultHubPublicationService : IHubPublicationService");
         StringAssert.Contains(hubPublicationServiceText, "HubDraftDetailProjection");
+        StringAssert.Contains(hubPublicationServiceText, "NormalizeOptionalText(request.Description)");
         StringAssert.Contains(hubPublicationServiceText, "HubPublicationStates.Submitted");
         StringAssert.Contains(hubModerationServiceContractText, "public interface IHubModerationService");
         StringAssert.Contains(hubModerationServiceContractText, "HubPublicationResult<HubModerationQueue> ListQueue");
         StringAssert.Contains(hubModerationServiceText, "public sealed class DefaultHubModerationService : IHubModerationService");
         StringAssert.Contains(hubPublicationContractsText, "public static class HubPublicationOperations");
+        StringAssert.Contains(hubPublicationContractsText, "public sealed record HubUpdateDraftRequest");
         StringAssert.Contains(hubPublicationContractsText, "public sealed record HubPublishDraftList");
         StringAssert.Contains(hubPublicationContractsText, "public sealed record HubDraftDetailProjection");
         StringAssert.Contains(hubPublicationContractsText, "public sealed record HubPublishDraftRequest");
