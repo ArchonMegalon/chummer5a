@@ -307,6 +307,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(artifactContractsText, "public static class RulePackExecutionPolicyModes");
         StringAssert.Contains(artifactContractsText, "public sealed record RulePackCapabilityDescriptor");
         StringAssert.Contains(artifactContractsText, "public sealed record RulePackExecutionPolicyHint");
+        StringAssert.Contains(artifactContractsText, "public static class BuildKitPromptKinds");
+        StringAssert.Contains(artifactContractsText, "public static class BuildKitActionKinds");
+        StringAssert.Contains(artifactContractsText, "public sealed record BuildKitRuntimeRequirement");
+        StringAssert.Contains(artifactContractsText, "public sealed record BuildKitPromptDescriptor");
+        StringAssert.Contains(artifactContractsText, "public sealed record BuildKitActionDescriptor");
         StringAssert.Contains(artifactContractsText, "public static class ArtifactVisibilityModes");
         Assert.IsFalse(artifactContractsText.Contains("public sealed record Pack(", StringComparison.Ordinal));
 

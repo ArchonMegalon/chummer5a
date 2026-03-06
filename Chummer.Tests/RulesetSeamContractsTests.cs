@@ -123,7 +123,35 @@ public class RulesetSeamContractsTests
             Title: "Street Sam Starter",
             Description: "Chargen starter kit.",
             Targets: [RulesetDefaults.Sr5],
-            RequiredRulePacks: [new ArtifactVersionReference("house-rules", "1.2.0")],
+            RuntimeRequirements:
+            [
+                new BuildKitRuntimeRequirement(
+                    RulesetId: RulesetDefaults.Sr5,
+                    RequiredRuntimeFingerprints: ["runtime-lock-sha256"],
+                    RequiredRulePacks: [new ArtifactVersionReference("house-rules", "1.2.0")])
+            ],
+            Prompts:
+            [
+                new BuildKitPromptDescriptor(
+                    PromptId: "weapon-focus",
+                    Kind: BuildKitPromptKinds.Choice,
+                    Label: "Preferred Combat Focus",
+                    Options:
+                    [
+                        new BuildKitPromptOption("melee", "Melee"),
+                        new BuildKitPromptOption("ranged", "Ranged")
+                    ],
+                    Required: true)
+            ],
+            Actions:
+            [
+                new BuildKitActionDescriptor(
+                    ActionId: "grant-starting-bundle",
+                    Kind: BuildKitActionKinds.AddBundle,
+                    TargetId: "starter/street-sam",
+                    PromptId: "weapon-focus",
+                    Notes: "Apply the matching starter bundle.")
+            ],
             Visibility: ArtifactVisibilityModes.Shared,
             TrustTier: ArtifactTrustTiers.Curated);
         ResolvedRuntimeLock runtimeLock = new(
@@ -138,6 +166,9 @@ public class RulesetSeamContractsTests
             RuntimeFingerprint: "runtime-lock-sha256");
 
         Assert.AreEqual("street-sam-starter", buildKit.BuildKitId);
+        Assert.AreEqual(BuildKitPromptKinds.Choice, buildKit.Prompts[0].Kind);
+        Assert.AreEqual(BuildKitActionKinds.AddBundle, buildKit.Actions[0].Kind);
+        Assert.AreEqual("runtime-lock-sha256", buildKit.RuntimeRequirements[0].RequiredRuntimeFingerprints[0]);
         Assert.AreEqual("house-rules", rulePack.PackId);
         Assert.AreEqual("sr5-core", contentBundle.BundleId);
         Assert.AreEqual("runtime-lock-sha256", runtimeLock.RuntimeFingerprint);

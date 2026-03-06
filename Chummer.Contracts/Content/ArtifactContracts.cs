@@ -121,13 +121,54 @@ public sealed record RulePackManifest(
 public sealed record RulePackCatalog(
     IReadOnlyList<RulePackManifest> InstalledRulePacks);
 
+public static class BuildKitPromptKinds
+{
+    public const string Choice = "choice";
+    public const string Toggle = "toggle";
+    public const string Quantity = "quantity";
+}
+
+public static class BuildKitActionKinds
+{
+    public const string AddBundle = "add-bundle";
+    public const string ApplyChoice = "apply-choice";
+    public const string SetMetadata = "set-metadata";
+    public const string QueueCareerUpdate = "queue-career-update";
+}
+
+public sealed record BuildKitRuntimeRequirement(
+    string RulesetId,
+    IReadOnlyList<string> RequiredRuntimeFingerprints,
+    IReadOnlyList<ArtifactVersionReference> RequiredRulePacks);
+
+public sealed record BuildKitPromptOption(
+    string OptionId,
+    string Label,
+    string? Description = null);
+
+public sealed record BuildKitPromptDescriptor(
+    string PromptId,
+    string Kind,
+    string Label,
+    IReadOnlyList<BuildKitPromptOption> Options,
+    bool Required = false);
+
+public sealed record BuildKitActionDescriptor(
+    string ActionId,
+    string Kind,
+    string TargetId,
+    string? PromptId = null,
+    string? Notes = null);
+
 public sealed record BuildKitManifest(
     string BuildKitId,
     string Version,
     string Title,
     string Description,
     IReadOnlyList<string> Targets,
-    IReadOnlyList<ArtifactVersionReference> RequiredRulePacks,
+    IReadOnlyList<BuildKitRuntimeRequirement> RuntimeRequirements,
+    IReadOnlyList<BuildKitPromptDescriptor> Prompts,
+    IReadOnlyList<BuildKitActionDescriptor> Actions,
     string Visibility,
     string TrustTier);
 
