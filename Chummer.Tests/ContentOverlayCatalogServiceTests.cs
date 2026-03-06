@@ -6,6 +6,8 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Chummer.Application.Content;
+using Chummer.Contracts.Content;
+using Chummer.Contracts.Rulesets;
 using Chummer.Infrastructure.Files;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -167,6 +169,51 @@ public class ContentOverlayCatalogServiceTests
             string resolved = service.ResolveDataFile("qualities.xml");
 
             Assert.AreEqual(baseQualities, resolved);
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
+    [TestMethod]
+    public void Overlay_catalog_projects_to_rulepack_catalog_vocabulary()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string baseData = Path.Combine(root, "data");
+            Directory.CreateDirectory(baseData);
+            File.WriteAllText(Path.Combine(baseData, "lifemodules.xml"), "<chummer><source>base</source></chummer>");
+
+            string amendsRoot = Path.Combine(root, "Amends");
+            string packRoot = Path.Combine(amendsRoot, "pack-rulepack");
+            Directory.CreateDirectory(Path.Combine(packRoot, "data"));
+            Directory.CreateDirectory(Path.Combine(packRoot, "lang"));
+            File.WriteAllText(Path.Combine(packRoot, "manifest.json"),
+                "{\n" +
+                "  \"id\": \"pack-rulepack\",\n" +
+                "  \"name\": \"RulePack Bridge\",\n" +
+                "  \"priority\": 100,\n" +
+                "  \"enabled\": true,\n" +
+                "  \"mode\": \"merge-catalog\",\n" +
+                "  \"description\": \"Bridge current overlays into the RulePack vocabulary.\"\n" +
+                "}");
+
+            var service = new FileSystemContentOverlayCatalogService(root, root, amendsRoot);
+
+            RulePackCatalog projected = service.GetCatalog().ToRulePackCatalog(RulesetDefaults.Sr5);
+
+            Assert.HasCount(1, projected.InstalledRulePacks);
+            RulePackManifest rulePack = projected.InstalledRulePacks[0];
+            Assert.AreEqual("pack-rulepack", rulePack.PackId);
+            Assert.AreEqual("RulePack Bridge", rulePack.Title);
+            CollectionAssert.AreEqual(new[] { RulesetDefaults.Sr5 }, rulePack.Targets.ToArray());
+            Assert.AreEqual(ArtifactVisibilityModes.LocalOnly, rulePack.Visibility);
+            Assert.AreEqual(ArtifactTrustTiers.LocalOnly, rulePack.TrustTier);
+            Assert.IsTrue(rulePack.Assets.Any(asset => string.Equals(asset.Kind, RulePackAssetKinds.Xml, StringComparison.Ordinal)));
+            Assert.IsTrue(rulePack.Assets.Any(asset => string.Equals(asset.Kind, RulePackAssetKinds.Localization, StringComparison.Ordinal)));
+            Assert.IsTrue(rulePack.Assets.Any(asset => string.Equals(asset.Mode, RulePackAssetModes.MergeCatalog, StringComparison.Ordinal)));
         }
         finally
         {

@@ -288,6 +288,33 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Content_artifact_taxonomy_distinguishes_rulepacks_from_buildkits()
+    {
+        string artifactContractsPath = FindPath("Chummer.Contracts", "Content", "ArtifactContracts.cs");
+        string artifactContractsText = File.ReadAllText(artifactContractsPath);
+        string overlayContractsPath = FindPath("Chummer.Application", "Content", "IContentOverlayCatalogService.cs");
+        string overlayContractsText = File.ReadAllText(overlayContractsPath);
+        string overlayBridgePath = FindPath("Chummer.Application", "Content", "ContentOverlayRulePackCatalogExtensions.cs");
+        string overlayBridgeText = File.ReadAllText(overlayBridgePath);
+
+        StringAssert.Contains(artifactContractsText, "public sealed record ContentBundleDescriptor");
+        StringAssert.Contains(artifactContractsText, "public sealed record RulePackManifest");
+        StringAssert.Contains(artifactContractsText, "public sealed record BuildKitManifest");
+        StringAssert.Contains(artifactContractsText, "public sealed record ResolvedRuntimeLock");
+        StringAssert.Contains(artifactContractsText, "public static class RulePackAssetModes");
+        StringAssert.Contains(artifactContractsText, "public static class ArtifactVisibilityModes");
+        Assert.IsFalse(artifactContractsText.Contains("public sealed record Pack(", StringComparison.Ordinal));
+
+        StringAssert.Contains(overlayContractsText, "public sealed record ContentOverlayPack");
+        StringAssert.Contains(overlayBridgeText, "public static RulePackCatalog ToRulePackCatalog(");
+        StringAssert.Contains(overlayBridgeText, "public static RulePackManifest ToRulePackManifest(");
+        StringAssert.Contains(overlayBridgeText, "ArtifactVisibilityModes.LocalOnly");
+        StringAssert.Contains(overlayBridgeText, "ArtifactTrustTiers.LocalOnly");
+        StringAssert.Contains(overlayBridgeText, "RulePackAssetKinds.Xml");
+        StringAssert.Contains(overlayBridgeText, "RulePackAssetKinds.Localization");
+    }
+
+    [TestMethod]
     public void Api_registers_request_owner_context_accessor_with_opt_in_forwarded_owner_support()
     {
         string apiProgramPath = FindPath("Chummer.Api", "Program.cs");

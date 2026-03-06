@@ -6,8 +6,10 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Application.Characters;
+using Chummer.Application.Content;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -64,6 +66,66 @@ public class RulesetSeamContractsTests
         Assert.AreEqual(RulesetDefaults.Sr5, downloadReceipt.RulesetId);
         Assert.AreEqual(RulesetDefaults.Sr5, listItem.RulesetId);
         Assert.AreEqual(RulesetDefaults.Sr5, envelope.RulesetId);
+    }
+
+    [TestMethod]
+    public void Artifact_taxonomy_distinguishes_rulepacks_buildkits_content_bundles_and_runtime_locks()
+    {
+        ContentBundleDescriptor contentBundle = new(
+            BundleId: "sr5-core",
+            RulesetId: RulesetDefaults.Sr5,
+            Version: "2026.03.06",
+            Title: "SR5 Core Bundle",
+            Description: "Official base data.",
+            AssetPaths: ["data/", "lang/"]);
+        RulePackManifest rulePack = new(
+            PackId: "house-rules",
+            Version: "1.2.0",
+            Title: "House Rules",
+            Author: "GM",
+            Description: "Campaign-specific runtime changes.",
+            Targets: [RulesetDefaults.Sr5],
+            EngineApiVersion: "rulepack-v1",
+            DependsOn: [],
+            ConflictsWith: [],
+            Visibility: ArtifactVisibilityModes.Shared,
+            TrustTier: ArtifactTrustTiers.Private,
+            Assets:
+            [
+                new RulePackAssetDescriptor(
+                    Kind: RulePackAssetKinds.Xml,
+                    Mode: RulePackAssetModes.MergeCatalog,
+                    RelativePath: "data/qualities.xml",
+                    Checksum: "sha256:abc")
+            ]);
+        BuildKitManifest buildKit = new(
+            BuildKitId: "street-sam-starter",
+            Version: "1.0.0",
+            Title: "Street Sam Starter",
+            Description: "Chargen starter kit.",
+            Targets: [RulesetDefaults.Sr5],
+            RequiredRulePacks: [new ArtifactVersionReference("house-rules", "1.2.0")],
+            Visibility: ArtifactVisibilityModes.Shared,
+            TrustTier: ArtifactTrustTiers.Curated);
+        ResolvedRuntimeLock runtimeLock = new(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles: [contentBundle],
+            RulePacks: [new ArtifactVersionReference("house-rules", "1.2.0")],
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["validate.character"] = "house-rules/validate.character"
+            },
+            EngineApiVersion: "rulepack-v1",
+            RuntimeFingerprint: "runtime-lock-sha256");
+
+        Assert.AreEqual("street-sam-starter", buildKit.BuildKitId);
+        Assert.AreEqual("house-rules", rulePack.PackId);
+        Assert.AreEqual("sr5-core", contentBundle.BundleId);
+        Assert.AreEqual("runtime-lock-sha256", runtimeLock.RuntimeFingerprint);
+        Assert.AreEqual(RulePackAssetModes.MergeCatalog, rulePack.Assets[0].Mode);
+        Assert.AreEqual(RulePackAssetKinds.Xml, rulePack.Assets[0].Kind);
+        Assert.AreEqual(ArtifactVisibilityModes.Shared, buildKit.Visibility);
+        Assert.AreEqual(ArtifactTrustTiers.Private, rulePack.TrustTier);
     }
 
     [TestMethod]
