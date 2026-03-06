@@ -40,7 +40,8 @@
                            HandleUiControlRequested="@HandleUiControlAsync" />
 
         <main class="center-pane">
-            <SummaryHeader State="@State" />
+            <SummaryHeader State="@State"
+                           ShellSurface="@_shellSurfaceState" />
 
             <MetadataPanel State="@State"
                            @bind-MetadataName="MetadataName"

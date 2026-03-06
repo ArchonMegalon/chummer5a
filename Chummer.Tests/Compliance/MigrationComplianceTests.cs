@@ -3510,6 +3510,8 @@ public class MigrationComplianceTests
         string workspaceStripCodeText = File.ReadAllText(workspaceStripCodePath);
         string summaryHeaderCodePath = FindPath("Chummer.Avalonia", "Controls", "SummaryHeaderControl.axaml.cs");
         string summaryHeaderCodeText = File.ReadAllText(summaryHeaderCodePath);
+        string summaryHeaderXamlPath = FindPath("Chummer.Avalonia", "Controls", "SummaryHeaderControl.axaml");
+        string summaryHeaderXamlText = File.ReadAllText(summaryHeaderXamlPath);
         string statusStripCodePath = FindPath("Chummer.Avalonia", "Controls", "StatusStripControl.axaml.cs");
         string statusStripCodeText = File.ReadAllText(statusStripCodePath);
         string statusFormatterPath = FindPath("Chummer.Presentation", "Shell", "ShellStatusTextFormatter.cs");
@@ -3561,10 +3563,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(workspaceStripCodeText, "public void SetState(WorkspaceStripState state)");
         StringAssert.Contains(workspaceStripCodeText, "SetWorkspaceText(state.WorkspaceText);");
         StringAssert.Contains(summaryHeaderCodeText, "public void SetState(SummaryHeaderState state)");
-        StringAssert.Contains(summaryHeaderCodeText, "SetValues(state.Name, state.Alias, state.Karma, state.Skills);");
+        StringAssert.Contains(summaryHeaderCodeText, "SetValues(state.Name, state.Alias, state.Karma, state.Skills, state.RuntimeSummary);");
         StringAssert.Contains(statusStripCodeText, "public void SetState(StatusStripState state)");
         StringAssert.Contains(statusStripCodeText, "SetValues(");
         StringAssert.Contains(statusFormatterText, "public static class ShellStatusTextFormatter");
+        StringAssert.Contains(statusFormatterText, "BuildActiveRuntimeSummary");
         StringAssert.Contains(statusFormatterText, "BuildComplianceState");
         StringAssert.Contains(statusFormatterText, "Runtime: ");
         StringAssert.Contains(statusFormatterText, "TrimFingerprint");
@@ -3590,6 +3593,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(projectorText, "ChromeState: new MainWindowChromeState(");
         StringAssert.Contains(projectorText, "WorkspaceStrip: new WorkspaceStripState(");
         StringAssert.Contains(projectorText, "SummaryHeader: new SummaryHeaderState(");
+        StringAssert.Contains(projectorText, "RuntimeSummary: ShellStatusTextFormatter.BuildActiveRuntimeSummary(shellSurface.ActiveRuntime)");
         StringAssert.Contains(projectorText, "StatusStrip: new StatusStripState(");
         StringAssert.Contains(projectorText, "ShellStatusTextFormatter.BuildComplianceState");
         StringAssert.Contains(projectorText, "SectionHostState: new SectionHostState(");
@@ -3614,6 +3618,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(xamlText, "<controls:CommandDialogPaneControl");
         StringAssert.Contains(xamlText, "<controls:SummaryHeaderControl");
         StringAssert.Contains(xamlText, "<controls:StatusStripControl");
+        StringAssert.Contains(summaryHeaderXamlText, "Text=\"Runtime\"");
+        StringAssert.Contains(summaryHeaderXamlText, "x:Name=\"RuntimeValueText\"");
         StringAssert.Contains(menuControlText, "Classes=\"menu-button\"");
         StringAssert.Contains(xamlText, "Button.menu-button.active-menu");
     }

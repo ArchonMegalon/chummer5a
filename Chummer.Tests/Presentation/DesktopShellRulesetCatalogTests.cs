@@ -108,6 +108,7 @@ public sealed class DesktopShellRulesetCatalogTests
             Assert.AreEqual("ui-sr6-control", controlButtons[0].GetAttribute("data-ui-control"));
             StringAssert.Contains(controlButtons[0].TextContent, "SR6 Matrix Control");
             StringAssert.Contains(cut.Find("#complianceState").TextContent, "Runtime: SR6 Core [sr6-runtime-fp-001]");
+            Assert.AreEqual("SR6 Core [sr6-runtime-fp-001] (available)", cut.Find("#summaryRuntime").GetAttribute("value"));
             StringAssert.Contains(cut.Find("#complianceState").TextContent, "Ruleset: sr6");
             StringAssert.Contains(cut.Find("#complianceState").TextContent, "Workflows: 1 defs / 1 surfaces");
         });
