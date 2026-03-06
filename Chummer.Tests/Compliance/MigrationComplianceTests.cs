@@ -369,6 +369,30 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Shadow_regression_contracts_lock_in_corpus_diff_waiver_and_explain_vocabulary()
+    {
+        string shadowRegressionContractsPath = FindPath("Chummer.Contracts", "Diagnostics", "ShadowRegressionContracts.cs");
+        string shadowRegressionContractsText = File.ReadAllText(shadowRegressionContractsPath);
+
+        StringAssert.Contains(shadowRegressionContractsText, "public static class ShadowRegressionFixtureKinds");
+        StringAssert.Contains(shadowRegressionContractsText, "public static class ShadowRegressionMetricKinds");
+        StringAssert.Contains(shadowRegressionContractsText, "public static class ShadowRegressionDiffKinds");
+        StringAssert.Contains(shadowRegressionContractsText, "public static class ShadowRegressionSeverityLevels");
+        StringAssert.Contains(shadowRegressionContractsText, "public sealed record ShadowRegressionFixtureDescriptor");
+        StringAssert.Contains(shadowRegressionContractsText, "public sealed record ShadowRegressionCorpusDescriptor");
+        StringAssert.Contains(shadowRegressionContractsText, "public sealed record ShadowRegressionMetricBaseline");
+        StringAssert.Contains(shadowRegressionContractsText, "public sealed record ShadowRegressionExplainReference");
+        StringAssert.Contains(shadowRegressionContractsText, "public sealed record ShadowRegressionDiff");
+        StringAssert.Contains(shadowRegressionContractsText, "public sealed record ShadowRegressionWaiver");
+        StringAssert.Contains(shadowRegressionContractsText, "public sealed record ShadowRegressionRunReceipt");
+        StringAssert.Contains(shadowRegressionContractsText, "DerivedStats");
+        StringAssert.Contains(shadowRegressionContractsText, "Validation");
+        StringAssert.Contains(shadowRegressionContractsText, "SessionProjection");
+        StringAssert.Contains(shadowRegressionContractsText, "LegacyOracle = false");
+        StringAssert.Contains(shadowRegressionContractsText, "ShadowRegressionExplainReference? Explain = null");
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");

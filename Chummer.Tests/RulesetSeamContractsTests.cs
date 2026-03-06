@@ -11,6 +11,7 @@ using Chummer.Application.Workspaces;
 using Chummer.Contracts.Assets;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Content;
+using Chummer.Contracts.Diagnostics;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Session;
@@ -547,6 +548,71 @@ public class RulesetSeamContractsTests
         Assert.AreEqual(WorkflowDefinitionIds.CareerWorkbench, careerSection.WorkflowId);
         Assert.AreEqual("ShellMenuBarControl", shellMenu.RendererHints!["desktopControl"]);
         CollectionAssert.Contains(libraryShell.SurfaceIds.ToList(), "shell.workspace-left");
+    }
+
+    [TestMethod]
+    public void Shadow_regression_contracts_define_corpus_baseline_diff_and_waiver_vocabulary()
+    {
+        ShadowRegressionFixtureDescriptor fixture = new(
+            FixtureId: "fuzzy-chargen",
+            RulesetId: RulesetDefaults.Sr5,
+            FixtureKind: ShadowRegressionFixtureKinds.CharacterFile,
+            RelativePath: "Chummer.Tests/TestFiles/Fuzzy-chargen.chum5",
+            RulePacks: [new ArtifactVersionReference("house-rules", "1.2.0")],
+            LegacyOracle: true);
+        ShadowRegressionCorpusDescriptor corpus = new(
+            CorpusId: "legacy-sr5-corpus",
+            RulesetId: RulesetDefaults.Sr5,
+            Fixtures: [fixture]);
+        ShadowRegressionMetricBaseline baseline = new(
+            FixtureId: fixture.FixtureId,
+            MetricKind: ShadowRegressionMetricKinds.DerivedStats,
+            SubjectId: "body",
+            ExpectedValueJson: "{\"value\":6}");
+        ShadowRegressionRunReceipt run = new(
+            RunId: "run-1",
+            CorpusId: corpus.CorpusId,
+            Baselines: [baseline],
+            Diffs:
+            [
+                new ShadowRegressionDiff(
+                    FixtureId: fixture.FixtureId,
+                    MetricKind: ShadowRegressionMetricKinds.Validation,
+                    DiffKind: ShadowRegressionDiffKinds.ValueMismatch,
+                    Severity: ShadowRegressionSeverityLevels.Error,
+                    SubjectId: "validation.summary",
+                    ExpectedValueJson: "{\"warnings\":0}",
+                    ActualValueJson: "{\"warnings\":1}",
+                    Reason: "New validation warning introduced.",
+                    WaiverId: "waiver-1",
+                    Explain: new ShadowRegressionExplainReference(
+                        TraceId: "trace-1",
+                        SubjectId: "validation.summary",
+                        ProviderId: "sr5/validate.character",
+                        PackId: "house-rules"))
+            ],
+            AppliedWaivers:
+            [
+                new ShadowRegressionWaiver(
+                    WaiverId: "waiver-1",
+                    FixtureId: fixture.FixtureId,
+                    MetricKind: ShadowRegressionMetricKinds.Validation,
+                    SubjectId: "validation.summary",
+                    Reason: "Known legacy discrepancy under review.",
+                    DecisionId: "MIG-011")
+            ],
+            ComparedFixtureCount: 1,
+            ComparedMetricCount: 6);
+
+        Assert.AreEqual(ShadowRegressionFixtureKinds.CharacterFile, fixture.FixtureKind);
+        Assert.IsTrue(fixture.LegacyOracle);
+        Assert.AreEqual("legacy-sr5-corpus", corpus.CorpusId);
+        Assert.AreEqual(ShadowRegressionMetricKinds.DerivedStats, baseline.MetricKind);
+        Assert.AreEqual(ShadowRegressionDiffKinds.ValueMismatch, run.Diffs[0].DiffKind);
+        Assert.AreEqual(ShadowRegressionSeverityLevels.Error, run.Diffs[0].Severity);
+        Assert.AreEqual("trace-1", run.Diffs[0].Explain!.TraceId);
+        Assert.AreEqual("waiver-1", run.AppliedWaivers[0].WaiverId);
+        Assert.AreEqual(6, run.ComparedMetricCount);
     }
 
     [TestMethod]
