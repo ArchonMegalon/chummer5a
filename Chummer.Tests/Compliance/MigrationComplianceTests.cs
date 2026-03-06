@@ -750,6 +750,33 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Rulepack_workbench_contracts_lock_in_library_inspector_graph_validation_and_override_vocabulary()
+    {
+        string rulePackWorkbenchContractsPath = FindPath("Chummer.Contracts", "Presentation", "RulePackWorkbenchContracts.cs");
+        string rulePackWorkbenchContractsText = File.ReadAllText(rulePackWorkbenchContractsPath);
+
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public static class RulePackWorkbenchSurfaceIds");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public static class RulePackInstallStates");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public static class RulePackDependencyEdgeKinds");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public static class RulePackValidationIssueKinds");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public sealed record RulePackWorkbenchListItem");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public sealed record RulePackDependencyNode");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public sealed record RulePackDependencyEdge");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public sealed record RulePackValidationIssue");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public sealed record DeclarativeOverrideDraft");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public sealed record RulePackLibraryProjection");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public sealed record RulePackInspectorProjection");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public sealed record RulePackDependencyGraphProjection");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public sealed record RulePackValidationPanelProjection");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "public sealed record DeclarativeOverrideEditorProjection");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "dependency-graph-view");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "review-required");
+        StringAssert.Contains(rulePackWorkbenchContractsText, "declarative-override");
+        Assert.IsFalse(rulePackWorkbenchContractsText.Contains("Avalonia", StringComparison.Ordinal));
+        Assert.IsFalse(rulePackWorkbenchContractsText.Contains("Blazor", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");

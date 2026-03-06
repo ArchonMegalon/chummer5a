@@ -1672,6 +1672,130 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Rulepack_workbench_contracts_define_library_inspector_graph_validation_and_override_vocabulary()
+    {
+        RulePackManifest manifest = new(
+            PackId: "house-rules",
+            Version: "1.2.0",
+            Title: "House Rules",
+            Author: "GM",
+            Description: "Campaign RulePack",
+            Targets: [RulesetDefaults.Sr5],
+            EngineApiVersion: "rulepack-v1",
+            DependsOn: [],
+            ConflictsWith: [],
+            Visibility: ArtifactVisibilityModes.Private,
+            TrustTier: ArtifactTrustTiers.Private,
+            Assets:
+            [
+                new RulePackAssetDescriptor(
+                    Kind: RulePackAssetKinds.DeclarativeRules,
+                    Mode: DeclarativeRuleOverrideModes.OverrideThreshold,
+                    RelativePath: "rules/thresholds.json",
+                    Checksum: "sha256-1")
+            ],
+            Capabilities:
+            [
+                new RulePackCapabilityDescriptor(
+                    CapabilityId: RulePackCapabilityIds.ValidateCharacter,
+                    AssetKind: RulePackAssetKinds.Lua,
+                    AssetMode: RulePackAssetModes.WrapProvider,
+                    Explainable: true)
+            ],
+            ExecutionPolicies: []);
+        RulePackLibraryProjection library = new(
+            Items:
+            [
+                new RulePackWorkbenchListItem(
+                    RulePack: new ArtifactVersionReference(
+                        Id: manifest.PackId,
+                        Version: manifest.Version),
+                    Title: manifest.Title,
+                    InstallState: RulePackInstallStates.InstalledEnabled,
+                    Visibility: manifest.Visibility,
+                    TrustTier: manifest.TrustTier,
+                    Targets: manifest.Targets,
+                    DiagnosticCount: 1)
+            ],
+            SelectedPackId: manifest.PackId);
+        RulePackInspectorProjection inspector = new(
+            Manifest: manifest,
+            InstallState: RulePackInstallStates.ReviewRequired,
+            Diagnostics:
+            [
+                new RulePackValidationIssue(
+                    Kind: RulePackValidationIssueKinds.DeclarativeOverride,
+                    Severity: RulePackResolutionSeverityLevels.Warning,
+                    Message: "Threshold override needs review.",
+                    AssetPath: "rules/thresholds.json",
+                    SubjectId: "wound-threshold",
+                    ExplainEntryId: "rulepack-validate-1")
+            ],
+            CompatibilityDiagnostics:
+            [
+                new RuntimeLockCompatibilityDiagnostic(
+                    State: RuntimeLockCompatibilityStates.RebindRequired,
+                    Message: "Install requires runtime rebind.")
+            ],
+            IsInstalled: true);
+        RulePackDependencyGraphProjection graph = new(
+            PackId: manifest.PackId,
+            Nodes:
+            [
+                new RulePackDependencyNode(
+                    NodeId: "house-rules",
+                    Label: "House Rules",
+                    Version: "1.2.0",
+                    Visibility: ArtifactVisibilityModes.Private,
+                    TrustTier: ArtifactTrustTiers.Private,
+                    IsSelected: true),
+                new RulePackDependencyNode(
+                    NodeId: "official-errata",
+                    Label: "Official Errata",
+                    Version: "2026.03",
+                    Visibility: ArtifactVisibilityModes.Public,
+                    TrustTier: ArtifactTrustTiers.Official)
+            ],
+            Edges:
+            [
+                new RulePackDependencyEdge(
+                    FromNodeId: "house-rules",
+                    ToNodeId: "official-errata",
+                    Kind: RulePackDependencyEdgeKinds.DependsOn,
+                    Message: "Requires base errata.")
+            ]);
+        RulePackValidationPanelProjection validationPanel = new(
+            PackId: manifest.PackId,
+            Version: manifest.Version,
+            Issues: inspector.Diagnostics,
+            HasBlockingIssues: false);
+        DeclarativeOverrideEditorProjection overrideEditor = new(
+            PackId: manifest.PackId,
+            Version: manifest.Version,
+            Overrides:
+            [
+                new DeclarativeOverrideDraft(
+                    OverrideId: "wound-threshold",
+                    Mode: DeclarativeRuleOverrideModes.OverrideThreshold,
+                    TargetId: "stun-track",
+                    Value: "10")
+            ],
+            SupportedModes:
+            [
+                DeclarativeRuleOverrideModes.SetConstant,
+                DeclarativeRuleOverrideModes.OverrideThreshold,
+                DeclarativeRuleOverrideModes.ReplaceCreationProfile
+            ]);
+
+        Assert.AreEqual(manifest.PackId, library.SelectedPackId);
+        Assert.AreEqual(RulePackInstallStates.InstalledEnabled, library.Items[0].InstallState);
+        Assert.AreEqual(RulePackValidationIssueKinds.DeclarativeOverride, inspector.Diagnostics[0].Kind);
+        Assert.AreEqual(RulePackDependencyEdgeKinds.DependsOn, graph.Edges[0].Kind);
+        Assert.AreEqual(DeclarativeRuleOverrideModes.OverrideThreshold, overrideEditor.Overrides[0].Mode);
+        Assert.IsFalse(validationPanel.HasBlockingIssues);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);
