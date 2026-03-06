@@ -3405,6 +3405,8 @@ public class MigrationComplianceTests
     [TestMethod]
     public void Repo_guidance_marks_legacy_heads_as_oracle_only()
     {
+        string solutionPath = FindPath("Chummer.sln");
+        string solutionText = File.ReadAllText(solutionPath);
         string readmePath = FindPath("README.md");
         string readmeText = File.ReadAllText(readmePath);
         string backlogPath = FindPath("docs", "MIGRATION_BACKLOG.md");
@@ -3412,9 +3414,17 @@ public class MigrationComplianceTests
         string prTemplatePath = FindPath(".github", "PULL_REQUEST_TEMPLATE.md");
         string prTemplateText = File.ReadAllText(prTemplatePath);
 
+        Assert.IsFalse(solutionText.Contains(@"ChummerHub\ChummerHub.csproj", StringComparison.Ordinal));
+        Assert.IsFalse(solutionText.Contains(@"Plugins\ChummerHub.Client\ChummerHub.Client.csproj", StringComparison.Ordinal));
+        Assert.IsFalse(solutionText.Contains("Debug with ChummerHub", StringComparison.Ordinal));
+        Assert.IsFalse(solutionText.Contains("Debuggable Release with ChummerHub", StringComparison.Ordinal));
+
         StringAssert.Contains(readmeText, "Legacy head policy: `Chummer` and `Chummer.Web` are oracle/parity assets only.");
         StringAssert.Contains(readmeText, "Net-new user-facing behavior belongs in the shared seam and active heads;");
         StringAssert.Contains(readmeText, "legacy changes must be limited to regression-oracle maintenance, parity extraction, or compatibility verification.");
+        StringAssert.Contains(readmeText, "Legacy hub policy: `ChummerHub` and `ChummerHub.Client` are archived compatibility assets only.");
+        StringAssert.Contains(readmeText, "They are not part of the active solution, public runtime, or future ChummerHub product path;");
+        StringAssert.Contains(readmeText, "all public-edge and hub work belongs behind `Chummer.Portal`.");
 
         StringAssert.Contains(backlogText, "Exit state: `Chummer` (WinForms) and `Chummer.Web` are oracle/parity assets only.");
         StringAssert.Contains(backlogText, "Net-new user-facing behavior must land in the shared seam and active heads;");
