@@ -38,12 +38,14 @@ app.UseStaticFiles();
 string? configuredApiKey = builder.Configuration["Chummer:ApiKey"];
 string? environmentApiKey = Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
 string? apiKey = configuredApiKey ?? environmentApiKey;
+bool isPortalOwnerPropagationConfigured = !string.IsNullOrWhiteSpace(portalOwnerSharedKey);
 bool protectApiDocs = ResolveBoolean(
     builder.Configuration["Chummer:ProtectApiDocs"],
     Environment.GetEnvironmentVariable("CHUMMER_PROTECT_API_DOCS"));
 
 if (!string.IsNullOrWhiteSpace(apiKey))
 {
+    Console.WriteLine("INFO: CHUMMER_API_KEY direct API protection is enabled. Treat X-Api-Key mode as local/dev/ops or private-upstream protection, not as the primary public authentication surface.");
     app.Use(async (context, next) =>
     {
         PathString path = context.Request.Path;
@@ -75,9 +77,13 @@ if (!string.IsNullOrWhiteSpace(apiKey))
         await next();
     });
 }
+else if (app.Environment.IsProduction() && isPortalOwnerPropagationConfigured)
+{
+    Console.WriteLine("INFO: CHUMMER_API_KEY is not configured. Hosted/public deployments should expose Chummer.Portal as the public edge and keep Chummer.Api private behind signed portal-owner propagation.");
+}
 else if (app.Environment.IsProduction())
 {
-    Console.WriteLine("WARNING: CHUMMER_API_KEY is not configured; API key middleware is disabled.");
+    Console.WriteLine("WARNING: Neither CHUMMER_API_KEY nor CHUMMER_PORTAL_OWNER_SHARED_KEY is configured. Public deployments should expose Chummer.Portal as the public edge and keep Chummer.Api private.");
 }
 
 app.MapOpenApi("/openapi/{documentName}.json");

@@ -9,7 +9,20 @@ public static class CommandEndpoints
     {
         app.MapGet("/api/commands", (string? ruleset, IRulesetShellCatalogResolver shellCatalogResolver) =>
         {
-            IReadOnlyList<AppCommandDefinition> commands = shellCatalogResolver.ResolveCommands(ruleset);
+            IReadOnlyList<AppCommandDefinition> commands;
+            try
+            {
+                commands = shellCatalogResolver.ResolveCommands(ruleset);
+            }
+            catch (InvalidOperationException) when (!string.IsNullOrWhiteSpace(ruleset))
+            {
+                return Results.BadRequest(new
+                {
+                    error = "unknown_ruleset",
+                    rulesetId = ruleset.Trim()
+                });
+            }
+
             return Results.Ok(new AppCommandCatalogResponse(
                 Count: commands.Count,
                 Commands: commands));

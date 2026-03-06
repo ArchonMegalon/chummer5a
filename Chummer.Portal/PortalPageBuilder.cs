@@ -318,8 +318,8 @@ internal static class PortalPageBuilder
         html.AppendLine("      <div><code>/blazor</code> " + (useBlazorProxy ? "proxy upstream → " + HtmlEncode(blazorProxyBaseUrl) : "redirect → " + HtmlEncode(blazorBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/avalonia</code> " + (useAvaloniaProxy ? "proxy upstream → " + HtmlEncode(avaloniaProxyBaseUrl) : "placeholder route at " + HtmlEncode(avaloniaBrowserBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/downloads</code> " + (useDownloadsProxy ? "proxy upstream → " + HtmlEncode(downloadsProxyBaseUrl) : "local files + manifest with fallback feed → " + HtmlEncode(downloadsBaseUrl)) + "</div>");
-        html.AppendLine("      <div><code>X-Api-Key</code> forwarding → " + (isApiKeyForwardingEnabled ? "enabled for <code>/api</code>, <code>/openapi</code>, and <code>/docs</code>" : "disabled") + "</div>");
-        html.AppendLine("      <div><code>Portal owner propagation</code> → " + (isPortalOwnerForwardingEnabled ? "signed authenticated owner headers enabled for <code>/api</code>, <code>/openapi</code>, and <code>/docs</code>" : "disabled") + "</div>");
+        html.AppendLine("      <div><code>X-Api-Key</code> forwarding → " + (isApiKeyForwardingEnabled ? "enabled for internal <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> upstream compatibility only" : "disabled") + "</div>");
+        html.AppendLine("      <div><code>Portal owner propagation</code> → " + (isPortalOwnerForwardingEnabled ? "signed authenticated owner headers enabled for hosted/public <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> proxy traffic" : "disabled") + "</div>");
         html.AppendLine("    </footer>");
         html.AppendLine("  </main>");
         html.AppendLine("</body>");

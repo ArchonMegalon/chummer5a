@@ -71,7 +71,7 @@ Start API + Blazor + Portal landing surface:
 docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-avalonia-browser chummer-portal
 ```
 
-Enable API key protection (recommended for production):
+Direct API access (local/dev/ops or private upstreams):
 
 ```bash
 export CHUMMER_API_KEY="replace-with-strong-secret"
@@ -80,6 +80,14 @@ docker compose up -d --build chummer-api chummer-blazor
 
 When set, `Chummer.Api` enforces `X-Api-Key` for non-public `/api/*` routes and both UI heads automatically forward the key.
 Set `CHUMMER_PROTECT_API_DOCS=true` to apply the same API-key gate to `/openapi/*` and `/docs/*`.
+This is the minimal direct-access fallback for local/dev/ops workflows or private upstream protection. It is not the primary public authentication model.
+
+Hosted/public deployment posture:
+
+* Expose `Chummer.Portal` as the only public origin.
+* Keep `Chummer.Api` on a private network behind the portal.
+* Use portal cookie auth plus signed portal-owner propagation for hosted/public identity.
+* Treat raw `X-Api-Key` mode as local/dev/ops or internal proxy compatibility only.
 
 Owner-scope dev/test bridge:
 
@@ -93,6 +101,7 @@ Portal-auth owner propagation seam:
 * Configure the same shared key in both `Chummer.Portal` and `Chummer.Api`; the portal strips incoming signed-owner headers and emits fresh signed authenticated owner headers only for `/api`, `/openapi`, and `/docs` proxy traffic.
 * `Chummer.Api` prefers this signed portal-owner context ahead of the dev/test `X-Chummer-Owner` bridge when both are present.
 * Optional `CHUMMER_PORTAL_OWNER_MAX_AGE_SECONDS` tightens signature freshness validation on the API side (default: `300` seconds).
+* This is the authoritative hosted/public bridge for owner-aware requests until full public identity/account management lands.
 
 Portal auth scaffold:
 
@@ -100,6 +109,7 @@ Portal auth scaffold:
 * `CHUMMER_PORTAL_DEV_AUTH_ENABLED=true` turns on the minimal dev harness endpoints: `POST /auth/dev-login`, `GET /auth/me`, and `POST /auth/logout`.
 * `CHUMMER_PORTAL_REQUIRE_AUTH=true` makes the portal require an authenticated cookie for `/api`, `/openapi`, `/docs`, `/blazor`, and `/avalonia`; the landing page and `/downloads` remain public.
 * The dev harness is only a bootstrap path for local/testing and for proving the portal-owner seam. It is not the final public identity system.
+* Public deployments should prefer this portal-auth path over direct API exposure; keep `CHUMMER_API_KEY` as a fallback for local/dev/ops or internal service-to-service compatibility only.
 
 Run migration/compliance test loop (branch helper script):
 
@@ -162,8 +172,8 @@ Portal notes (current milestone):
 * Set `CHUMMER_PORTAL_DOWNLOADS_PROXY_URL` to route `/downloads/*` through in-process YARP proxy mode instead of local-file mode.
 * `docker-compose.yml` mounts `./Docker/Downloads` into `/app/downloads` for the portal service; sync `desktop-download-bundle` into this folder to make `/downloads` serve real binaries.
 * Local sync helper: `bash scripts/runbook.sh downloads-sync <bundleDir> <deployDir>` (defaults: `dist` -> `Docker/Downloads`).
-* Portal can forward `X-Api-Key` to API/docs/openapi upstream routes when `CHUMMER_PORTAL_API_KEY` is set (or when `CHUMMER_API_KEY` is present in the portal service environment).
-* Portal can also forward signed authenticated owner context to the API/docs/openapi upstream when `CHUMMER_PORTAL_OWNER_SHARED_KEY` is configured on both services; this is the forward path for future portal-backed identity, while `CHUMMER_ALLOW_OWNER_HEADER` remains a disabled-by-default dev/test bridge only.
+* Portal can forward `X-Api-Key` to API/docs/openapi upstream routes when `CHUMMER_PORTAL_API_KEY` is set (or when `CHUMMER_API_KEY` is present in the portal service environment), but this is intended for internal/private upstream compatibility rather than as the public auth model.
+* Portal can also forward signed authenticated owner context to the API/docs/openapi upstream when `CHUMMER_PORTAL_OWNER_SHARED_KEY` is configured on both services; this is the authoritative hosted/public path for owner-aware requests, while `CHUMMER_ALLOW_OWNER_HEADER` remains a disabled-by-default dev/test bridge only.
 * Portal cookie-auth scaffolding is always registered; enable `CHUMMER_PORTAL_DEV_AUTH_ENABLED=true` only for local/test login bootstrap and enable `CHUMMER_PORTAL_REQUIRE_AUTH=true` when you want the portal itself to enforce authenticated access to protected upstream routes.
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
 

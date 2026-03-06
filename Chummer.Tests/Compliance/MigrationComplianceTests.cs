@@ -983,6 +983,8 @@ public class MigrationComplianceTests
         string portalAuthenticationEndpointsText = File.ReadAllText(portalAuthenticationEndpointsPath);
         string portalProtectedRouteMatcherPath = FindPath("Chummer.Portal", "PortalProtectedRouteMatcher.cs");
         string portalProtectedRouteMatcherText = File.ReadAllText(portalProtectedRouteMatcherPath);
+        string portalPageBuilderPath = FindPath("Chummer.Portal", "PortalPageBuilder.cs");
+        string portalPageBuilderText = File.ReadAllText(portalPageBuilderPath);
         string ownerContractPath = FindPath("Chummer.Contracts", "Owners", "PortalOwnerPropagationContract.cs");
         string ownerContractText = File.ReadAllText(ownerContractPath);
         string readmePath = FindPath("README.md");
@@ -999,6 +1001,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(apiProgramText, "new RequestOwnerContextAccessor(");
         StringAssert.Contains(apiProgramText, "\"X-Chummer-Owner\"");
         StringAssert.Contains(apiProgramText, "ResolvePortalOwnerSharedKey");
+        StringAssert.Contains(apiProgramText, "Treat X-Api-Key mode as local/dev/ops or private-upstream protection");
+        StringAssert.Contains(apiProgramText, "Hosted/public deployments should expose Chummer.Portal as the public edge and keep Chummer.Api private behind signed portal-owner propagation.");
+        StringAssert.Contains(apiProgramText, "Neither CHUMMER_API_KEY nor CHUMMER_PORTAL_OWNER_SHARED_KEY is configured");
 
         StringAssert.Contains(requestOwnerAccessorText, "public sealed class RequestOwnerContextAccessor");
         StringAssert.Contains(requestOwnerAccessorText, "OwnerScope.LocalSingleUser");
@@ -1026,6 +1031,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalAuthenticationEndpointsText, "new ClaimsIdentity(claims, \"portal-dev\")");
         StringAssert.Contains(portalProtectedRouteMatcherText, "path.StartsWithSegments(\"/blazor\"");
         StringAssert.Contains(portalProtectedRouteMatcherText, "path.StartsWithSegments(\"/avalonia\"");
+        StringAssert.Contains(portalPageBuilderText, "enabled for internal <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> upstream compatibility only");
+        StringAssert.Contains(portalPageBuilderText, "signed authenticated owner headers enabled for hosted/public <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> proxy traffic");
         StringAssert.Contains(ownerContractText, "X-Chummer-Portal-Owner");
         StringAssert.Contains(ownerContractText, "X-Chummer-Portal-Owner-Signature");
         StringAssert.Contains(ownerContractText, "BuildSignaturePayload");
@@ -1035,7 +1042,12 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "signed authenticated owner headers");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DEV_AUTH_ENABLED");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_REQUIRE_AUTH");
+        StringAssert.Contains(readmeText, "Hosted/public deployment posture:");
+        StringAssert.Contains(readmeText, "Expose `Chummer.Portal` as the only public origin.");
+        StringAssert.Contains(readmeText, "Treat raw `X-Api-Key` mode as local/dev/ops or internal proxy compatibility only.");
+        StringAssert.Contains(readmeText, "This is the minimal direct-access fallback for local/dev/ops workflows or private upstream protection.");
         StringAssert.Contains(backlogText, "signed portal-owner propagation seam");
+        StringAssert.Contains(backlogText, "API key mode remains documented as minimal/dev fallback.");
     }
 
     [TestMethod]

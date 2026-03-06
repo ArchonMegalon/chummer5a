@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
@@ -466,10 +467,14 @@ public class ApiIntegrationTests
     {
         using var client = CreateClient();
 
-        JsonObject response = await GetRequiredJsonObject(client, "/api/commands?ruleset=sr6");
+        using HttpResponseMessage response = await client.GetAsync("/api/commands?ruleset=shadowrun-x");
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
 
-        Assert.AreEqual(0, response["count"]?.GetValue<int>() ?? -1);
-        Assert.IsTrue(response["commands"] is JsonArray commands && commands.Count == 0);
+        Assert.AreEqual("unknown_ruleset", payload["error"]?.GetValue<string>());
+        Assert.AreEqual("shadowrun-x", payload["rulesetId"]?.GetValue<string>());
     }
 
     [TestMethod]
@@ -492,10 +497,14 @@ public class ApiIntegrationTests
     {
         using var client = CreateClient();
 
-        JsonObject response = await GetRequiredJsonObject(client, "/api/navigation-tabs?ruleset=sr6");
+        using HttpResponseMessage response = await client.GetAsync("/api/navigation-tabs?ruleset=shadowrun-x");
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
 
-        Assert.AreEqual(0, response["count"]?.GetValue<int>() ?? -1);
-        Assert.IsTrue(response["tabs"] is JsonArray tabs && tabs.Count == 0);
+        Assert.AreEqual("unknown_ruleset", payload["error"]?.GetValue<string>());
+        Assert.AreEqual("shadowrun-x", payload["rulesetId"]?.GetValue<string>());
     }
 
     [TestMethod]
