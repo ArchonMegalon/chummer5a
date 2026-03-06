@@ -202,6 +202,7 @@ Progress: README now frames the Docker branch as the current multi-head runtime,
 
 - [ ] `MIG-090` Replace API-key-only production posture with real authn/authz strategy.
 Acceptance criteria: production deployment path supports identity-backed authentication and authorization; API key mode remains documented as minimal/dev fallback.
+Progress note: the API now has a disabled-by-default forwarded owner header seam (`CHUMMER_ALLOW_OWNER_HEADER`, `CHUMMER_OWNER_HEADER_NAME`) for dev/test isolation and future portal-edge integration, but this is explicitly not the public auth model.
 
 - [ ] `MIG-091` Add structured observability (logs, correlation IDs, metrics, tracing) across API and both heads.
 Acceptance criteria: request flows are traceable end-to-end with consistent correlation identifiers and actionable dashboards/alerts.

@@ -81,6 +81,12 @@ docker compose up -d --build chummer-api chummer-blazor
 When set, `Chummer.Api` enforces `X-Api-Key` for non-public `/api/*` routes and both UI heads automatically forward the key.
 Set `CHUMMER_PROTECT_API_DOCS=true` to apply the same API-key gate to `/openapi/*` and `/docs/*`.
 
+Owner-scope dev/test bridge:
+
+* `CHUMMER_ALLOW_OWNER_HEADER=true` enables request owner resolution from `X-Chummer-Owner` (override with `CHUMMER_OWNER_HEADER_NAME`) in `Chummer.Api`.
+* Authenticated user identity still wins when present; the forwarded owner header path is disabled by default.
+* This header seam is for local/test harnesses and portal-edge development only. It is not public authentication, and production/public deployments should use real portal or edge identity instead of trusting forwarded arbitrary owner headers.
+
 Run migration/compliance test loop (branch helper script):
 
 ```bash

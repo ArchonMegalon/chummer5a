@@ -293,6 +293,10 @@ public class MigrationComplianceTests
         string apiProgramText = File.ReadAllText(apiProgramPath);
         string requestOwnerAccessorPath = FindPath("Chummer.Api", "Owners", "RequestOwnerContextAccessor.cs");
         string requestOwnerAccessorText = File.ReadAllText(requestOwnerAccessorPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+        string backlogPath = FindPath("docs", "MIGRATION_BACKLOG.md");
+        string backlogText = File.ReadAllText(backlogPath);
 
         StringAssert.Contains(apiProgramText, "AddHttpContextAccessor();");
         StringAssert.Contains(apiProgramText, "CHUMMER_ALLOW_OWNER_HEADER");
@@ -306,6 +310,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(requestOwnerAccessorText, "ClaimTypes.NameIdentifier");
         StringAssert.Contains(requestOwnerAccessorText, "principal.FindFirst(\"sub\")?.Value");
         StringAssert.Contains(requestOwnerAccessorText, "context.Request.Headers[_headerName].FirstOrDefault()");
+        StringAssert.Contains(readmeText, "CHUMMER_ALLOW_OWNER_HEADER=true");
+        StringAssert.Contains(readmeText, "It is not public authentication");
+        StringAssert.Contains(backlogText, "disabled-by-default forwarded owner header seam");
     }
 
     [TestMethod]
