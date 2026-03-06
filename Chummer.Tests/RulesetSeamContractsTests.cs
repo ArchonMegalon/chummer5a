@@ -12,6 +12,7 @@ using Chummer.Contracts.Characters;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
+using Chummer.Contracts.Session;
 using Chummer.Contracts.Workspaces;
 using Chummer.Infrastructure.Xml;
 using Chummer.Rulesets.Sr4;
@@ -126,6 +127,103 @@ public class RulesetSeamContractsTests
         Assert.AreEqual(RulePackAssetKinds.Xml, rulePack.Assets[0].Kind);
         Assert.AreEqual(ArtifactVisibilityModes.Shared, buildKit.Visibility);
         Assert.AreEqual(ArtifactTrustTiers.Private, rulePack.TrustTier);
+    }
+
+    [TestMethod]
+    public void Session_taxonomy_distinguishes_ledger_snapshot_and_runtime_bundle()
+    {
+        SessionEvent sessionEvent = new(
+            EventId: "evt-1",
+            OverlayId: "overlay-1",
+            CharacterId: "char-1",
+            BaseCharacterVersionId: "charv-1",
+            RuntimeFingerprint: "runtime-lock-sha256",
+            DeviceId: "device-1",
+            ActorId: "user-1",
+            Sequence: 1,
+            EventType: SessionEventTypes.TrackerIncrement,
+            PayloadJson: "{\"trackerId\":\"stun\",\"amount\":1}",
+            CreatedAtUtc: DateTimeOffset.UtcNow);
+        SessionLedger ledger = new(
+            OverlayId: "overlay-1",
+            CharacterId: "char-1",
+            BaseCharacterVersionId: "charv-1",
+            RuntimeFingerprint: "runtime-lock-sha256",
+            Events: [sessionEvent],
+            BaselineSnapshotId: "snap-0",
+            NextSequence: 2);
+        SessionOverlaySnapshot snapshot = new(
+            OverlayId: "overlay-1",
+            CharacterId: "char-1",
+            BaseCharacterVersionId: "charv-1",
+            RuntimeFingerprint: "runtime-lock-sha256",
+            Trackers:
+            [
+                new SessionTrackerValue(
+                    TrackerId: "stun",
+                    Label: "Stun",
+                    CurrentValue: 1,
+                    MinimumValue: 0,
+                    MaximumValue: 10,
+                    ThresholdState: "healthy")
+            ],
+            ActiveEffects:
+            [
+                new SessionEffectState(
+                    EffectId: "wounded",
+                    Label: "Wounded",
+                    IsActive: true,
+                    SourceEventId: sessionEvent.EventId)
+            ],
+            PinnedQuickActions:
+            [
+                new SessionQuickActionPin(
+                    ActionId: "second-wind",
+                    Label: "Second Wind",
+                    CapabilityId: "session.quick-actions")
+            ],
+            Notes: ["Took stun from suppressive fire."],
+            SyncState: new SessionSyncState(
+                Status: SessionSyncStatuses.PendingSync,
+                PendingEventCount: 1,
+                LastSyncedAtUtc: null));
+        SessionRuntimeBundle runtimeBundle = new(
+            BundleId: "session-bundle-1",
+            RulesetId: RulesetDefaults.Sr5,
+            RuntimeFingerprint: "runtime-lock-sha256",
+            EngineApiVersion: "session-runtime-v1",
+            SignedAtUtc: DateTimeOffset.UtcNow,
+            Signature: "sig-1",
+            QuickActions:
+            [
+                new SessionQuickActionPin(
+                    ActionId: "second-wind",
+                    Label: "Second Wind",
+                    CapabilityId: "session.quick-actions")
+            ],
+            Trackers:
+            [
+                new SessionTrackerDefinition(
+                    TrackerId: "stun",
+                    Label: "Stun",
+                    DefaultValue: 0,
+                    MinimumValue: 0,
+                    MaximumValue: 10,
+                    Thresholds: [3, 6, 9])
+            ],
+            ReducerBindings: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["tracker.increment"] = "session-runtime/stun.increment"
+            });
+
+        Assert.AreEqual("evt-1", ledger.Events[0].EventId);
+        Assert.AreEqual(SessionEventTypes.TrackerIncrement, ledger.Events[0].EventType);
+        Assert.AreEqual("overlay-1", snapshot.OverlayId);
+        Assert.AreEqual(SessionSyncStatuses.PendingSync, snapshot.SyncState.Status);
+        Assert.AreEqual("session-bundle-1", runtimeBundle.BundleId);
+        Assert.AreEqual("runtime-lock-sha256", runtimeBundle.RuntimeFingerprint);
+        Assert.AreEqual(10, runtimeBundle.Trackers[0].MaximumValue);
+        Assert.AreEqual("session-runtime/stun.increment", runtimeBundle.ReducerBindings["tracker.increment"]);
     }
 
     [TestMethod]

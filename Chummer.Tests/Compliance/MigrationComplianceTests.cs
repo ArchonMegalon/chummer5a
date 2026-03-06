@@ -315,6 +315,24 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
+    {
+        string sessionContractsPath = FindPath("Chummer.Contracts", "Session", "SessionContracts.cs");
+        string sessionContractsText = File.ReadAllText(sessionContractsPath);
+
+        StringAssert.Contains(sessionContractsText, "public static class SessionEventTypes");
+        StringAssert.Contains(sessionContractsText, "public static class SessionSyncStatuses");
+        StringAssert.Contains(sessionContractsText, "public sealed record SessionEvent");
+        StringAssert.Contains(sessionContractsText, "public sealed record SessionLedger");
+        StringAssert.Contains(sessionContractsText, "public sealed record SessionOverlaySnapshot");
+        StringAssert.Contains(sessionContractsText, "public sealed record SessionRuntimeBundle");
+        StringAssert.Contains(sessionContractsText, "RuntimeFingerprint");
+        StringAssert.Contains(sessionContractsText, "SignedAtUtc");
+        Assert.IsFalse(sessionContractsText.Contains("public sealed record SessionOverlay(", StringComparison.Ordinal));
+        Assert.IsFalse(sessionContractsText.Contains("LuaSource", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Api_registers_request_owner_context_accessor_with_opt_in_forwarded_owner_support()
     {
         string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
