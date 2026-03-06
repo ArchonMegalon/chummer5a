@@ -107,7 +107,26 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
     private void Publish(CharacterOverviewState state)
     {
         State = state;
+        _shellPresenter?.SyncOverviewFeedback(CreateShellOverviewFeedback(state));
         StateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private static ShellOverviewFeedback CreateShellOverviewFeedback(CharacterOverviewState state)
+    {
+        ShellWorkspaceState[] openWorkspaces = state.OpenWorkspaces
+            .Select(workspace => new ShellWorkspaceState(
+                Id: workspace.Id,
+                Name: workspace.Name,
+                Alias: workspace.Alias,
+                LastOpenedUtc: workspace.LastOpenedUtc,
+                RulesetId: workspace.RulesetId,
+                HasSavedWorkspace: workspace.HasSavedWorkspace))
+            .ToArray();
+        return new ShellOverviewFeedback(
+            OpenWorkspaces: openWorkspaces,
+            Notice: state.Notice,
+            Error: state.Error,
+            LastCommandId: state.LastCommandId);
     }
 
     private bool TryCreateBootstrapFromShellState(out ShellBootstrapData bootstrap)
@@ -134,7 +153,8 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
                     Nuyen: 0m,
                     Created: false),
                 workspace.LastOpenedUtc,
-                workspace.RulesetId))
+                workspace.RulesetId,
+                workspace.HasSavedWorkspace))
             .ToArray();
 
         bootstrap = new ShellBootstrapData(

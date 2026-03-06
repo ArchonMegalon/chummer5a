@@ -8,4 +8,5 @@ public sealed record ShellWorkspaceState(
     string Name,
     string Alias,
     DateTimeOffset LastOpenedUtc,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId = RulesetDefaults.Sr5,
+    bool HasSavedWorkspace = false);

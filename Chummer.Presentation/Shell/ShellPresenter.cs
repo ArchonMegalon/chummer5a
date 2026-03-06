@@ -327,6 +327,31 @@ public sealed class ShellPresenter : IShellPresenter
         });
     }
 
+    public void SyncOverviewFeedback(ShellOverviewFeedback feedback)
+    {
+        ArgumentNullException.ThrowIfNull(feedback);
+
+        ShellWorkspaceState[] openWorkspaces = feedback.OpenWorkspaces
+            .OrderByDescending(workspace => workspace.LastOpenedUtc)
+            .ToArray();
+        string? lastCommandId = NormalizeCommandId(feedback.LastCommandId);
+        if (State.OpenWorkspaces.SequenceEqual(openWorkspaces)
+            && string.Equals(State.Notice, feedback.Notice, StringComparison.Ordinal)
+            && string.Equals(State.Error, feedback.Error, StringComparison.Ordinal)
+            && string.Equals(State.LastCommandId, lastCommandId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Publish(State with
+        {
+            OpenWorkspaces = openWorkspaces,
+            Notice = feedback.Notice,
+            Error = feedback.Error,
+            LastCommandId = lastCommandId
+        });
+    }
+
     private bool IsCommandEnabled(AppCommandDefinition command)
     {
         return command.EnabledByDefault
@@ -341,7 +366,8 @@ public sealed class ShellPresenter : IShellPresenter
                 Name: string.IsNullOrWhiteSpace(workspace.Summary.Name) ? "(Unnamed Character)" : workspace.Summary.Name,
                 Alias: workspace.Summary.Alias ?? string.Empty,
                 LastOpenedUtc: workspace.LastUpdatedUtc,
-                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId)))
+                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
+                HasSavedWorkspace: workspace.HasSavedWorkspace))
             .OrderByDescending(workspace => workspace.LastOpenedUtc)
             .ToArray();
     }
@@ -507,6 +533,13 @@ public sealed class ShellPresenter : IShellPresenter
         return string.IsNullOrWhiteSpace(tabId)
             ? null
             : tabId.Trim();
+    }
+
+    private static string? NormalizeCommandId(string? commandId)
+    {
+        return string.IsNullOrWhiteSpace(commandId)
+            ? null
+            : commandId.Trim();
     }
 
     private static int MenuSortIndex(string id)

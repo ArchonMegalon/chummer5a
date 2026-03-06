@@ -49,7 +49,8 @@ public static class WorkspaceEndpoints
                     Id: workspace.Id.Value,
                     Summary: workspace.Summary,
                     LastUpdatedUtc: workspace.LastUpdatedUtc,
-                    RulesetId: workspace.RulesetId))
+                    RulesetId: workspace.RulesetId,
+                    HasSavedWorkspace: workspace.HasSavedWorkspace))
                 .ToArray();
 
             return Results.Ok(new WorkspaceListResponse(

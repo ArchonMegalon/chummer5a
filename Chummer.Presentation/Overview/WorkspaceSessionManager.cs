@@ -14,7 +14,8 @@ public sealed class WorkspaceSessionManager : IWorkspaceSessionManager
                 Name: string.IsNullOrWhiteSpace(workspace.Summary.Name) ? "(Unnamed Character)" : workspace.Summary.Name,
                 Alias: workspace.Summary.Alias ?? string.Empty,
                 LastOpenedUtc: workspace.LastUpdatedUtc,
-                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId)))
+                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
+                HasSavedWorkspace: workspace.HasSavedWorkspace))
             .OrderByDescending(workspace => workspace.LastOpenedUtc)
             .ToArray();
     }

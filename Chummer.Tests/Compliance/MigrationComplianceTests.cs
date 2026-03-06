@@ -109,6 +109,10 @@ public class MigrationComplianceTests
         string avaloniaMainWindowCodeText = File.ReadAllText(avaloniaMainWindowCodePath);
         string avaloniaDialogsCodePath = FindPath("Chummer.Avalonia", "MainWindow.Dialogs.cs");
         string avaloniaDialogsCodeText = File.ReadAllText(avaloniaDialogsCodePath);
+        string avaloniaActionExecutionCoordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.ActionExecutionCoordinator.cs");
+        string avaloniaActionExecutionCoordinatorText = File.ReadAllText(avaloniaActionExecutionCoordinatorPath);
+        string avaloniaUiActionFeedbackPath = FindPath("Chummer.Avalonia", "MainWindow.UiActionFeedback.cs");
+        string avaloniaUiActionFeedbackText = File.ReadAllText(avaloniaUiActionFeedbackPath);
         string avaloniaPostRefreshCoordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.PostRefreshCoordinators.cs");
         string avaloniaPostRefreshCoordinatorText = File.ReadAllText(avaloniaPostRefreshCoordinatorPath);
 
@@ -138,6 +142,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(avaloniaAppCodeText, "ICharacterOverviewPresenter");
         StringAssert.Contains(avaloniaMainWindowCodeText, "public MainWindow(");
         StringAssert.Contains(avaloniaDialogsCodeText, "private async Task RunUiActionAsync");
+        StringAssert.Contains(avaloniaDialogsCodeText, "_actionExecutionCoordinator.RunAsync(operation, operationName, CancellationToken.None);");
+        StringAssert.Contains(avaloniaActionExecutionCoordinatorText, "_onFailure(operationName, ex);");
+        StringAssert.Contains(avaloniaUiActionFeedbackText, "private void ApplyUiActionFailure(string operationName, Exception ex)");
+        StringAssert.Contains(avaloniaUiActionFeedbackText, "MainWindowShellFrameProjector.Project(");
         StringAssert.Contains(avaloniaPostRefreshCoordinatorText, "DesktopDialogWindow dialogWindow = new(adapter);");
     }
 
@@ -707,6 +715,27 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Portal_downloads_repo_snapshot_is_local_dev_only_and_not_published()
+    {
+        string portalProjectPath = FindPath("Chummer.Portal", "Chummer.Portal.csproj");
+        string portalProjectText = File.ReadAllText(portalProjectPath);
+        string downloadsReadmePath = FindPath("Docker", "Downloads", "README.md");
+        string downloadsReadmeText = File.ReadAllText(downloadsReadmePath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+        string runbookPath = FindPath("docs", "SELF_HOSTED_DOWNLOADS_RUNBOOK.md");
+        string runbookText = File.ReadAllText(runbookPath);
+
+        StringAssert.Contains(portalProjectText, "<Content Update=\"downloads\\**\\*\">");
+        StringAssert.Contains(portalProjectText, "<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>");
+        StringAssert.Contains(portalProjectText, "<CopyToPublishDirectory>Never</CopyToPublishDirectory>");
+        StringAssert.Contains(readmeText, "is excluded from published portal output");
+        StringAssert.Contains(downloadsReadmeText, "production source of truth");
+        StringAssert.Contains(runbookText, "Published portal builds do not ship the checked-in `Chummer.Portal/downloads/releases.json` snapshot");
+        StringAssert.Contains(runbookText, "should surface as `manifest-missing`");
+    }
+
+    [TestMethod]
     public void Portal_download_manifest_discovers_local_artifacts_when_manifest_is_empty()
     {
         string portalProgramPath = FindPath("Chummer.Portal", "Program.cs");
@@ -889,7 +918,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(providerImplementationText, "BootstrapCacheWindow");
         StringAssert.Contains(providerImplementationText, "GetWorkspacesAsync");
         StringAssert.Contains(providerImplementationText, "_client.GetShellBootstrapAsync");
-        StringAssert.Contains(providerImplementationText, "_client.ListWorkspacesAsync");
+        StringAssert.Contains(providerImplementationText, "DefaultBootstrapCacheKey");
+        Assert.IsFalse(providerImplementationText.Contains("_client.ListWorkspacesAsync", StringComparison.Ordinal));
+        Assert.IsFalse(providerImplementationText.Contains("_client.GetShellPreferencesAsync", StringComparison.Ordinal));
+        Assert.IsFalse(providerImplementationText.Contains("_client.GetShellSessionAsync", StringComparison.Ordinal));
 
         StringAssert.Contains(shellPresenterText, "_bootstrapDataProvider.GetAsync");
         StringAssert.Contains(overviewPresenterText, "_bootstrapDataProvider.GetAsync");
@@ -970,9 +1002,10 @@ public class MigrationComplianceTests
         Assert.IsTrue(
             Regex.IsMatch(shellEndpointsText, @"if\s*\(string\.IsNullOrWhiteSpace\(preferredActiveWorkspaceId\)\)\s*return null;", RegexOptions.Multiline),
             "Shell bootstrap endpoint should return no active workspace when session state is empty.");
-        Assert.IsTrue(
-            Regex.IsMatch(bootstrapProviderText, @"if\s*\(string\.IsNullOrWhiteSpace\(preferredActiveWorkspaceId\)\)\s*return null;", RegexOptions.Multiline),
-            "Shell bootstrap provider should return no active workspace when session state is empty.");
+        StringAssert.Contains(bootstrapProviderText, "ActiveWorkspaceId: snapshot.ActiveWorkspaceId");
+        Assert.IsFalse(
+            bootstrapProviderText.Contains("preferredActiveWorkspaceId", StringComparison.Ordinal),
+            "Shell bootstrap provider should trust the bootstrap snapshot instead of reconstructing active workspace selection.");
         Assert.IsTrue(
             Regex.IsMatch(inProcessClientText, @"if\s*\(string\.IsNullOrWhiteSpace\(persistedActiveWorkspaceId\)\)\s*return null;", RegexOptions.Multiline),
             "In-process bootstrap client should return no active workspace when session state is empty.");
@@ -996,6 +1029,8 @@ public class MigrationComplianceTests
     {
         string shellSurfaceResolverPath = FindPath("Chummer.Presentation", "Shell", "ShellSurfaceResolver.cs");
         string shellSurfaceResolverText = File.ReadAllText(shellSurfaceResolverPath);
+        string characterOverviewPresenterPath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.cs");
+        string characterOverviewPresenterText = File.ReadAllText(characterOverviewPresenterPath);
         string avaloniaProjectorPath = FindPath("Chummer.Avalonia", "MainWindow.ShellFrameProjector.cs");
         string avaloniaProjectorText = File.ReadAllText(avaloniaProjectorPath);
 
@@ -1011,9 +1046,24 @@ public class MigrationComplianceTests
         Assert.IsFalse(
             shellSurfaceResolverText.Contains("overviewState.Session.OpenWorkspaces", StringComparison.Ordinal),
             "Shell surface resolver must not source open workspaces from overview session state.");
+        Assert.IsFalse(
+            shellSurfaceResolverText.Contains("overviewState.OpenWorkspaces", StringComparison.Ordinal),
+            "Shell surface resolver must not source open workspace saved status from overview state.");
+        Assert.IsFalse(
+            shellSurfaceResolverText.Contains("overviewState.LastCommandId", StringComparison.Ordinal),
+            "Shell surface resolver must not fall back to overview command history.");
+        Assert.IsFalse(
+            shellSurfaceResolverText.Contains("overviewState.Notice", StringComparison.Ordinal),
+            "Shell surface resolver must not fall back to overview notices.");
+        Assert.IsFalse(
+            shellSurfaceResolverText.Contains("overviewState.Error", StringComparison.Ordinal),
+            "Shell surface resolver must not fall back to overview errors.");
         StringAssert.Contains(shellSurfaceResolverText, "string? activeTabId = shellState.ActiveTabId;");
         StringAssert.Contains(shellSurfaceResolverText, "CharacterWorkspaceId? activeWorkspaceId = shellState.ActiveWorkspaceId;");
-        StringAssert.Contains(shellSurfaceResolverText, "ResolveOpenWorkspaces(shellState, overviewState)");
+        StringAssert.Contains(shellSurfaceResolverText, "shellState.OpenWorkspaces");
+        StringAssert.Contains(shellSurfaceResolverText, "LastCommandId: shellState.LastCommandId");
+        StringAssert.Contains(shellSurfaceResolverText, "Notice = shellState.Notice");
+        StringAssert.Contains(characterOverviewPresenterText, "_shellPresenter?.SyncOverviewFeedback(CreateShellOverviewFeedback(state));");
 
         Assert.IsFalse(
             avaloniaProjectorText.Contains("shellSurface.ActiveWorkspaceId ?? state.WorkspaceId", StringComparison.Ordinal),
@@ -1515,6 +1565,8 @@ public class MigrationComplianceTests
         string menuControlText = File.ReadAllText(menuControlPath);
         string codePath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
         string codeText = File.ReadAllText(codePath);
+        string controlBindingPath = FindPath("Chummer.Avalonia", "MainWindow.ControlBinding.cs");
+        string controlBindingText = File.ReadAllText(controlBindingPath);
         string statePath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
         string stateText = File.ReadAllText(statePath);
         string projectorPath = FindPath("Chummer.Avalonia", "MainWindow.ShellFrameProjector.cs");
@@ -1540,39 +1592,31 @@ public class MigrationComplianceTests
 
         Assert.IsFalse(codeText.Contains("FindControl<", StringComparison.Ordinal));
         StringAssert.Contains(codeText, "public MainWindow(");
-        StringAssert.Contains(codeText, "_toolStrip = ToolStripControl;");
-        StringAssert.Contains(codeText, "_workspaceStrip = WorkspaceStripControl;");
-        StringAssert.Contains(codeText, "_menuBar = ShellMenuBarControl;");
-        StringAssert.Contains(codeText, "_toolStrip.ImportFileRequested +=");
-        StringAssert.Contains(codeText, "_toolStrip.ImportRawRequested +=");
-        StringAssert.Contains(codeText, "_toolStrip.SaveRequested +=");
-        StringAssert.Contains(codeText, "_toolStrip.CloseWorkspaceRequested +=");
-        StringAssert.Contains(codeText, "_menuBar.MenuSelected +=");
-        StringAssert.Contains(codeText, "_navigatorPane = NavigatorPaneControl;");
-        StringAssert.Contains(codeText, "_sectionHost = SectionHostControl;");
-        StringAssert.Contains(codeText, "_commandDialogPane = CommandDialogPaneControl;");
-        StringAssert.Contains(codeText, "_summaryHeader = SummaryHeaderControl;");
-        StringAssert.Contains(codeText, "_statusStrip = StatusStripControl;");
-        StringAssert.Contains(codeText, "_navigatorPane.WorkspaceSelected +=");
-        StringAssert.Contains(codeText, "_commandDialogPane.CommandSelected +=");
+        StringAssert.Contains(codeText, "_controls = MainWindowControlBinder.Bind(");
+        Assert.IsFalse(codeText.Contains("private readonly ToolStripControl _toolStrip;", StringComparison.Ordinal));
+        Assert.IsFalse(codeText.Contains("private readonly WorkspaceStripControl _workspaceStrip;", StringComparison.Ordinal));
+        Assert.IsFalse(codeText.Contains("private readonly ShellMenuBarControl _menuBar;", StringComparison.Ordinal));
+        Assert.IsFalse(codeText.Contains("private readonly NavigatorPaneControl _navigatorPane;", StringComparison.Ordinal));
+        Assert.IsFalse(codeText.Contains("private readonly CommandDialogPaneControl _commandDialogPane;", StringComparison.Ordinal));
+        StringAssert.Contains(controlBindingText, "internal static class MainWindowControlBinder");
+        StringAssert.Contains(controlBindingText, "toolStrip.ImportFileRequested +=");
+        StringAssert.Contains(controlBindingText, "toolStrip.ImportRawRequested +=");
+        StringAssert.Contains(controlBindingText, "toolStrip.SaveRequested +=");
+        StringAssert.Contains(controlBindingText, "toolStrip.CloseWorkspaceRequested +=");
+        StringAssert.Contains(controlBindingText, "menuBar.MenuSelected +=");
+        StringAssert.Contains(controlBindingText, "navigatorPane.WorkspaceSelected +=");
+        StringAssert.Contains(controlBindingText, "commandDialogPane.CommandSelected +=");
+        StringAssert.Contains(controlBindingText, "internal sealed record MainWindowControls(");
+        StringAssert.Contains(controlBindingText, "public string SectionHostInputText => SectionHost.XmlInputText;");
+        StringAssert.Contains(controlBindingText, "public void ApplyShellFrame(MainWindowShellFrame shellFrame)");
         StringAssert.Contains(stateText, "MainWindowShellFrameProjector.Project(");
         StringAssert.Contains(stateText, "ApplyShellFrame(shellFrame);");
         StringAssert.Contains(stateText, "ApplyPostRefreshEffects(state);");
-        StringAssert.Contains(stateText, "ApplyHeaderState(shellFrame.HeaderState);");
-        StringAssert.Contains(stateText, "_navigatorPane.SetState(shellFrame.NavigatorPaneState);");
-        StringAssert.Contains(stateText, "_commandDialogPane.SetState(shellFrame.CommandDialogPaneState);");
-        StringAssert.Contains(stateText, "_sectionHost.SetState(shellFrame.SectionHostState);");
-        StringAssert.Contains(stateText, "_toolStrip.SetState(headerState.ToolStrip);");
-        StringAssert.Contains(stateText, "_menuBar.SetState(headerState.MenuBar);");
-        StringAssert.Contains(stateText, "ApplyChromeState(shellFrame.ChromeState);");
-        StringAssert.Contains(stateText, "_workspaceStrip.SetState(chromeState.WorkspaceStrip);");
-        StringAssert.Contains(stateText, "_summaryHeader.SetState(chromeState.SummaryHeader);");
-        StringAssert.Contains(stateText, "_statusStrip.SetState(chromeState.StatusStrip);");
+        StringAssert.Contains(stateText, "_controls.ApplyShellFrame(shellFrame);");
         StringAssert.Contains(stateText, "private void ApplyPostRefreshEffects(CharacterOverviewState state)");
-        StringAssert.Contains(stateText, "MainWindowDialogWindowCoordinator.Sync(");
-        StringAssert.Contains(stateText, "PendingDownloadDispatchCoordinator.TryCreate(");
-        StringAssert.Contains(stateText, "private void ApplyHeaderState(MainWindowHeaderState headerState)");
-        StringAssert.Contains(stateText, "private void ApplyChromeState(MainWindowChromeState chromeState)");
+        StringAssert.Contains(stateText, "PendingDownloadDispatchRequest? pendingDownloadRequest = _transientStateCoordinator.ApplyPostRefresh(");
+        Assert.IsFalse(stateText.Contains("private void ApplyHeaderState", StringComparison.Ordinal));
+        Assert.IsFalse(stateText.Contains("private void ApplyChromeState", StringComparison.Ordinal));
         StringAssert.Contains(navigatorCodeText, "public void SetState(NavigatorPaneState state)");
         StringAssert.Contains(navigatorCodeText, "SetOpenWorkspaces(state.OpenWorkspaces, state.SelectedWorkspaceId);");
         StringAssert.Contains(navigatorCodeText, "SetNavigationTabs(state.NavigationTabs, state.ActiveTabId);");
@@ -1594,10 +1638,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(toolStripCodeText, "SetStatusText(state.StatusText);");
         StringAssert.Contains(menuBarCodeText, "public void SetState(MenuBarState state)");
         StringAssert.Contains(menuBarCodeText, "SetMenuState(");
-        StringAssert.Contains(postRefreshCoordinatorText, "internal static class MainWindowDialogWindowCoordinator");
-        StringAssert.Contains(postRefreshCoordinatorText, "internal static class PendingDownloadDispatchCoordinator");
-        StringAssert.Contains(postRefreshCoordinatorText, "public static DesktopDialogWindow? Sync(");
-        StringAssert.Contains(postRefreshCoordinatorText, "public static PendingDownloadDispatchRequest? TryCreate(");
+        StringAssert.Contains(postRefreshCoordinatorText, "internal static class MainWindowPostRefreshCoordinator");
+        StringAssert.Contains(postRefreshCoordinatorText, "public static MainWindowPostRefreshResult Apply(");
+        StringAssert.Contains(postRefreshCoordinatorText, "private static DesktopDialogWindow? SyncDialogWindow(");
+        StringAssert.Contains(postRefreshCoordinatorText, "private static PendingDownloadDispatchRequest? TryCreatePendingDownload(");
         StringAssert.Contains(projectorText, "BuildWorkspaceActionLookup");
         StringAssert.Contains(projectorText, "WorkspaceActionsById");
         StringAssert.Contains(projectorText, "HeaderState: new MainWindowHeaderState(");
@@ -1631,6 +1675,186 @@ public class MigrationComplianceTests
         StringAssert.Contains(xamlText, "<controls:StatusStripControl");
         StringAssert.Contains(menuControlText, "Classes=\"menu-button\"");
         StringAssert.Contains(xamlText, "Button.menu-button.active-menu");
+    }
+
+    [TestMethod]
+    public void Avalonia_mainwindow_routes_shell_interactions_through_a_single_coordinator()
+    {
+        string mainWindowPath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
+        string mainWindowText = File.ReadAllText(mainWindowPath);
+        string coordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.InteractionCoordinator.cs");
+        string coordinatorText = File.ReadAllText(coordinatorPath);
+        string eventHandlersPath = FindPath("Chummer.Avalonia", "MainWindow.EventHandlers.cs");
+        string eventHandlersText = File.ReadAllText(eventHandlersPath);
+        string selectionHandlersPath = FindPath("Chummer.Avalonia", "MainWindow.SelectionHandlers.cs");
+        string selectionHandlersText = File.ReadAllText(selectionHandlersPath);
+
+        StringAssert.Contains(mainWindowText, "private readonly MainWindowInteractionCoordinator _interactionCoordinator;");
+        StringAssert.Contains(mainWindowText, "_interactionCoordinator = new MainWindowInteractionCoordinator(");
+        StringAssert.Contains(coordinatorText, "internal sealed class MainWindowInteractionCoordinator");
+        StringAssert.Contains(coordinatorText, "public async Task ExecuteCommandAsync(string commandId, CancellationToken ct)");
+        StringAssert.Contains(coordinatorText, "public async Task SelectTabAsync(string tabId, CancellationToken ct)");
+        StringAssert.Contains(coordinatorText, "public Task ExecuteDialogActionAsync(string actionId, CancellationToken ct)");
+        StringAssert.Contains(coordinatorText, "public bool TryGetActiveWorkspaceId(CharacterOverviewState state, out CharacterWorkspaceId activeWorkspaceId)");
+        StringAssert.Contains(eventHandlersText, "_interactionCoordinator.SaveAsync");
+        StringAssert.Contains(eventHandlersText, "_interactionCoordinator.ToggleMenuAsync");
+        StringAssert.Contains(eventHandlersText, "_interactionCoordinator.ExecuteCommandAsync");
+        StringAssert.Contains(selectionHandlersText, "_interactionCoordinator.ExecuteCommandAsync");
+        StringAssert.Contains(selectionHandlersText, "_interactionCoordinator.SwitchWorkspaceAsync");
+        StringAssert.Contains(selectionHandlersText, "_interactionCoordinator.SelectTabAsync");
+        StringAssert.Contains(selectionHandlersText, "_interactionCoordinator.ExecuteDialogActionAsync");
+        Assert.IsFalse(eventHandlersText.Contains("_shellPresenter.ToggleMenuAsync", StringComparison.Ordinal));
+        Assert.IsFalse(selectionHandlersText.Contains("_shellPresenter.SelectTabAsync", StringComparison.Ordinal));
+        Assert.IsFalse(selectionHandlersText.Contains("_adapter.ExecuteDialogActionAsync", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void Avalonia_mainwindow_routes_post_refresh_lifecycle_through_a_single_coordinator()
+    {
+        string stateRefreshPath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
+        string stateRefreshText = File.ReadAllText(stateRefreshPath);
+        string coordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.PostRefreshCoordinators.cs");
+        string coordinatorText = File.ReadAllText(coordinatorPath);
+
+        StringAssert.Contains(stateRefreshText, "PendingDownloadDispatchRequest? pendingDownloadRequest = _transientStateCoordinator.ApplyPostRefresh(");
+        Assert.IsFalse(stateRefreshText.Contains("MainWindowDialogWindowCoordinator.Sync", StringComparison.Ordinal));
+        Assert.IsFalse(stateRefreshText.Contains("PendingDownloadDispatchCoordinator.TryCreate", StringComparison.Ordinal));
+        StringAssert.Contains(coordinatorText, "internal static class MainWindowPostRefreshCoordinator");
+        StringAssert.Contains(coordinatorText, "DesktopDialogWindow? dialogWindow = SyncDialogWindow(");
+        StringAssert.Contains(coordinatorText, "PendingDownloadDispatchRequest? pendingDownloadRequest = TryCreatePendingDownload(");
+        StringAssert.Contains(coordinatorText, "internal sealed record MainWindowPostRefreshResult(");
+    }
+
+    [TestMethod]
+    public void Avalonia_mainwindow_routes_storage_operations_through_desktop_file_coordinator()
+    {
+        string eventHandlersPath = FindPath("Chummer.Avalonia", "MainWindow.EventHandlers.cs");
+        string eventHandlersText = File.ReadAllText(eventHandlersPath);
+        string downloadsPath = FindPath("Chummer.Avalonia", "MainWindow.Downloads.cs");
+        string downloadsText = File.ReadAllText(downloadsPath);
+        string coordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.DesktopFileCoordinator.cs");
+        string coordinatorText = File.ReadAllText(coordinatorPath);
+
+        StringAssert.Contains(coordinatorText, "internal static class MainWindowDesktopFileCoordinator");
+        StringAssert.Contains(coordinatorText, "public static async Task<DesktopImportFileResult> OpenImportFileAsync");
+        StringAssert.Contains(coordinatorText, "public static async Task<DesktopDownloadSaveResult> SaveDownloadAsync");
+        StringAssert.Contains(coordinatorText, "storageProvider.OpenFilePickerAsync");
+        StringAssert.Contains(coordinatorText, "storageProvider.SaveFilePickerAsync");
+        StringAssert.Contains(eventHandlersText, "MainWindowDesktopFileCoordinator.OpenImportFileAsync(");
+        StringAssert.Contains(downloadsText, "MainWindowDesktopFileCoordinator.SaveDownloadAsync(");
+        Assert.IsFalse(eventHandlersText.Contains("StorageProvider.OpenFilePickerAsync", StringComparison.Ordinal));
+        Assert.IsFalse(downloadsText.Contains("StorageProvider.SaveFilePickerAsync", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void Avalonia_mainwindow_routes_fallback_feedback_through_feedback_coordinator()
+    {
+        string eventHandlersPath = FindPath("Chummer.Avalonia", "MainWindow.EventHandlers.cs");
+        string eventHandlersText = File.ReadAllText(eventHandlersPath);
+        string downloadsPath = FindPath("Chummer.Avalonia", "MainWindow.Downloads.cs");
+        string downloadsText = File.ReadAllText(downloadsPath);
+        string feedbackPath = FindPath("Chummer.Avalonia", "MainWindow.FeedbackCoordinator.cs");
+        string feedbackText = File.ReadAllText(feedbackPath);
+        string uiFeedbackPath = FindPath("Chummer.Avalonia", "MainWindow.UiActionFeedback.cs");
+        string uiFeedbackText = File.ReadAllText(uiFeedbackPath);
+
+        StringAssert.Contains(feedbackText, "internal static class MainWindowFeedbackCoordinator");
+        StringAssert.Contains(feedbackText, "public static void ShowImportRawRequired");
+        StringAssert.Contains(feedbackText, "public static void ShowImportFileUnavailable");
+        StringAssert.Contains(feedbackText, "public static void ShowNoActiveWorkspace");
+        StringAssert.Contains(feedbackText, "public static void ShowDownloadUnavailable");
+        StringAssert.Contains(feedbackText, "public static void ShowDownloadCancelled");
+        StringAssert.Contains(feedbackText, "public static void ShowDownloadCompleted");
+        StringAssert.Contains(feedbackText, "public static void ApplyUiActionFailure(");
+        StringAssert.Contains(eventHandlersText, "MainWindowFeedbackCoordinator.ShowImportRawRequired(_controls.ToolStrip);");
+        StringAssert.Contains(eventHandlersText, "MainWindowFeedbackCoordinator.ShowImportFileUnavailable(_controls.ToolStrip);");
+        StringAssert.Contains(eventHandlersText, "MainWindowFeedbackCoordinator.ShowNoActiveWorkspace(_controls.ToolStrip);");
+        StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowDownloadUnavailable(_controls.SectionHost);");
+        StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowDownloadCancelled(_controls.SectionHost);");
+        StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowDownloadCompleted(");
+        StringAssert.Contains(uiFeedbackText, "MainWindowFeedbackCoordinator.ApplyUiActionFailure(");
+        Assert.IsFalse(eventHandlersText.Contains("_toolStrip.SetStatusText(", StringComparison.Ordinal));
+        Assert.IsFalse(downloadsText.Contains("_sectionHost.SetNotice(", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
+    public void Avalonia_mainwindow_routes_action_execution_through_a_single_coordinator()
+    {
+        string mainWindowPath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
+        string mainWindowText = File.ReadAllText(mainWindowPath);
+        string dialogsPath = FindPath("Chummer.Avalonia", "MainWindow.Dialogs.cs");
+        string dialogsText = File.ReadAllText(dialogsPath);
+        string coordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.ActionExecutionCoordinator.cs");
+        string coordinatorText = File.ReadAllText(coordinatorPath);
+
+        StringAssert.Contains(mainWindowText, "private readonly MainWindowActionExecutionCoordinator _actionExecutionCoordinator;");
+        StringAssert.Contains(mainWindowText, "_actionExecutionCoordinator = new MainWindowActionExecutionCoordinator(");
+        StringAssert.Contains(dialogsText, "_actionExecutionCoordinator.RunAsync(operation, operationName, CancellationToken.None);");
+        Assert.IsFalse(dialogsText.Contains("SyncShellWorkspaceContextAsync", StringComparison.Ordinal));
+        StringAssert.Contains(coordinatorText, "internal sealed class MainWindowActionExecutionCoordinator");
+        StringAssert.Contains(coordinatorText, "public async Task RunAsync(Func<Task> operation, string operationName, CancellationToken ct)");
+        StringAssert.Contains(coordinatorText, "_shellPresenter.SyncWorkspaceContextAsync(activeWorkspaceId, ct);");
+        StringAssert.Contains(coordinatorText, "_onFailure(operationName, ex);");
+    }
+
+    [TestMethod]
+    public void Avalonia_mainwindow_routes_lifecycle_hooks_through_a_single_coordinator()
+    {
+        string mainWindowPath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
+        string mainWindowText = File.ReadAllText(mainWindowPath);
+        string stateRefreshPath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
+        string stateRefreshText = File.ReadAllText(stateRefreshPath);
+        string coordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.LifecycleCoordinator.cs");
+        string coordinatorText = File.ReadAllText(coordinatorPath);
+
+        StringAssert.Contains(mainWindowText, "private readonly MainWindowLifecycleCoordinator _lifecycleCoordinator;");
+        StringAssert.Contains(mainWindowText, "_lifecycleCoordinator = new MainWindowLifecycleCoordinator(");
+        StringAssert.Contains(mainWindowText, "_lifecycleCoordinator.Attach();");
+        StringAssert.Contains(mainWindowText, "_lifecycleCoordinator.Detach(_transientStateCoordinator.DetachDialogWindow());");
+        Assert.IsFalse(mainWindowText.Contains("_adapter.Updated += (_, _) => RefreshState();", StringComparison.Ordinal));
+        Assert.IsFalse(mainWindowText.Contains("_shellPresenter.StateChanged += ShellPresenter_OnStateChanged;", StringComparison.Ordinal));
+        Assert.IsFalse(mainWindowText.Contains("Opened += OnOpened;", StringComparison.Ordinal));
+        Assert.IsFalse(stateRefreshText.Contains("private void ShellPresenter_OnStateChanged", StringComparison.Ordinal));
+        StringAssert.Contains(coordinatorText, "internal sealed class MainWindowLifecycleCoordinator");
+        StringAssert.Contains(coordinatorText, "public void Attach()");
+        StringAssert.Contains(coordinatorText, "public DesktopDialogWindow? Detach(DesktopDialogWindow? dialogWindow)");
+        StringAssert.Contains(coordinatorText, "_adapter.Updated += Adapter_OnUpdated;");
+        StringAssert.Contains(coordinatorText, "_shellPresenter.StateChanged += ShellPresenter_OnStateChanged;");
+        StringAssert.Contains(coordinatorText, "_window.Opened += _onOpened;");
+        StringAssert.Contains(coordinatorText, "_adapter.Dispose();");
+    }
+
+    [TestMethod]
+    public void Avalonia_mainwindow_routes_transient_window_state_through_a_single_coordinator()
+    {
+        string mainWindowPath = FindPath("Chummer.Avalonia", "MainWindow.axaml.cs");
+        string mainWindowText = File.ReadAllText(mainWindowPath);
+        string stateRefreshPath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
+        string stateRefreshText = File.ReadAllText(stateRefreshPath);
+        string selectionHandlersPath = FindPath("Chummer.Avalonia", "MainWindow.SelectionHandlers.cs");
+        string selectionHandlersText = File.ReadAllText(selectionHandlersPath);
+        string dialogsPath = FindPath("Chummer.Avalonia", "MainWindow.Dialogs.cs");
+        string dialogsText = File.ReadAllText(dialogsPath);
+        string downloadsPath = FindPath("Chummer.Avalonia", "MainWindow.Downloads.cs");
+        string downloadsText = File.ReadAllText(downloadsPath);
+        string coordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.TransientStateCoordinator.cs");
+        string coordinatorText = File.ReadAllText(coordinatorPath);
+
+        StringAssert.Contains(mainWindowText, "private readonly MainWindowTransientStateCoordinator _transientStateCoordinator;");
+        StringAssert.Contains(mainWindowText, "_transientStateCoordinator = new MainWindowTransientStateCoordinator();");
+        Assert.IsFalse(mainWindowText.Contains("_dialogWindow", StringComparison.Ordinal));
+        Assert.IsFalse(mainWindowText.Contains("_lastDownloadVersionHandled", StringComparison.Ordinal));
+        Assert.IsFalse(mainWindowText.Contains("_workspaceActionsById", StringComparison.Ordinal));
+        StringAssert.Contains(stateRefreshText, "_transientStateCoordinator.ApplyShellFrame(shellFrame);");
+        StringAssert.Contains(stateRefreshText, "PendingDownloadDispatchRequest? pendingDownloadRequest = _transientStateCoordinator.ApplyPostRefresh(");
+        StringAssert.Contains(selectionHandlersText, "_transientStateCoordinator.TryResolveWorkspaceAction(actionId, out WorkspaceSurfaceActionDefinition? action)");
+        StringAssert.Contains(dialogsText, "_transientStateCoordinator.ClearDialogWindow(sender);");
+        StringAssert.Contains(downloadsText, "if (!_transientStateCoordinator.ShouldHandleDownload(request))");
+        StringAssert.Contains(coordinatorText, "internal sealed class MainWindowTransientStateCoordinator");
+        StringAssert.Contains(coordinatorText, "public void ApplyShellFrame(MainWindowShellFrame shellFrame)");
+        StringAssert.Contains(coordinatorText, "public PendingDownloadDispatchRequest? ApplyPostRefresh(");
+        StringAssert.Contains(coordinatorText, "public bool TryResolveWorkspaceAction(string actionId, out WorkspaceSurfaceActionDefinition? action)");
+        StringAssert.Contains(coordinatorText, "public DesktopDialogWindow? DetachDialogWindow()");
     }
 
     [TestMethod]

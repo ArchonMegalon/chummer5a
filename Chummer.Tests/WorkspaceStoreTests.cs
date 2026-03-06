@@ -27,9 +27,9 @@ public class WorkspaceStoreTests
             bool found = store.TryGet(id, out WorkspaceDocument actual);
 
             Assert.IsTrue(found);
-            Assert.AreEqual(expected.Content, actual.Content);
+            Assert.AreEqual(expected.PayloadEnvelope.Payload, actual.PayloadEnvelope.Payload);
             Assert.AreEqual(expected.Format, actual.Format);
-            Assert.AreEqual(RulesetDefaults.Sr5, actual.RulesetId);
+            Assert.AreEqual(RulesetDefaults.Sr5, actual.PayloadEnvelope.RulesetId);
         }
         finally
         {
@@ -53,7 +53,7 @@ public class WorkspaceStoreTests
                 FileWorkspaceStore store = new(stateDirectory);
                 bool found = store.TryGet(id, out WorkspaceDocument loaded);
                 Assert.IsTrue(found);
-                StringAssert.Contains(loaded.Content, "BLUE");
+                StringAssert.Contains(loaded.PayloadEnvelope.Payload, "BLUE");
             }
         }
         finally
@@ -78,7 +78,7 @@ public class WorkspaceStoreTests
                 FileWorkspaceStore store = new(stateDirectory);
                 bool found = store.TryGet(id, out WorkspaceDocument loaded);
                 Assert.IsTrue(found);
-                Assert.AreEqual("sr6", loaded.RulesetId);
+                Assert.AreEqual("sr6", loaded.PayloadEnvelope.RulesetId);
             }
         }
         finally
@@ -137,9 +137,9 @@ public class WorkspaceStoreTests
             bool found = store.TryGet(id, out WorkspaceDocument loaded);
 
             Assert.IsTrue(found);
-            StringAssert.Contains(loaded.Content, "Legacy");
+            StringAssert.Contains(loaded.PayloadEnvelope.Payload, "Legacy");
             Assert.AreEqual(WorkspaceDocumentFormat.Chum5Xml, loaded.Format);
-            Assert.AreEqual("sr6", loaded.RulesetId);
+            Assert.AreEqual("sr6", loaded.PayloadEnvelope.RulesetId);
         }
         finally
         {

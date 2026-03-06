@@ -107,7 +107,8 @@ public sealed class HttpChummerClient : IChummerClient
                 Id: new CharacterWorkspaceId(workspace.Id),
                 Summary: workspace.Summary,
                 LastUpdatedUtc: workspace.LastUpdatedUtc,
-                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId)))
+                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
+                HasSavedWorkspace: workspace.HasSavedWorkspace))
             .ToArray();
     }
 
@@ -180,7 +181,8 @@ public sealed class HttpChummerClient : IChummerClient
                 Id: new CharacterWorkspaceId(workspace.Id),
                 Summary: workspace.Summary,
                 LastUpdatedUtc: workspace.LastUpdatedUtc,
-                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId)))
+                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
+                HasSavedWorkspace: workspace.HasSavedWorkspace))
             .ToArray();
 
         return new ShellBootstrapSnapshot(

@@ -43,7 +43,7 @@ public class RulesetSeamContractsTests
             LastUpdatedUtc: DateTimeOffset.UtcNow);
         WorkspacePayloadEnvelope envelope = new(RulesetDefaults.Sr5, SchemaVersion: 1, PayloadKind: "workspace", Payload: "{}");
 
-        Assert.AreEqual(RulesetDefaults.Sr5, workspaceDocument.RulesetId);
+        Assert.AreEqual(RulesetDefaults.Sr5, workspaceDocument.PayloadEnvelope.RulesetId);
         Assert.AreEqual(RulesetDefaults.Sr5, importDocument.RulesetId);
         Assert.AreEqual(RulesetDefaults.Sr5, saveReceipt.RulesetId);
         Assert.AreEqual(RulesetDefaults.Sr5, downloadReceipt.RulesetId);

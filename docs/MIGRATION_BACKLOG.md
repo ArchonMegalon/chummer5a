@@ -136,23 +136,29 @@ Progress: added `Avalonia_and_Blazor_dialog_workflow_keeps_shell_regions_in_pari
 
 ### Phase 6: Migrate tab families through workspace sections
 
-- [ ] `MIG-060` Family migration: `Overview/Info` harden payload + commands + acceptance path.
+- [x] `MIG-060` Family migration: `Overview/Info` harden payload + commands + acceptance path.
 Acceptance criteria: both heads use shared section route and pass one real `.chum5` acceptance flow.
+Progress: covered by `Avalonia_and_Blazor_overview_flows_show_equivalent_state_after_import`, `Avalonia_and_Blazor_workspace_action_summary_matches`, `Avalonia_and_Blazor_info_family_workspace_actions_render_matching_sections`, and the comprehensive section-action acceptance sweep in `DualHeadAcceptanceTests`.
 
-- [ ] `MIG-061` Family migration: `Attributes/Skills/Qualities`.
+- [x] `MIG-061` Family migration: `Attributes/Skills/Qualities`.
 Acceptance criteria: section rendering and commands are equivalent across both heads with tests.
+Progress: covered by `Avalonia_and_Blazor_attributes_and_skills_workspace_actions_render_matching_sections` plus the comprehensive section-action acceptance sweep, which includes `tab-qualities.*` parity.
 
-- [ ] `MIG-062` Family migration: `Inventory/Combat`.
+- [x] `MIG-062` Family migration: `Inventory/Combat`.
 Acceptance criteria: same command IDs and section payload semantics across both heads.
+Progress: covered by `Avalonia_and_Blazor_gear_family_workspace_actions_render_matching_sections`, `Avalonia_and_Blazor_combat_and_cyberware_workspace_actions_render_matching_sections`, and the comprehensive section-action acceptance sweep.
 
-- [ ] `MIG-063` Family migration: `Magic/Resonance`.
+- [x] `MIG-063` Family migration: `Magic/Resonance`.
 Acceptance criteria: same shared behavior path and parity tests for common workflows.
+Progress: covered by `Avalonia_and_Blazor_magic_family_workspace_actions_render_matching_sections` plus the comprehensive section-action acceptance sweep.
 
-- [ ] `MIG-064` Family migration: `Social/Career`.
+- [x] `MIG-064` Family migration: `Social/Career`.
 Acceptance criteria: import/edit/save flows pass with parity checks for affected tabs/actions.
+Progress: covered by `Avalonia_and_Blazor_support_family_workspace_actions_render_matching_sections` plus the comprehensive section-action acceptance sweep across lifestyles, contacts, calendar, improvements, progress, and expenses.
 
-- [ ] `MIG-065` Family migration: `Tools` (settings, roster, translator, XML editor, index, export/print entry points).
+- [x] `MIG-065` Family migration: `Tools` (settings, roster, translator, XML editor, index, export/print entry points).
 Acceptance criteria: tool command handling is shared and no head-specific business logic is added.
+Progress: covered by `Avalonia_and_Blazor_dialog_and_import_commands_expose_matching_dialog_contracts`, `Avalonia_and_Blazor_character_settings_save_updates_shared_state`, and `Avalonia_and_Blazor_download_and_export_commands_prepare_matching_receipts`.
 
 ### Phase 7: Save/export semantics and XML boundary cleanup
 

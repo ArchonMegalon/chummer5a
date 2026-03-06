@@ -289,6 +289,22 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task SaveAsync_syncs_shell_feedback_when_shell_presenter_is_supplied()
+    {
+        var client = new FakeChummerClient();
+        var shellPresenter = new ShellPresenterStub(ShellState.Empty);
+        var presenter = new CharacterOverviewPresenter(client, shellPresenter: shellPresenter);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.SaveAsync(CancellationToken.None);
+
+        Assert.IsNotNull(shellPresenter.LastOverviewFeedback);
+        Assert.AreEqual("Workspace saved.", shellPresenter.LastOverviewFeedback.Notice);
+        Assert.AreEqual("ws-1", shellPresenter.LastOverviewFeedback.OpenWorkspaces[0].Id.Value);
+        Assert.IsTrue(shellPresenter.LastOverviewFeedback.OpenWorkspaces[0].HasSavedWorkspace);
+    }
+
+    [TestMethod]
     public async Task ExecuteCommandAsync_save_character_marks_workspace_as_saved()
     {
         var client = new FakeChummerClient();
@@ -1318,6 +1334,7 @@ public class CharacterOverviewPresenterTests
 
         public ShellState State { get; private set; }
         public string? LastPreferredRulesetId { get; private set; }
+        public ShellOverviewFeedback? LastOverviewFeedback { get; private set; }
 
         public event EventHandler? StateChanged
         {
@@ -1359,6 +1376,11 @@ public class CharacterOverviewPresenterTests
         public Task SyncWorkspaceContextAsync(CharacterWorkspaceId? activeWorkspaceId, CancellationToken ct)
         {
             return Task.CompletedTask;
+        }
+
+        public void SyncOverviewFeedback(ShellOverviewFeedback feedback)
+        {
+            LastOverviewFeedback = feedback;
         }
     }
 }

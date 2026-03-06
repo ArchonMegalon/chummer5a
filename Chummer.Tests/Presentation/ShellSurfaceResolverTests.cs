@@ -33,7 +33,8 @@ public sealed class ShellSurfaceResolverTests
                     Name: "Shell Runner",
                     Alias: "SHL",
                     LastOpenedUtc: DateTimeOffset.UtcNow,
-                    RulesetId: "sr6")
+                    RulesetId: "sr6",
+                    HasSavedWorkspace: true)
             ],
             Commands = [fileMenu, saveCommand],
             MenuRoots = [fileMenu],
@@ -68,41 +69,6 @@ public sealed class ShellSurfaceResolverTests
 
         CharacterOverviewState overviewState = CharacterOverviewState.Empty with
         {
-            Session = new WorkspaceSessionState(
-                ActiveWorkspaceId: new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview"),
-                OpenWorkspaces:
-                [
-                    new OpenWorkspaceState(
-                        Id: shellWorkspaceId,
-                        Name: "Shell Runner",
-                        Alias: "SHL",
-                        LastOpenedUtc: DateTimeOffset.UtcNow,
-                        RulesetId: "sr6",
-                        HasSavedWorkspace: true),
-                    new OpenWorkspaceState(
-                        Id: new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview"),
-                        Name: "Overview Runner",
-                        Alias: "OVR",
-                        LastOpenedUtc: DateTimeOffset.UtcNow,
-                        RulesetId: "sr6")
-                ],
-                RecentWorkspaceIds: []),
-            OpenWorkspaces =
-            [
-                new OpenWorkspaceState(
-                    Id: shellWorkspaceId,
-                    Name: "Shell Runner",
-                    Alias: "SHL",
-                    LastOpenedUtc: DateTimeOffset.UtcNow,
-                    RulesetId: "sr6",
-                    HasSavedWorkspace: true),
-                new OpenWorkspaceState(
-                    Id: new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview"),
-                    Name: "Overview Runner",
-                    Alias: "OVR",
-                    LastOpenedUtc: DateTimeOffset.UtcNow,
-                    RulesetId: "sr6")
-            ],
             ActiveTabId = "tab-overview",
             WorkspaceId = new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-overview")
         };
@@ -177,7 +143,8 @@ public sealed class ShellSurfaceResolverTests
             ActiveTabId = profileTab.Id,
             OpenMenuId = "file",
             Notice = "surface-notice",
-            Error = "surface-error"
+            Error = "surface-error",
+            LastCommandId = "shell-command"
         };
 
         var allowedAction = new WorkspaceSurfaceActionDefinition(
@@ -222,7 +189,7 @@ public sealed class ShellSurfaceResolverTests
         Assert.AreEqual("file", surface.OpenMenuId);
         Assert.AreEqual("surface-notice", surface.Notice);
         Assert.AreEqual("surface-error", surface.Error);
-        Assert.AreEqual("overview-command", surface.LastCommandId);
+        Assert.AreEqual("shell-command", surface.LastCommandId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastWorkspaceActionTabId);
         Assert.AreEqual("sr6", catalogResolver.LastWorkspaceActionRulesetId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastUiControlTabId);

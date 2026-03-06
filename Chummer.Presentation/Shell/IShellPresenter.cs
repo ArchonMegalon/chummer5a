@@ -17,4 +17,8 @@ public interface IShellPresenter
     Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct);
 
     Task SyncWorkspaceContextAsync(Chummer.Contracts.Workspaces.CharacterWorkspaceId? activeWorkspaceId, CancellationToken ct);
+
+    void SyncOverviewFeedback(ShellOverviewFeedback feedback)
+    {
+    }
 }

@@ -11,6 +11,10 @@ Expected contents:
 The portal serves `/downloads/releases.json` from this directory and resolves
 `/downloads/files/<artifact>` from the same root.
 
+Published portal builds do not ship the checked-in `Chummer.Portal/downloads`
+snapshot. This mounted directory is the production source of truth for
+`/downloads/*`.
+
 Populate this directory from the `desktop-download-bundle` artifact produced by
 `.github/workflows/desktop-downloads-matrix.yml`, or use:
 

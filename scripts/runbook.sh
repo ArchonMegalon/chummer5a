@@ -112,6 +112,18 @@ if [[ "$RUNBOOK_MODE" == "local-tests" ]]; then
   export AVALONIA_TELEMETRY_OPTOUT="${AVALONIA_TELEMETRY_OPTOUT:-1}"
   export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER="${DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER:-1}"
   export MSBUILDDISABLENODEREUSE="${MSBUILDDISABLENODEREUSE:-1}"
+  if [[ -z "${CHUMMER_API_BASE_URL:-}" ]] && command -v docker >/dev/null 2>&1; then
+    set +e
+    detected_api_binding="$(docker compose port chummer-api 8080 2>/dev/null | tail -n 1)"
+    detected_api_status=$?
+    set -e
+    if [[ "$detected_api_status" -eq 0 && -n "$detected_api_binding" ]]; then
+      detected_api_port="${detected_api_binding##*:}"
+      if [[ "$detected_api_port" =~ ^[0-9]+$ ]]; then
+        export CHUMMER_API_BASE_URL="http://127.0.0.1:${detected_api_port}"
+      fi
+    fi
+  fi
   framework_args=()
   filter_args=()
   cpu_args=()
@@ -172,6 +184,9 @@ PY
         exit 1
       fi
     fi
+  fi
+  if [[ -n "${CHUMMER_API_BASE_URL:-}" ]]; then
+    echo "local-tests using CHUMMER_API_BASE_URL=$CHUMMER_API_BASE_URL"
   fi
   set +e
   dotnet test "$TEST_PROJECT" -c "$TEST_CONFIGURATION" "${framework_args[@]}" "${filter_args[@]}" "${cpu_args[@]}" "${server_args[@]}" "${restore_args[@]}" "${build_args[@]}" --logger "console;verbosity=normal" 2>&1 | tee "$TEST_LOG_FILE"

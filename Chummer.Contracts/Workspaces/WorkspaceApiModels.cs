@@ -23,7 +23,8 @@ public sealed record WorkspaceListItemResponse(
     string Id,
     CharacterFileSummary Summary,
     DateTimeOffset LastUpdatedUtc,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId = RulesetDefaults.Sr5,
+    bool HasSavedWorkspace = false);
 
 public sealed record WorkspaceListResponse(
     int Count,

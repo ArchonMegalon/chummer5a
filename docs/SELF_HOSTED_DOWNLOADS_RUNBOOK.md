@@ -98,5 +98,6 @@ The portal manifest/page now distinguishes operator states explicitly:
 Operational expectation:
 
 1. Production/self-hosted deploys should end in `published`.
-2. `unpublished` is acceptable only before the first release.
+2. `unpublished` is acceptable only before the first release or in local-dev output that intentionally keeps the repo fallback snapshot.
 3. `manifest-empty`, `manifest-missing`, and `manifest-error` should be treated as operator failures, not user-facing “normal empty state”.
+4. Published portal builds do not ship the checked-in `Chummer.Portal/downloads/releases.json` snapshot, so a missing storage mount should surface as `manifest-missing`, not as a fake `unpublished` release feed.

@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Overview;
@@ -96,14 +97,29 @@ public sealed partial class CharacterOverviewPresenter
             return;
         }
 
+        string rulesetId = ResolveWorkspaceRulesetId(_currentWorkspace.Value);
         NavigationTabDefinition? tab = State.NavigationTabs.FirstOrDefault(item => string.Equals(item.Id, tabId, StringComparison.Ordinal));
+        tab ??= RulesetShellCatalogResolver.ResolveNavigationTabs(rulesetId)
+            .FirstOrDefault(item => string.Equals(item.Id, tabId, StringComparison.Ordinal));
         if (tab is null)
         {
             Publish(State with { Error = $"Unknown tab '{tabId}'." });
             return;
         }
 
-        await LoadSectionAsync(tab.SectionId, tab.Id, $"{tab.Id}:{tab.SectionId}", ct);
+        WorkspaceSurfaceActionDefinition? defaultAction = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(
+                tab.Id,
+                rulesetId)
+            .FirstOrDefault(action =>
+                action.Kind == WorkspaceSurfaceActionKind.Section
+                && string.Equals(action.TargetId, tab.SectionId, StringComparison.Ordinal));
+        if (defaultAction is not null)
+        {
+            await ExecuteWorkspaceActionAsync(defaultAction, ct);
+            return;
+        }
+
+        await LoadSectionAsync(tab.SectionId, tab.Id, $"{tab.Id}.{tab.SectionId}", ct);
     }
 
 }

@@ -1,9 +1,6 @@
-using System.IO;
-using System.Linq;
 using System.Text;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Platform.Storage;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Shell;
 
@@ -13,10 +10,10 @@ public partial class MainWindow
 {
     private async void ToolStrip_OnImportRawRequested(object? sender, EventArgs e)
     {
-        string importText = _sectionHost.XmlInputText;
+        string importText = _controls.SectionHostInputText;
         if (string.IsNullOrWhiteSpace(importText))
         {
-            _toolStrip.SetStatusText("State: provide debug XML content before importing.");
+            MainWindowFeedbackCoordinator.ShowImportRawRequired(_controls.ToolStrip);
             return;
         }
 
@@ -27,36 +24,23 @@ public partial class MainWindow
 
     private async void ToolStrip_OnImportFileRequested(object? sender, EventArgs e)
     {
-        if (!StorageProvider.CanOpen)
+        DesktopImportFileResult importFile = await MainWindowDesktopFileCoordinator.OpenImportFileAsync(
+            StorageProvider,
+            CancellationToken.None);
+        if (importFile.Outcome == DesktopFileOperationOutcome.Unavailable)
         {
-            _toolStrip.SetStatusText("State: file picker unavailable on this platform.");
+            MainWindowFeedbackCoordinator.ShowImportFileUnavailable(_controls.ToolStrip);
             return;
         }
 
-        await RunUiActionAsync(async () =>
+        if (importFile.Outcome != DesktopFileOperationOutcome.Completed || importFile.Payload is null)
         {
-            IReadOnlyList<IStorageFile> files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-            {
-                Title = "Open Character File",
-                AllowMultiple = false,
-                FileTypeFilter =
-                [
-                    new FilePickerFileType("Chummer Character Files")
-                    {
-                        Patterns = ["*.chum5", "*.xml"]
-                    }
-                ]
-            });
+            return;
+        }
 
-            IStorageFile? file = files.FirstOrDefault();
-            if (file is null)
-                return;
-
-            await using Stream stream = await file.OpenReadAsync();
-            using MemoryStream memory = new();
-            await stream.CopyToAsync(memory, CancellationToken.None);
-            await _adapter.ImportAsync(memory.ToArray(), CancellationToken.None);
-        }, "import character file");
+        await RunUiActionAsync(
+            () => _adapter.ImportAsync(importFile.Payload, CancellationToken.None),
+            "import character file");
     }
 
     private async void OnOpened(object? sender, EventArgs e)
@@ -73,28 +57,27 @@ public partial class MainWindow
     private async void ToolStrip_OnSaveRequested(object? sender, EventArgs e)
     {
         await RunUiActionAsync(
-            () => _presenter.SaveAsync(CancellationToken.None),
+            () => _interactionCoordinator.SaveAsync(CancellationToken.None),
             "save workspace");
     }
 
     private async void ToolStrip_OnCloseWorkspaceRequested(object? sender, EventArgs e)
     {
-        CharacterWorkspaceId? activeWorkspaceId = _adapter.State.Session.ActiveWorkspaceId ?? _adapter.State.WorkspaceId;
-        if (activeWorkspaceId is null)
+        if (!_interactionCoordinator.TryGetActiveWorkspaceId(_adapter.State, out CharacterWorkspaceId activeWorkspaceId))
         {
-            _toolStrip.SetStatusText("State: no active workspace to close.");
+            MainWindowFeedbackCoordinator.ShowNoActiveWorkspace(_controls.ToolStrip);
             return;
         }
 
         await RunUiActionAsync(
-            () => _adapter.CloseWorkspaceAsync(activeWorkspaceId.Value, CancellationToken.None),
+            () => _interactionCoordinator.CloseWorkspaceAsync(activeWorkspaceId, CancellationToken.None),
             "close workspace");
     }
 
     private async void MenuBar_OnMenuSelected(object? sender, string menuId)
     {
         await RunUiActionAsync(
-            () => _shellPresenter.ToggleMenuAsync(menuId, CancellationToken.None),
+            () => _interactionCoordinator.ToggleMenuAsync(menuId, CancellationToken.None),
             $"toggle menu '{menuId}'");
     }
 
@@ -115,11 +98,7 @@ public partial class MainWindow
 
         e.Handled = true;
         await RunUiActionAsync(
-            async () =>
-            {
-                await _shellPresenter.ExecuteCommandAsync(commandId, CancellationToken.None);
-                await _adapter.ExecuteCommandAsync(commandId, CancellationToken.None);
-            },
+            () => _interactionCoordinator.ExecuteCommandAsync(commandId, CancellationToken.None),
             $"execute hotkey command '{commandId}'");
     }
 }

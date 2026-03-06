@@ -50,7 +50,8 @@ public static class ShellEndpoints
                     Id: workspace.Id.Value,
                     Summary: workspace.Summary,
                     LastUpdatedUtc: workspace.LastUpdatedUtc,
-                    RulesetId: workspace.RulesetId))
+                    RulesetId: workspace.RulesetId,
+                    HasSavedWorkspace: workspace.HasSavedWorkspace))
                 .ToArray();
 
             return Results.Ok(new ShellBootstrapResponse(

@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Chummer.Avalonia.Controls;
 using Chummer.Contracts.Presentation;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
@@ -9,23 +8,15 @@ namespace Chummer.Avalonia;
 
 public partial class MainWindow : Window
 {
-    private readonly ICharacterOverviewPresenter _presenter;
     private readonly IShellPresenter _shellPresenter;
     private readonly ICommandAvailabilityEvaluator _commandAvailabilityEvaluator;
     private readonly IShellSurfaceResolver _shellSurfaceResolver;
     private readonly CharacterOverviewViewModelAdapter _adapter;
-    private readonly ToolStripControl _toolStrip;
-    private readonly WorkspaceStripControl _workspaceStrip;
-    private readonly SummaryHeaderControl _summaryHeader;
-    private readonly ShellMenuBarControl _menuBar;
-    private readonly NavigatorPaneControl _navigatorPane;
-    private readonly SectionHostControl _sectionHost;
-    private readonly CommandDialogPaneControl _commandDialogPane;
-    private readonly StatusStripControl _statusStrip;
-    private DesktopDialogWindow? _dialogWindow;
-    private long _lastDownloadVersionHandled;
-    private IReadOnlyDictionary<string, WorkspaceSurfaceActionDefinition> _workspaceActionsById
-        = new Dictionary<string, WorkspaceSurfaceActionDefinition>(StringComparer.Ordinal);
+    private readonly MainWindowActionExecutionCoordinator _actionExecutionCoordinator;
+    private readonly MainWindowInteractionCoordinator _interactionCoordinator;
+    private readonly MainWindowLifecycleCoordinator _lifecycleCoordinator;
+    private readonly MainWindowTransientStateCoordinator _transientStateCoordinator;
+    private readonly MainWindowControls _controls;
 
     public MainWindow()
         : this(
@@ -46,36 +37,46 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        _presenter = presenter;
         _shellPresenter = shellPresenter;
         _commandAvailabilityEvaluator = commandAvailabilityEvaluator;
         _shellSurfaceResolver = shellSurfaceResolver;
         _adapter = adapter;
-        _adapter.Updated += (_, _) => RefreshState();
-        _shellPresenter.StateChanged += ShellPresenter_OnStateChanged;
+        _actionExecutionCoordinator = new MainWindowActionExecutionCoordinator(
+            adapter,
+            shellPresenter,
+            ApplyUiActionFailure);
+        _interactionCoordinator = new MainWindowInteractionCoordinator(presenter, shellPresenter, adapter);
+        _transientStateCoordinator = new MainWindowTransientStateCoordinator();
 
-        _toolStrip = ToolStripControl;
-        _toolStrip.ImportFileRequested += ToolStrip_OnImportFileRequested;
-        _toolStrip.ImportRawRequested += ToolStrip_OnImportRawRequested;
-        _toolStrip.SaveRequested += ToolStrip_OnSaveRequested;
-        _toolStrip.CloseWorkspaceRequested += ToolStrip_OnCloseWorkspaceRequested;
-        _workspaceStrip = WorkspaceStripControl;
-        _menuBar = ShellMenuBarControl;
-        _menuBar.MenuSelected += MenuBar_OnMenuSelected;
-        _summaryHeader = SummaryHeaderControl;
-        _navigatorPane = NavigatorPaneControl;
-        _navigatorPane.WorkspaceSelected += NavigatorPane_OnWorkspaceSelected;
-        _navigatorPane.NavigationTabSelected += NavigatorPane_OnNavigationTabSelected;
-        _navigatorPane.SectionActionSelected += NavigatorPane_OnSectionActionSelected;
-        _navigatorPane.UiControlSelected += NavigatorPane_OnUiControlSelected;
-        _sectionHost = SectionHostControl;
-        _commandDialogPane = CommandDialogPaneControl;
-        _commandDialogPane.CommandSelected += CommandDialogPane_OnCommandSelected;
-        _commandDialogPane.DialogActionSelected += CommandDialogPane_OnDialogActionSelected;
-        _statusStrip = StatusStripControl;
+        _controls = MainWindowControlBinder.Bind(
+            toolStrip: ToolStripControl,
+            workspaceStrip: WorkspaceStripControl,
+            summaryHeader: SummaryHeaderControl,
+            menuBar: ShellMenuBarControl,
+            navigatorPane: NavigatorPaneControl,
+            sectionHost: SectionHostControl,
+            commandDialogPane: CommandDialogPaneControl,
+            statusStrip: StatusStripControl,
+            onImportFileRequested: ToolStrip_OnImportFileRequested,
+            onImportRawRequested: ToolStrip_OnImportRawRequested,
+            onSaveRequested: ToolStrip_OnSaveRequested,
+            onCloseWorkspaceRequested: ToolStrip_OnCloseWorkspaceRequested,
+            onMenuSelected: MenuBar_OnMenuSelected,
+            onWorkspaceSelected: NavigatorPane_OnWorkspaceSelected,
+            onNavigationTabSelected: NavigatorPane_OnNavigationTabSelected,
+            onSectionActionSelected: NavigatorPane_OnSectionActionSelected,
+            onUiControlSelected: NavigatorPane_OnUiControlSelected,
+            onCommandSelected: CommandDialogPane_OnCommandSelected,
+            onDialogActionSelected: CommandDialogPane_OnDialogActionSelected);
+        _lifecycleCoordinator = new MainWindowLifecycleCoordinator(
+            this,
+            adapter,
+            shellPresenter,
+            RefreshState,
+            OnOpened);
+        _lifecycleCoordinator.Attach();
 
         RefreshState();
-        Opened += OnOpened;
     }
 
     private static T ResolveService<T>()
@@ -88,14 +89,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        if (_dialogWindow is not null)
-        {
-            _dialogWindow.CloseFromPresenter();
-            _dialogWindow = null;
-        }
-
-        _shellPresenter.StateChanged -= ShellPresenter_OnStateChanged;
-        _adapter.Dispose();
+        _lifecycleCoordinator.Detach(_transientStateCoordinator.DetachDialogWindow());
         base.OnClosed(e);
     }
 }

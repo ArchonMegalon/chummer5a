@@ -362,12 +362,49 @@ public class ShellPresenterTests
         Assert.AreEqual("tab-rules", presenter.State.ActiveTabId);
     }
 
+    [TestMethod]
+    public async Task SyncOverviewFeedback_updates_shell_feedback_and_saved_workspace_status()
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        var client = new ShellClientStub
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-1", "Runner", "R1", now, hasSavedWorkspace: false)
+            ],
+            Session = new ShellSessionState(ActiveWorkspaceId: "ws-1")
+        };
+        var presenter = new ShellPresenter(client);
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        presenter.SyncOverviewFeedback(new ShellOverviewFeedback(
+            OpenWorkspaces:
+            [
+                new ShellWorkspaceState(
+                    Id: new CharacterWorkspaceId("ws-1"),
+                    Name: "Runner",
+                    Alias: "R1",
+                    LastOpenedUtc: now,
+                    RulesetId: RulesetDefaults.Sr5,
+                    HasSavedWorkspace: true)
+            ],
+            Notice: "Workspace saved.",
+            Error: null,
+            LastCommandId: "save_character"));
+
+        Assert.IsTrue(presenter.State.OpenWorkspaces[0].HasSavedWorkspace);
+        Assert.AreEqual("Workspace saved.", presenter.State.Notice);
+        Assert.AreEqual("save_character", presenter.State.LastCommandId);
+        Assert.AreEqual("ws-1", presenter.State.ActiveWorkspaceId?.Value);
+    }
+
     private static WorkspaceListItem CreateWorkspace(
         string id,
         string name,
         string alias,
         DateTimeOffset lastUpdatedUtc,
-        string rulesetId = RulesetDefaults.Sr5)
+        string rulesetId = RulesetDefaults.Sr5,
+        bool hasSavedWorkspace = false)
     {
         return new WorkspaceListItem(
             Id: new CharacterWorkspaceId(id),
@@ -382,7 +419,8 @@ public class ShellPresenterTests
                 Nuyen: 0m,
                 Created: true),
             LastUpdatedUtc: lastUpdatedUtc,
-            RulesetId: rulesetId);
+            RulesetId: rulesetId,
+            HasSavedWorkspace: hasSavedWorkspace);
     }
 
     private sealed class ShellClientStub : IChummerClient

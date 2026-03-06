@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Avalonia;
@@ -26,6 +27,9 @@ public class DualHeadAcceptanceTests
 {
     private static readonly Uri BaseUri = ResolveBaseUri();
     private static readonly string? ApiKey = ResolveApiKey();
+    private static readonly Regex WorkspaceTokenRegex = new("(?<=Workspace:\\s)[A-Za-z0-9-]+", RegexOptions.Compiled);
+    private static readonly Regex WorkspaceFileNameRegex = new("^[a-f0-9]{32}(?:-[a-f0-9]{4}){0,4}\\.(?:chum5|json)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex WorkspaceFileTokenRegex = new("[a-f0-9]{32}(?:-[a-f0-9]{4}){0,4}\\.(?:chum5|json)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     [TestMethod]
     public async Task Avalonia_and_Blazor_overview_flows_show_equivalent_state_after_import()
@@ -863,6 +867,130 @@ public class DualHeadAcceptanceTests
     }
 
     [TestMethod]
+    public async Task Avalonia_and_Blazor_all_workspace_section_actions_render_matching_sections()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+        WorkspaceSurfaceActionDefinition[] actions = WorkspaceSurfaceActionCatalog.All
+            .Where(action => action.Kind == WorkspaceSurfaceActionKind.Section)
+            .ToArray();
+
+        Dictionary<string, WorkspaceActionSnapshot> avaloniaSnapshots = await CaptureAvaloniaWorkspaceActionSnapshotsAsync(documentBytes, actions);
+        Dictionary<string, WorkspaceActionSnapshot> blazorSnapshots = await CaptureBlazorWorkspaceActionSnapshotsAsync(documentBytes, actions);
+
+        foreach (WorkspaceSurfaceActionDefinition action in actions)
+        {
+            Assert.IsTrue(avaloniaSnapshots.TryGetValue(action.Id, out WorkspaceActionSnapshot? avalonia), $"Missing Avalonia snapshot for action '{action.Id}'.");
+            Assert.IsTrue(blazorSnapshots.TryGetValue(action.Id, out WorkspaceActionSnapshot? blazor), $"Missing Blazor snapshot for action '{action.Id}'.");
+
+            Assert.AreEqual(action.TabId, avalonia.ActiveTabId, $"Unexpected Avalonia active tab for action '{action.Id}'.");
+            Assert.AreEqual(action.TabId, blazor.ActiveTabId, $"Unexpected Blazor active tab for action '{action.Id}'.");
+            Assert.AreEqual(action.Id, avalonia.ActionId);
+            Assert.AreEqual(action.Id, blazor.ActionId);
+            Assert.AreEqual(action.TargetId, avalonia.SectionId);
+            Assert.AreEqual(action.TargetId, blazor.SectionId);
+            Assert.AreEqual(avalonia.Json, blazor.Json, $"Section payload mismatch for action '{action.Id}'.");
+            Assert.AreEqual(avalonia.RowCount, blazor.RowCount, $"Section row count mismatch for action '{action.Id}'.");
+        }
+    }
+
+    [TestMethod]
+    public async Task Avalonia_and_Blazor_dialog_and_import_commands_expose_matching_dialog_contracts()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+        string[] commandIds = AppCommandCatalog.All
+            .Where(command => OverviewCommandPolicy.IsImportHintCommand(command.Id) || OverviewCommandPolicy.IsDialogCommand(command.Id))
+            .Select(command => command.Id)
+            .ToArray();
+
+        Dictionary<string, CommandDialogSnapshot> avaloniaSnapshots = await CaptureAvaloniaCommandDialogSnapshotsAsync(documentBytes, commandIds);
+        Dictionary<string, CommandDialogSnapshot> blazorSnapshots = await CaptureBlazorCommandDialogSnapshotsAsync(documentBytes, commandIds);
+
+        foreach (string commandId in commandIds)
+        {
+            Assert.IsTrue(avaloniaSnapshots.TryGetValue(commandId, out CommandDialogSnapshot? avalonia), $"Missing Avalonia dialog snapshot for command '{commandId}'.");
+            Assert.IsTrue(blazorSnapshots.TryGetValue(commandId, out CommandDialogSnapshot? blazor), $"Missing Blazor dialog snapshot for command '{commandId}'.");
+            AssertCommandDialogSnapshotEqual(avalonia, blazor, commandId);
+        }
+    }
+
+    [TestMethod]
+    public async Task Avalonia_and_Blazor_character_settings_save_updates_shared_state()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+
+        CharacterOverviewState avaloniaState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+            await adapter.InitializeAsync(CancellationToken.None);
+            await adapter.ImportAsync(documentBytes, CancellationToken.None);
+            await adapter.ExecuteCommandAsync("character_settings", CancellationToken.None);
+            await adapter.UpdateDialogFieldAsync("characterPriority", "Priority", CancellationToken.None);
+            await adapter.UpdateDialogFieldAsync("characterKarmaNuyen", "5", CancellationToken.None);
+            await adapter.UpdateDialogFieldAsync("characterHouseRulesEnabled", "true", CancellationToken.None);
+            await adapter.UpdateDialogFieldAsync("characterNotes", "Shared parity notes", CancellationToken.None);
+            await adapter.ExecuteDialogActionAsync("save", CancellationToken.None);
+            avaloniaState = adapter.State;
+        }
+
+        CharacterOverviewState blazorState;
+        using (HttpClient http = CreateClient())
+        {
+            var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+            CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+            using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+            await bridge.InitializeAsync(CancellationToken.None);
+            await bridge.ImportAsync(documentBytes, CancellationToken.None);
+            await bridge.ExecuteCommandAsync("character_settings", CancellationToken.None);
+            await bridge.UpdateDialogFieldAsync("characterPriority", "Priority", CancellationToken.None);
+            await bridge.UpdateDialogFieldAsync("characterKarmaNuyen", "5", CancellationToken.None);
+            await bridge.UpdateDialogFieldAsync("characterHouseRulesEnabled", "true", CancellationToken.None);
+            await bridge.UpdateDialogFieldAsync("characterNotes", "Shared parity notes", CancellationToken.None);
+            await bridge.ExecuteDialogActionAsync("save", CancellationToken.None);
+            blazorState = ResolveBridgeState(callbackState, bridge);
+        }
+
+        Assert.AreEqual("Priority", avaloniaState.Build?.BuildMethod);
+        Assert.AreEqual("Priority", blazorState.Build?.BuildMethod);
+        Assert.AreEqual(5, avaloniaState.Preferences.KarmaNuyenRatio);
+        Assert.AreEqual(5, blazorState.Preferences.KarmaNuyenRatio);
+        Assert.IsTrue(avaloniaState.Preferences.HouseRulesEnabled);
+        Assert.IsTrue(blazorState.Preferences.HouseRulesEnabled);
+        Assert.AreEqual("Shared parity notes", avaloniaState.Preferences.CharacterNotes);
+        Assert.AreEqual("Shared parity notes", blazorState.Preferences.CharacterNotes);
+        Assert.IsNull(avaloniaState.ActiveDialog);
+        Assert.IsNull(blazorState.ActiveDialog);
+        Assert.AreEqual("Character settings updated.", avaloniaState.Notice);
+        Assert.AreEqual("Character settings updated.", blazorState.Notice);
+    }
+
+    [TestMethod]
+    public async Task Avalonia_and_Blazor_download_and_export_commands_prepare_matching_receipts()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+
+        PendingDownloadSnapshot avaloniaSaveAs = await CaptureAvaloniaDownloadSnapshotAsync(documentBytes, "save_character_as");
+        PendingDownloadSnapshot blazorSaveAs = await CaptureBlazorDownloadSnapshotAsync(documentBytes, "save_character_as");
+        AssertPendingDownloadSnapshotEqual(avaloniaSaveAs, blazorSaveAs, "save_character_as");
+        Assert.AreEqual(WorkspaceDocumentFormat.Chum5Xml, avaloniaSaveAs.Format);
+
+        PendingDownloadSnapshot avaloniaDataExporter = await CaptureAvaloniaDownloadSnapshotAsync(documentBytes, "data_exporter", dialogActionId: "download");
+        PendingDownloadSnapshot blazorDataExporter = await CaptureBlazorDownloadSnapshotAsync(documentBytes, "data_exporter", dialogActionId: "download");
+        AssertPendingDownloadSnapshotEqual(avaloniaDataExporter, blazorDataExporter, "data_exporter.download");
+        Assert.AreEqual(WorkspaceDocumentFormat.Json, avaloniaDataExporter.Format);
+
+        PendingDownloadSnapshot avaloniaExportCharacter = await CaptureAvaloniaDownloadSnapshotAsync(documentBytes, "export_character", dialogActionId: "download");
+        PendingDownloadSnapshot blazorExportCharacter = await CaptureBlazorDownloadSnapshotAsync(documentBytes, "export_character", dialogActionId: "download");
+        AssertPendingDownloadSnapshotEqual(avaloniaExportCharacter, blazorExportCharacter, "export_character.download");
+        Assert.AreEqual(WorkspaceDocumentFormat.Json, avaloniaExportCharacter.Format);
+    }
+
+    [TestMethod]
     public async Task Avalonia_and_Blazor_shell_surfaces_expose_identical_ids()
     {
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
@@ -1045,6 +1173,247 @@ public class DualHeadAcceptanceTests
         Assert.AreEqual("Blazor Two", blazorAfterSwitchToSecond.Profile?.Name);
     }
 
+    private static async Task<Dictionary<string, WorkspaceActionSnapshot>> CaptureAvaloniaWorkspaceActionSnapshotsAsync(
+        byte[] documentBytes,
+        IReadOnlyList<WorkspaceSurfaceActionDefinition> actions)
+    {
+        var snapshots = new Dictionary<string, WorkspaceActionSnapshot>(StringComparer.Ordinal);
+        using HttpClient http = CreateClient();
+        var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+        using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+        await adapter.InitializeAsync(CancellationToken.None);
+        await adapter.ImportAsync(documentBytes, CancellationToken.None);
+
+        foreach (WorkspaceSurfaceActionDefinition action in actions)
+        {
+            await adapter.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+            CharacterOverviewState state = adapter.State;
+            snapshots[action.Id] = new WorkspaceActionSnapshot(
+                state.ActiveTabId,
+                state.ActiveActionId,
+                state.ActiveSectionId,
+                state.ActiveSectionJson,
+                state.ActiveSectionRows.Count);
+        }
+
+        return snapshots;
+    }
+
+    private static async Task<Dictionary<string, WorkspaceActionSnapshot>> CaptureBlazorWorkspaceActionSnapshotsAsync(
+        byte[] documentBytes,
+        IReadOnlyList<WorkspaceSurfaceActionDefinition> actions)
+    {
+        var snapshots = new Dictionary<string, WorkspaceActionSnapshot>(StringComparer.Ordinal);
+        using HttpClient http = CreateClient();
+        var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+        CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+        using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+        await bridge.InitializeAsync(CancellationToken.None);
+        await bridge.ImportAsync(documentBytes, CancellationToken.None);
+
+        foreach (WorkspaceSurfaceActionDefinition action in actions)
+        {
+            await bridge.ExecuteWorkspaceActionAsync(action, CancellationToken.None);
+            CharacterOverviewState state = ResolveBridgeState(callbackState, bridge);
+            snapshots[action.Id] = new WorkspaceActionSnapshot(
+                state.ActiveTabId,
+                state.ActiveActionId,
+                state.ActiveSectionId,
+                state.ActiveSectionJson,
+                state.ActiveSectionRows.Count);
+        }
+
+        return snapshots;
+    }
+
+    private static async Task<Dictionary<string, CommandDialogSnapshot>> CaptureAvaloniaCommandDialogSnapshotsAsync(
+        byte[] documentBytes,
+        IReadOnlyList<string> commandIds)
+    {
+        var snapshots = new Dictionary<string, CommandDialogSnapshot>(StringComparer.Ordinal);
+        using HttpClient http = CreateClient();
+        var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+        using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+        await adapter.InitializeAsync(CancellationToken.None);
+        await adapter.ImportAsync(documentBytes, CancellationToken.None);
+
+        foreach (string commandId in commandIds)
+        {
+            await adapter.ExecuteCommandAsync(commandId, CancellationToken.None);
+            snapshots[commandId] = TakeCommandDialogSnapshot(commandId, adapter.State);
+            await adapter.CloseDialogAsync(CancellationToken.None);
+        }
+
+        return snapshots;
+    }
+
+    private static async Task<Dictionary<string, CommandDialogSnapshot>> CaptureBlazorCommandDialogSnapshotsAsync(
+        byte[] documentBytes,
+        IReadOnlyList<string> commandIds)
+    {
+        var snapshots = new Dictionary<string, CommandDialogSnapshot>(StringComparer.Ordinal);
+        using HttpClient http = CreateClient();
+        var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+        CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+        using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+        await bridge.InitializeAsync(CancellationToken.None);
+        await bridge.ImportAsync(documentBytes, CancellationToken.None);
+
+        foreach (string commandId in commandIds)
+        {
+            await bridge.ExecuteCommandAsync(commandId, CancellationToken.None);
+            snapshots[commandId] = TakeCommandDialogSnapshot(commandId, ResolveBridgeState(callbackState, bridge));
+            await bridge.CloseDialogAsync(CancellationToken.None);
+        }
+
+        return snapshots;
+    }
+
+    private static async Task<PendingDownloadSnapshot> CaptureAvaloniaDownloadSnapshotAsync(
+        byte[] documentBytes,
+        string commandId,
+        string? dialogActionId = null)
+    {
+        using HttpClient http = CreateClient();
+        var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+        using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+        await adapter.InitializeAsync(CancellationToken.None);
+        await adapter.ImportAsync(documentBytes, CancellationToken.None);
+        await adapter.ExecuteCommandAsync(commandId, CancellationToken.None);
+        if (!string.IsNullOrWhiteSpace(dialogActionId))
+        {
+            await adapter.ExecuteDialogActionAsync(dialogActionId, CancellationToken.None);
+        }
+
+        return TakePendingDownloadSnapshot(adapter.State);
+    }
+
+    private static async Task<PendingDownloadSnapshot> CaptureBlazorDownloadSnapshotAsync(
+        byte[] documentBytes,
+        string commandId,
+        string? dialogActionId = null)
+    {
+        using HttpClient http = CreateClient();
+        var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+        CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+        using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+        await bridge.InitializeAsync(CancellationToken.None);
+        await bridge.ImportAsync(documentBytes, CancellationToken.None);
+        await bridge.ExecuteCommandAsync(commandId, CancellationToken.None);
+        if (!string.IsNullOrWhiteSpace(dialogActionId))
+        {
+            await bridge.ExecuteDialogActionAsync(dialogActionId, CancellationToken.None);
+        }
+
+        return TakePendingDownloadSnapshot(ResolveBridgeState(callbackState, bridge));
+    }
+
+    private static CharacterOverviewState ResolveBridgeState(
+        CharacterOverviewState callbackState,
+        CharacterOverviewStateBridge bridge)
+    {
+        return callbackState.WorkspaceId is null ? bridge.Current : callbackState;
+    }
+
+    private static CommandDialogSnapshot TakeCommandDialogSnapshot(string commandId, CharacterOverviewState state)
+    {
+        DesktopDialogState? dialog = state.ActiveDialog;
+        DialogFieldSnapshot[] fields = dialog?.Fields
+            .Select(field => new DialogFieldSnapshot(
+                field.Id,
+                NormalizeDialogFieldValue(field.Id, field.Value),
+                NormalizeDialogFieldValue(field.Id, field.Placeholder),
+                field.IsReadOnly,
+                field.IsMultiline,
+                field.InputType))
+            .ToArray() ?? Array.Empty<DialogFieldSnapshot>();
+        string[] actionIds = dialog?.Actions
+            .Select(action => action.Id)
+            .ToArray() ?? Array.Empty<string>();
+
+        return new CommandDialogSnapshot(
+            commandId,
+            state.LastCommandId,
+            dialog?.Id,
+            dialog?.Title,
+            dialog?.Message,
+            fields,
+            actionIds);
+    }
+
+    private static PendingDownloadSnapshot TakePendingDownloadSnapshot(CharacterOverviewState state)
+    {
+        return new PendingDownloadSnapshot(
+            state.LastCommandId,
+            state.PendingDownload?.Format,
+            NormalizeDownloadFileName(state.PendingDownload?.FileName),
+            state.PendingDownload?.DocumentLength,
+            state.PendingDownload?.RulesetId,
+            state.PendingDownload?.ContentBase64,
+            NormalizeDownloadNotice(state.Notice));
+    }
+
+    private static string NormalizeDialogFieldValue(string fieldId, string value)
+    {
+        if (string.Equals(fieldId, "workspace", StringComparison.Ordinal))
+            return "<workspace>";
+
+        if (string.Equals(fieldId, "dataExportPreview", StringComparison.Ordinal))
+            return WorkspaceTokenRegex.Replace(value, "<workspace>");
+
+        return value;
+    }
+
+    private static string? NormalizeDownloadFileName(string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return fileName;
+
+        return WorkspaceFileNameRegex.IsMatch(fileName)
+            ? Regex.Replace(fileName, "^[^.]+", "<workspace>")
+            : fileName;
+    }
+
+    private static string? NormalizeDownloadNotice(string? notice)
+    {
+        if (string.IsNullOrWhiteSpace(notice))
+            return notice;
+
+        return WorkspaceFileTokenRegex.Replace(notice, match => NormalizeDownloadFileName(match.Value) ?? match.Value);
+    }
+
+    private static void AssertCommandDialogSnapshotEqual(
+        CommandDialogSnapshot avalonia,
+        CommandDialogSnapshot blazor,
+        string commandId)
+    {
+        Assert.AreEqual(commandId, avalonia.CommandId);
+        Assert.AreEqual(commandId, blazor.CommandId);
+        Assert.AreEqual(avalonia.LastCommandId, blazor.LastCommandId, $"Last command mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.DialogId, blazor.DialogId, $"Dialog id mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.Title, blazor.Title, $"Dialog title mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.Message, blazor.Message, $"Dialog message mismatch for '{commandId}'.");
+        CollectionAssert.AreEqual(avalonia.Fields, blazor.Fields, $"Dialog fields mismatch for '{commandId}'.");
+        CollectionAssert.AreEqual(avalonia.ActionIds, blazor.ActionIds, $"Dialog actions mismatch for '{commandId}'.");
+    }
+
+    private static void AssertPendingDownloadSnapshotEqual(
+        PendingDownloadSnapshot avalonia,
+        PendingDownloadSnapshot blazor,
+        string commandId)
+    {
+        Assert.AreEqual(commandId.Split('.')[0], avalonia.LastCommandId, $"Unexpected Avalonia last command for '{commandId}'.");
+        Assert.AreEqual(commandId.Split('.')[0], blazor.LastCommandId, $"Unexpected Blazor last command for '{commandId}'.");
+        Assert.IsNotNull(avalonia.Format, $"Missing Avalonia download receipt for '{commandId}'.");
+        Assert.IsNotNull(blazor.Format, $"Missing Blazor download receipt for '{commandId}'.");
+        Assert.AreEqual(avalonia.Format, blazor.Format, $"Download format mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.FileName, blazor.FileName, $"Download file name mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.DocumentLength, blazor.DocumentLength, $"Download length mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.RulesetId, blazor.RulesetId, $"Download ruleset mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.ContentBase64, blazor.ContentBase64, $"Download payload mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.Notice, blazor.Notice, $"Download notice mismatch for '{commandId}'.");
+    }
+
     private static ShellRegionSnapshot BuildShellRegionSnapshot(CharacterOverviewState state, DefaultCommandAvailabilityEvaluator evaluator)
     {
         string[] enabledCommandIds = state.Commands
@@ -1120,6 +1489,39 @@ public class DualHeadAcceptanceTests
         string? DialogTitle,
         string[] DialogFieldIds,
         string[] DialogActionIds);
+
+    private sealed record WorkspaceActionSnapshot(
+        string? ActiveTabId,
+        string? ActionId,
+        string? SectionId,
+        string? Json,
+        int RowCount);
+
+    private sealed record DialogFieldSnapshot(
+        string Id,
+        string Value,
+        string Placeholder,
+        bool IsReadOnly,
+        bool IsMultiline,
+        string InputType);
+
+    private sealed record CommandDialogSnapshot(
+        string CommandId,
+        string? LastCommandId,
+        string? DialogId,
+        string? Title,
+        string? Message,
+        DialogFieldSnapshot[] Fields,
+        string[] ActionIds);
+
+    private sealed record PendingDownloadSnapshot(
+        string? LastCommandId,
+        WorkspaceDocumentFormat? Format,
+        string? FileName,
+        int? DocumentLength,
+        string? RulesetId,
+        string? ContentBase64,
+        string? Notice);
 
     private static string ResolveActiveRulesetId(CharacterOverviewState state)
     {

@@ -30,13 +30,11 @@ public class ShellBootstrapDataProviderTests
         await provider.GetAsync(CancellationToken.None);
         await provider.GetAsync(CancellationToken.None);
 
-        Assert.AreEqual(1, client.GetCommandsCalls);
-        Assert.AreEqual(1, client.GetNavigationTabsCalls);
-        Assert.AreEqual(1, client.ListWorkspacesCalls);
+        Assert.AreEqual(1, client.GetShellBootstrapCalls);
     }
 
     [TestMethod]
-    public async Task GetWorkspacesAsync_caches_workspace_payload_without_catalog_requests()
+    public async Task GetWorkspacesAsync_caches_authoritative_bootstrap_snapshot()
     {
         var client = new BootstrapClientStub();
         var provider = new ShellBootstrapDataProvider(client);
@@ -44,13 +42,16 @@ public class ShellBootstrapDataProviderTests
         await provider.GetWorkspacesAsync(CancellationToken.None);
         await provider.GetWorkspacesAsync(CancellationToken.None);
 
+        Assert.AreEqual(1, client.GetShellBootstrapCalls);
+        Assert.AreEqual(0, client.ListWorkspacesCalls);
+        Assert.AreEqual(0, client.GetShellPreferencesCalls);
+        Assert.AreEqual(0, client.GetShellSessionCalls);
         Assert.AreEqual(0, client.GetCommandsCalls);
         Assert.AreEqual(0, client.GetNavigationTabsCalls);
-        Assert.AreEqual(1, client.ListWorkspacesCalls);
     }
 
     [TestMethod]
-    public async Task GetWorkspacesAsync_reads_saved_preferred_ruleset_when_seeding_workspace_cache()
+    public async Task GetWorkspacesAsync_preserves_preferred_ruleset_from_bootstrap_snapshot()
     {
         var client = new BootstrapClientStub
         {
@@ -61,8 +62,9 @@ public class ShellBootstrapDataProviderTests
         await provider.GetWorkspacesAsync(CancellationToken.None);
         ShellBootstrapData bootstrap = await provider.GetAsync("sr6", CancellationToken.None);
 
-        Assert.AreEqual(1, client.GetShellPreferencesCalls);
-        Assert.AreEqual(1, client.GetShellSessionCalls);
+        Assert.AreEqual(1, client.GetShellBootstrapCalls);
+        Assert.AreEqual(0, client.GetShellPreferencesCalls);
+        Assert.AreEqual(0, client.GetShellSessionCalls);
         Assert.AreEqual("sr6", bootstrap.PreferredRulesetId);
     }
 
@@ -156,13 +158,11 @@ public class ShellBootstrapDataProviderTests
         await shellPresenter.InitializeAsync(CancellationToken.None);
         await overviewPresenter.InitializeAsync(CancellationToken.None);
 
-        Assert.AreEqual(1, client.GetCommandsCalls);
-        Assert.AreEqual(1, client.GetNavigationTabsCalls);
-        Assert.AreEqual(1, client.ListWorkspacesCalls);
+        Assert.AreEqual(1, client.GetShellBootstrapCalls);
     }
 
     [TestMethod]
-    public async Task GetAsync_caches_workspaces_across_rulesets_and_scopes_catalog_requests()
+    public async Task GetAsync_caches_ruleset_scoped_bootstrap_snapshots()
     {
         var client = new BootstrapClientStub();
         var provider = new ShellBootstrapDataProvider(client);
@@ -171,14 +171,12 @@ public class ShellBootstrapDataProviderTests
         await provider.GetAsync("sr6", CancellationToken.None);
         await provider.GetAsync("sr6", CancellationToken.None);
 
-        Assert.AreEqual(2, client.GetCommandsCalls);
-        Assert.AreEqual(2, client.GetNavigationTabsCalls);
-        Assert.AreEqual(2, client.ListWorkspacesCalls);
+        Assert.AreEqual(2, client.GetShellBootstrapCalls);
 
         string[] expectedRulesets = ["sr5", "sr6"];
         CollectionAssert.AreEquivalent(
             expectedRulesets,
-            client.CommandRulesets
+            client.RequestedBootstrapRulesets
                 .Distinct(StringComparer.Ordinal)
                 .OrderBy(id => id, StringComparer.Ordinal)
                 .ToArray());
@@ -186,12 +184,15 @@ public class ShellBootstrapDataProviderTests
 
     private sealed class BootstrapClientStub : IChummerClient
     {
+        public int GetShellBootstrapCalls { get; private set; }
         public int GetCommandsCalls { get; private set; }
         public int GetNavigationTabsCalls { get; private set; }
         public int ListWorkspacesCalls { get; private set; }
         public int GetShellPreferencesCalls { get; private set; }
         public int GetShellSessionCalls { get; private set; }
-        public List<string> CommandRulesets { get; } = new();
+        public List<string> RequestedBootstrapRulesets { get; } = new();
+        public IReadOnlyList<AppCommandDefinition> Commands { get; set; } = AppCommandCatalog.All;
+        public IReadOnlyList<NavigationTabDefinition> NavigationTabs { get; set; } = NavigationTabCatalog.All;
         public ShellPreferences Preferences { get; set; } = ShellPreferences.Default;
         public ShellSessionState Session { get; set; } = ShellSessionState.Default;
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
@@ -227,14 +228,13 @@ public class ShellBootstrapDataProviderTests
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
         {
             GetCommandsCalls++;
-            CommandRulesets.Add(rulesetId ?? "sr5");
-            return Task.FromResult<IReadOnlyList<AppCommandDefinition>>(AppCommandCatalog.All);
+            return Task.FromResult(Commands);
         }
 
         public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
         {
             GetNavigationTabsCalls++;
-            return Task.FromResult<IReadOnlyList<NavigationTabDefinition>>(NavigationTabCatalog.All);
+            return Task.FromResult(NavigationTabs);
         }
 
         public Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct)
@@ -243,9 +243,11 @@ public class ShellBootstrapDataProviderTests
             return Task.FromResult(Workspaces);
         }
 
-        public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
+        public Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
         {
-            IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
+            GetShellBootstrapCalls++;
+
+            IReadOnlyList<WorkspaceListItem> workspaces = Workspaces;
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, Session.ActiveWorkspaceId);
             string preferredRulesetId = RulesetDefaults.Normalize(Preferences.PreferredRulesetId);
             string activeRulesetId = activeWorkspaceId is null
@@ -255,18 +257,18 @@ public class ShellBootstrapDataProviderTests
             string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
                 ? activeRulesetId
                 : RulesetDefaults.Normalize(rulesetId);
-            IReadOnlyList<AppCommandDefinition> commands = await GetCommandsAsync(effectiveRulesetId, ct);
-            IReadOnlyList<NavigationTabDefinition> tabs = await GetNavigationTabsAsync(effectiveRulesetId, ct);
-            return new ShellBootstrapSnapshot(
+            RequestedBootstrapRulesets.Add(effectiveRulesetId);
+
+            return Task.FromResult(new ShellBootstrapSnapshot(
                 effectiveRulesetId,
-                commands,
-                tabs,
+                Commands,
+                NavigationTabs,
                 workspaces,
                 PreferredRulesetId: preferredRulesetId,
                 ActiveRulesetId: activeRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId,
                 ActiveTabId: NormalizeTabId(Session.ActiveTabId),
-                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(Session.ActiveTabsByWorkspace));
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(Session.ActiveTabsByWorkspace)));
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();

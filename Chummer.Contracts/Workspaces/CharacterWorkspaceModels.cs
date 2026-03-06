@@ -32,10 +32,6 @@ public sealed record WorkspaceDocument(
             Format)
     {
     }
-
-    public string Content => PayloadEnvelope.Payload;
-
-    public string RulesetId => PayloadEnvelope.RulesetId;
 }
 
 public sealed record WorkspaceImportDocument(
@@ -70,7 +66,8 @@ public sealed record WorkspaceListItem(
     CharacterWorkspaceId Id,
     CharacterFileSummary Summary,
     DateTimeOffset LastUpdatedUtc,
-    string RulesetId = RulesetDefaults.Sr5);
+    string RulesetId = RulesetDefaults.Sr5,
+    bool HasSavedWorkspace = false);
 
 public sealed record UpdateWorkspaceMetadata(
     string? Name,

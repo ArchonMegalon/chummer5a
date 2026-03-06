@@ -4,9 +4,35 @@ using Chummer.Presentation.Overview;
 
 namespace Chummer.Avalonia;
 
-internal static class MainWindowDialogWindowCoordinator
+internal static class MainWindowPostRefreshCoordinator
 {
-    public static DesktopDialogWindow? Sync(
+    public static MainWindowPostRefreshResult Apply(
+        MainWindow owner,
+        DesktopDialogWindow? currentDialogWindow,
+        CharacterOverviewState state,
+        CharacterOverviewViewModelAdapter adapter,
+        long lastHandledDownloadVersion,
+        EventHandler onDialogClosed)
+    {
+        DesktopDialogWindow? dialogWindow = SyncDialogWindow(
+            owner,
+            currentDialogWindow,
+            state.ActiveDialog,
+            adapter,
+            onDialogClosed);
+
+        PendingDownloadDispatchRequest? pendingDownloadRequest = TryCreatePendingDownload(
+            state,
+            lastHandledDownloadVersion);
+        long nextHandledDownloadVersion = pendingDownloadRequest?.Version ?? lastHandledDownloadVersion;
+
+        return new MainWindowPostRefreshResult(
+            dialogWindow,
+            pendingDownloadRequest,
+            nextHandledDownloadVersion);
+    }
+
+    private static DesktopDialogWindow? SyncDialogWindow(
         MainWindow owner,
         DesktopDialogWindow? currentWindow,
         DesktopDialogState? activeDialog,
@@ -41,11 +67,8 @@ internal static class MainWindowDialogWindowCoordinator
         dialogWindow.Closed += onClosed;
         return dialogWindow;
     }
-}
 
-internal static class PendingDownloadDispatchCoordinator
-{
-    public static PendingDownloadDispatchRequest? TryCreate(
+    private static PendingDownloadDispatchRequest? TryCreatePendingDownload(
         CharacterOverviewState state,
         long lastHandledVersion)
     {
@@ -64,3 +87,8 @@ internal static class PendingDownloadDispatchCoordinator
 internal sealed record PendingDownloadDispatchRequest(
     WorkspaceDownloadReceipt Download,
     long Version);
+
+internal sealed record MainWindowPostRefreshResult(
+    DesktopDialogWindow? DialogWindow,
+    PendingDownloadDispatchRequest? PendingDownloadRequest,
+    long LastHandledDownloadVersion);

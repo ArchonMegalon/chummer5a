@@ -28,7 +28,15 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
             : RulesetDefaults.Normalize(shellState.ActiveRulesetId);
         string? activeTabId = shellState.ActiveTabId;
         CharacterWorkspaceId? activeWorkspaceId = shellState.ActiveWorkspaceId;
-        IReadOnlyList<OpenWorkspaceState> openWorkspaces = ResolveOpenWorkspaces(shellState, overviewState);
+        IReadOnlyList<OpenWorkspaceState> openWorkspaces = shellState.OpenWorkspaces
+            .Select(workspace => new OpenWorkspaceState(
+                Id: workspace.Id,
+                Name: workspace.Name,
+                Alias: workspace.Alias,
+                LastOpenedUtc: workspace.LastOpenedUtc,
+                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
+                HasSavedWorkspace: workspace.HasSavedWorkspace))
+            .ToArray();
 
         var workspaceActions = _catalogResolver.ResolveWorkspaceActionsForTab(
                 activeTabId,
@@ -53,38 +61,13 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
             PreferredRulesetId: preferredRulesetId,
             ActiveWorkspaceId: activeWorkspaceId,
             ActiveTabId: activeTabId,
-            LastCommandId: shellState.LastCommandId ?? overviewState.LastCommandId);
+            LastCommandId: shellState.LastCommandId);
 
         return state with
         {
             OpenMenuId = shellState.OpenMenuId,
-            Notice = shellState.Notice ?? overviewState.Notice,
-            Error = shellState.Error ?? overviewState.Error
+            Notice = shellState.Notice,
+            Error = shellState.Error
         };
-    }
-
-    private static IReadOnlyList<OpenWorkspaceState> ResolveOpenWorkspaces(ShellState shellState, CharacterOverviewState overviewState)
-    {
-        if (shellState.OpenWorkspaces.Count == 0)
-        {
-            return [];
-        }
-
-        Dictionary<string, bool> savedWorkspaceLookup = overviewState.OpenWorkspaces
-            .GroupBy(workspace => workspace.Id.Value, StringComparer.Ordinal)
-            .ToDictionary(
-                group => group.Key,
-                group => group.Any(workspace => workspace.HasSavedWorkspace),
-                StringComparer.Ordinal);
-
-        return shellState.OpenWorkspaces
-            .Select(workspace => new OpenWorkspaceState(
-                Id: workspace.Id,
-                Name: workspace.Name,
-                Alias: workspace.Alias,
-                LastOpenedUtc: workspace.LastOpenedUtc,
-                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
-                HasSavedWorkspace: savedWorkspaceLookup.TryGetValue(workspace.Id.Value, out bool hasSavedWorkspace) && hasSavedWorkspace))
-            .ToArray();
     }
 }
