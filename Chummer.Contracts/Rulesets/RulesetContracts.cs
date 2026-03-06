@@ -30,11 +30,6 @@ public static class RulesetDefaults
     {
         return NormalizeOptional(value) ?? NormalizeRequired(defaultRulesetId);
     }
-
-    public static string Normalize(string? value)
-    {
-        return NormalizeOrDefault(value, Sr5);
-    }
 }
 
 public readonly record struct RulesetId(string Value)

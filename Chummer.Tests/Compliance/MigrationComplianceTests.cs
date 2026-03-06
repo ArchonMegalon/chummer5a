@@ -1480,6 +1480,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetContractsText, "public readonly record struct RulesetId");
         StringAssert.Contains(rulesetContractsText, "public static RulesetId Default => new(string.Empty);");
         StringAssert.Contains(rulesetContractsText, "RulesetDefaults.NormalizeOptional(Value) ?? string.Empty");
+        Assert.IsFalse(rulesetContractsText.Contains("public static string Normalize(", StringComparison.Ordinal));
         StringAssert.Contains(rulesetContractsText, "public sealed record WorkspacePayloadEnvelope");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetPlugin");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetSerializer");
