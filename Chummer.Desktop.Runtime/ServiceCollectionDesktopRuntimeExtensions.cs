@@ -22,6 +22,7 @@ public static class ServiceCollectionDesktopRuntimeExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         services.RemoveAll<IChummerClient>();
+        services.RemoveAll<ISessionClient>();
 
         if (UseHttpClientMode())
         {
@@ -30,11 +31,13 @@ public static class ServiceCollectionDesktopRuntimeExtensions
             services.AddSr6Ruleset();
             services.TryAddSingleton(CreateApiHttpClient());
             services.TryAddSingleton<IChummerClient, HttpChummerClient>();
+            services.TryAddSingleton<ISessionClient, HttpSessionClient>();
             return services;
         }
 
         services.AddChummerHeadlessCore(baseDirectory, currentDirectory);
         services.TryAddSingleton<IChummerClient, InProcessChummerClient>();
+        services.TryAddSingleton<ISessionClient, InProcessSessionClient>();
         return services;
     }
 

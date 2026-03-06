@@ -24,6 +24,7 @@ The `Docker` branch is the current multi-head runtime architecture for this repo
 * `Chummer.Api` is the HTTP host for headless services and workspace routes.
 * `Chummer.Application`, `Chummer.Contracts`, `Chummer.Infrastructure`, and `Chummer.Presentation` provide the shared behavior seam.
 * `Chummer.Contracts.Rulesets` defines host-neutral ruleset/plugin/script interfaces plus a shared workspace payload envelope for peer SR4/SR5/SR6 module expansion without changing the active runtime seam.
+* `/api/session/*` is reserved as the dedicated future session/mobile boundary. Current session routes return explicit `session_not_implemented` receipts until the session product path is implemented, and future session/mobile clients should bind to the dedicated `ISessionClient` seam instead of widening the workbench-oriented `IChummerClient` contract.
 * `Chummer.Blazor` is the browser/web head, `Chummer.Avalonia` is the native desktop head, and `Chummer.Blazor.Desktop` is the desktop webview host.
 * `Chummer.Portal` is the single public gateway surface and `Chummer.Avalonia.Browser` provides the browser-hosted `/avalonia` route behind the portal profile.
 * `Chummer.Web` is retained only as a compatibility/oracle asset and is not part of the default runtime or parity-check contract.

@@ -20,7 +20,9 @@ using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Session;
 using Chummer.Contracts.Trackers;
 using Chummer.Contracts.Workspaces;
+using Chummer.Desktop.Runtime;
 using Chummer.Infrastructure.Xml;
+using Chummer.Presentation;
 using Chummer.Rulesets.Sr4;
 using Chummer.Rulesets.Sr5;
 using Chummer.Rulesets.Sr6;
@@ -2527,5 +2529,37 @@ public class RulesetSeamContractsTests
         Assert.IsFalse(scriptResult.Success);
         Assert.IsEmpty(scriptResult.Outputs);
         StringAssert.Contains(scriptResult.Error, "SR4 script host is not implemented");
+    }
+
+    [TestMethod]
+    public void Session_api_contracts_define_operation_and_placeholder_receipt_vocabulary()
+    {
+        SessionNotImplementedReceipt receipt = new(
+            Error: "session_not_implemented",
+            Operation: SessionApiOperations.SyncCharacterLedger,
+            Message: "The dedicated session/mobile API seam exists, but this operation is not implemented yet.",
+            CharacterId: "char-7",
+            OwnerId: "owner-3");
+
+        Assert.AreEqual(SessionApiOperations.SyncCharacterLedger, receipt.Operation);
+        Assert.AreEqual("session_not_implemented", receipt.Error);
+        Assert.AreEqual("char-7", receipt.CharacterId);
+        Assert.AreEqual("owner-3", receipt.OwnerId);
+    }
+
+    [TestMethod]
+    public async Task Dedicated_session_client_keeps_mobile_boundary_separate_from_workbench_client()
+    {
+        InProcessSessionClient sessionClient = new();
+        SessionApiResult<SessionCharacterCatalog> listResult = await sessionClient.ListCharactersAsync(CancellationToken.None);
+        SessionApiResult<RulePackCatalog> rulePackResult = await sessionClient.ListRulePacksAsync(CancellationToken.None);
+
+        Assert.IsFalse(listResult.IsImplemented);
+        Assert.IsNotNull(listResult.NotImplemented);
+        Assert.AreEqual(SessionApiOperations.ListCharacters, listResult.NotImplemented.Operation);
+        Assert.AreEqual("session_not_implemented", listResult.NotImplemented.Error);
+        Assert.IsFalse(rulePackResult.IsImplemented);
+        Assert.IsNotNull(rulePackResult.NotImplemented);
+        Assert.AreEqual(SessionApiOperations.ListRulePacks, rulePackResult.NotImplemented.Operation);
     }
 }

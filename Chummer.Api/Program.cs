@@ -98,6 +98,7 @@ app.MapRosterEndpoints();
 app.MapCommandEndpoints();
 app.MapNavigationEndpoints();
 app.MapShellEndpoints();
+app.MapSessionEndpoints();
 app.MapWorkspaceEndpoints();
 
 app.Run();

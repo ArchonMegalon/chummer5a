@@ -9,6 +9,8 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Chummer.Contracts.Session;
+using Chummer.Presentation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;
@@ -147,6 +149,40 @@ public class ApiIntegrationTests
 
         JsonObject info = await GetRequiredJsonObject(client, "/api/info");
         Assert.AreEqual("Chummer", info["service"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Session_http_client_uses_explicit_not_implemented_boundary_for_character_list()
+    {
+        using var http = CreateClient();
+        HttpSessionClient sessionClient = new(http);
+
+        SessionApiResult<SessionCharacterCatalog> result = await sessionClient.ListCharactersAsync(default);
+
+        Assert.IsFalse(result.IsImplemented);
+        Assert.IsNotNull(result.NotImplemented);
+        Assert.AreEqual("session_not_implemented", result.NotImplemented.Error);
+        Assert.AreEqual(SessionApiOperations.ListCharacters, result.NotImplemented.Operation);
+    }
+
+    [TestMethod]
+    public async Task Session_http_client_uses_explicit_not_implemented_boundary_for_sync()
+    {
+        using var http = CreateClient();
+        HttpSessionClient sessionClient = new(http);
+        SessionSyncBatch batch = new(
+            OverlayId: "overlay-1",
+            BaseCharacterVersion: new("char-1", "ver-1", "sr5", "runtime-1"),
+            Events: [],
+            ClientCursor: "cursor-1");
+
+        SessionApiResult<SessionSyncReceipt> result = await sessionClient.SyncCharacterLedgerAsync("char-1", batch, default);
+
+        Assert.IsFalse(result.IsImplemented);
+        Assert.IsNotNull(result.NotImplemented);
+        Assert.AreEqual("session_not_implemented", result.NotImplemented.Error);
+        Assert.AreEqual(SessionApiOperations.SyncCharacterLedger, result.NotImplemented.Operation);
+        Assert.AreEqual("char-1", result.NotImplemented.CharacterId);
     }
 
     [TestMethod]
@@ -505,6 +541,38 @@ public class ApiIntegrationTests
 
         Assert.AreEqual("unknown_ruleset", payload["error"]?.GetValue<string>());
         Assert.AreEqual("shadowrun-x", payload["rulesetId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Session_characters_endpoint_returns_not_implemented_receipt()
+    {
+        using var client = CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync("/api/session/characters");
+        Assert.AreEqual(HttpStatusCode.NotImplemented, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual("session_not_implemented", payload["error"]?.GetValue<string>());
+        Assert.AreEqual("list-characters", payload["operation"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Session_character_sync_endpoint_returns_not_implemented_receipt()
+    {
+        using var client = CreateClient();
+
+        using var request = new StringContent("{}", Encoding.UTF8, "application/json");
+        using HttpResponseMessage response = await client.PostAsync("/api/session/characters/char-1/sync", request);
+        Assert.AreEqual(HttpStatusCode.NotImplemented, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual("session_not_implemented", payload["error"]?.GetValue<string>());
+        Assert.AreEqual("sync-character-ledger", payload["operation"]?.GetValue<string>());
+        Assert.AreEqual("char-1", payload["characterId"]?.GetValue<string>());
     }
 
     [TestMethod]

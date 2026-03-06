@@ -35,10 +35,12 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
 
                     using ServiceProvider provider = services.BuildServiceProvider();
                     IChummerClient client = provider.GetRequiredService<IChummerClient>();
+                    ISessionClient sessionClient = provider.GetRequiredService<ISessionClient>();
                     IOwnerContextAccessor ownerContextAccessor = provider.GetRequiredService<IOwnerContextAccessor>();
                     IReadOnlyList<IRulesetPlugin> plugins = provider.GetServices<IRulesetPlugin>().ToArray();
 
                     Assert.IsInstanceOfType<InProcessChummerClient>(client);
+                    Assert.IsInstanceOfType<InProcessSessionClient>(sessionClient);
                     Assert.AreEqual(OwnerScope.LocalSingleUser.NormalizedValue, ownerContextAccessor.Current.NormalizedValue);
                     Assert.IsFalse(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr4, StringComparison.Ordinal)));
                     Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr5, StringComparison.Ordinal)));
@@ -100,10 +102,12 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
 
                     using ServiceProvider provider = services.BuildServiceProvider();
                     IChummerClient client = provider.GetRequiredService<IChummerClient>();
+                    ISessionClient sessionClient = provider.GetRequiredService<ISessionClient>();
                     HttpClient httpClient = provider.GetRequiredService<HttpClient>();
                     IReadOnlyList<IRulesetPlugin> plugins = provider.GetServices<IRulesetPlugin>().ToArray();
 
                     Assert.IsInstanceOfType<HttpChummerClient>(client);
+                    Assert.IsInstanceOfType<HttpSessionClient>(sessionClient);
                     Assert.IsNotNull(httpClient.BaseAddress);
                     Assert.AreEqual("https://api.example.invalid/", httpClient.BaseAddress!.ToString());
                     Assert.IsTrue(httpClient.DefaultRequestHeaders.Contains("X-Api-Key"));
@@ -138,10 +142,12 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
 
                     using ServiceProvider provider = services.BuildServiceProvider();
                     IChummerClient client = provider.GetRequiredService<IChummerClient>();
+                    ISessionClient sessionClient = provider.GetRequiredService<ISessionClient>();
                     HttpClient httpClient = provider.GetRequiredService<HttpClient>();
                     IReadOnlyList<IRulesetPlugin> plugins = provider.GetServices<IRulesetPlugin>().ToArray();
 
                     Assert.IsInstanceOfType<HttpChummerClient>(client);
+                    Assert.IsInstanceOfType<HttpSessionClient>(sessionClient);
                     Assert.IsNotNull(httpClient.BaseAddress);
                     Assert.AreEqual("https://legacy.example.invalid/", httpClient.BaseAddress!.ToString());
                     Assert.IsFalse(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr4, StringComparison.Ordinal)));
