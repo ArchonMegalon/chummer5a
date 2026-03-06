@@ -1587,6 +1587,91 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Runtime_inspector_contracts_define_projection_warning_and_migration_preview_vocabulary()
+    {
+        ResolvedRuntimeLock runtimeLock = new(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles:
+            [
+                new ContentBundleDescriptor(
+                    BundleId: "sr5-core",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Version: "2026.03",
+                    Title: "SR5 Core",
+                    Description: "Base SR5 content.",
+                    AssetPaths: ["data/qualities.xml"])
+            ],
+            RulePacks:
+            [
+                new ArtifactVersionReference(
+                    Id: "house-rules",
+                    Version: "1.2.0")
+            ],
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["validate.character"] = "house-rules/validate.character"
+            },
+            EngineApiVersion: "rulepack-v1",
+            RuntimeFingerprint: "runtime-lock-sha256");
+        RuntimeInspectorProjection projection = new(
+            TargetKind: RuntimeInspectorTargetKinds.CharacterVersion,
+            TargetId: "charv-1",
+            RuntimeLock: runtimeLock,
+            ResolvedRulePacks:
+            [
+                new RuntimeInspectorRulePackEntry(
+                    RulePack: runtimeLock.RulePacks[0],
+                    Title: "House Rules",
+                    Visibility: ArtifactVisibilityModes.Private,
+                    TrustTier: ArtifactTrustTiers.Private,
+                    CapabilityIds: [RulePackCapabilityIds.ValidateCharacter])
+            ],
+            ProviderBindings:
+            [
+                new RuntimeInspectorProviderBinding(
+                    CapabilityId: RulePackCapabilityIds.ValidateCharacter,
+                    ProviderId: "house-rules/validate.character",
+                    PackId: "house-rules",
+                    SourceAssetPath: "lua/validate.lua")
+            ],
+            CompatibilityDiagnostics:
+            [
+                new RuntimeLockCompatibilityDiagnostic(
+                    State: RuntimeLockCompatibilityStates.RebindRequired,
+                    Message: "The runtime lock requires rebind before install.",
+                    RequiredRuntimeFingerprint: "runtime-lock-next")
+            ],
+            Warnings:
+            [
+                new RuntimeInspectorWarning(
+                    Kind: RuntimeInspectorWarningKinds.Compatibility,
+                    Severity: RuntimeInspectorWarningSeverityLevels.Warning,
+                    Message: "A runtime rebind is required before save.",
+                    SubjectId: "house-rules",
+                    ExplainEntryId: "explain-runtime-1")
+            ],
+            MigrationPreview:
+            [
+                new RuntimeMigrationPreviewItem(
+                    Kind: RuntimeMigrationPreviewChangeKinds.ProviderRebound,
+                    Summary: "Validation provider will be rebound to the curated pack.",
+                    SubjectId: RulePackCapabilityIds.ValidateCharacter,
+                    BeforeValue: "house-rules/validate.character",
+                    AfterValue: "curated-pack/validate.character",
+                    RequiresRebind: true)
+            ],
+            GeneratedAtUtc: DateTimeOffset.UtcNow);
+
+        Assert.AreEqual(RuntimeInspectorTargetKinds.CharacterVersion, projection.TargetKind);
+        Assert.AreEqual("runtime-lock-sha256", projection.RuntimeLock.RuntimeFingerprint);
+        Assert.AreEqual(ArtifactTrustTiers.Private, projection.ResolvedRulePacks[0].TrustTier);
+        Assert.AreEqual("house-rules/validate.character", projection.ProviderBindings[0].ProviderId);
+        Assert.AreEqual(RuntimeInspectorWarningKinds.Compatibility, projection.Warnings[0].Kind);
+        Assert.AreEqual(RuntimeMigrationPreviewChangeKinds.ProviderRebound, projection.MigrationPreview[0].Kind);
+        Assert.IsTrue(projection.MigrationPreview[0].RequiresRebind);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

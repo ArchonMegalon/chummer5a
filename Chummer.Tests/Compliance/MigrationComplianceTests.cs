@@ -727,6 +727,29 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Runtime_inspector_contracts_lock_in_projection_warning_and_migration_preview_vocabulary()
+    {
+        string runtimeInspectorContractsPath = FindPath("Chummer.Contracts", "Content", "RuntimeInspectorContracts.cs");
+        string runtimeInspectorContractsText = File.ReadAllText(runtimeInspectorContractsPath);
+
+        StringAssert.Contains(runtimeInspectorContractsText, "public static class RuntimeInspectorTargetKinds");
+        StringAssert.Contains(runtimeInspectorContractsText, "public static class RuntimeInspectorWarningKinds");
+        StringAssert.Contains(runtimeInspectorContractsText, "public static class RuntimeInspectorWarningSeverityLevels");
+        StringAssert.Contains(runtimeInspectorContractsText, "public static class RuntimeMigrationPreviewChangeKinds");
+        StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorRulePackEntry");
+        StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorProviderBinding");
+        StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorWarning");
+        StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeMigrationPreviewItem");
+        StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorProjection");
+        StringAssert.Contains(runtimeInspectorContractsText, "runtime-lock");
+        StringAssert.Contains(runtimeInspectorContractsText, "provider-rebound");
+        StringAssert.Contains(runtimeInspectorContractsText, "ResolvedRuntimeLock RuntimeLock");
+        StringAssert.Contains(runtimeInspectorContractsText, "IReadOnlyList<RuntimeLockCompatibilityDiagnostic> CompatibilityDiagnostics");
+        Assert.IsFalse(runtimeInspectorContractsText.Contains("Avalonia", StringComparison.Ordinal));
+        Assert.IsFalse(runtimeInspectorContractsText.Contains("Blazor", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
