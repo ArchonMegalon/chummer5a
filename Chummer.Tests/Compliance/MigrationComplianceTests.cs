@@ -342,6 +342,33 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Workflow_surface_contracts_lock_in_shared_shell_region_and_workbench_vocabulary()
+    {
+        string workflowSurfaceContractsPath = FindPath("Chummer.Contracts", "Presentation", "WorkflowSurfaceContracts.cs");
+        string workflowSurfaceContractsText = File.ReadAllText(workflowSurfaceContractsPath);
+
+        StringAssert.Contains(workflowSurfaceContractsText, "public static class ShellRegionIds");
+        StringAssert.Contains(workflowSurfaceContractsText, "public static class WorkflowDefinitionIds");
+        StringAssert.Contains(workflowSurfaceContractsText, "public static class WorkflowSurfaceKinds");
+        StringAssert.Contains(workflowSurfaceContractsText, "public static class WorkflowLayoutTokens");
+        StringAssert.Contains(workflowSurfaceContractsText, "public sealed record WorkflowDefinition");
+        StringAssert.Contains(workflowSurfaceContractsText, "public sealed record WorkflowSurfaceDefinition");
+        StringAssert.Contains(workflowSurfaceContractsText, "LibraryShell");
+        StringAssert.Contains(workflowSurfaceContractsText, "CreateWorkbench");
+        StringAssert.Contains(workflowSurfaceContractsText, "CareerWorkbench");
+        StringAssert.Contains(workflowSurfaceContractsText, "ExpenseLedger");
+        StringAssert.Contains(workflowSurfaceContractsText, "HistoryTimeline");
+        StringAssert.Contains(workflowSurfaceContractsText, "DiceTool");
+        StringAssert.Contains(workflowSurfaceContractsText, "ExportTool");
+        StringAssert.Contains(workflowSurfaceContractsText, "PackManager");
+        StringAssert.Contains(workflowSurfaceContractsText, "SessionDashboard");
+        StringAssert.Contains(workflowSurfaceContractsText, "MenuBar");
+        StringAssert.Contains(workflowSurfaceContractsText, "SectionPane");
+        StringAssert.Contains(workflowSurfaceContractsText, "DialogHost");
+        Assert.IsFalse(workflowSurfaceContractsText.Contains("DesktopUiControlDefinition", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");

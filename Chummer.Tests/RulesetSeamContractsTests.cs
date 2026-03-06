@@ -506,6 +506,50 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Workflow_surface_contracts_define_legacy_workbench_workflows_and_shell_regions()
+    {
+        WorkflowDefinition libraryShell = new(
+            WorkflowId: WorkflowDefinitionIds.LibraryShell,
+            Title: "Library Shell",
+            SurfaceIds: ["shell.menu", "shell.workspace-left", "shell.section"],
+            RequiresOpenWorkspace: false);
+        WorkflowDefinition sessionDashboard = new(
+            WorkflowId: WorkflowDefinitionIds.SessionDashboard,
+            Title: "Session Dashboard",
+            SurfaceIds: ["session.summary", "session.quick-actions"],
+            RequiresOpenWorkspace: true,
+            MobileOptimized: true);
+        WorkflowSurfaceDefinition shellMenu = new(
+            SurfaceId: "shell.menu",
+            WorkflowId: WorkflowDefinitionIds.LibraryShell,
+            Kind: WorkflowSurfaceKinds.ShellRegion,
+            RegionId: ShellRegionIds.MenuBar,
+            LayoutToken: WorkflowLayoutTokens.ShellFrame,
+            ActionIds: ["file", "tools"],
+            RendererHints: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["desktopControl"] = "ShellMenuBarControl"
+            });
+        WorkflowSurfaceDefinition careerSection = new(
+            SurfaceId: "career.section",
+            WorkflowId: WorkflowDefinitionIds.CareerWorkbench,
+            Kind: WorkflowSurfaceKinds.Workbench,
+            RegionId: ShellRegionIds.SectionPane,
+            LayoutToken: WorkflowLayoutTokens.CareerWorkbench,
+            ActionIds: ["summary", "validate", "metadata"]);
+
+        Assert.AreEqual(WorkflowDefinitionIds.LibraryShell, libraryShell.WorkflowId);
+        Assert.AreEqual(WorkflowDefinitionIds.SessionDashboard, sessionDashboard.WorkflowId);
+        Assert.IsTrue(sessionDashboard.MobileOptimized);
+        Assert.AreEqual(WorkflowSurfaceKinds.ShellRegion, shellMenu.Kind);
+        Assert.AreEqual(ShellRegionIds.MenuBar, shellMenu.RegionId);
+        Assert.AreEqual(WorkflowLayoutTokens.CareerWorkbench, careerSection.LayoutToken);
+        Assert.AreEqual(WorkflowDefinitionIds.CareerWorkbench, careerSection.WorkflowId);
+        Assert.AreEqual("ShellMenuBarControl", shellMenu.RendererHints!["desktopControl"]);
+        CollectionAssert.Contains(libraryShell.SurfaceIds.ToList(), "shell.workspace-left");
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);
