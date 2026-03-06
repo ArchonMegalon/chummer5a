@@ -54,6 +54,8 @@ public class HubCatalogServiceTests
         Assert.AreEqual(HubCatalogItemKinds.RulePack, rulePack.Summary.Kind);
         Assert.AreEqual(RulePackPublicationStatuses.Published, rulePack.PublicationStatus);
         Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "engine-api"));
+        Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "install-history-count" && fact.Value == "1"));
+        Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "last-install-target" && fact.Value == "workspace-1"));
 
         Assert.IsNotNull(buildKit);
         Assert.AreEqual(HubCatalogItemKinds.BuildKit, buildKit.Summary.Kind);
@@ -65,6 +67,7 @@ public class HubCatalogServiceTests
         Assert.AreEqual("sha256:core", ruleProfile.RuntimeFingerprint);
         Assert.AreEqual(ArtifactInstallStates.Available, ruleProfile.Summary.InstallState);
         Assert.IsTrue(ruleProfile.Actions.Any(action => action.Kind == HubProjectActionKinds.InspectRuntime));
+        Assert.IsTrue(ruleProfile.Facts.Any(fact => fact.FactId == "last-install-operation" && fact.Value == ArtifactInstallHistoryOperations.Pin));
 
         Assert.IsNotNull(runtimeLock);
         Assert.AreEqual(HubCatalogItemKinds.RuntimeLock, runtimeLock.Summary.Kind);
@@ -72,6 +75,7 @@ public class HubCatalogServiceTests
         Assert.AreEqual("sha256:core", runtimeLock.RuntimeFingerprint);
         Assert.AreEqual(ArtifactInstallStates.Installed, runtimeLock.Summary.InstallState);
         Assert.IsTrue(runtimeLock.Facts.Any(fact => fact.FactId == "install-state" && fact.Value == ArtifactInstallStates.Installed));
+        Assert.IsTrue(runtimeLock.Facts.Any(fact => fact.FactId == "last-install-at"));
     }
 
     private static DefaultHubCatalogService CreateService() => new(
@@ -79,6 +83,21 @@ public class HubCatalogServiceTests
         [
             new HubRulesetPluginStub(RulesetDefaults.Sr5, "Shadowrun Fifth Edition"),
             new HubRulesetPluginStub(RulesetDefaults.Sr6, "Shadowrun Sixth Edition")
+        ]),
+        new RulePackInstallHistoryStoreStub(
+        [
+            new RulePackInstallHistoryRecord(
+                PackId: "house-rules",
+                Version: "1.0.0",
+                RulesetId: RulesetDefaults.Sr5,
+                Entry: new ArtifactInstallHistoryEntry(
+                    Operation: ArtifactInstallHistoryOperations.Install,
+                    Install: new ArtifactInstallState(
+                        ArtifactInstallStates.Installed,
+                        InstalledTargetKind: RuleProfileApplyTargetKinds.Workspace,
+                        InstalledTargetId: "workspace-1",
+                        RuntimeFingerprint: "sha256:runtime"),
+                    AppliedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00")))
         ]),
         new RulePackRegistryServiceStub(
         [
@@ -105,6 +124,20 @@ public class HubCatalogServiceTests
                     Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
                     Shares: []),
                 new ArtifactInstallState(ArtifactInstallStates.Installed))
+        ]),
+        new RuleProfileInstallHistoryStoreStub(
+        [
+            new RuleProfileInstallHistoryRecord(
+                ProfileId: "official.sr5.core",
+                RulesetId: RulesetDefaults.Sr5,
+                Entry: new ArtifactInstallHistoryEntry(
+                    Operation: ArtifactInstallHistoryOperations.Pin,
+                    Install: new ArtifactInstallState(
+                        ArtifactInstallStates.Pinned,
+                        InstalledTargetKind: RuleProfileApplyTargetKinds.Workspace,
+                        InstalledTargetId: "workspace-1",
+                        RuntimeFingerprint: "sha256:core"),
+                    AppliedAtUtc: DateTimeOffset.Parse("2026-03-06T12:05:00+00:00")))
         ]),
         new RuleProfileRegistryServiceStub(
         [
@@ -173,6 +206,20 @@ public class HubCatalogServiceTests
                 PublicationStatus: BuildKitPublicationStatuses.Published,
                 UpdatedAtUtc: DateTimeOffset.UtcNow)
         ]),
+        new RuntimeLockInstallHistoryStoreStub(
+        [
+            new RuntimeLockInstallHistoryRecord(
+                LockId: "sha256:core",
+                RulesetId: RulesetDefaults.Sr5,
+                Entry: new ArtifactInstallHistoryEntry(
+                    Operation: ArtifactInstallHistoryOperations.Pin,
+                    Install: new ArtifactInstallState(
+                        ArtifactInstallStates.Installed,
+                        InstalledTargetKind: RuntimeLockTargetKinds.Workspace,
+                        InstalledTargetId: "workspace-1",
+                        RuntimeFingerprint: "sha256:core"),
+                    AppliedAtUtc: DateTimeOffset.Parse("2026-03-06T12:10:00+00:00")))
+        ]),
         new RuntimeLockRegistryServiceStub(
             new RuntimeLockRegistryPage(
             [
@@ -221,6 +268,26 @@ public class HubCatalogServiceTests
             _entries.FirstOrDefault(entry => entry.Manifest.PackId == packId);
     }
 
+    private sealed class RulePackInstallHistoryStoreStub : IRulePackInstallHistoryStore
+    {
+        private readonly IReadOnlyList<RulePackInstallHistoryRecord> _records;
+
+        public RulePackInstallHistoryStoreStub(IReadOnlyList<RulePackInstallHistoryRecord> records)
+        {
+            _records = records;
+        }
+
+        public IReadOnlyList<RulePackInstallHistoryRecord> List(OwnerScope owner, string? rulesetId = null) => _records;
+
+        public IReadOnlyList<RulePackInstallHistoryRecord> GetHistory(OwnerScope owner, string packId, string version, string rulesetId) =>
+            _records.Where(record =>
+                string.Equals(record.PackId, packId, StringComparison.Ordinal)
+                && string.Equals(record.Version, version, StringComparison.Ordinal)
+                && string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal)).ToArray();
+
+        public RulePackInstallHistoryRecord Append(OwnerScope owner, RulePackInstallHistoryRecord record) => throw new NotSupportedException();
+    }
+
     private sealed class RuleProfileRegistryServiceStub : IRuleProfileRegistryService
     {
         private readonly IReadOnlyList<RuleProfileRegistryEntry> _entries;
@@ -236,6 +303,25 @@ public class HubCatalogServiceTests
             _entries.FirstOrDefault(entry => entry.Manifest.ProfileId == profileId);
     }
 
+    private sealed class RuleProfileInstallHistoryStoreStub : IRuleProfileInstallHistoryStore
+    {
+        private readonly IReadOnlyList<RuleProfileInstallHistoryRecord> _records;
+
+        public RuleProfileInstallHistoryStoreStub(IReadOnlyList<RuleProfileInstallHistoryRecord> records)
+        {
+            _records = records;
+        }
+
+        public IReadOnlyList<RuleProfileInstallHistoryRecord> List(OwnerScope owner, string? rulesetId = null) => _records;
+
+        public IReadOnlyList<RuleProfileInstallHistoryRecord> GetHistory(OwnerScope owner, string profileId, string rulesetId) =>
+            _records.Where(record =>
+                string.Equals(record.ProfileId, profileId, StringComparison.Ordinal)
+                && string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal)).ToArray();
+
+        public RuleProfileInstallHistoryRecord Append(OwnerScope owner, RuleProfileInstallHistoryRecord record) => throw new NotSupportedException();
+    }
+
     private sealed class RuntimeLockRegistryServiceStub : IRuntimeLockRegistryService
     {
         private readonly RuntimeLockRegistryPage _page;
@@ -249,6 +335,25 @@ public class HubCatalogServiceTests
 
         public RuntimeLockRegistryEntry? Get(OwnerScope owner, string lockId, string? rulesetId = null) =>
             _page.Entries.FirstOrDefault(entry => entry.LockId == lockId);
+    }
+
+    private sealed class RuntimeLockInstallHistoryStoreStub : IRuntimeLockInstallHistoryStore
+    {
+        private readonly IReadOnlyList<RuntimeLockInstallHistoryRecord> _records;
+
+        public RuntimeLockInstallHistoryStoreStub(IReadOnlyList<RuntimeLockInstallHistoryRecord> records)
+        {
+            _records = records;
+        }
+
+        public IReadOnlyList<RuntimeLockInstallHistoryRecord> List(OwnerScope owner, string? rulesetId = null) => _records;
+
+        public IReadOnlyList<RuntimeLockInstallHistoryRecord> GetHistory(OwnerScope owner, string lockId, string rulesetId) =>
+            _records.Where(record =>
+                string.Equals(record.LockId, lockId, StringComparison.Ordinal)
+                && string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal)).ToArray();
+
+        public RuntimeLockInstallHistoryRecord Append(OwnerScope owner, RuntimeLockInstallHistoryRecord record) => throw new NotSupportedException();
     }
 
     private sealed class BuildKitRegistryServiceStub : IBuildKitRegistryService

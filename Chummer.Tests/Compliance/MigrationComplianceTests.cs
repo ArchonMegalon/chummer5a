@@ -560,6 +560,60 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Owner_backed_install_history_seams_are_registered_for_hub_runtime_surfaces()
+    {
+        string artifactContractsPath = FindPath("Chummer.Contracts", "Content", "ArtifactContracts.cs");
+        string artifactContractsText = File.ReadAllText(artifactContractsPath);
+        string rulePackRegistryContractsPath = FindPath("Chummer.Contracts", "Content", "RulePackRegistryContracts.cs");
+        string rulePackRegistryContractsText = File.ReadAllText(rulePackRegistryContractsPath);
+        string ruleProfileRegistryContractsPath = FindPath("Chummer.Contracts", "Content", "RuleProfileRegistryContracts.cs");
+        string ruleProfileRegistryContractsText = File.ReadAllText(ruleProfileRegistryContractsPath);
+        string runtimeLockRegistryContractsPath = FindPath("Chummer.Contracts", "Content", "RuntimeLockRegistryContracts.cs");
+        string runtimeLockRegistryContractsText = File.ReadAllText(runtimeLockRegistryContractsPath);
+        string rulePackInstallHistoryStoreContractPath = FindPath("Chummer.Application", "Content", "IRulePackInstallHistoryStore.cs");
+        string rulePackInstallHistoryStoreContractText = File.ReadAllText(rulePackInstallHistoryStoreContractPath);
+        string ruleProfileInstallHistoryStoreContractPath = FindPath("Chummer.Application", "Content", "IRuleProfileInstallHistoryStore.cs");
+        string ruleProfileInstallHistoryStoreContractText = File.ReadAllText(ruleProfileInstallHistoryStoreContractPath);
+        string runtimeLockInstallHistoryStoreContractPath = FindPath("Chummer.Application", "Content", "IRuntimeLockInstallHistoryStore.cs");
+        string runtimeLockInstallHistoryStoreContractText = File.ReadAllText(runtimeLockInstallHistoryStoreContractPath);
+        string fileRulePackInstallHistoryStorePath = FindPath("Chummer.Infrastructure", "Files", "FileRulePackInstallHistoryStore.cs");
+        string fileRulePackInstallHistoryStoreText = File.ReadAllText(fileRulePackInstallHistoryStorePath);
+        string fileRuleProfileInstallHistoryStorePath = FindPath("Chummer.Infrastructure", "Files", "FileRuleProfileInstallHistoryStore.cs");
+        string fileRuleProfileInstallHistoryStoreText = File.ReadAllText(fileRuleProfileInstallHistoryStorePath);
+        string fileRuntimeLockInstallHistoryStorePath = FindPath("Chummer.Infrastructure", "Files", "FileRuntimeLockInstallHistoryStore.cs");
+        string fileRuntimeLockInstallHistoryStoreText = File.ReadAllText(fileRuntimeLockInstallHistoryStorePath);
+        string hubCatalogServicePath = FindPath("Chummer.Application", "Hub", "DefaultHubCatalogService.cs");
+        string hubCatalogServiceText = File.ReadAllText(hubCatalogServicePath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(artifactContractsText, "public static class ArtifactInstallHistoryOperations");
+        StringAssert.Contains(artifactContractsText, "public sealed record ArtifactInstallHistoryEntry");
+        StringAssert.Contains(rulePackRegistryContractsText, "public sealed record RulePackInstallHistoryRecord");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "public sealed record RuleProfileInstallHistoryRecord");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "public sealed record RuntimeLockInstallHistoryRecord");
+        StringAssert.Contains(rulePackInstallHistoryStoreContractText, "public interface IRulePackInstallHistoryStore");
+        StringAssert.Contains(rulePackInstallHistoryStoreContractText, "RulePackInstallHistoryRecord Append");
+        StringAssert.Contains(ruleProfileInstallHistoryStoreContractText, "public interface IRuleProfileInstallHistoryStore");
+        StringAssert.Contains(ruleProfileInstallHistoryStoreContractText, "RuleProfileInstallHistoryRecord Append");
+        StringAssert.Contains(runtimeLockInstallHistoryStoreContractText, "public interface IRuntimeLockInstallHistoryStore");
+        StringAssert.Contains(runtimeLockInstallHistoryStoreContractText, "RuntimeLockInstallHistoryRecord Append");
+        StringAssert.Contains(fileRulePackInstallHistoryStoreText, "public sealed class FileRulePackInstallHistoryStore : IRulePackInstallHistoryStore");
+        StringAssert.Contains(fileRuleProfileInstallHistoryStoreText, "public sealed class FileRuleProfileInstallHistoryStore : IRuleProfileInstallHistoryStore");
+        StringAssert.Contains(fileRuntimeLockInstallHistoryStoreText, "public sealed class FileRuntimeLockInstallHistoryStore : IRuntimeLockInstallHistoryStore");
+        StringAssert.Contains(hubCatalogServiceText, "IRulePackInstallHistoryStore");
+        StringAssert.Contains(hubCatalogServiceText, "IRuleProfileInstallHistoryStore");
+        StringAssert.Contains(hubCatalogServiceText, "IRuntimeLockInstallHistoryStore");
+        StringAssert.Contains(hubCatalogServiceText, "install-history-count");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRulePackInstallHistoryStore>(_ => new FileRulePackInstallHistoryStore(stateDirectory))");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuleProfileInstallHistoryStore>(_ => new FileRuleProfileInstallHistoryStore(stateDirectory))");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeLockInstallHistoryStore>(_ => new FileRuntimeLockInstallHistoryStore(stateDirectory))");
+        StringAssert.Contains(readmeText, "install history");
+    }
+
+    [TestMethod]
     public void Hub_project_install_preview_surface_is_exposed_through_hub_api_seam()
     {
         string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");

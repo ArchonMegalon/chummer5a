@@ -73,6 +73,12 @@ public sealed record RulePackInstallRecord(
     string RulesetId,
     ArtifactInstallState Install);
 
+public sealed record RulePackInstallHistoryRecord(
+    string PackId,
+    string Version,
+    string RulesetId,
+    ArtifactInstallHistoryEntry Entry);
+
 public sealed record RulePackPublicationReceipt(
     string PackId,
     string Version,

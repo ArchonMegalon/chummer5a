@@ -76,3 +76,8 @@ public sealed record RuleProfileInstallRecord(
     string ProfileId,
     string RulesetId,
     ArtifactInstallState Install);
+
+public sealed record RuleProfileInstallHistoryRecord(
+    string ProfileId,
+    string RulesetId,
+    ArtifactInstallHistoryEntry Entry);

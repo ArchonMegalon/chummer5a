@@ -11,22 +11,31 @@ namespace Chummer.Application.Hub;
 public sealed class DefaultHubCatalogService : IHubCatalogService
 {
     private readonly IRulesetPluginRegistry _rulesetPluginRegistry;
+    private readonly IRulePackInstallHistoryStore _rulePackInstallHistoryStore;
     private readonly IRulePackRegistryService _rulePackRegistryService;
+    private readonly IRuleProfileInstallHistoryStore _ruleProfileInstallHistoryStore;
     private readonly IRuleProfileRegistryService _ruleProfileRegistryService;
     private readonly IBuildKitRegistryService _buildKitRegistryService;
+    private readonly IRuntimeLockInstallHistoryStore _runtimeLockInstallHistoryStore;
     private readonly IRuntimeLockRegistryService _runtimeLockRegistryService;
 
     public DefaultHubCatalogService(
         IRulesetPluginRegistry rulesetPluginRegistry,
+        IRulePackInstallHistoryStore rulePackInstallHistoryStore,
         IRulePackRegistryService rulePackRegistryService,
+        IRuleProfileInstallHistoryStore ruleProfileInstallHistoryStore,
         IRuleProfileRegistryService ruleProfileRegistryService,
         IBuildKitRegistryService buildKitRegistryService,
+        IRuntimeLockInstallHistoryStore runtimeLockInstallHistoryStore,
         IRuntimeLockRegistryService runtimeLockRegistryService)
     {
         _rulesetPluginRegistry = rulesetPluginRegistry;
+        _rulePackInstallHistoryStore = rulePackInstallHistoryStore;
         _rulePackRegistryService = rulePackRegistryService;
+        _ruleProfileInstallHistoryStore = ruleProfileInstallHistoryStore;
         _ruleProfileRegistryService = ruleProfileRegistryService;
         _buildKitRegistryService = buildKitRegistryService;
+        _runtimeLockInstallHistoryStore = runtimeLockInstallHistoryStore;
         _runtimeLockRegistryService = runtimeLockRegistryService;
     }
 
@@ -106,6 +115,10 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
                 continue;
             }
 
+            HubProjectDetailFact[] installHistoryFacts = CreateInstallHistoryFacts(
+                _rulePackInstallHistoryStore.GetHistory(owner, entry.Manifest.PackId, entry.Manifest.Version, candidateRulesetId)
+                    .Select(record => record.Entry));
+
             return new HubProjectDetailProjection(
                 Summary: ToCatalogItem(candidateRulesetId, entry),
                 OwnerId: entry.Publication.OwnerId,
@@ -116,6 +129,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
                 Facts:
                 [
                     new HubProjectDetailFact("install-state", "Install State", entry.Install.State),
+                    .. installHistoryFacts,
                     new HubProjectDetailFact("engine-api", "Engine API", entry.Manifest.EngineApiVersion),
                     new HubProjectDetailFact("asset-count", "Assets", entry.Manifest.Assets.Count.ToString()),
                     new HubProjectDetailFact("capability-count", "Capabilities", entry.Manifest.Capabilities.Count.ToString()),
@@ -146,6 +160,10 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             return null;
         }
 
+        HubProjectDetailFact[] installHistoryFacts = CreateInstallHistoryFacts(
+            _ruleProfileInstallHistoryStore.GetHistory(owner, entry.Manifest.ProfileId, entry.Manifest.RulesetId)
+                .Select(record => record.Entry));
+
         return new HubProjectDetailProjection(
             Summary: ToCatalogItem(entry),
             OwnerId: entry.Publication.OwnerId,
@@ -156,6 +174,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             Facts:
             [
                 new HubProjectDetailFact("install-state", "Install State", entry.Install.State),
+                .. installHistoryFacts,
                 new HubProjectDetailFact("audience", "Audience", entry.Manifest.Audience),
                 new HubProjectDetailFact("update-channel", "Update Channel", entry.Manifest.UpdateChannel),
                 new HubProjectDetailFact("default-toggle-count", "Default Toggles", entry.Manifest.DefaultToggles.Count.ToString()),
@@ -237,6 +256,10 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             return null;
         }
 
+        HubProjectDetailFact[] installHistoryFacts = CreateInstallHistoryFacts(
+            _runtimeLockInstallHistoryStore.GetHistory(owner, entry.LockId, entry.RuntimeLock.RulesetId)
+                .Select(record => record.Entry));
+
         return new HubProjectDetailProjection(
             Summary: ToCatalogItem(entry),
             OwnerId: entry.Owner.NormalizedValue,
@@ -247,6 +270,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             Facts:
             [
                 new HubProjectDetailFact("install-state", "Install State", entry.Install.State),
+                .. installHistoryFacts,
                 new HubProjectDetailFact("engine-api", "Engine API", entry.RuntimeLock.EngineApiVersion),
                 new HubProjectDetailFact("content-bundle-count", "Content Bundles", entry.RuntimeLock.ContentBundles.Count.ToString()),
                 new HubProjectDetailFact("rulepack-count", "RulePacks", entry.RuntimeLock.RulePacks.Count.ToString()),
@@ -331,6 +355,32 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         string.Equals(visibility, ArtifactVisibilityModes.Public, StringComparison.Ordinal)
             ? ArtifactTrustTiers.Curated
             : ArtifactTrustTiers.LocalOnly;
+
+    private static HubProjectDetailFact[] CreateInstallHistoryFacts(IEnumerable<ArtifactInstallHistoryEntry> historyEntries)
+    {
+        ArtifactInstallHistoryEntry[] history = historyEntries
+            .OrderByDescending(entry => entry.AppliedAtUtc)
+            .ToArray();
+        if (history.Length == 0)
+        {
+            return [];
+        }
+
+        ArtifactInstallHistoryEntry latest = history[0];
+        List<HubProjectDetailFact> facts =
+        [
+            new HubProjectDetailFact("install-history-count", "Install History", history.Length.ToString()),
+            new HubProjectDetailFact("last-install-operation", "Last Install Operation", latest.Operation),
+            new HubProjectDetailFact("last-install-at", "Last Install At", latest.AppliedAtUtc.ToString("O"))
+        ];
+
+        if (!string.IsNullOrWhiteSpace(latest.Install.InstalledTargetId))
+        {
+            facts.Add(new HubProjectDetailFact("last-install-target", "Last Install Target", latest.Install.InstalledTargetId));
+        }
+
+        return facts.ToArray();
+    }
 
     private static bool MatchesQueryText(HubCatalogItem item, string queryText)
     {

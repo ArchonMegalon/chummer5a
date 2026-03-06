@@ -31,6 +31,21 @@ public sealed record ArtifactInstallState(
     string? InstalledTargetId = null,
     string? RuntimeFingerprint = null);
 
+public static class ArtifactInstallHistoryOperations
+{
+    public const string Install = "install";
+    public const string Update = "update";
+    public const string Pin = "pin";
+    public const string Unpin = "unpin";
+    public const string Remove = "remove";
+}
+
+public sealed record ArtifactInstallHistoryEntry(
+    string Operation,
+    ArtifactInstallState Install,
+    DateTimeOffset AppliedAtUtc,
+    string? Notes = null);
+
 public static class RulePackAssetKinds
 {
     public const string Xml = "xml";

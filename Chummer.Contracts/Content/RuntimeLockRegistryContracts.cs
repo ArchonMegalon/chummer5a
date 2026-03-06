@@ -46,3 +46,8 @@ public sealed record RuntimeLockRegistryPage(
     IReadOnlyList<RuntimeLockRegistryEntry> Entries,
     int TotalCount,
     string? ContinuationToken = null);
+
+public sealed record RuntimeLockInstallHistoryRecord(
+    string LockId,
+    string RulesetId,
+    ArtifactInstallHistoryEntry Entry);

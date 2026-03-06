@@ -1499,6 +1499,39 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Install_history_contracts_define_append_only_operation_and_history_vocabulary()
+    {
+        ArtifactInstallHistoryEntry historyEntry = new(
+            Operation: ArtifactInstallHistoryOperations.Pin,
+            Install: new ArtifactInstallState(
+                ArtifactInstallStates.Pinned,
+                InstalledTargetKind: RuntimeLockTargetKinds.Workspace,
+                InstalledTargetId: "workspace-1",
+                RuntimeFingerprint: "sha256:core"),
+            AppliedAtUtc: DateTimeOffset.UtcNow,
+            Notes: "Pinned for campaign workspace.");
+        RulePackInstallHistoryRecord rulePackHistory = new(
+            PackId: "house-rules",
+            Version: "1.0.0",
+            RulesetId: RulesetDefaults.Sr5,
+            Entry: historyEntry);
+        RuleProfileInstallHistoryRecord ruleProfileHistory = new(
+            ProfileId: "official.sr5.core",
+            RulesetId: RulesetDefaults.Sr5,
+            Entry: historyEntry);
+        RuntimeLockInstallHistoryRecord runtimeLockHistory = new(
+            LockId: "sha256:core",
+            RulesetId: RulesetDefaults.Sr5,
+            Entry: historyEntry);
+
+        Assert.AreEqual(ArtifactInstallHistoryOperations.Pin, historyEntry.Operation);
+        Assert.AreEqual(ArtifactInstallStates.Pinned, historyEntry.Install.State);
+        Assert.AreEqual("house-rules", rulePackHistory.PackId);
+        Assert.AreEqual("official.sr5.core", ruleProfileHistory.ProfileId);
+        Assert.AreEqual("sha256:core", runtimeLockHistory.LockId);
+    }
+
+    [TestMethod]
     public void Session_runtime_bundle_issue_contracts_define_issue_rotation_and_trust_vocabulary()
     {
         CharacterVersionReference baseCharacterVersion = new(
