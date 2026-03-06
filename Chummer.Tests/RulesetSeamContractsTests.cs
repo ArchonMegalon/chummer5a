@@ -255,6 +255,65 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Ruleprofile_application_contracts_define_preview_and_deferred_apply_receipts()
+    {
+        ResolvedRuntimeLock runtimeLock = new(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles:
+            [
+                new ContentBundleDescriptor(
+                    BundleId: "sr5-core",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Version: "2026.03.06",
+                    Title: "SR5 Core Bundle",
+                    Description: "Official base data.",
+                    AssetPaths: ["data/", "lang/"])
+            ],
+            RulePacks: [new ArtifactVersionReference("house-rules", "1.2.0")],
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal),
+            EngineApiVersion: "rulepack-v1",
+            RuntimeFingerprint: "runtime-lock-sha256");
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Workspace, "workspace-1");
+        RuleProfilePreviewReceipt preview = new(
+            ProfileId: "official.sr5.core",
+            Target: target,
+            RuntimeLock: runtimeLock,
+            Changes:
+            [
+                new RuleProfilePreviewItem(
+                    Kind: RuleProfilePreviewChangeKinds.RuntimeLockPinned,
+                    Summary: "Pin runtime.",
+                    SubjectId: runtimeLock.RuntimeFingerprint),
+                new RuleProfilePreviewItem(
+                    Kind: RuleProfilePreviewChangeKinds.RulePackSelectionChanged,
+                    Summary: "Apply rulepack selection.",
+                    SubjectId: "official.sr5.core",
+                    RequiresConfirmation: true)
+            ],
+            Warnings:
+            [
+                new RuntimeInspectorWarning(
+                    Kind: RuntimeInspectorWarningKinds.Trust,
+                    Severity: RuntimeInspectorWarningSeverityLevels.Info,
+                    Message: "Local-only profile.")
+            ],
+            RequiresConfirmation: true);
+        RuleProfileApplyReceipt receipt = new(
+            ProfileId: "official.sr5.core",
+            Target: target,
+            Outcome: RuleProfileApplyOutcomes.Deferred,
+            Preview: preview,
+            DeferredReason: "ruleprofile_apply_not_implemented");
+
+        Assert.AreEqual(RuleProfileApplyTargetKinds.Workspace, preview.Target.TargetKind);
+        Assert.AreEqual(RuleProfilePreviewChangeKinds.RulePackSelectionChanged, preview.Changes[1].Kind);
+        Assert.IsTrue(preview.RequiresConfirmation);
+        Assert.AreEqual(RuleProfileApplyOutcomes.Deferred, receipt.Outcome);
+        Assert.AreEqual("ruleprofile_apply_not_implemented", receipt.DeferredReason);
+        Assert.IsNotNull(receipt.Preview.RuntimeLock);
+    }
+
+    [TestMethod]
     public void Session_taxonomy_distinguishes_ledger_snapshot_and_runtime_bundle()
     {
         ResolvedRuntimeLock runtimeLock = new(

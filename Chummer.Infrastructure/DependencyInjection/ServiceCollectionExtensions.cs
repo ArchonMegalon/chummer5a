@@ -61,6 +61,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IContentOverlayCatalogService>(overlays);
         services.AddSingleton<IRulePackRegistryService, OverlayRulePackRegistryService>();
         services.AddSingleton<IRuleProfileRegistryService, DefaultRuleProfileRegistryService>();
+        services.AddSingleton<IRuleProfileApplicationService, DefaultRuleProfileApplicationService>();
 
         services.AddSingleton<ILifeModulesCatalogService>(provider =>
         {

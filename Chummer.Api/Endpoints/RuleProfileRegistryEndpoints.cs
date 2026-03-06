@@ -30,6 +30,30 @@ public static class RuleProfileRegistryEndpoints
                 : Results.Ok(entry);
         });
 
+        app.MapPost("/api/profiles/{profileId}/preview", (string profileId, string? ruleset, RuleProfileApplyTarget target, IRuleProfileApplicationService ruleProfileApplicationService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            RuleProfilePreviewReceipt? preview = ruleProfileApplicationService.Preview(ownerContextAccessor.Current, profileId, target, ruleset);
+            return preview is null
+                ? Results.NotFound(new
+                {
+                    error = "ruleprofile_not_found",
+                    profileId
+                })
+                : Results.Ok(preview);
+        });
+
+        app.MapPost("/api/profiles/{profileId}/apply", (string profileId, string? ruleset, RuleProfileApplyTarget target, IRuleProfileApplicationService ruleProfileApplicationService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            RuleProfileApplyReceipt? receipt = ruleProfileApplicationService.Apply(ownerContextAccessor.Current, profileId, target, ruleset);
+            return receipt is null
+                ? Results.NotFound(new
+                {
+                    error = "ruleprofile_not_found",
+                    profileId
+                })
+                : Results.Ok(receipt);
+        });
+
         return app;
     }
 }

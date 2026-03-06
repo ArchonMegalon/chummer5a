@@ -9,6 +9,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Session;
 using Chummer.Presentation;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -175,6 +176,40 @@ public class ApiIntegrationTests
 
         Assert.AreEqual("ruleprofile_not_found", payload["error"]?.GetValue<string>());
         Assert.AreEqual("missing-profile", payload["profileId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Profile_preview_endpoint_returns_runtime_lock_preview_for_registered_profile()
+    {
+        using var client = CreateClient();
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Workspace, "workspace-1");
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync("/api/profiles/official.sr5.core/preview?ruleset=sr5", target);
+        response.EnsureSuccessStatusCode();
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual("official.sr5.core", payload["profileId"]?.GetValue<string>());
+        Assert.AreEqual("workspace-1", payload["target"]?["targetId"]?.GetValue<string>());
+        Assert.IsNotNull(payload["runtimeLock"]?["runtimeFingerprint"]);
+    }
+
+    [TestMethod]
+    public async Task Profile_apply_endpoint_returns_deferred_receipt_for_registered_profile()
+    {
+        using var client = CreateClient();
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Character, "character-1");
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync("/api/profiles/official.sr5.core/apply?ruleset=sr5", target);
+        response.EnsureSuccessStatusCode();
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual(RuleProfileApplyOutcomes.Deferred, payload["outcome"]?.GetValue<string>());
+        Assert.AreEqual("ruleprofile_apply_not_implemented", payload["deferredReason"]?.GetValue<string>());
+        Assert.AreEqual("character-1", payload["target"]?["targetId"]?.GetValue<string>());
     }
 
     [TestMethod]

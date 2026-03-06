@@ -301,6 +301,32 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Ruleprofile_apply_boundary_is_explicit_prior_to_workspace_binding()
+    {
+        string ruleProfileRegistryEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RuleProfileRegistryEndpoints.cs");
+        string ruleProfileRegistryEndpointsText = File.ReadAllText(ruleProfileRegistryEndpointsPath);
+        string ruleProfileApplicationServiceContractPath = FindPath("Chummer.Application", "Content", "IRuleProfileApplicationService.cs");
+        string ruleProfileApplicationServiceContractText = File.ReadAllText(ruleProfileApplicationServiceContractPath);
+        string defaultRuleProfileApplicationServicePath = FindPath("Chummer.Application", "Content", "DefaultRuleProfileApplicationService.cs");
+        string defaultRuleProfileApplicationServiceText = File.ReadAllText(defaultRuleProfileApplicationServicePath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(ruleProfileRegistryEndpointsText, "/api/profiles/{profileId}/preview");
+        StringAssert.Contains(ruleProfileRegistryEndpointsText, "/api/profiles/{profileId}/apply");
+        StringAssert.Contains(ruleProfileRegistryEndpointsText, "IRuleProfileApplicationService");
+        StringAssert.Contains(ruleProfileApplicationServiceContractText, "public interface IRuleProfileApplicationService");
+        StringAssert.Contains(ruleProfileApplicationServiceContractText, "RuleProfilePreviewReceipt? Preview");
+        StringAssert.Contains(ruleProfileApplicationServiceContractText, "RuleProfileApplyReceipt? Apply");
+        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "RuleProfileApplyOutcomes.Deferred");
+        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "\"ruleprofile_apply_not_implemented\"");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuleProfileApplicationService, DefaultRuleProfileApplicationService>()");
+        StringAssert.Contains(readmeText, "deferred receipts");
+    }
+
+    [TestMethod]
     public void Solution_includes_headless_and_dual_head_projects()
     {
         string solutionPath = FindPath("Chummer.sln");
@@ -657,6 +683,23 @@ public class MigrationComplianceTests
         StringAssert.Contains(ruleProfileRegistryContractsText, "public sealed record RuleProfileRegistryEntry");
         StringAssert.Contains(ruleProfileRegistryContractsText, "ResolvedRuntimeLock RuntimeLock");
         StringAssert.Contains(ruleProfileRegistryContractsText, "RulePackReviewDecision Review");
+    }
+
+    [TestMethod]
+    public void Ruleprofile_application_contracts_lock_in_target_preview_and_apply_vocabulary()
+    {
+        string ruleProfileApplicationContractsPath = FindPath("Chummer.Contracts", "Content", "RuleProfileApplicationContracts.cs");
+        string ruleProfileApplicationContractsText = File.ReadAllText(ruleProfileApplicationContractsPath);
+
+        StringAssert.Contains(ruleProfileApplicationContractsText, "public static class RuleProfileApplyTargetKinds");
+        StringAssert.Contains(ruleProfileApplicationContractsText, "public static class RuleProfileApplyOutcomes");
+        StringAssert.Contains(ruleProfileApplicationContractsText, "public static class RuleProfilePreviewChangeKinds");
+        StringAssert.Contains(ruleProfileApplicationContractsText, "public sealed record RuleProfileApplyTarget");
+        StringAssert.Contains(ruleProfileApplicationContractsText, "public sealed record RuleProfilePreviewItem");
+        StringAssert.Contains(ruleProfileApplicationContractsText, "public sealed record RuleProfilePreviewReceipt");
+        StringAssert.Contains(ruleProfileApplicationContractsText, "public sealed record RuleProfileApplyReceipt");
+        StringAssert.Contains(ruleProfileApplicationContractsText, "RuntimeLockInstallReceipt? InstallReceipt = null");
+        StringAssert.Contains(ruleProfileApplicationContractsText, "string? DeferredReason = null");
     }
 
     [TestMethod]
