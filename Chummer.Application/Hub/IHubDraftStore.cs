@@ -12,4 +12,6 @@ public interface IHubDraftStore
     HubDraftRecord? Get(OwnerScope owner, string kind, string projectId, string rulesetId);
 
     HubDraftRecord Upsert(OwnerScope owner, HubDraftRecord record);
+
+    bool Delete(OwnerScope owner, string draftId);
 }

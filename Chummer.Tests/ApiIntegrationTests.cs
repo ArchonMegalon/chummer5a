@@ -322,6 +322,31 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_publish_draft_archive_and_delete_endpoints_manage_lifecycle_state()
+    {
+        using var client = CreateClient();
+        string projectId = $"campaign.shadowops.{Guid.NewGuid():N}";
+
+        using HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/hub/publish/drafts", new HubPublishDraftRequest(
+            ProjectKind: HubCatalogItemKinds.RulePack,
+            ProjectId: projectId,
+            RulesetId: RulesetDefaults.Sr5,
+            Title: "Campaign ShadowOps"));
+        createResponse.EnsureSuccessStatusCode();
+        JsonObject created = await ParseRequiredJsonObject(createResponse);
+        string draftId = created["draftId"]?.GetValue<string>() ?? string.Empty;
+
+        JsonObject archived = await PostRequiredJsonObject(client, $"/api/hub/publish/drafts/{draftId}/archive", new JsonObject());
+        Assert.AreEqual(HubPublicationStates.Archived, archived["state"]?.GetValue<string>());
+
+        using HttpResponseMessage deleteResponse = await client.DeleteAsync($"/api/hub/publish/drafts/{draftId}");
+        Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        using HttpResponseMessage detailResponse = await client.GetAsync($"/api/hub/publish/drafts/{draftId}");
+        Assert.AreEqual(HttpStatusCode.NotFound, detailResponse.StatusCode);
+    }
+
+    [TestMethod]
     public async Task Hub_publish_submit_endpoint_persists_submission_receipt_and_queue_entry()
     {
         using var client = CreateClient();

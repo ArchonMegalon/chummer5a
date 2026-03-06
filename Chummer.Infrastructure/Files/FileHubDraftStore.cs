@@ -83,6 +83,22 @@ public sealed class FileHubDraftStore : IHubDraftStore
         return normalizedRecord;
     }
 
+    public bool Delete(OwnerScope owner, string draftId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(draftId);
+
+        List<HubDraftRecord> records = Load(owner).ToList();
+        int removed = records.RemoveAll(record =>
+            string.Equals(record.DraftId, draftId.Trim(), StringComparison.Ordinal));
+        if (removed == 0)
+        {
+            return false;
+        }
+
+        Save(owner, records);
+        return true;
+    }
+
     private IReadOnlyList<HubDraftRecord> Load(OwnerScope owner)
     {
         string path = GetPath(owner);

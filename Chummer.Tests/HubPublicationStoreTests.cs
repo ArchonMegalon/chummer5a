@@ -89,6 +89,52 @@ public class HubPublicationStoreTests
         }
     }
 
+    [TestMethod]
+    public void File_hub_publication_stores_delete_owner_scoped_draft_and_moderation_records()
+    {
+        string stateDirectory = CreateTempDirectory();
+
+        try
+        {
+            FileHubDraftStore draftStore = new(stateDirectory);
+            FileHubModerationCaseStore moderationStore = new(stateDirectory);
+            OwnerScope owner = new("alice");
+            HubDraftRecord draft = new(
+                DraftId: "draft-1",
+                ProjectKind: HubCatalogItemKinds.RulePack,
+                ProjectId: "campaign.shadowops",
+                RulesetId: RulesetDefaults.Sr5,
+                Title: "Campaign ShadowOps",
+                OwnerId: owner.NormalizedValue,
+                State: HubPublicationStates.Submitted,
+                CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
+                UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:05:00+00:00"));
+            HubModerationCaseRecord moderation = new(
+                CaseId: "case-1",
+                DraftId: draft.DraftId,
+                ProjectKind: draft.ProjectKind,
+                ProjectId: draft.ProjectId,
+                RulesetId: draft.RulesetId,
+                Title: draft.Title,
+                OwnerId: owner.NormalizedValue,
+                State: HubModerationStates.PendingReview,
+                CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:10:00+00:00"),
+                UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:11:00+00:00"));
+
+            draftStore.Upsert(owner, draft);
+            moderationStore.Upsert(owner, moderation);
+
+            Assert.IsTrue(draftStore.Delete(owner, draft.DraftId));
+            Assert.IsTrue(moderationStore.DeleteByDraftId(owner, draft.DraftId));
+            Assert.IsNull(draftStore.Get(owner, draft.DraftId));
+            Assert.IsNull(moderationStore.GetByDraftId(owner, draft.DraftId));
+        }
+        finally
+        {
+            Directory.Delete(stateDirectory, recursive: true);
+        }
+    }
+
     private static string CreateTempDirectory()
     {
         string path = Path.Combine(Path.GetTempPath(), $"chummer-hub-publication-store-tests-{Guid.NewGuid():N}");

@@ -21,6 +21,7 @@ public static class InfoEndpoints
                 "/api/hub/projects/{kind}/{itemId}/compatibility",
                 "/api/hub/publish/drafts",
                 "/api/hub/publish/drafts/{draftId}",
+                "/api/hub/publish/drafts/{draftId}/archive",
                 "/api/hub/publish/{kind}/{itemId}/submit",
                 "/api/hub/moderation/queue",
                 "/api/content/overlays",

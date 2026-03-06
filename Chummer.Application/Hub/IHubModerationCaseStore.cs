@@ -12,4 +12,6 @@ public interface IHubModerationCaseStore
     HubModerationCaseRecord? Get(OwnerScope owner, string kind, string projectId, string rulesetId);
 
     HubModerationCaseRecord Upsert(OwnerScope owner, HubModerationCaseRecord record);
+
+    bool DeleteByDraftId(OwnerScope owner, string draftId);
 }

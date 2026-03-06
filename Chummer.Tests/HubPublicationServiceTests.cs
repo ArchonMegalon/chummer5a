@@ -143,6 +143,70 @@ public class HubPublicationServiceTests
         Assert.AreEqual("ready", detail.LatestModerationNotes);
     }
 
+    [TestMethod]
+    public void Default_publication_service_archive_marks_draft_terminal_and_clears_owner_queue_entry()
+    {
+        InMemoryHubDraftStore draftStore = new();
+        InMemoryHubModerationCaseStore moderationCaseStore = new();
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        DefaultHubModerationService moderationService = new(moderationCaseStore);
+        OwnerScope owner = new("alice");
+
+        HubPublishDraftReceipt draft = publicationService.CreateDraft(
+            owner,
+            new HubPublishDraftRequest(
+                ProjectKind: HubCatalogItemKinds.RulePack,
+                ProjectId: "campaign.shadowops.archive",
+                RulesetId: RulesetDefaults.Sr5,
+                Title: "Campaign ShadowOps Archive")).Payload!;
+        publicationService.SubmitForReview(
+            owner,
+            HubCatalogItemKinds.RulePack,
+            "campaign.shadowops.archive",
+            RulesetDefaults.Sr5,
+            new HubSubmitProjectRequest("ready"));
+
+        HubPublishDraftReceipt? archived = publicationService.ArchiveDraft(owner, draft.DraftId).Payload;
+        HubDraftDetailProjection? detail = publicationService.GetDraft(owner, draft.DraftId).Payload;
+        HubModerationQueue queue = moderationService.ListQueue(owner, HubModerationStates.PendingReview).Payload!;
+
+        Assert.IsNotNull(archived);
+        Assert.AreEqual(HubPublicationStates.Archived, archived.State);
+        Assert.IsNotNull(detail);
+        Assert.AreEqual(HubPublicationStates.Archived, detail.Draft.State);
+        Assert.IsNull(detail.Moderation);
+        Assert.IsEmpty(queue.Items);
+    }
+
+    [TestMethod]
+    public void Default_publication_service_delete_removes_owner_draft_and_moderation_state()
+    {
+        InMemoryHubDraftStore draftStore = new();
+        InMemoryHubModerationCaseStore moderationCaseStore = new();
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        OwnerScope owner = new("alice");
+
+        HubPublishDraftReceipt draft = publicationService.CreateDraft(
+            owner,
+            new HubPublishDraftRequest(
+                ProjectKind: HubCatalogItemKinds.RulePack,
+                ProjectId: "campaign.shadowops.delete",
+                RulesetId: RulesetDefaults.Sr5,
+                Title: "Campaign ShadowOps Delete")).Payload!;
+        publicationService.SubmitForReview(
+            owner,
+            HubCatalogItemKinds.RulePack,
+            "campaign.shadowops.delete",
+            RulesetDefaults.Sr5,
+            new HubSubmitProjectRequest("ready"));
+
+        bool deleted = publicationService.DeleteDraft(owner, draft.DraftId).Payload;
+
+        Assert.IsTrue(deleted);
+        Assert.IsNull(publicationService.GetDraft(owner, draft.DraftId).Payload);
+        Assert.IsNull(moderationCaseStore.GetByDraftId(owner, draft.DraftId));
+    }
+
     private sealed class InMemoryHubDraftStore : IHubDraftStore
     {
         private readonly List<HubDraftRecord> _records = [];
@@ -185,6 +249,13 @@ public class HubPublicationServiceTests
             }
 
             return normalizedRecord;
+        }
+
+        public bool Delete(OwnerScope owner, string draftId)
+        {
+            return _records.RemoveAll(current =>
+                string.Equals(current.OwnerId, owner.NormalizedValue, StringComparison.Ordinal)
+                && string.Equals(current.DraftId, draftId, StringComparison.Ordinal)) > 0;
         }
     }
 
@@ -230,6 +301,13 @@ public class HubPublicationServiceTests
             }
 
             return normalizedRecord;
+        }
+
+        public bool DeleteByDraftId(OwnerScope owner, string draftId)
+        {
+            return _records.RemoveAll(current =>
+                string.Equals(current.OwnerId, owner.NormalizedValue, StringComparison.Ordinal)
+                && string.Equals(current.DraftId, draftId, StringComparison.Ordinal)) > 0;
         }
     }
 }

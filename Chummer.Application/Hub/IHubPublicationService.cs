@@ -13,5 +13,9 @@ public interface IHubPublicationService
 
     HubPublicationResult<HubPublishDraftReceipt?> UpdateDraft(OwnerScope owner, string draftId, HubUpdateDraftRequest? request);
 
+    HubPublicationResult<HubPublishDraftReceipt?> ArchiveDraft(OwnerScope owner, string draftId);
+
+    HubPublicationResult<bool> DeleteDraft(OwnerScope owner, string draftId);
+
     HubPublicationResult<HubProjectSubmissionReceipt> SubmitForReview(OwnerScope owner, string kind, string itemId, string? rulesetId, HubSubmitProjectRequest? request);
 }

@@ -5,6 +5,8 @@ public static class HubPublicationOperations
     public const string ListDrafts = "list-drafts";
     public const string CreateDraft = "create-draft";
     public const string UpdateDraft = "update-draft";
+    public const string ArchiveDraft = "archive-draft";
+    public const string DeleteDraft = "delete-draft";
     public const string SubmitProject = "submit-project";
     public const string ListModerationQueue = "list-moderation-queue";
 }
@@ -13,6 +15,7 @@ public static class HubPublicationStates
 {
     public const string Draft = "draft";
     public const string Submitted = "submitted";
+    public const string Archived = "archived";
     public const string PendingReview = "pending-review";
 }
 

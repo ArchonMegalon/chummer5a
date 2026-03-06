@@ -58,6 +58,30 @@ public static class HubPublicationEndpoints
                 : Results.Ok(updated);
         });
 
+        app.MapPost("/api/hub/publish/drafts/{draftId}/archive", (string draftId, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            HubPublishDraftReceipt? archived = hubPublicationService.ArchiveDraft(ownerContextAccessor.Current, draftId).Payload;
+            return archived is null
+                ? Results.NotFound(new
+                {
+                    error = "hub_publish_draft_not_found",
+                    draftId
+                })
+                : Results.Ok(archived);
+        });
+
+        app.MapDelete("/api/hub/publish/drafts/{draftId}", (string draftId, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            bool deleted = hubPublicationService.DeleteDraft(ownerContextAccessor.Current, draftId).Payload;
+            return deleted
+                ? Results.NoContent()
+                : Results.NotFound(new
+                {
+                    error = "hub_publish_draft_not_found",
+                    draftId
+                });
+        });
+
         app.MapPost("/api/hub/publish/{kind}/{itemId}/submit", (string kind, string itemId, string? ruleset, HubSubmitProjectRequest? request, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(hubPublicationService.SubmitForReview(ownerContextAccessor.Current, kind, itemId, ruleset, request)));
 

@@ -118,6 +118,37 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
         return HubPublicationResult<HubPublishDraftReceipt?>.Implemented(ToReceipt(persisted));
     }
 
+    public HubPublicationResult<HubPublishDraftReceipt?> ArchiveDraft(OwnerScope owner, string draftId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(draftId);
+
+        HubDraftRecord? existing = _draftStore.Get(owner, draftId);
+        if (existing is null)
+        {
+            return HubPublicationResult<HubPublishDraftReceipt?>.Implemented(null);
+        }
+
+        HubDraftRecord archived = _draftStore.Upsert(
+            owner,
+            existing with
+            {
+                State = HubPublicationStates.Archived,
+                UpdatedAtUtc = DateTimeOffset.UtcNow
+            });
+        _moderationCaseStore.DeleteByDraftId(owner, draftId);
+
+        return HubPublicationResult<HubPublishDraftReceipt?>.Implemented(ToReceipt(archived));
+    }
+
+    public HubPublicationResult<bool> DeleteDraft(OwnerScope owner, string draftId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(draftId);
+
+        bool deleted = _draftStore.Delete(owner, draftId);
+        _moderationCaseStore.DeleteByDraftId(owner, draftId);
+        return HubPublicationResult<bool>.Implemented(deleted);
+    }
+
     public HubPublicationResult<HubProjectSubmissionReceipt> SubmitForReview(OwnerScope owner, string kind, string itemId, string? rulesetId, HubSubmitProjectRequest? request)
     {
         string normalizedKind = NormalizeKindRequired(kind);

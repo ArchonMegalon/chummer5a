@@ -200,6 +200,43 @@ public sealed class OwnerScopedApiEndpointTests
         Assert.AreEqual(StatusCodes.Status404NotFound, (int)response.StatusCode);
     }
 
+    [TestMethod]
+    public async Task Hub_publication_archive_and_delete_endpoints_respect_forwarded_owner_scope()
+    {
+        await using WebApplication app = await CreateAppAsync();
+        using HttpClient client = app.GetTestClient();
+
+        JsonObject aliceDraft = await PostRequiredJsonObject(client, "/api/hub/publish/drafts", new JsonObject
+        {
+            ["projectKind"] = HubCatalogItemKinds.RulePack,
+            ["projectId"] = "alice.pack.lifecycle",
+            ["rulesetId"] = "sr5",
+            ["title"] = "Alice Pack Lifecycle"
+        }, "alice@example.com");
+        string draftId = aliceDraft["draftId"]?.GetValue<string>() ?? string.Empty;
+
+        JsonObject archived = await PostRequiredJsonObject(client, $"/api/hub/publish/drafts/{draftId}/archive", new JsonObject(), "alice@example.com");
+        Assert.AreEqual(HubPublicationStates.Archived, archived["state"]?.GetValue<string>());
+
+        using HttpRequestMessage archiveRequest = new(HttpMethod.Post, $"/api/hub/publish/drafts/{draftId}/archive")
+        {
+            Content = JsonContent.Create(new JsonObject())
+        };
+        archiveRequest.Headers.Add(OwnerHeaderName, "bob@example.com");
+        using HttpResponseMessage archiveResponse = await client.SendAsync(archiveRequest);
+        Assert.AreEqual(StatusCodes.Status404NotFound, (int)archiveResponse.StatusCode);
+
+        using HttpRequestMessage deleteRequest = new(HttpMethod.Delete, $"/api/hub/publish/drafts/{draftId}");
+        deleteRequest.Headers.Add(OwnerHeaderName, "alice@example.com");
+        using HttpResponseMessage deleteResponse = await client.SendAsync(deleteRequest);
+        Assert.AreEqual(StatusCodes.Status204NoContent, (int)deleteResponse.StatusCode);
+
+        using HttpRequestMessage bobDeleteRequest = new(HttpMethod.Delete, $"/api/hub/publish/drafts/{draftId}");
+        bobDeleteRequest.Headers.Add(OwnerHeaderName, "bob@example.com");
+        using HttpResponseMessage bobDeleteResponse = await client.SendAsync(bobDeleteRequest);
+        Assert.AreEqual(StatusCodes.Status404NotFound, (int)bobDeleteResponse.StatusCode);
+    }
+
     private static async Task<WebApplication> CreateAppAsync()
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
@@ -512,6 +549,16 @@ public sealed class OwnerScopedApiEndpointTests
 
             return normalizedRecord;
         }
+
+        public bool Delete(OwnerScope owner, string draftId)
+        {
+            if (!_recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubDraftRecord>? records))
+            {
+                return false;
+            }
+
+            return records.RemoveAll(record => string.Equals(record.DraftId, draftId, StringComparison.Ordinal)) > 0;
+        }
     }
 
     private sealed class InMemoryHubModerationCaseStore : IHubModerationCaseStore
@@ -562,6 +609,16 @@ public sealed class OwnerScopedApiEndpointTests
             }
 
             return normalizedRecord;
+        }
+
+        public bool DeleteByDraftId(OwnerScope owner, string draftId)
+        {
+            if (!_recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubModerationCaseRecord>? records))
+            {
+                return false;
+            }
+
+            return records.RemoveAll(record => string.Equals(record.DraftId, draftId, StringComparison.Ordinal)) > 0;
         }
     }
 }
