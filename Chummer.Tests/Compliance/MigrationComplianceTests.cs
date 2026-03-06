@@ -1472,6 +1472,18 @@ public class MigrationComplianceTests
         Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetShellCatalogResolverService", StringComparison.Ordinal));
         StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetPluginRegistry");
         StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetShellCatalogResolverService");
+        StringAssert.Contains(rulesetHostingServicesText, "IRulesetSelectionPolicy");
+        Assert.IsFalse(rulesetHostingServicesText.Contains("AppCommandCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(rulesetHostingServicesText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(rulesetHostingServicesText.Contains("WorkspaceSurfaceActionCatalog.ForTab(", StringComparison.Ordinal));
+        Assert.IsFalse(rulesetHostingServicesText.Contains("DesktopUiControlCatalog.ForTab(", StringComparison.Ordinal));
+
+        string catalogOnlyResolverPath = FindPath("Chummer.Presentation", "Shell", "CatalogOnlyRulesetShellCatalogResolver.cs");
+        string catalogOnlyResolverText = File.ReadAllText(catalogOnlyResolverPath);
+        StringAssert.Contains(catalogOnlyResolverText, "AppCommandCatalog.ForRuleset(");
+        StringAssert.Contains(catalogOnlyResolverText, "NavigationTabCatalog.ForRuleset(");
+        StringAssert.Contains(catalogOnlyResolverText, "WorkspaceSurfaceActionCatalog.ForTab(");
+        StringAssert.Contains(catalogOnlyResolverText, "DesktopUiControlCatalog.ForTab(");
 
         Assert.IsFalse(workspaceModelsText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(workspaceApiModelsText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));

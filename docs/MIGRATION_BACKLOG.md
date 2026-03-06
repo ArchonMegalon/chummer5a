@@ -56,7 +56,7 @@ Progress: added `ICommandAvailabilityEvaluator` + `DefaultCommandAvailabilityEva
 
 - [x] `MIG-013` Add parity tests asserting both heads expose identical command IDs/tab IDs/action IDs/control IDs from shared state.
 Acceptance criteria: test fails on any divergence between head render models for the same workspace.
-Progress: added `Avalonia_and_Blazor_shell_surfaces_expose_identical_ids` in `Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs`.
+Progress: added `Avalonia_and_Blazor_shell_surfaces_expose_identical_ids` in `Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs`. Active runtime shell metadata now resolves only through registered ruleset plugins plus explicit selection policy; the catalog-only resolver remains in `Chummer.Presentation` as a compatibility/test-only fallback instead of an active host fallback.
 
 ### Phase 2: Complete multi-workspace session behavior
 

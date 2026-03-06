@@ -18,6 +18,8 @@ using Chummer.Desktop.Runtime;
 using Chummer.Infrastructure.Files;
 using Chummer.Infrastructure.Workspaces;
 using Chummer.Presentation.Shell;
+using Chummer.Rulesets.Sr5;
+using Chummer.Rulesets.Sr6;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;
@@ -131,11 +133,19 @@ public class RestartSafeWorkspacePersistenceTests
         IWorkspaceService workspaceService = new WorkspaceService(
             new FileWorkspaceStore(stateDirectory),
             new RulesetWorkspaceCodecResolver([new RestartSafeWorkspaceCodec()]));
+        RulesetPluginRegistry pluginRegistry = new(
+        [
+            new Sr5RulesetPlugin(),
+            new Sr6RulesetPlugin()
+        ]);
+        IRulesetSelectionPolicy rulesetSelectionPolicy = new DefaultRulesetSelectionPolicy(pluginRegistry);
         IRulesetShellCatalogResolver shellCatalogResolver = new RulesetShellCatalogResolverService(
-            new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>()));
+            pluginRegistry,
+            rulesetSelectionPolicy);
         InProcessChummerClient client = new(
             workspaceService,
             shellCatalogResolver,
+            rulesetSelectionPolicy,
             preferencesService,
             sessionService);
         return new RuntimeHarness(client, new ShellBootstrapDataProvider(client));

@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Contracts.Presentation;
@@ -38,13 +37,26 @@ public sealed class RulesetShellCatalogResolverTests
     }
 
     [TestMethod]
-    public void ResolveNavigationTabs_falls_back_to_catalog_without_matching_plugin()
+    public void ResolveNavigationTabs_uses_default_ruleset_selection_when_ruleset_is_not_specified()
     {
-        RulesetShellCatalogResolverService resolver = CreateResolver(new StubRulesetPlugin("sr6", commands: [], tabs: []));
-        IReadOnlyList<NavigationTabDefinition> tabs = resolver.ResolveNavigationTabs("sr5");
+        NavigationTabDefinition[] sr5Tabs =
+        [
+            new NavigationTabDefinition(
+                Id: "tab-sr5-default",
+                Label: "SR5 Default",
+                SectionId: "profile",
+                Group: "character",
+                RequiresOpenCharacter: true,
+                EnabledByDefault: true,
+                RulesetId: "sr5")
+        ];
+        RulesetShellCatalogResolverService resolver = CreateResolver(
+            new StubRulesetPlugin("sr5", commands: [], tabs: sr5Tabs),
+            new StubRulesetPlugin("sr6", commands: [], tabs: []));
+        IReadOnlyList<NavigationTabDefinition> tabs = resolver.ResolveNavigationTabs(null);
 
-        Assert.HasCount(NavigationTabCatalog.ForRuleset("sr5").Count, tabs);
-        Assert.IsTrue(tabs.Any(tab => string.Equals(tab.Id, "tab-info", StringComparison.Ordinal)));
+        Assert.HasCount(1, tabs);
+        Assert.AreEqual("tab-sr5-default", tabs[0].Id);
     }
 
     [TestMethod]
@@ -100,13 +112,25 @@ public sealed class RulesetShellCatalogResolverTests
     }
 
     [TestMethod]
-    public void ResolveDesktopUiControlsForTab_falls_back_to_catalog_without_matching_plugin()
+    public void ResolveDesktopUiControlsForTab_throws_when_requested_ruleset_has_no_registered_plugin()
     {
         RulesetShellCatalogResolverService resolver = CreateResolver(new StubRulesetPlugin("sr6", commands: [], tabs: []));
-        IReadOnlyList<DesktopUiControlDefinition> controls = resolver.ResolveDesktopUiControlsForTab("tab-info", "sr5");
 
-        Assert.HasCount(DesktopUiControlCatalog.ForTab("tab-info", "sr5").Count, controls);
-        Assert.IsTrue(controls.Any(control => string.Equals(control.TabId, "tab-info", StringComparison.Ordinal)));
+        InvalidOperationException ex = Assert.ThrowsExactly<InvalidOperationException>(() =>
+            resolver.ResolveDesktopUiControlsForTab("tab-info", "sr5"));
+
+        StringAssert.Contains(ex.Message, "sr5");
+    }
+
+    [TestMethod]
+    public void ResolveCommands_throws_when_no_ruleset_plugins_are_registered()
+    {
+        RulesetShellCatalogResolverService resolver = CreateResolver();
+
+        InvalidOperationException ex = Assert.ThrowsExactly<InvalidOperationException>(() =>
+            resolver.ResolveCommands(null));
+
+        StringAssert.Contains(ex.Message, "No ruleset plugin is registered");
     }
 
     [TestMethod]
@@ -133,7 +157,8 @@ public sealed class RulesetShellCatalogResolverTests
 
     private static RulesetShellCatalogResolverService CreateResolver(params IRulesetPlugin[] plugins)
     {
-        return new RulesetShellCatalogResolverService(new RulesetPluginRegistry(plugins));
+        RulesetPluginRegistry registry = new(plugins);
+        return new RulesetShellCatalogResolverService(registry, new DefaultRulesetSelectionPolicy(registry));
     }
 
     private sealed class StubRulesetPlugin : IRulesetPlugin

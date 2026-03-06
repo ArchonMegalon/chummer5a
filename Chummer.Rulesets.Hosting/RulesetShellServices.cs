@@ -53,44 +53,45 @@ public sealed class DefaultRulesetSelectionPolicy : IRulesetSelectionPolicy
 public sealed class RulesetShellCatalogResolverService : IRulesetShellCatalogResolver
 {
     private readonly IRulesetPluginRegistry _pluginRegistry;
+    private readonly IRulesetSelectionPolicy _rulesetSelectionPolicy;
 
-    public RulesetShellCatalogResolverService(IRulesetPluginRegistry pluginRegistry)
+    public RulesetShellCatalogResolverService(
+        IRulesetPluginRegistry pluginRegistry,
+        IRulesetSelectionPolicy? rulesetSelectionPolicy = null)
     {
         _pluginRegistry = pluginRegistry;
+        _rulesetSelectionPolicy = rulesetSelectionPolicy ?? new DefaultRulesetSelectionPolicy(pluginRegistry);
     }
 
     public IReadOnlyList<AppCommandDefinition> ResolveCommands(string? rulesetId)
     {
-        IRulesetPlugin? plugin = _pluginRegistry.Resolve(rulesetId);
-        return plugin is null
-            ? AppCommandCatalog.ForRuleset(rulesetId)
-            : plugin.ShellDefinitions.GetCommands();
+        return ResolveRequiredPlugin(rulesetId).ShellDefinitions.GetCommands();
     }
 
     public IReadOnlyList<NavigationTabDefinition> ResolveNavigationTabs(string? rulesetId)
     {
-        IRulesetPlugin? plugin = _pluginRegistry.Resolve(rulesetId);
-        return plugin is null
-            ? NavigationTabCatalog.ForRuleset(rulesetId)
-            : plugin.ShellDefinitions.GetNavigationTabs();
+        return ResolveRequiredPlugin(rulesetId).ShellDefinitions.GetNavigationTabs();
     }
 
     public IReadOnlyList<WorkspaceSurfaceActionDefinition> ResolveWorkspaceActionsForTab(string? tabId, string? rulesetId)
     {
-        IRulesetPlugin? plugin = _pluginRegistry.Resolve(rulesetId);
-        if (plugin is null)
-            return WorkspaceSurfaceActionCatalog.ForTab(tabId, rulesetId);
-
-        return SelectTabActions(plugin.Catalogs.GetWorkspaceActions(), tabId);
+        return SelectTabActions(ResolveRequiredPlugin(rulesetId).Catalogs.GetWorkspaceActions(), tabId);
     }
 
     public IReadOnlyList<DesktopUiControlDefinition> ResolveDesktopUiControlsForTab(string? tabId, string? rulesetId)
     {
-        IRulesetPlugin? plugin = _pluginRegistry.Resolve(rulesetId);
-        if (plugin is null)
-            return DesktopUiControlCatalog.ForTab(tabId, rulesetId);
+        return SelectTabControls(ResolveRequiredPlugin(rulesetId).Catalogs.GetDesktopUiControls(), tabId);
+    }
 
-        return SelectTabControls(plugin.Catalogs.GetDesktopUiControls(), tabId);
+    private IRulesetPlugin ResolveRequiredPlugin(string? requestedRulesetId)
+    {
+        string effectiveRulesetId = RulesetDefaults.NormalizeOptional(requestedRulesetId)
+            ?? RulesetDefaults.NormalizeOptional(_rulesetSelectionPolicy.GetDefaultRulesetId())
+            ?? throw new InvalidOperationException("No ruleset plugin is registered to provide shell metadata.");
+
+        return _pluginRegistry.Resolve(effectiveRulesetId)
+            ?? throw new InvalidOperationException(
+                $"No ruleset plugin is registered for ruleset '{effectiveRulesetId}'.");
     }
 
     private static IReadOnlyList<WorkspaceSurfaceActionDefinition> SelectTabActions(

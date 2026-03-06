@@ -16,6 +16,8 @@ using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Desktop.Runtime;
+using Chummer.Rulesets.Sr5;
+using Chummer.Rulesets.Sr6;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;
@@ -63,17 +65,17 @@ public sealed class InProcessChummerClientRulesetPluginTests
     }
 
     [TestMethod]
-    public async Task GetCommands_and_tabs_fallback_to_catalog_when_plugin_is_missing()
+    public async Task GetCommands_and_tabs_use_registered_runtime_ruleset_plugins()
     {
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())));
+            CreateRuntimeShellCatalogResolver());
 
         IReadOnlyList<AppCommandDefinition> commands = await client.GetCommandsAsync("sr5", CancellationToken.None);
         IReadOnlyList<NavigationTabDefinition> tabs = await client.GetNavigationTabsAsync("sr5", CancellationToken.None);
 
-        Assert.HasCount(AppCommandCatalog.ForRuleset("sr5").Count, commands);
-        Assert.HasCount(NavigationTabCatalog.ForRuleset("sr5").Count, tabs);
+        Assert.HasCount(new Sr5RulesetShellDefinitionProvider().GetCommands().Count, commands);
+        Assert.HasCount(new Sr5RulesetShellDefinitionProvider().GetNavigationTabs().Count, tabs);
         Assert.IsTrue(commands.Any(command => string.Equals(command.Id, "file", StringComparison.Ordinal)));
         Assert.IsTrue(tabs.Any(tab => string.Equals(tab.Id, "tab-info", StringComparison.Ordinal)));
     }
@@ -85,7 +87,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         preferencesStore.Save(new ShellPreferences("sr6"));
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            CreateRuntimeShellCatalogResolver(),
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
             shellPreferencesService: new ShellPreferencesService(preferencesStore));
 
         ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
@@ -99,7 +102,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         var preferencesStore = new InMemoryShellPreferencesStore();
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            CreateRuntimeShellCatalogResolver(),
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
             shellPreferencesService: new ShellPreferencesService(preferencesStore));
 
         await client.SaveShellPreferencesAsync(new ShellPreferences("sr6"), CancellationToken.None);
@@ -114,7 +118,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         var sessionStore = new InMemoryShellSessionStore();
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            CreateRuntimeShellCatalogResolver(),
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
             shellSessionService: new ShellSessionService(sessionStore));
 
         await client.SaveShellSessionAsync(new ShellSessionState("ws-sr6"), CancellationToken.None);
@@ -130,7 +135,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         var preferencesStore = new InMemoryShellPreferencesStore();
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            CreateRuntimeShellCatalogResolver(),
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
             shellPreferencesService: new ShellPreferencesService(preferencesStore),
             ownerContextAccessor: new StubOwnerContextAccessor(owner));
 
@@ -158,7 +164,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         sessionStore.Save(owner, new ShellSessionState(ActiveTabId: "tab-rules"));
         var client = new InProcessChummerClient(
             workspaceService,
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            CreateRuntimeShellCatalogResolver(),
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
             shellPreferencesService: new ShellPreferencesService(preferencesStore),
             shellSessionService: new ShellSessionService(sessionStore),
             ownerContextAccessor: new StubOwnerContextAccessor(owner));
@@ -194,7 +201,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         };
         InProcessChummerClient client = new(
             workspaceService,
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            CreateRuntimeShellCatalogResolver(),
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
             ownerContextAccessor: new StubOwnerContextAccessor(owner));
 
         WorkspaceImportResult result = await client.ImportAsync(
@@ -222,7 +230,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         sessionStore.Save(new ShellSessionState("ws-sr5"));
         var client = new InProcessChummerClient(
             workspaceService,
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            CreateRuntimeShellCatalogResolver(),
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
             new ShellPreferencesService(preferencesStore),
             new ShellSessionService(sessionStore));
 
@@ -248,7 +257,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         preferencesStore.Save(new ShellPreferences(RulesetDefaults.Sr5));
         var client = new InProcessChummerClient(
             workspaceService,
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            CreateRuntimeShellCatalogResolver(),
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
             new ShellPreferencesService(preferencesStore),
             new ShellSessionService(new InMemoryShellSessionStore()));
 
@@ -268,7 +278,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         sessionStore.Save(new ShellSessionState(ActiveTabId: "tab-rules"));
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            CreateRuntimeShellCatalogResolver(),
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
             new ShellPreferencesService(preferencesStore),
             new ShellSessionService(sessionStore));
 
@@ -291,7 +302,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
             }));
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            CreateRuntimeShellCatalogResolver(),
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
             new ShellPreferencesService(preferencesStore),
             new ShellSessionService(sessionStore));
 
@@ -333,7 +345,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
         };
         InProcessChummerClient client = new(
             workspaceService,
-            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())));
+            CreateRuntimeShellCatalogResolver());
 
         CommandResult<WorkspaceExportReceipt> export = await client.ExportAsync(new CharacterWorkspaceId("ws-export"), CancellationToken.None);
 
@@ -374,6 +386,26 @@ public sealed class InProcessChummerClientRulesetPluginTests
         public IRulesetRuleHost Rules { get; }
 
         public IRulesetScriptHost Scripts { get; }
+    }
+
+    private static IRulesetPlugin[] CreateRuntimeRulesetPlugins()
+    {
+        return
+        [
+            new Sr5RulesetPlugin(),
+            new Sr6RulesetPlugin()
+        ];
+    }
+
+    private static RulesetShellCatalogResolverService CreateRuntimeShellCatalogResolver()
+    {
+        RulesetPluginRegistry registry = new(CreateRuntimeRulesetPlugins());
+        return new RulesetShellCatalogResolverService(registry, new DefaultRulesetSelectionPolicy(registry));
+    }
+
+    private static DefaultRulesetSelectionPolicy CreateRuntimeRulesetSelectionPolicy()
+    {
+        return new DefaultRulesetSelectionPolicy(new RulesetPluginRegistry(CreateRuntimeRulesetPlugins()));
     }
 
     private sealed class StubRulesetSerializer : IRulesetSerializer

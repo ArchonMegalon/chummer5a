@@ -18,6 +18,8 @@ using Chummer.Contracts.Workspaces;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
+using Chummer.Rulesets.Sr5;
+using Chummer.Rulesets.Sr6;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests.Presentation;
@@ -28,10 +30,20 @@ public class DualHeadAcceptanceTests
     private static readonly Uri BaseUri = ResolveBaseUri();
     private static readonly string? ApiKey = ResolveApiKey();
     private static readonly RulesetShellCatalogResolverService ShellCatalogResolver =
-        new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>()));
+        CreateShellCatalogResolver();
     private static readonly Regex WorkspaceTokenRegex = new("(?<=Workspace:\\s)[A-Za-z0-9-]+", RegexOptions.Compiled);
     private static readonly Regex WorkspaceFileNameRegex = new("^[a-f0-9]{32}(?:-[a-f0-9]{4}){0,4}\\.(?:chum5|json)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex WorkspaceFileTokenRegex = new("[a-f0-9]{32}(?:-[a-f0-9]{4}){0,4}\\.(?:chum5|json)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static RulesetShellCatalogResolverService CreateShellCatalogResolver()
+    {
+        RulesetPluginRegistry registry = new(
+        [
+            new Sr5RulesetPlugin(),
+            new Sr6RulesetPlugin()
+        ]);
+        return new RulesetShellCatalogResolverService(registry, new DefaultRulesetSelectionPolicy(registry));
+    }
 
     [TestMethod]
     public async Task Avalonia_and_Blazor_overview_flows_show_equivalent_state_after_import()
