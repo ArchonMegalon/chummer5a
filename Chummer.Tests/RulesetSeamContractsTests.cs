@@ -12,6 +12,7 @@ using Chummer.Contracts.Assets;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Diagnostics;
+using Chummer.Contracts.Journal;
 using Chummer.Contracts.Owners;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
@@ -1527,6 +1528,62 @@ public class RulesetSeamContractsTests
         Assert.AreEqual("requires-cyberware", page.DisableReasons[0].ReasonId);
         Assert.AreEqual("favorite-weapons", selection.PresetId);
         Assert.AreEqual("weapon-ares-alpha", selection.ItemId);
+    }
+
+    [TestMethod]
+    public void Journal_contracts_define_structured_notes_ledger_and_timeline_vocabulary()
+    {
+        OwnerScope owner = new("user-1");
+        NoteDocument note = new(
+            NoteId: "note-1",
+            Owner: owner,
+            ScopeKind: JournalScopeKinds.Character,
+            ScopeId: "char-1",
+            Title: "Street Contacts",
+            Blocks:
+            [
+                new NoteBlock(
+                    BlockId: "block-1",
+                    Kind: NoteBlockKinds.Paragraph,
+                    Content: "Met with the fixer in Tacoma.",
+                    CreatedAtUtc: DateTimeOffset.UtcNow)
+            ],
+            UpdatedAtUtc: DateTimeOffset.UtcNow);
+        LedgerEntry ledgerEntry = new(
+            EntryId: "ledger-1",
+            Owner: owner,
+            ScopeKind: JournalScopeKinds.Character,
+            ScopeId: "char-1",
+            Kind: LedgerEntryKinds.Nuyen,
+            Amount: -2500m,
+            Currency: "nuyen",
+            Label: "Ares Alpha",
+            OccurredAtUtc: DateTimeOffset.UtcNow,
+            NoteId: note.NoteId);
+        TimelineEvent timelineEvent = new(
+            EventId: "timeline-1",
+            Owner: owner,
+            ScopeKind: JournalScopeKinds.Character,
+            ScopeId: "char-1",
+            Kind: TimelineEventKinds.Training,
+            Title: "Longarms 4 -> 5",
+            StartsAtUtc: DateTimeOffset.UtcNow.AddDays(1),
+            EndsAtUtc: DateTimeOffset.UtcNow.AddDays(10),
+            NoteId: note.NoteId,
+            LedgerEntryId: ledgerEntry.EntryId);
+        JournalProjection projection = new(
+            ScopeKind: JournalScopeKinds.Character,
+            ScopeId: "char-1",
+            Notes: [note],
+            LedgerEntries: [ledgerEntry],
+            TimelineEvents: [timelineEvent]);
+
+        Assert.AreEqual(JournalScopeKinds.Character, projection.ScopeKind);
+        Assert.AreEqual(NoteBlockKinds.Paragraph, projection.Notes[0].Blocks[0].Kind);
+        Assert.AreEqual(LedgerEntryKinds.Nuyen, projection.LedgerEntries[0].Kind);
+        Assert.AreEqual(TimelineEventKinds.Training, projection.TimelineEvents[0].Kind);
+        Assert.AreEqual(note.NoteId, projection.LedgerEntries[0].NoteId);
+        Assert.AreEqual(ledgerEntry.EntryId, projection.TimelineEvents[0].LedgerEntryId);
     }
 
     [TestMethod]
