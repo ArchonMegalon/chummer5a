@@ -2,9 +2,11 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using Chummer.Application.Owners;
 using Chummer.Application.Content;
 using Chummer.Contracts.Owners;
+using Chummer.Contracts.Rulesets;
 using Chummer.Infrastructure.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -63,9 +65,12 @@ public class HeadlessCoreContentBundleValidationTests
             using ServiceProvider provider = services.BuildServiceProvider();
             IContentOverlayCatalogService overlays = provider.GetRequiredService<IContentOverlayCatalogService>();
             IOwnerContextAccessor ownerContextAccessor = provider.GetRequiredService<IOwnerContextAccessor>();
+            IRulesetPlugin[] plugins = provider.GetServices<IRulesetPlugin>().ToArray();
             string resolved = overlays.ResolveDataFile("lifemodules.xml");
             Assert.AreEqual(Path.Combine(dataDirectory, "lifemodules.xml"), resolved);
             Assert.AreEqual(OwnerScope.LocalSingleUser.NormalizedValue, ownerContextAccessor.Current.NormalizedValue);
+            Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr5, StringComparison.Ordinal)));
+            Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr6, StringComparison.Ordinal)));
         }
         finally
         {

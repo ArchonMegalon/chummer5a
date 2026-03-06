@@ -4,6 +4,7 @@ using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 using Chummer.Rulesets.Hosting;
 using Chummer.Rulesets.Sr5;
+using Chummer.Rulesets.Sr6;
 
 var builder = WebApplication.CreateBuilder(args);
 string? configuredPathBase = builder.Configuration["Chummer:PathBase"];
@@ -38,6 +39,7 @@ builder.Services.AddScoped<IShellPresenter, ShellPresenter>();
 builder.Services.AddScoped<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
 builder.Services.AddRulesetInfrastructure();
 builder.Services.AddSr5Ruleset();
+builder.Services.AddSr6Ruleset();
 builder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
 builder.Services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
 

@@ -15,27 +15,45 @@ namespace Chummer.Tests;
 public sealed class RulesetWorkspaceCodecResolverTests
 {
     [TestMethod]
-    public void Resolve_uses_first_registered_codec_when_ruleset_is_missing()
+    public void Resolve_throws_when_ruleset_is_missing()
     {
         IRulesetWorkspaceCodec first = new StubWorkspaceCodec("sr6");
         IRulesetWorkspaceCodec second = new StubWorkspaceCodec("sr5");
         RulesetWorkspaceCodecResolver resolver = new([first, second]);
 
-        IRulesetWorkspaceCodec resolved = resolver.Resolve(null);
+        InvalidOperationException? ex = null;
+        try
+        {
+            resolver.Resolve(null);
+        }
+        catch (InvalidOperationException captured)
+        {
+            ex = captured;
+        }
 
-        Assert.AreSame(first, resolved);
+        Assert.IsNotNull(ex);
+        StringAssert.Contains(ex.Message, "Workspace ruleset id is required");
     }
 
     [TestMethod]
-    public void Resolve_does_not_hardcode_sr5_fallback_for_unknown_rulesets()
+    public void Resolve_throws_for_unknown_rulesets()
     {
         IRulesetWorkspaceCodec first = new StubWorkspaceCodec("sr6");
         IRulesetWorkspaceCodec second = new StubWorkspaceCodec("sr5");
         RulesetWorkspaceCodecResolver resolver = new([first, second]);
 
-        IRulesetWorkspaceCodec resolved = resolver.Resolve("shadowrun-x");
+        InvalidOperationException? ex = null;
+        try
+        {
+            resolver.Resolve("shadowrun-x");
+        }
+        catch (InvalidOperationException captured)
+        {
+            ex = captured;
+        }
 
-        Assert.AreSame(first, resolved);
+        Assert.IsNotNull(ex);
+        StringAssert.Contains(ex.Message, "shadowrun-x");
     }
 
     [TestMethod]

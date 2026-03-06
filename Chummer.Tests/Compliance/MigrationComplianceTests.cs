@@ -1386,10 +1386,13 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();");
         StringAssert.Contains(infrastructureDiText, "services.AddRulesetInfrastructure();");
         StringAssert.Contains(infrastructureDiText, "services.AddSr5Ruleset();");
+        StringAssert.Contains(infrastructureDiText, "services.AddSr6Ruleset();");
         StringAssert.Contains(desktopRuntimeDiText, "services.AddRulesetInfrastructure();");
         StringAssert.Contains(desktopRuntimeDiText, "services.AddSr5Ruleset();");
+        StringAssert.Contains(desktopRuntimeDiText, "services.AddSr6Ruleset();");
         StringAssert.Contains(blazorProgramText, "builder.Services.AddRulesetInfrastructure();");
         StringAssert.Contains(blazorProgramText, "builder.Services.AddSr5Ruleset();");
+        StringAssert.Contains(blazorProgramText, "builder.Services.AddSr6Ruleset();");
         StringAssert.Contains(blazorProgramText, "AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();");
 
         StringAssert.Contains(commandEndpointsText, "IRulesetShellCatalogResolver shellCatalogResolver");
@@ -1563,6 +1566,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(codecResolverText, "RulesetDefaults.NormalizeOptional(rulesetId)");
         StringAssert.Contains(codecResolverText, "RulesetDefaults.NormalizeRequired(codec.RulesetId)");
         Assert.IsFalse(codecResolverText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
+        Assert.IsFalse(codecResolverText.Contains("_fallbackCodec", StringComparison.Ordinal));
+        Assert.IsFalse(codecResolverText.Contains("return _fallbackCodec", StringComparison.Ordinal));
+        StringAssert.Contains(codecResolverText, "Workspace ruleset id is required to resolve a workspace codec.");
+        StringAssert.Contains(codecResolverText, "No workspace codec is registered for ruleset");
         StringAssert.Contains(workspaceModelsText, "public sealed record WorkspaceDocumentState");
         StringAssert.Contains(workspaceModelsText, "WorkspaceDocumentState State");
         StringAssert.Contains(workspaceModelsText, "public WorkspacePayloadEnvelope PayloadEnvelope => State.ToEnvelope();");
