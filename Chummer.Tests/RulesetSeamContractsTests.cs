@@ -122,10 +122,12 @@ public class RulesetSeamContractsTests
         Assert.IsNull(typeof(RulesetDefaults).GetMethod("Normalize", [typeof(string)]));
         Assert.IsNotNull(typeof(RulesetDefaults).GetMethod(nameof(RulesetDefaults.NormalizeOptional)));
         Assert.IsNotNull(typeof(RulesetDefaults).GetMethod(nameof(RulesetDefaults.NormalizeRequired)));
-        Assert.IsNotNull(typeof(RulesetDefaults).GetMethod(nameof(RulesetDefaults.NormalizeOrDefault)));
+        Assert.IsNull(typeof(RulesetDefaults).GetMethod("NormalizeOrDefault", [typeof(string), typeof(string)]));
         Assert.IsNull(RulesetDefaults.NormalizeOptional(" "));
         Assert.AreEqual(RulesetDefaults.Sr4, RulesetDefaults.NormalizeRequired(" SR4 "));
-        Assert.AreEqual(RulesetDefaults.Sr6, RulesetDefaults.NormalizeOrDefault(null, RulesetDefaults.Sr6));
+        Assert.AreEqual(
+            RulesetDefaults.Sr6,
+            RulesetDefaults.NormalizeOptional(null) ?? RulesetDefaults.NormalizeRequired(RulesetDefaults.Sr6));
     }
 
     [TestMethod]

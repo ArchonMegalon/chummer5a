@@ -962,14 +962,16 @@ public class CharacterOverviewPresenterTests
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
         {
             GetCommandsCalls++;
-            string effectiveRulesetId = RulesetDefaults.NormalizeOrDefault(rulesetId, _preferences.PreferredRulesetId);
+            string effectiveRulesetId = RulesetDefaults.NormalizeOptional(rulesetId)
+                ?? RulesetDefaults.NormalizeRequired(_preferences.PreferredRulesetId);
             return Task.FromResult(CreateCommands(effectiveRulesetId));
         }
 
         public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
         {
             GetNavigationTabsCalls++;
-            string effectiveRulesetId = RulesetDefaults.NormalizeOrDefault(rulesetId, _preferences.PreferredRulesetId);
+            string effectiveRulesetId = RulesetDefaults.NormalizeOptional(rulesetId)
+                ?? RulesetDefaults.NormalizeRequired(_preferences.PreferredRulesetId);
             return Task.FromResult(CreateTabs(effectiveRulesetId));
         }
 

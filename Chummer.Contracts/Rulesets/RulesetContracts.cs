@@ -26,10 +26,6 @@ public static class RulesetDefaults
         return normalized;
     }
 
-    public static string NormalizeOrDefault(string? value, string defaultRulesetId)
-    {
-        return NormalizeOptional(value) ?? NormalizeRequired(defaultRulesetId);
-    }
 }
 
 public readonly record struct RulesetId(string Value)
