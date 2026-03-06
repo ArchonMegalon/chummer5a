@@ -361,7 +361,7 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
-    public async Task Profile_apply_endpoint_returns_deferred_receipt_for_registered_profile()
+    public async Task Profile_apply_endpoint_returns_applied_receipt_for_registered_profile()
     {
         using var client = CreateClient();
         RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Character, "character-1");
@@ -372,9 +372,11 @@ public class ApiIntegrationTests
         Assert.IsInstanceOfType<JsonObject>(parsed);
         JsonObject payload = (JsonObject)parsed!;
 
-        Assert.AreEqual(RuleProfileApplyOutcomes.Deferred, payload["outcome"]?.GetValue<string>());
-        Assert.AreEqual("ruleprofile_apply_not_implemented", payload["deferredReason"]?.GetValue<string>());
+        Assert.AreEqual(RuleProfileApplyOutcomes.Applied, payload["outcome"]?.GetValue<string>());
+        Assert.IsNull(payload["deferredReason"]);
         Assert.AreEqual("character-1", payload["target"]?["targetId"]?.GetValue<string>());
+        Assert.AreEqual("character-1", payload["installReceipt"]?["targetId"]?.GetValue<string>());
+        Assert.IsNotNull(payload["installReceipt"]?["runtimeLock"]?["runtimeFingerprint"]);
     }
 
     [TestMethod]

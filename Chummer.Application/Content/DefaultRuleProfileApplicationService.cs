@@ -1,19 +1,40 @@
 using System.Linq;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Owners;
+using Chummer.Contracts.Rulesets;
 
 namespace Chummer.Application.Content;
 
 public sealed class DefaultRuleProfileApplicationService : IRuleProfileApplicationService
 {
+    private readonly IRuleProfileInstallHistoryStore _installHistoryStore;
+    private readonly IRuleProfileInstallStateStore _installStateStore;
     private readonly IRuleProfileRegistryService _ruleProfileRegistryService;
+    private readonly IRuntimeLockInstallService _runtimeLockInstallService;
 
-    public DefaultRuleProfileApplicationService(IRuleProfileRegistryService ruleProfileRegistryService)
+    public DefaultRuleProfileApplicationService(
+        IRuleProfileRegistryService ruleProfileRegistryService,
+        IRuntimeLockInstallService runtimeLockInstallService,
+        IRuleProfileInstallStateStore installStateStore,
+        IRuleProfileInstallHistoryStore installHistoryStore)
     {
         _ruleProfileRegistryService = ruleProfileRegistryService;
+        _runtimeLockInstallService = runtimeLockInstallService;
+        _installStateStore = installStateStore;
+        _installHistoryStore = installHistoryStore;
     }
 
     public RuleProfilePreviewReceipt? Preview(OwnerScope owner, string profileId, RuleProfileApplyTarget target, string? rulesetId = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(profileId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(target.TargetKind);
+        ArgumentException.ThrowIfNullOrWhiteSpace(target.TargetId);
+
+        RuleProfileRegistryEntry? entry = _ruleProfileRegistryService.Get(owner, profileId, rulesetId);
+        return entry is null ? null : CreatePreview(entry, target);
+    }
+
+    public RuleProfileApplyReceipt? Apply(OwnerScope owner, string profileId, RuleProfileApplyTarget target, string? rulesetId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(profileId);
         ArgumentException.ThrowIfNullOrWhiteSpace(target.TargetKind);
@@ -25,6 +46,44 @@ public sealed class DefaultRuleProfileApplicationService : IRuleProfileApplicati
             return null;
         }
 
+        RuleProfilePreviewReceipt preview = CreatePreview(entry, target);
+        string resolvedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId) ?? entry.Manifest.RulesetId;
+        RuntimeLockInstallReceipt? installReceipt = _runtimeLockInstallService.Apply(
+            owner,
+            entry.Manifest.RuntimeLock.RuntimeFingerprint,
+            target,
+            resolvedRulesetId);
+        if (installReceipt is null)
+        {
+            return new RuleProfileApplyReceipt(
+                ProfileId: preview.ProfileId,
+                Target: preview.Target,
+                Outcome: RuleProfileApplyOutcomes.Blocked,
+                Preview: preview);
+        }
+
+        if (string.Equals(installReceipt.Outcome, RuntimeLockInstallOutcomes.Blocked, StringComparison.Ordinal))
+        {
+            return new RuleProfileApplyReceipt(
+                ProfileId: preview.ProfileId,
+                Target: preview.Target,
+                Outcome: RuleProfileApplyOutcomes.Blocked,
+                Preview: preview,
+                InstallReceipt: installReceipt);
+        }
+
+        PersistProfileInstall(owner, entry, target, resolvedRulesetId, installReceipt);
+
+        return new RuleProfileApplyReceipt(
+            ProfileId: preview.ProfileId,
+            Target: preview.Target,
+            Outcome: RuleProfileApplyOutcomes.Applied,
+            Preview: preview,
+            InstallReceipt: installReceipt);
+    }
+
+    private RuleProfilePreviewReceipt CreatePreview(RuleProfileRegistryEntry entry, RuleProfileApplyTarget target)
+    {
         RuleProfilePreviewItem[] changes = BuildPreviewChanges(entry, target);
         RuntimeInspectorWarning[] warnings = BuildWarnings(entry);
 
@@ -37,20 +96,47 @@ public sealed class DefaultRuleProfileApplicationService : IRuleProfileApplicati
             RequiresConfirmation: changes.Any(change => change.RequiresConfirmation));
     }
 
-    public RuleProfileApplyReceipt? Apply(OwnerScope owner, string profileId, RuleProfileApplyTarget target, string? rulesetId = null)
+    private void PersistProfileInstall(
+        OwnerScope owner,
+        RuleProfileRegistryEntry entry,
+        RuleProfileApplyTarget target,
+        string resolvedRulesetId,
+        RuntimeLockInstallReceipt installReceipt)
     {
-        RuleProfilePreviewReceipt? preview = Preview(owner, profileId, target, rulesetId);
-        if (preview is null)
+        ArtifactInstallState current = entry.Install;
+        string runtimeFingerprint = installReceipt.RuntimeLock.RuntimeFingerprint;
+
+        if (string.Equals(current.State, ArtifactInstallStates.Pinned, StringComparison.Ordinal)
+            && string.Equals(current.InstalledTargetKind, target.TargetKind, StringComparison.Ordinal)
+            && string.Equals(current.InstalledTargetId, target.TargetId, StringComparison.Ordinal)
+            && string.Equals(current.RuntimeFingerprint, runtimeFingerprint, StringComparison.Ordinal)
+            && current.InstalledAtUtc is not null)
         {
-            return null;
+            return;
         }
 
-        return new RuleProfileApplyReceipt(
-            ProfileId: preview.ProfileId,
-            Target: preview.Target,
-            Outcome: RuleProfileApplyOutcomes.Deferred,
-            Preview: preview,
-            DeferredReason: "ruleprofile_apply_not_implemented");
+        DateTimeOffset appliedAtUtc = installReceipt.InstalledAtUtc;
+        ArtifactInstallState install = new(
+            State: ArtifactInstallStates.Pinned,
+            InstalledAtUtc: current.InstalledAtUtc ?? appliedAtUtc,
+            InstalledTargetKind: target.TargetKind,
+            InstalledTargetId: target.TargetId,
+            RuntimeFingerprint: runtimeFingerprint);
+        ArtifactInstallState persistedInstall = _installStateStore.Upsert(
+            owner,
+            new RuleProfileInstallRecord(
+                entry.Manifest.ProfileId,
+                resolvedRulesetId,
+                install)).Install;
+        _installHistoryStore.Append(
+            owner,
+            new RuleProfileInstallHistoryRecord(
+                entry.Manifest.ProfileId,
+                resolvedRulesetId,
+                new ArtifactInstallHistoryEntry(
+                    Operation: ArtifactInstallHistoryOperations.Pin,
+                    Install: persistedInstall,
+                    AppliedAtUtc: appliedAtUtc)));
     }
 
     private static RuleProfilePreviewItem[] BuildPreviewChanges(RuleProfileRegistryEntry entry, RuleProfileApplyTarget target)

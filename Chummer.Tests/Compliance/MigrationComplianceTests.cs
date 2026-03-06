@@ -432,7 +432,7 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
-    public void Ruleprofile_apply_boundary_is_explicit_prior_to_workspace_binding()
+    public void Ruleprofile_apply_boundary_executes_through_owner_backed_profile_and_runtime_lock_install_seams()
     {
         string ruleProfileRegistryEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RuleProfileRegistryEndpoints.cs");
         string ruleProfileRegistryEndpointsText = File.ReadAllText(ruleProfileRegistryEndpointsPath);
@@ -451,10 +451,15 @@ public class MigrationComplianceTests
         StringAssert.Contains(ruleProfileApplicationServiceContractText, "public interface IRuleProfileApplicationService");
         StringAssert.Contains(ruleProfileApplicationServiceContractText, "RuleProfilePreviewReceipt? Preview");
         StringAssert.Contains(ruleProfileApplicationServiceContractText, "RuleProfileApplyReceipt? Apply");
-        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "RuleProfileApplyOutcomes.Deferred");
-        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "\"ruleprofile_apply_not_implemented\"");
+        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "IRuntimeLockInstallService");
+        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "IRuleProfileInstallStateStore");
+        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "IRuleProfileInstallHistoryStore");
+        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "RuleProfileApplyOutcomes.Applied");
+        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "_runtimeLockInstallService.Apply");
+        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "_installStateStore.Upsert");
+        StringAssert.Contains(defaultRuleProfileApplicationServiceText, "_installHistoryStore.Append");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuleProfileApplicationService, DefaultRuleProfileApplicationService>()");
-        StringAssert.Contains(readmeText, "deferred receipts");
+        StringAssert.Contains(readmeText, "nested runtime-lock installation receipts");
     }
 
     [TestMethod]

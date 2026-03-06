@@ -256,7 +256,7 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
-    public void Ruleprofile_application_contracts_define_preview_and_deferred_apply_receipts()
+    public void Ruleprofile_application_contracts_define_preview_and_applied_install_receipts()
     {
         ResolvedRuntimeLock runtimeLock = new(
             RulesetId: RulesetDefaults.Sr5,
@@ -302,15 +302,21 @@ public class RulesetSeamContractsTests
         RuleProfileApplyReceipt receipt = new(
             ProfileId: "official.sr5.core",
             Target: target,
-            Outcome: RuleProfileApplyOutcomes.Deferred,
+            Outcome: RuleProfileApplyOutcomes.Applied,
             Preview: preview,
-            DeferredReason: "ruleprofile_apply_not_implemented");
+            InstallReceipt: new RuntimeLockInstallReceipt(
+                TargetKind: target.TargetKind,
+                TargetId: target.TargetId,
+                Outcome: RuntimeLockInstallOutcomes.Installed,
+                RuntimeLock: runtimeLock,
+                InstalledAtUtc: DateTimeOffset.Parse("2026-03-06T12:15:00+00:00"),
+                RebindNotices: []));
 
         Assert.AreEqual(RuleProfileApplyTargetKinds.Workspace, preview.Target.TargetKind);
         Assert.AreEqual(RuleProfilePreviewChangeKinds.RulePackSelectionChanged, preview.Changes[1].Kind);
         Assert.IsTrue(preview.RequiresConfirmation);
-        Assert.AreEqual(RuleProfileApplyOutcomes.Deferred, receipt.Outcome);
-        Assert.AreEqual("ruleprofile_apply_not_implemented", receipt.DeferredReason);
+        Assert.AreEqual(RuleProfileApplyOutcomes.Applied, receipt.Outcome);
+        Assert.AreEqual(RuntimeLockInstallOutcomes.Installed, receipt.InstallReceipt?.Outcome);
         Assert.IsNotNull(receipt.Preview.RuntimeLock);
     }
 

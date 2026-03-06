@@ -17,7 +17,11 @@ public class RuleProfileApplicationServiceTests
     [TestMethod]
     public void Default_application_service_previews_runtime_lock_and_changes_for_registered_profile()
     {
-        DefaultRuleProfileApplicationService service = new(new RuleProfileRegistryServiceStub(CreateProfileEntry(includeRulePack: true)));
+        DefaultRuleProfileApplicationService service = new(
+            new RuleProfileRegistryServiceStub(CreateProfileEntry(includeRulePack: true)),
+            new RuntimeLockInstallServiceStub(CreateInstallReceipt("workspace-1")),
+            new RuleProfileInstallStateStoreStub(),
+            new RuleProfileInstallHistoryStoreStub());
 
         RuleProfilePreviewReceipt? preview = service.Preview(
             OwnerScope.LocalSingleUser,
@@ -33,9 +37,16 @@ public class RuleProfileApplicationServiceTests
     }
 
     [TestMethod]
-    public void Default_application_service_returns_deferred_apply_receipt_until_binding_flows_exist()
+    public void Default_application_service_applies_profile_and_persists_install_state_and_history()
     {
-        DefaultRuleProfileApplicationService service = new(new RuleProfileRegistryServiceStub(CreateProfileEntry(includeRulePack: false)));
+        RuntimeLockInstallServiceStub runtimeLockInstallService = new(CreateInstallReceipt("character-1"));
+        RuleProfileInstallStateStoreStub installStateStore = new();
+        RuleProfileInstallHistoryStoreStub installHistoryStore = new();
+        DefaultRuleProfileApplicationService service = new(
+            new RuleProfileRegistryServiceStub(CreateProfileEntry(includeRulePack: false)),
+            runtimeLockInstallService,
+            installStateStore,
+            installHistoryStore);
 
         RuleProfileApplyReceipt? receipt = service.Apply(
             OwnerScope.LocalSingleUser,
@@ -43,11 +54,35 @@ public class RuleProfileApplicationServiceTests
             new RuleProfileApplyTarget(RuleProfileApplyTargetKinds.Character, "character-1"));
 
         Assert.IsNotNull(receipt);
-        Assert.AreEqual(RuleProfileApplyOutcomes.Deferred, receipt.Outcome);
-        Assert.AreEqual("ruleprofile_apply_not_implemented", receipt.DeferredReason);
+        Assert.AreEqual(RuleProfileApplyOutcomes.Applied, receipt.Outcome);
+        Assert.IsNull(receipt.DeferredReason);
         Assert.IsNotNull(receipt.Preview);
+        Assert.IsNotNull(receipt.InstallReceipt);
+        Assert.AreEqual(RuntimeLockInstallOutcomes.Installed, receipt.InstallReceipt.Outcome);
         Assert.AreEqual("character-1", receipt.Target.TargetId);
+        Assert.AreEqual("runtime-lock-sha256", runtimeLockInstallService.ApplyCalls[0].LockId);
+        Assert.HasCount(1, installStateStore.Upserts);
+        Assert.AreEqual(ArtifactInstallStates.Pinned, installStateStore.Upserts[0].Install.State);
+        Assert.AreEqual(RuleProfileApplyTargetKinds.Character, installStateStore.Upserts[0].Install.InstalledTargetKind);
+        Assert.AreEqual("character-1", installStateStore.Upserts[0].Install.InstalledTargetId);
+        Assert.AreEqual("runtime-lock-sha256", installStateStore.Upserts[0].Install.RuntimeFingerprint);
+        Assert.HasCount(1, installHistoryStore.Appends);
+        Assert.AreEqual(ArtifactInstallHistoryOperations.Pin, installHistoryStore.Appends[0].Entry.Operation);
     }
+
+    private static RuntimeLockInstallReceipt CreateInstallReceipt(string targetId) => new(
+        TargetKind: RuleProfileApplyTargetKinds.Character,
+        TargetId: targetId,
+        Outcome: RuntimeLockInstallOutcomes.Installed,
+        RuntimeLock: new ResolvedRuntimeLock(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles: [],
+            RulePacks: [],
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal),
+            EngineApiVersion: "rulepack-v1",
+            RuntimeFingerprint: "runtime-lock-sha256"),
+        InstalledAtUtc: DateTimeOffset.Parse("2026-03-06T12:15:00+00:00"),
+        RebindNotices: []);
 
     private static RuleProfileRegistryEntry CreateProfileEntry(bool includeRulePack)
     {
@@ -112,6 +147,66 @@ public class RuleProfileApplicationServiceTests
             return string.Equals(profileId, _entry.Manifest.ProfileId, StringComparison.Ordinal)
                 ? _entry
                 : null;
+        }
+    }
+
+    private sealed class RuntimeLockInstallServiceStub : IRuntimeLockInstallService
+    {
+        private readonly RuntimeLockInstallReceipt _receipt;
+
+        public RuntimeLockInstallServiceStub(RuntimeLockInstallReceipt receipt)
+        {
+            _receipt = receipt;
+        }
+
+        public List<(string LockId, RuleProfileApplyTarget Target, string? RulesetId)> ApplyCalls { get; } = [];
+
+        public RuntimeLockInstallPreviewReceipt? Preview(OwnerScope owner, string lockId, RuleProfileApplyTarget target, string? rulesetId = null)
+            => null;
+
+        public RuntimeLockInstallReceipt? Apply(OwnerScope owner, string lockId, RuleProfileApplyTarget target, string? rulesetId = null)
+        {
+            ApplyCalls.Add((lockId, target, rulesetId));
+            return _receipt with
+            {
+                TargetKind = target.TargetKind,
+                TargetId = target.TargetId
+            };
+        }
+    }
+
+    private sealed class RuleProfileInstallStateStoreStub : IRuleProfileInstallStateStore
+    {
+        public List<RuleProfileInstallRecord> Upserts { get; } = [];
+
+        public IReadOnlyList<RuleProfileInstallRecord> List(OwnerScope owner, string? rulesetId = null) => Upserts;
+
+        public RuleProfileInstallRecord? Get(OwnerScope owner, string profileId, string rulesetId)
+        {
+            return Upserts.LastOrDefault(record =>
+                string.Equals(record.ProfileId, profileId, StringComparison.Ordinal)
+                && string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal));
+        }
+
+        public RuleProfileInstallRecord Upsert(OwnerScope owner, RuleProfileInstallRecord record)
+        {
+            Upserts.Add(record);
+            return record;
+        }
+    }
+
+    private sealed class RuleProfileInstallHistoryStoreStub : IRuleProfileInstallHistoryStore
+    {
+        public List<RuleProfileInstallHistoryRecord> Appends { get; } = [];
+
+        public IReadOnlyList<RuleProfileInstallHistoryRecord> List(OwnerScope owner, string? rulesetId = null) => Appends;
+
+        public IReadOnlyList<RuleProfileInstallHistoryRecord> GetHistory(OwnerScope owner, string profileId, string rulesetId) => Appends;
+
+        public RuleProfileInstallHistoryRecord Append(OwnerScope owner, RuleProfileInstallHistoryRecord record)
+        {
+            Appends.Add(record);
+            return record;
         }
     }
 }
