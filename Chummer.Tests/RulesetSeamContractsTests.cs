@@ -243,7 +243,8 @@ public class RulesetSeamContractsTests
                         SubjectKind: RulePackShareSubjectKinds.PublicCatalog,
                         SubjectId: "profiles",
                         AccessLevel: RulePackShareAccessLevels.Install)
-                ]));
+                ]),
+            new ArtifactInstallState(ArtifactInstallStates.Available));
 
         Assert.AreEqual("official.sr5.core", entry.Manifest.ProfileId);
         Assert.AreEqual(RuleProfileCatalogKinds.Official, entry.Manifest.CatalogKind);
@@ -994,7 +995,7 @@ public class RulesetSeamContractsTests
                 ParentVersion: "1.0.0",
                 IsFork: true),
             PublishedAtUtc: DateTimeOffset.UtcNow);
-        RulePackRegistryEntry entry = new(manifest, publication);
+        RulePackRegistryEntry entry = new(manifest, publication, new ArtifactInstallState(ArtifactInstallStates.Installed));
         RulePackPublicationReceipt receipt = new(
             PackId: manifest.PackId,
             Version: manifest.Version,

@@ -61,9 +61,11 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<ICharacterSocialNarrativeQueries>()));
         services.AddSingleton<IContentOverlayCatalogService>(overlays);
         services.AddSingleton<IBuildKitRegistryService, DefaultBuildKitRegistryService>();
+        services.AddSingleton<IRulePackInstallStateStore>(_ => new FileRulePackInstallStateStore(stateDirectory));
         services.AddSingleton<IRulePackPublicationStore>(_ => new FileRulePackPublicationStore(stateDirectory));
         services.AddSingleton<IRulePackRegistryService, OverlayRulePackRegistryService>();
         services.AddSingleton<IRuntimeFingerprintService, DefaultRuntimeFingerprintService>();
+        services.AddSingleton<IRuleProfileInstallStateStore>(_ => new FileRuleProfileInstallStateStore(stateDirectory));
         services.AddSingleton<IRuleProfilePublicationStore>(_ => new FileRuleProfilePublicationStore(stateDirectory));
         services.AddSingleton<IRuleProfileRegistryService, DefaultRuleProfileRegistryService>();
         services.AddSingleton<IRuleProfileApplicationService, DefaultRuleProfileApplicationService>();

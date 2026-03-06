@@ -58,13 +58,20 @@ public sealed record RulePackPublicationMetadata(
 
 public sealed record RulePackRegistryEntry(
     RulePackManifest Manifest,
-    RulePackPublicationMetadata Publication);
+    RulePackPublicationMetadata Publication,
+    ArtifactInstallState Install);
 
 public sealed record RulePackPublicationRecord(
     string PackId,
     string Version,
     string RulesetId,
     RulePackPublicationMetadata Publication);
+
+public sealed record RulePackInstallRecord(
+    string PackId,
+    string Version,
+    string RulesetId,
+    ArtifactInstallState Install);
 
 public sealed record RulePackPublicationReceipt(
     string PackId,

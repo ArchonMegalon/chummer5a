@@ -64,9 +64,15 @@ public sealed record RuleProfilePublicationMetadata(
 
 public sealed record RuleProfileRegistryEntry(
     RuleProfileManifest Manifest,
-    RuleProfilePublicationMetadata Publication);
+    RuleProfilePublicationMetadata Publication,
+    ArtifactInstallState Install);
 
 public sealed record RuleProfilePublicationRecord(
     string ProfileId,
     string RulesetId,
     RuleProfilePublicationMetadata Publication);
+
+public sealed record RuleProfileInstallRecord(
+    string ProfileId,
+    string RulesetId,
+    ArtifactInstallState Install);

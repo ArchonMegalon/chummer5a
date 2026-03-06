@@ -92,7 +92,8 @@ public class RuleProfileApplicationServiceTests
                 Visibility: includeRulePack ? ArtifactVisibilityModes.LocalOnly : ArtifactVisibilityModes.Public,
                 PublicationStatus: RuleProfilePublicationStatuses.Published,
                 Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                Shares: []));
+                Shares: []),
+            new ArtifactInstallState(ArtifactInstallStates.Available));
     }
 
     private sealed class RuleProfileRegistryServiceStub : IRuleProfileRegistryService

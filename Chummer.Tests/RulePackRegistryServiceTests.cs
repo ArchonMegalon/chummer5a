@@ -38,7 +38,8 @@ public class RulePackRegistryServiceTests
         OverlayRulePackRegistryService service = new(
             new ContentOverlayCatalogServiceStub(catalog),
             new RulesetSelectionPolicyStub(),
-            new RulePackPublicationStoreStub());
+            new RulePackPublicationStoreStub(),
+            new RulePackInstallStateStoreStub());
 
         IReadOnlyList<RulePackRegistryEntry> entries = service.List(OwnerScope.LocalSingleUser, RulesetDefaults.Sr5);
 
@@ -47,6 +48,7 @@ public class RulePackRegistryServiceTests
         Assert.AreEqual(RulesetDefaults.Sr5, entries[0].Manifest.Targets[0]);
         Assert.AreEqual(RulePackPublicationStatuses.Published, entries[0].Publication.PublicationStatus);
         Assert.AreEqual(RulePackReviewStates.NotRequired, entries[0].Publication.Review.State);
+        Assert.AreEqual(ArtifactInstallStates.Installed, entries[0].Install.State);
     }
 
     [TestMethod]
@@ -89,6 +91,19 @@ public class RulePackRegistryServiceTests
                                 SubjectId: "bob",
                                 AccessLevel: RulePackShareAccessLevels.View)
                         ]))
+            ]),
+            new RulePackInstallStateStoreStub(
+            [
+                new RulePackInstallRecord(
+                    PackId: "house-rules",
+                    Version: "overlay-v1",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Install: new ArtifactInstallState(
+                        State: ArtifactInstallStates.Pinned,
+                        InstalledAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
+                        InstalledTargetKind: RuleProfileApplyTargetKinds.Workspace,
+                        InstalledTargetId: "workspace-1",
+                        RuntimeFingerprint: "sha256:runtime"))
             ]));
 
         RulePackRegistryEntry entry = service.List(new OwnerScope("alice"), RulesetDefaults.Sr5).Single();
@@ -98,6 +113,8 @@ public class RulePackRegistryServiceTests
         Assert.AreEqual(RulePackPublicationStatuses.Draft, entry.Publication.PublicationStatus);
         Assert.AreEqual(RulePackReviewStates.PendingReview, entry.Publication.Review.State);
         Assert.HasCount(1, entry.Publication.Shares);
+        Assert.AreEqual(ArtifactInstallStates.Pinned, entry.Install.State);
+        Assert.AreEqual("workspace-1", entry.Install.InstalledTargetId);
     }
 
     [TestMethod]
@@ -106,7 +123,8 @@ public class RulePackRegistryServiceTests
         OverlayRulePackRegistryService service = new(
             new ContentOverlayCatalogServiceStub(new ContentOverlayCatalog("/app/data", "/app/lang", [])),
             new RulesetSelectionPolicyStub(),
-            new RulePackPublicationStoreStub());
+            new RulePackPublicationStoreStub(),
+            new RulePackInstallStateStoreStub());
 
         RulePackRegistryEntry? entry = service.Get(OwnerScope.LocalSingleUser, "missing-pack", RulesetDefaults.Sr5);
 
@@ -162,6 +180,37 @@ public class RulePackRegistryServiceTests
         }
 
         public RulePackPublicationRecord Upsert(OwnerScope owner, RulePackPublicationRecord record)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    private sealed class RulePackInstallStateStoreStub : IRulePackInstallStateStore
+    {
+        private readonly IReadOnlyList<RulePackInstallRecord> _records;
+
+        public RulePackInstallStateStoreStub(IReadOnlyList<RulePackInstallRecord>? records = null)
+        {
+            _records = records ?? [];
+        }
+
+        public IReadOnlyList<RulePackInstallRecord> List(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return normalizedRulesetId is null
+                ? _records
+                : _records.Where(record => string.Equals(record.RulesetId, normalizedRulesetId, StringComparison.Ordinal)).ToArray();
+        }
+
+        public RulePackInstallRecord? Get(OwnerScope owner, string packId, string version, string rulesetId)
+        {
+            return _records.FirstOrDefault(
+                record => string.Equals(record.PackId, packId, StringComparison.Ordinal)
+                    && string.Equals(record.Version, version, StringComparison.Ordinal)
+                    && string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal));
+        }
+
+        public RulePackInstallRecord Upsert(OwnerScope owner, RulePackInstallRecord record)
         {
             throw new NotSupportedException();
         }

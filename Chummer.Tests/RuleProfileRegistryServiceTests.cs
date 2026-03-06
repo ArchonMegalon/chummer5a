@@ -64,9 +64,11 @@ public class RuleProfileRegistryServiceTests
                         Visibility: ArtifactVisibilityModes.LocalOnly,
                         PublicationStatus: RulePackPublicationStatuses.Published,
                         Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                        Shares: []))
+                        Shares: []),
+                    new ArtifactInstallState(ArtifactInstallStates.Installed))
             ]),
             new RuleProfilePublicationStoreStub(),
+            new RuleProfileInstallStateStoreStub(),
             new DefaultRuntimeFingerprintService());
 
         IReadOnlyList<RuleProfileRegistryEntry> entries = service.List(OwnerScope.LocalSingleUser);
@@ -78,6 +80,7 @@ public class RuleProfileRegistryServiceTests
         Assert.HasCount(1, overlayProfile.Manifest.RulePacks);
         Assert.AreEqual("house-rules", overlayProfile.Manifest.RulePacks[0].RulePack.Id);
         Assert.AreEqual(RuleProfileCatalogKinds.Personal, overlayProfile.Manifest.CatalogKind);
+        Assert.AreEqual(ArtifactInstallStates.Available, overlayProfile.Install.State);
     }
 
     [TestMethod]
@@ -87,6 +90,7 @@ public class RuleProfileRegistryServiceTests
             new RulesetPluginRegistry([new StubRulesetPlugin(RulesetDefaults.Sr5, "Shadowrun Fifth Edition", schemaVersion: 5)]),
             new RulePackRegistryServiceStub([]),
             new RuleProfilePublicationStoreStub(),
+            new RuleProfileInstallStateStoreStub(),
             new DefaultRuntimeFingerprintService());
 
         RuleProfileRegistryEntry? entry = service.Get(OwnerScope.LocalSingleUser, "missing-profile", RulesetDefaults.Sr5);
@@ -134,7 +138,8 @@ public class RuleProfileRegistryServiceTests
                         Visibility: ArtifactVisibilityModes.Private,
                         PublicationStatus: RulePackPublicationStatuses.Published,
                         Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                        Shares: []))
+                        Shares: []),
+                    new ArtifactInstallState(ArtifactInstallStates.Installed))
             ]),
             new RuleProfilePublicationStoreStub(
             [
@@ -154,6 +159,18 @@ public class RuleProfileRegistryServiceTests
                                 AccessLevel: RulePackShareAccessLevels.Install)
                         ]))
             ]),
+            new RuleProfileInstallStateStoreStub(
+            [
+                new RuleProfileInstallRecord(
+                    ProfileId: "local.sr5.current-overlays",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Install: new ArtifactInstallState(
+                        State: ArtifactInstallStates.Pinned,
+                        InstalledAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
+                        InstalledTargetKind: RuleProfileApplyTargetKinds.Workspace,
+                        InstalledTargetId: "workspace-1",
+                        RuntimeFingerprint: "sha256:runtime"))
+            ]),
             new DefaultRuntimeFingerprintService());
 
         RuleProfileRegistryEntry entry = service.Get(new OwnerScope("alice"), "local.sr5.current-overlays", RulesetDefaults.Sr5)!;
@@ -163,6 +180,8 @@ public class RuleProfileRegistryServiceTests
         Assert.AreEqual(RuleProfilePublicationStatuses.Draft, entry.Publication.PublicationStatus);
         Assert.AreEqual(RulePackReviewStates.PendingReview, entry.Publication.Review.State);
         Assert.HasCount(1, entry.Publication.Shares);
+        Assert.AreEqual(ArtifactInstallStates.Pinned, entry.Install.State);
+        Assert.AreEqual("workspace-1", entry.Install.InstalledTargetId);
     }
 
     private static DefaultRuleProfileRegistryService CreateServiceWithRulePackChecksum(string checksum)
@@ -205,9 +224,11 @@ public class RuleProfileRegistryServiceTests
                         Visibility: ArtifactVisibilityModes.LocalOnly,
                         PublicationStatus: RulePackPublicationStatuses.Published,
                         Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                        Shares: []))
+                        Shares: []),
+                    new ArtifactInstallState(ArtifactInstallStates.Installed))
             ]),
             new RuleProfilePublicationStoreStub(),
+            new RuleProfileInstallStateStoreStub(),
             new DefaultRuntimeFingerprintService());
     }
 
@@ -260,6 +281,36 @@ public class RuleProfileRegistryServiceTests
         }
 
         public RuleProfilePublicationRecord Upsert(OwnerScope owner, RuleProfilePublicationRecord record)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    private sealed class RuleProfileInstallStateStoreStub : IRuleProfileInstallStateStore
+    {
+        private readonly IReadOnlyList<RuleProfileInstallRecord> _records;
+
+        public RuleProfileInstallStateStoreStub(IReadOnlyList<RuleProfileInstallRecord>? records = null)
+        {
+            _records = records ?? [];
+        }
+
+        public IReadOnlyList<RuleProfileInstallRecord> List(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return normalizedRulesetId is null
+                ? _records
+                : _records.Where(record => string.Equals(record.RulesetId, normalizedRulesetId, StringComparison.Ordinal)).ToArray();
+        }
+
+        public RuleProfileInstallRecord? Get(OwnerScope owner, string profileId, string rulesetId)
+        {
+            return _records.FirstOrDefault(
+                record => string.Equals(record.ProfileId, profileId, StringComparison.Ordinal)
+                    && string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal));
+        }
+
+        public RuleProfileInstallRecord Upsert(OwnerScope owner, RuleProfileInstallRecord record)
         {
             throw new NotSupportedException();
         }

@@ -17,6 +17,20 @@ public static class ArtifactTrustTiers
     public const string LocalOnly = "local-only";
 }
 
+public static class ArtifactInstallStates
+{
+    public const string Available = "available";
+    public const string Installed = "installed";
+    public const string Pinned = "pinned";
+}
+
+public sealed record ArtifactInstallState(
+    string State,
+    DateTimeOffset? InstalledAtUtc = null,
+    string? InstalledTargetKind = null,
+    string? InstalledTargetId = null,
+    string? RuntimeFingerprint = null);
+
 public static class RulePackAssetKinds
 {
     public const string Xml = "xml";

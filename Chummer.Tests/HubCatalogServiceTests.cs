@@ -63,6 +63,7 @@ public class HubCatalogServiceTests
         Assert.IsNotNull(ruleProfile);
         Assert.AreEqual(HubCatalogItemKinds.RuleProfile, ruleProfile.Summary.Kind);
         Assert.AreEqual("sha256:core", ruleProfile.RuntimeFingerprint);
+        Assert.AreEqual(ArtifactInstallStates.Available, ruleProfile.Summary.InstallState);
         Assert.IsTrue(ruleProfile.Actions.Any(action => action.Kind == HubProjectActionKinds.InspectRuntime));
 
         Assert.IsNotNull(runtimeLock);
@@ -100,7 +101,8 @@ public class HubCatalogServiceTests
                     Visibility: ArtifactVisibilityModes.LocalOnly,
                     PublicationStatus: RulePackPublicationStatuses.Published,
                     Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                    Shares: []))
+                    Shares: []),
+                new ArtifactInstallState(ArtifactInstallStates.Installed))
         ]),
         new RuleProfileRegistryServiceStub(
         [
@@ -127,7 +129,8 @@ public class HubCatalogServiceTests
                     Visibility: ArtifactVisibilityModes.Public,
                     PublicationStatus: RuleProfilePublicationStatuses.Published,
                     Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                    Shares: []))
+                    Shares: []),
+                new ArtifactInstallState(ArtifactInstallStates.Available))
         ]),
         new BuildKitRegistryServiceStub(
         [

@@ -102,7 +102,8 @@ public class RuntimeLockRegistryServiceTests
                 Visibility: visibility,
                 PublicationStatus: RuleProfilePublicationStatuses.Published,
                 Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                Shares: []));
+                Shares: []),
+            new ArtifactInstallState(ArtifactInstallStates.Available));
     }
 
     private static ResolvedRuntimeLock CreateRuntimeLock(string runtimeFingerprint)

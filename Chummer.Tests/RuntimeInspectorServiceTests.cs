@@ -55,7 +55,8 @@ public class RuntimeInspectorServiceTests
                         Visibility: ArtifactVisibilityModes.LocalOnly,
                         PublicationStatus: RulePackPublicationStatuses.Published,
                         Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                        Shares: []))
+                        Shares: []),
+                    new ArtifactInstallState(ArtifactInstallStates.Installed))
             ]));
 
         RuntimeInspectorProjection? projection = service.GetProfileProjection(OwnerScope.LocalSingleUser, "official.sr5.core", RulesetDefaults.Sr5);
@@ -124,7 +125,8 @@ public class RuntimeInspectorServiceTests
                 Visibility: ArtifactVisibilityModes.LocalOnly,
                 PublicationStatus: RuleProfilePublicationStatuses.Published,
                 Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                Shares: []));
+                Shares: []),
+            new ArtifactInstallState(ArtifactInstallStates.Available));
     }
 
     private sealed class RuleProfileRegistryServiceStub : IRuleProfileRegistryService

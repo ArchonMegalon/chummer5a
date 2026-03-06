@@ -8,6 +8,7 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
 {
     private const string EngineApiVersion = "rulepack-v1";
     private const string SystemOwnerId = "system";
+    private readonly IRuleProfileInstallStateStore _installStateStore;
     private readonly IRulesetPluginRegistry _pluginRegistry;
     private readonly IRuleProfilePublicationStore _publicationStore;
     private readonly IRulePackRegistryService _rulePackRegistryService;
@@ -17,11 +18,13 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
         IRulesetPluginRegistry pluginRegistry,
         IRulePackRegistryService rulePackRegistryService,
         IRuleProfilePublicationStore publicationStore,
+        IRuleProfileInstallStateStore installStateStore,
         IRuntimeFingerprintService runtimeFingerprintService)
     {
         _pluginRegistry = pluginRegistry;
         _rulePackRegistryService = rulePackRegistryService;
         _publicationStore = publicationStore;
+        _installStateStore = installStateStore;
         _runtimeFingerprintService = runtimeFingerprintService;
     }
 
@@ -58,6 +61,11 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
     {
         string rulesetId = plugin.Id.NormalizedValue;
         IReadOnlyList<RulePackRegistryEntry> rulePacks = _rulePackRegistryService.List(owner, rulesetId);
+        Dictionary<string, ArtifactInstallState> installStateLookup = _installStateStore.List(owner, rulesetId)
+            .ToDictionary(
+                record => CreatePublicationKey(record.ProfileId, record.RulesetId),
+                record => record.Install,
+                StringComparer.Ordinal);
         Dictionary<string, RuleProfilePublicationMetadata> publicationLookup = _publicationStore.List(owner, rulesetId)
             .ToDictionary(
                 record => CreatePublicationKey(record.ProfileId, record.RulesetId),
@@ -65,12 +73,12 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
                 StringComparer.Ordinal);
         List<RuleProfileRegistryEntry> entries =
         [
-            CreateCoreProfile(plugin, publicationLookup)
+            CreateCoreProfile(plugin, publicationLookup, installStateLookup)
         ];
 
         if (rulePacks.Count > 0)
         {
-            entries.Add(CreateOverlayProfile(plugin, owner, rulePacks, publicationLookup));
+            entries.Add(CreateOverlayProfile(plugin, owner, rulePacks, publicationLookup, installStateLookup));
         }
 
         return entries;
@@ -78,7 +86,8 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
 
     private RuleProfileRegistryEntry CreateCoreProfile(
         IRulesetPlugin plugin,
-        IReadOnlyDictionary<string, RuleProfilePublicationMetadata> publicationLookup)
+        IReadOnlyDictionary<string, RuleProfilePublicationMetadata> publicationLookup,
+        IReadOnlyDictionary<string, ArtifactInstallState> installStateLookup)
     {
         string rulesetId = plugin.Id.NormalizedValue;
         string profileId = $"official.{rulesetId}.core";
@@ -114,15 +123,21 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
                         SubjectId: "profiles",
                         AccessLevel: RulePackShareAccessLevels.Install)
                 ]);
+        ArtifactInstallState install = installStateLookup.TryGetValue(
+            CreatePublicationKey(profileId, rulesetId),
+            out ArtifactInstallState? persistedInstall)
+            ? persistedInstall
+            : new ArtifactInstallState(ArtifactInstallStates.Available);
 
-        return new RuleProfileRegistryEntry(manifest, publication);
+        return new RuleProfileRegistryEntry(manifest, publication, install);
     }
 
     private RuleProfileRegistryEntry CreateOverlayProfile(
         IRulesetPlugin plugin,
         OwnerScope owner,
         IReadOnlyList<RulePackRegistryEntry> rulePacks,
-        IReadOnlyDictionary<string, RuleProfilePublicationMetadata> publicationLookup)
+        IReadOnlyDictionary<string, RuleProfilePublicationMetadata> publicationLookup,
+        IReadOnlyDictionary<string, ArtifactInstallState> installStateLookup)
     {
         string rulesetId = plugin.Id.NormalizedValue;
         string profileId = $"local.{rulesetId}.current-overlays";
@@ -155,8 +170,15 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
                 PublicationStatus: RuleProfilePublicationStatuses.Published,
                 Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
                 Shares: []);
+        ArtifactInstallState install = installStateLookup.TryGetValue(
+            CreatePublicationKey(profileId, rulesetId),
+            out ArtifactInstallState? persistedInstall)
+            ? persistedInstall
+            : new ArtifactInstallState(
+                ArtifactInstallStates.Available,
+                RuntimeFingerprint: runtimeLock.RuntimeFingerprint);
 
-        return new RuleProfileRegistryEntry(manifest, publication);
+        return new RuleProfileRegistryEntry(manifest, publication, install);
     }
 
     private ResolvedRuntimeLock CreateRuntimeLock(

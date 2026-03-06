@@ -115,6 +115,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
                 RuntimeFingerprint: null,
                 Facts:
                 [
+                    new HubProjectDetailFact("install-state", "Install State", entry.Install.State),
                     new HubProjectDetailFact("engine-api", "Engine API", entry.Manifest.EngineApiVersion),
                     new HubProjectDetailFact("asset-count", "Assets", entry.Manifest.Assets.Count.ToString()),
                     new HubProjectDetailFact("capability-count", "Capabilities", entry.Manifest.Capabilities.Count.ToString()),
@@ -154,6 +155,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             RuntimeFingerprint: entry.Manifest.RuntimeLock.RuntimeFingerprint,
             Facts:
             [
+                new HubProjectDetailFact("install-state", "Install State", entry.Install.State),
                 new HubProjectDetailFact("audience", "Audience", entry.Manifest.Audience),
                 new HubProjectDetailFact("update-channel", "Update Channel", entry.Manifest.UpdateChannel),
                 new HubProjectDetailFact("default-toggle-count", "Default Toggles", entry.Manifest.DefaultToggles.Count.ToString()),
@@ -285,7 +287,8 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         Visibility: entry.Publication.Visibility,
         TrustTier: entry.Manifest.TrustTier,
         LinkTarget: $"/hub/rulepacks/{entry.Manifest.PackId}",
-        Version: entry.Manifest.Version);
+        Version: entry.Manifest.Version,
+        InstallState: entry.Install.State);
 
     private static HubCatalogItem ToCatalogItem(string rulesetId, BuildKitRegistryEntry entry) => new(
         ItemId: entry.Manifest.BuildKitId,
@@ -307,7 +310,8 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         Visibility: entry.Publication.Visibility,
         TrustTier: ResolveTrustTier(entry.Publication.Visibility),
         LinkTarget: $"/hub/profiles/{entry.Manifest.ProfileId}",
-        Version: entry.Manifest.RuntimeLock.RuntimeFingerprint);
+        Version: entry.Manifest.RuntimeLock.RuntimeFingerprint,
+        InstallState: entry.Install.State);
 
     private static HubCatalogItem ToCatalogItem(RuntimeLockRegistryEntry entry) => new(
         ItemId: entry.LockId,

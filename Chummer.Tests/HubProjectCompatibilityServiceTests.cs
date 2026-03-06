@@ -62,7 +62,8 @@ public class HubProjectCompatibilityServiceTests
                         Visibility: ArtifactVisibilityModes.LocalOnly,
                         PublicationStatus: RulePackPublicationStatuses.Published,
                         Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                        Shares: []))
+                        Shares: []),
+                    new ArtifactInstallState(ArtifactInstallStates.Installed))
             ]),
             new RuleProfileRegistryServiceStub([]),
             new BuildKitRegistryServiceStub([]),

@@ -140,6 +140,7 @@ public class RuntimeFingerprintServiceTests
                 Visibility: ArtifactVisibilityModes.LocalOnly,
                 PublicationStatus: RulePackPublicationStatuses.Published,
                 Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                Shares: []));
+                Shares: []),
+            new ArtifactInstallState(ArtifactInstallStates.Installed));
     }
 }

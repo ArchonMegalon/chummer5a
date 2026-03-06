@@ -35,7 +35,8 @@ public sealed record HubCatalogItem(
     string TrustTier,
     string LinkTarget,
     string? Version = null,
-    bool Installable = true);
+    bool Installable = true,
+    string? InstallState = null);
 
 public sealed record HubCatalogResultPage(
     BrowseQuery Query,
