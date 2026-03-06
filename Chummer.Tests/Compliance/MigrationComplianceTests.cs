@@ -1232,13 +1232,18 @@ public class MigrationComplianceTests
         string actionDefinitionText = File.ReadAllText(actionDefinitionPath);
         string controlDefinitionPath = FindPath("Chummer.Contracts", "Presentation", "DesktopUiControlDefinition.cs");
         string controlDefinitionText = File.ReadAllText(controlDefinitionPath);
-        string commandCatalogPath = FindPath("Chummer.Contracts", "Presentation", "AppCommandCatalog.cs");
+        Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Presentation", "AppCommandCatalog.cs"));
+        Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Presentation", "NavigationTabCatalog.cs"));
+        Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Presentation", "WorkspaceSurfaceActionCatalog.cs"));
+        Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Presentation", "DesktopUiControlCatalog.cs"));
+
+        string commandCatalogPath = FindPath("Chummer.Rulesets.Hosting", "Presentation", "AppCommandCatalog.cs");
         string commandCatalogText = File.ReadAllText(commandCatalogPath);
-        string tabCatalogPath = FindPath("Chummer.Contracts", "Presentation", "NavigationTabCatalog.cs");
+        string tabCatalogPath = FindPath("Chummer.Rulesets.Hosting", "Presentation", "NavigationTabCatalog.cs");
         string tabCatalogText = File.ReadAllText(tabCatalogPath);
-        string actionCatalogPath = FindPath("Chummer.Contracts", "Presentation", "WorkspaceSurfaceActionCatalog.cs");
+        string actionCatalogPath = FindPath("Chummer.Rulesets.Hosting", "Presentation", "WorkspaceSurfaceActionCatalog.cs");
         string actionCatalogText = File.ReadAllText(actionCatalogPath);
-        string controlCatalogPath = FindPath("Chummer.Contracts", "Presentation", "DesktopUiControlCatalog.cs");
+        string controlCatalogPath = FindPath("Chummer.Rulesets.Hosting", "Presentation", "DesktopUiControlCatalog.cs");
         string controlCatalogText = File.ReadAllText(controlCatalogPath);
         string dialogFactoryPath = FindPath("Chummer.Presentation", "Overview", "DesktopDialogFactory.cs");
         string dialogFactoryText = File.ReadAllText(dialogFactoryPath);
