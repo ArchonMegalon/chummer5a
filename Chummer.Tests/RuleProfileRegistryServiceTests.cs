@@ -66,6 +66,7 @@ public class RuleProfileRegistryServiceTests
                         Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
                         Shares: []))
             ]),
+            new RuleProfilePublicationStoreStub(),
             new DefaultRuntimeFingerprintService());
 
         IReadOnlyList<RuleProfileRegistryEntry> entries = service.List(OwnerScope.LocalSingleUser);
@@ -85,6 +86,7 @@ public class RuleProfileRegistryServiceTests
         DefaultRuleProfileRegistryService service = new(
             new RulesetPluginRegistry([new StubRulesetPlugin(RulesetDefaults.Sr5, "Shadowrun Fifth Edition", schemaVersion: 5)]),
             new RulePackRegistryServiceStub([]),
+            new RuleProfilePublicationStoreStub(),
             new DefaultRuntimeFingerprintService());
 
         RuleProfileRegistryEntry? entry = service.Get(OwnerScope.LocalSingleUser, "missing-profile", RulesetDefaults.Sr5);
@@ -102,6 +104,65 @@ public class RuleProfileRegistryServiceTests
         string fingerprintB = checksumB.Get(OwnerScope.LocalSingleUser, "local.sr5.current-overlays", RulesetDefaults.Sr5)!.Manifest.RuntimeLock.RuntimeFingerprint;
 
         Assert.AreNotEqual(fingerprintA, fingerprintB);
+    }
+
+    [TestMethod]
+    public void Default_registry_service_prefers_owner_backed_profile_publication_metadata_when_present()
+    {
+        DefaultRuleProfileRegistryService service = new(
+            new RulesetPluginRegistry([new StubRulesetPlugin(RulesetDefaults.Sr5, "Shadowrun Fifth Edition", schemaVersion: 5)]),
+            new RulePackRegistryServiceStub(
+            [
+                new RulePackRegistryEntry(
+                    new RulePackManifest(
+                        PackId: "house-rules",
+                        Version: "1.0.0",
+                        Title: "House Rules",
+                        Author: "GM",
+                        Description: "Campaign overlay.",
+                        Targets: [RulesetDefaults.Sr5],
+                        EngineApiVersion: "rulepack-v1",
+                        DependsOn: [],
+                        ConflictsWith: [],
+                        Visibility: ArtifactVisibilityModes.LocalOnly,
+                        TrustTier: ArtifactTrustTiers.LocalOnly,
+                        Assets: [],
+                        Capabilities: [],
+                        ExecutionPolicies: []),
+                    new RulePackPublicationMetadata(
+                        OwnerId: "alice",
+                        Visibility: ArtifactVisibilityModes.Private,
+                        PublicationStatus: RulePackPublicationStatuses.Published,
+                        Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                        Shares: []))
+            ]),
+            new RuleProfilePublicationStoreStub(
+            [
+                new RuleProfilePublicationRecord(
+                    ProfileId: "local.sr5.current-overlays",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Publication: new RuleProfilePublicationMetadata(
+                        OwnerId: "alice",
+                        Visibility: ArtifactVisibilityModes.CampaignShared,
+                        PublicationStatus: RuleProfilePublicationStatuses.Draft,
+                        Review: new RulePackReviewDecision(RulePackReviewStates.PendingReview),
+                        Shares:
+                        [
+                            new RulePackShareGrant(
+                                SubjectKind: RulePackShareSubjectKinds.Campaign,
+                                SubjectId: "campaign-7",
+                                AccessLevel: RulePackShareAccessLevels.Install)
+                        ]))
+            ]),
+            new DefaultRuntimeFingerprintService());
+
+        RuleProfileRegistryEntry entry = service.Get(new OwnerScope("alice"), "local.sr5.current-overlays", RulesetDefaults.Sr5)!;
+
+        Assert.AreEqual("alice", entry.Publication.OwnerId);
+        Assert.AreEqual(ArtifactVisibilityModes.CampaignShared, entry.Publication.Visibility);
+        Assert.AreEqual(RuleProfilePublicationStatuses.Draft, entry.Publication.PublicationStatus);
+        Assert.AreEqual(RulePackReviewStates.PendingReview, entry.Publication.Review.State);
+        Assert.HasCount(1, entry.Publication.Shares);
     }
 
     private static DefaultRuleProfileRegistryService CreateServiceWithRulePackChecksum(string checksum)
@@ -146,6 +207,7 @@ public class RuleProfileRegistryServiceTests
                         Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
                         Shares: []))
             ]),
+            new RuleProfilePublicationStoreStub(),
             new DefaultRuntimeFingerprintService());
     }
 
@@ -170,6 +232,36 @@ public class RuleProfileRegistryServiceTests
         {
             return List(owner, rulesetId)
                 .FirstOrDefault(entry => string.Equals(entry.Manifest.PackId, packId, StringComparison.Ordinal));
+        }
+    }
+
+    private sealed class RuleProfilePublicationStoreStub : IRuleProfilePublicationStore
+    {
+        private readonly IReadOnlyList<RuleProfilePublicationRecord> _records;
+
+        public RuleProfilePublicationStoreStub(IReadOnlyList<RuleProfilePublicationRecord>? records = null)
+        {
+            _records = records ?? [];
+        }
+
+        public IReadOnlyList<RuleProfilePublicationRecord> List(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return normalizedRulesetId is null
+                ? _records
+                : _records.Where(record => string.Equals(record.RulesetId, normalizedRulesetId, StringComparison.Ordinal)).ToArray();
+        }
+
+        public RuleProfilePublicationRecord? Get(OwnerScope owner, string profileId, string rulesetId)
+        {
+            return _records.FirstOrDefault(
+                record => string.Equals(record.ProfileId, profileId, StringComparison.Ordinal)
+                    && string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal));
+        }
+
+        public RuleProfilePublicationRecord Upsert(OwnerScope owner, RuleProfilePublicationRecord record)
+        {
+            throw new NotSupportedException();
         }
     }
 

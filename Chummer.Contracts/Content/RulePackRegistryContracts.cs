@@ -60,6 +60,12 @@ public sealed record RulePackRegistryEntry(
     RulePackManifest Manifest,
     RulePackPublicationMetadata Publication);
 
+public sealed record RulePackPublicationRecord(
+    string PackId,
+    string Version,
+    string RulesetId,
+    RulePackPublicationMetadata Publication);
+
 public sealed record RulePackPublicationReceipt(
     string PackId,
     string Version,

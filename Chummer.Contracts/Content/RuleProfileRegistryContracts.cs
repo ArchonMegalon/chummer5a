@@ -65,3 +65,8 @@ public sealed record RuleProfilePublicationMetadata(
 public sealed record RuleProfileRegistryEntry(
     RuleProfileManifest Manifest,
     RuleProfilePublicationMetadata Publication);
+
+public sealed record RuleProfilePublicationRecord(
+    string ProfileId,
+    string RulesetId,
+    RuleProfilePublicationMetadata Publication);

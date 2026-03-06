@@ -9,16 +9,19 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
     private const string EngineApiVersion = "rulepack-v1";
     private const string SystemOwnerId = "system";
     private readonly IRulesetPluginRegistry _pluginRegistry;
+    private readonly IRuleProfilePublicationStore _publicationStore;
     private readonly IRulePackRegistryService _rulePackRegistryService;
     private readonly IRuntimeFingerprintService _runtimeFingerprintService;
 
     public DefaultRuleProfileRegistryService(
         IRulesetPluginRegistry pluginRegistry,
         IRulePackRegistryService rulePackRegistryService,
+        IRuleProfilePublicationStore publicationStore,
         IRuntimeFingerprintService runtimeFingerprintService)
     {
         _pluginRegistry = pluginRegistry;
         _rulePackRegistryService = rulePackRegistryService;
+        _publicationStore = publicationStore;
         _runtimeFingerprintService = runtimeFingerprintService;
     }
 
@@ -55,28 +58,36 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
     {
         string rulesetId = plugin.Id.NormalizedValue;
         IReadOnlyList<RulePackRegistryEntry> rulePacks = _rulePackRegistryService.List(owner, rulesetId);
+        Dictionary<string, RuleProfilePublicationMetadata> publicationLookup = _publicationStore.List(owner, rulesetId)
+            .ToDictionary(
+                record => CreatePublicationKey(record.ProfileId, record.RulesetId),
+                record => record.Publication,
+                StringComparer.Ordinal);
         List<RuleProfileRegistryEntry> entries =
         [
-            CreateCoreProfile(plugin)
+            CreateCoreProfile(plugin, publicationLookup)
         ];
 
         if (rulePacks.Count > 0)
         {
-            entries.Add(CreateOverlayProfile(plugin, owner, rulePacks));
+            entries.Add(CreateOverlayProfile(plugin, owner, rulePacks, publicationLookup));
         }
 
         return entries;
     }
 
-    private RuleProfileRegistryEntry CreateCoreProfile(IRulesetPlugin plugin)
+    private RuleProfileRegistryEntry CreateCoreProfile(
+        IRulesetPlugin plugin,
+        IReadOnlyDictionary<string, RuleProfilePublicationMetadata> publicationLookup)
     {
         string rulesetId = plugin.Id.NormalizedValue;
+        string profileId = $"official.{rulesetId}.core";
         ResolvedRuntimeLock runtimeLock = CreateRuntimeLock(
             plugin,
             rulePacks: []);
 
         RuleProfileManifest manifest = new(
-            ProfileId: $"official.{rulesetId}.core",
+            ProfileId: profileId,
             Title: $"{plugin.DisplayName} Core",
             Description: $"Curated core runtime for {plugin.DisplayName}.",
             RulesetId: rulesetId,
@@ -87,18 +98,22 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
             RuntimeLock: runtimeLock,
             UpdateChannel: RuleProfileUpdateChannels.Stable,
             Notes: "Built-in baseline runtime profile.");
-        RuleProfilePublicationMetadata publication = new(
-            OwnerId: SystemOwnerId,
-            Visibility: ArtifactVisibilityModes.Public,
-            PublicationStatus: RuleProfilePublicationStatuses.Published,
-            Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-            Shares:
-            [
-                new RulePackShareGrant(
-                    SubjectKind: RulePackShareSubjectKinds.PublicCatalog,
-                    SubjectId: "profiles",
-                    AccessLevel: RulePackShareAccessLevels.Install)
-            ]);
+        RuleProfilePublicationMetadata publication = publicationLookup.TryGetValue(
+            CreatePublicationKey(profileId, rulesetId),
+            out RuleProfilePublicationMetadata? persisted)
+            ? persisted
+            : new RuleProfilePublicationMetadata(
+                OwnerId: SystemOwnerId,
+                Visibility: ArtifactVisibilityModes.Public,
+                PublicationStatus: RuleProfilePublicationStatuses.Published,
+                Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                Shares:
+                [
+                    new RulePackShareGrant(
+                        SubjectKind: RulePackShareSubjectKinds.PublicCatalog,
+                        SubjectId: "profiles",
+                        AccessLevel: RulePackShareAccessLevels.Install)
+                ]);
 
         return new RuleProfileRegistryEntry(manifest, publication);
     }
@@ -106,7 +121,8 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
     private RuleProfileRegistryEntry CreateOverlayProfile(
         IRulesetPlugin plugin,
         OwnerScope owner,
-        IReadOnlyList<RulePackRegistryEntry> rulePacks)
+        IReadOnlyList<RulePackRegistryEntry> rulePacks,
+        IReadOnlyDictionary<string, RuleProfilePublicationMetadata> publicationLookup)
     {
         string rulesetId = plugin.Id.NormalizedValue;
         string profileId = $"local.{rulesetId}.current-overlays";
@@ -129,12 +145,16 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
             RuntimeLock: runtimeLock,
             UpdateChannel: RuleProfileUpdateChannels.Preview,
             Notes: "Derived from the current local RulePack registry.");
-        RuleProfilePublicationMetadata publication = new(
-            OwnerId: owner.IsLocalSingleUser ? owner.NormalizedValue : owner.NormalizedValue,
-            Visibility: ArtifactVisibilityModes.LocalOnly,
-            PublicationStatus: RuleProfilePublicationStatuses.Published,
-            Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-            Shares: []);
+        RuleProfilePublicationMetadata publication = publicationLookup.TryGetValue(
+            CreatePublicationKey(profileId, rulesetId),
+            out RuleProfilePublicationMetadata? persisted)
+            ? persisted
+            : new RuleProfilePublicationMetadata(
+                OwnerId: owner.NormalizedValue,
+                Visibility: ArtifactVisibilityModes.LocalOnly,
+                PublicationStatus: RuleProfilePublicationStatuses.Published,
+                Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                Shares: []);
 
         return new RuleProfileRegistryEntry(manifest, publication);
     }
@@ -180,5 +200,10 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
             ProviderBindings: providerBindings,
             EngineApiVersion: EngineApiVersion,
             RuntimeFingerprint: runtimeFingerprint);
+    }
+
+    private static string CreatePublicationKey(string profileId, string rulesetId)
+    {
+        return $"{profileId}|{rulesetId}";
     }
 }

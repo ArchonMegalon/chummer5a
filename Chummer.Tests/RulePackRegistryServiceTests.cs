@@ -1,7 +1,9 @@
 #nullable enable annotations
 
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Chummer.Application.Content;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Owners;
@@ -35,7 +37,8 @@ public class RulePackRegistryServiceTests
             ]);
         OverlayRulePackRegistryService service = new(
             new ContentOverlayCatalogServiceStub(catalog),
-            new RulesetSelectionPolicyStub());
+            new RulesetSelectionPolicyStub(),
+            new RulePackPublicationStoreStub());
 
         IReadOnlyList<RulePackRegistryEntry> entries = service.List(OwnerScope.LocalSingleUser, RulesetDefaults.Sr5);
 
@@ -47,11 +50,63 @@ public class RulePackRegistryServiceTests
     }
 
     [TestMethod]
+    public void Overlay_registry_service_prefers_owner_backed_publication_metadata_when_present()
+    {
+        ContentOverlayCatalog catalog = new(
+            BaseDataPath: "/app/data",
+            BaseLanguagePath: "/app/lang",
+            Overlays:
+            [
+                new ContentOverlayPack(
+                    Id: "house-rules",
+                    Name: "House Rules",
+                    RootPath: "/packs/house-rules",
+                    DataPath: "/packs/house-rules/data",
+                    LanguagePath: "/packs/house-rules/lang",
+                    Priority: 50,
+                    Enabled: true,
+                    Mode: ContentOverlayModes.MergeCatalog,
+                    Description: "Campaign overlay.")
+            ]);
+        OverlayRulePackRegistryService service = new(
+            new ContentOverlayCatalogServiceStub(catalog),
+            new RulesetSelectionPolicyStub(),
+            new RulePackPublicationStoreStub(
+            [
+                new RulePackPublicationRecord(
+                    PackId: "house-rules",
+                    Version: "overlay-v1",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Publication: new RulePackPublicationMetadata(
+                        OwnerId: "alice",
+                        Visibility: ArtifactVisibilityModes.Private,
+                        PublicationStatus: RulePackPublicationStatuses.Draft,
+                        Review: new RulePackReviewDecision(RulePackReviewStates.PendingReview),
+                        Shares:
+                        [
+                            new RulePackShareGrant(
+                                SubjectKind: RulePackShareSubjectKinds.User,
+                                SubjectId: "bob",
+                                AccessLevel: RulePackShareAccessLevels.View)
+                        ]))
+            ]));
+
+        RulePackRegistryEntry entry = service.List(new OwnerScope("alice"), RulesetDefaults.Sr5).Single();
+
+        Assert.AreEqual("alice", entry.Publication.OwnerId);
+        Assert.AreEqual(ArtifactVisibilityModes.Private, entry.Publication.Visibility);
+        Assert.AreEqual(RulePackPublicationStatuses.Draft, entry.Publication.PublicationStatus);
+        Assert.AreEqual(RulePackReviewStates.PendingReview, entry.Publication.Review.State);
+        Assert.HasCount(1, entry.Publication.Shares);
+    }
+
+    [TestMethod]
     public void Overlay_registry_service_returns_null_for_unknown_pack()
     {
         OverlayRulePackRegistryService service = new(
             new ContentOverlayCatalogServiceStub(new ContentOverlayCatalog("/app/data", "/app/lang", [])),
-            new RulesetSelectionPolicyStub());
+            new RulesetSelectionPolicyStub(),
+            new RulePackPublicationStoreStub());
 
         RulePackRegistryEntry? entry = service.Get(OwnerScope.LocalSingleUser, "missing-pack", RulesetDefaults.Sr5);
 
@@ -79,5 +134,36 @@ public class RulePackRegistryServiceTests
     private sealed class RulesetSelectionPolicyStub : IRulesetSelectionPolicy
     {
         public string GetDefaultRulesetId() => RulesetDefaults.Sr5;
+    }
+
+    private sealed class RulePackPublicationStoreStub : IRulePackPublicationStore
+    {
+        private readonly IReadOnlyList<RulePackPublicationRecord> _records;
+
+        public RulePackPublicationStoreStub(IReadOnlyList<RulePackPublicationRecord>? records = null)
+        {
+            _records = records ?? [];
+        }
+
+        public IReadOnlyList<RulePackPublicationRecord> List(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return normalizedRulesetId is null
+                ? _records
+                : _records.Where(record => string.Equals(record.RulesetId, normalizedRulesetId, StringComparison.Ordinal)).ToArray();
+        }
+
+        public RulePackPublicationRecord? Get(OwnerScope owner, string packId, string version, string rulesetId)
+        {
+            return _records.FirstOrDefault(
+                record => string.Equals(record.PackId, packId, StringComparison.Ordinal)
+                    && string.Equals(record.Version, version, StringComparison.Ordinal)
+                    && string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal));
+        }
+
+        public RulePackPublicationRecord Upsert(OwnerScope owner, RulePackPublicationRecord record)
+        {
+            throw new NotSupportedException();
+        }
     }
 }
