@@ -14,6 +14,10 @@ public interface IRulesetSelectionPolicy
     string GetDefaultRulesetId();
 }
 
+public sealed record RulesetSelectionOptions(
+    string DefaultRulesetId = RulesetDefaults.Sr5,
+    string Source = "built-in:sr5");
+
 public interface IRulesetShellCatalogResolver
 {
     IReadOnlyList<AppCommandDefinition> ResolveCommands(string? rulesetId);

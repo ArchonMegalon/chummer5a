@@ -131,7 +131,8 @@ public sealed class RulesetShellCatalogResolverTests
         InvalidOperationException ex = Assert.ThrowsExactly<InvalidOperationException>(() =>
             resolver.ResolveCommands(null));
 
-        StringAssert.Contains(ex.Message, "No ruleset plugin is registered");
+        StringAssert.Contains(ex.Message, "Configured default ruleset 'sr5'");
+        StringAssert.Contains(ex.Message, "no ruleset plugins are registered");
     }
 
     [TestMethod]
@@ -145,7 +146,7 @@ public sealed class RulesetShellCatalogResolverTests
     }
 
     [TestMethod]
-    public void DefaultRulesetSelectionPolicy_returns_first_registered_plugin_id()
+    public void DefaultRulesetSelectionPolicy_defaults_to_sr5_without_following_registration_order()
     {
         DefaultRulesetSelectionPolicy policy = new(new RulesetPluginRegistry(
         [
@@ -153,7 +154,38 @@ public sealed class RulesetShellCatalogResolverTests
             new StubRulesetPlugin("sr5", commands: [], tabs: [])
         ]));
 
-        Assert.AreEqual("sr6", policy.GetDefaultRulesetId());
+        Assert.AreEqual(RulesetDefaults.Sr5, policy.GetDefaultRulesetId());
+    }
+
+    [TestMethod]
+    public void DefaultRulesetSelectionPolicy_returns_configured_ruleset_when_registered()
+    {
+        DefaultRulesetSelectionPolicy policy = new(
+            new RulesetPluginRegistry(
+            [
+                new StubRulesetPlugin("sr6", commands: [], tabs: []),
+                new StubRulesetPlugin("sr5", commands: [], tabs: [])
+            ]),
+            new RulesetSelectionOptions(RulesetDefaults.Sr6, "test"));
+
+        Assert.AreEqual(RulesetDefaults.Sr6, policy.GetDefaultRulesetId());
+    }
+
+    [TestMethod]
+    public void DefaultRulesetSelectionPolicy_throws_when_configured_ruleset_is_not_registered()
+    {
+        DefaultRulesetSelectionPolicy policy = new(
+            new RulesetPluginRegistry(
+            [
+                new StubRulesetPlugin("sr6", commands: [], tabs: []),
+                new StubRulesetPlugin("sr5", commands: [], tabs: [])
+            ]),
+            new RulesetSelectionOptions(RulesetDefaults.Sr4, "test"));
+
+        InvalidOperationException ex = Assert.ThrowsExactly<InvalidOperationException>(() => policy.GetDefaultRulesetId());
+
+        StringAssert.Contains(ex.Message, "Configured default ruleset 'sr4'");
+        StringAssert.Contains(ex.Message, "Available rulesets: sr5, sr6");
     }
 
     private static RulesetShellCatalogResolverService CreateResolver(params IRulesetPlugin[] plugins)

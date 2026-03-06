@@ -33,7 +33,7 @@ The `Docker` branch is the current multi-head runtime architecture for this repo
 * `Chummer.Blazor` is the browser/web head, `Chummer.Avalonia` is the native desktop head, and `Chummer.Blazor.Desktop` is the desktop webview host.
 * `Chummer.Portal` is the single public gateway surface and `Chummer.Avalonia.Browser` provides the browser-hosted `/avalonia` route behind the portal profile.
 * `Chummer.Web` is retained only as a compatibility/oracle asset and is not part of the default runtime or parity-check contract.
-* Default runtime registration currently enables SR5 and SR6 only. `Chummer.Rulesets.Sr4` remains a scaffolded/experimental module and is not part of the default headless/runtime path until import/open/runtime coverage is complete.
+* Default runtime registration currently enables SR5 and SR6 only. `Chummer.Rulesets.Sr4` remains a scaffolded/experimental module and is not part of the default headless/runtime path until import/open/runtime coverage is complete. Set `CHUMMER_DEFAULT_RULESET` to choose the explicit host default ruleset; if it points at an unregistered ruleset, shell/bootstrap flows fail with diagnostics instead of following plugin registration order.
 * Legacy head policy: `Chummer` and `Chummer.Web` are oracle/parity assets only. Net-new user-facing behavior belongs in the shared seam and active heads; legacy changes must be limited to regression-oracle maintenance, parity extraction, or compatibility verification.
 * Runtime compose flows target `chummer-api` and `chummer-blazor`; portal flows add `chummer-portal`, `chummer-blazor-portal`, and `chummer-avalonia-browser`; no `chummer-web` service is part of the active product path.
 * Migration execution backlog: [`docs/MIGRATION_BACKLOG.md`](docs/MIGRATION_BACKLOG.md).

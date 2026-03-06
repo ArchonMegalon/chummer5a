@@ -35,18 +35,39 @@ public sealed class RulesetPluginRegistry : IRulesetPluginRegistry
 public sealed class DefaultRulesetSelectionPolicy : IRulesetSelectionPolicy
 {
     private readonly IRulesetPluginRegistry _pluginRegistry;
+    private readonly RulesetSelectionOptions _options;
 
-    public DefaultRulesetSelectionPolicy(IRulesetPluginRegistry pluginRegistry)
+    public DefaultRulesetSelectionPolicy(
+        IRulesetPluginRegistry pluginRegistry,
+        RulesetSelectionOptions? options = null)
     {
         _pluginRegistry = pluginRegistry;
+        _options = options ?? new RulesetSelectionOptions();
     }
 
     public string GetDefaultRulesetId()
     {
-        return _pluginRegistry.All
+        string defaultRulesetId = RulesetDefaults.NormalizeRequired(_options.DefaultRulesetId);
+        if (_pluginRegistry.Resolve(defaultRulesetId) is not null)
+        {
+            return defaultRulesetId;
+        }
+
+        string availableRulesets = string.Join(
+            ", ",
+            _pluginRegistry.All
             .Select(plugin => plugin.Id.NormalizedValue)
-            .FirstOrDefault(rulesetId => !string.IsNullOrWhiteSpace(rulesetId))
-            ?? string.Empty;
+            .Where(rulesetId => !string.IsNullOrWhiteSpace(rulesetId))
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(rulesetId => rulesetId, StringComparer.Ordinal));
+        if (string.IsNullOrWhiteSpace(availableRulesets))
+        {
+            throw new InvalidOperationException(
+                $"Configured default ruleset '{defaultRulesetId}' from {_options.Source} cannot be resolved because no ruleset plugins are registered.");
+        }
+
+        throw new InvalidOperationException(
+            $"Configured default ruleset '{defaultRulesetId}' from {_options.Source} is not registered. Available rulesets: {availableRulesets}.");
     }
 }
 

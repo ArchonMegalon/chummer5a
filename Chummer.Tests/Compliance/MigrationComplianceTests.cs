@@ -2607,10 +2607,17 @@ public class MigrationComplianceTests
         StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6WorkspaceSurfaceActionCatalog");
         StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6DesktopUiControlCatalog");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "AddRulesetInfrastructure(this IServiceCollection services)");
+        StringAssert.Contains(rulesetHostingDiExtensionsText, "CHUMMER_DEFAULT_RULESET");
+        StringAssert.Contains(rulesetHostingDiExtensionsText, "CreateRulesetSelectionOptions()");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
+        StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton(_ => CreateRulesetSelectionOptions());");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetSelectionPolicy, DefaultRulesetSelectionPolicy>();");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();");
+        StringAssert.Contains(rulesetServicesText, "public sealed record RulesetSelectionOptions");
+        StringAssert.Contains(rulesetHostingServicesText, "RulesetSelectionOptions");
+        StringAssert.Contains(rulesetHostingServicesText, "Configured default ruleset");
+        Assert.IsFalse(rulesetHostingServicesText.Contains("FirstOrDefault(rulesetId => !string.IsNullOrWhiteSpace(rulesetId))", StringComparison.Ordinal));
         StringAssert.Contains(infrastructureDiText, "services.AddRulesetInfrastructure();");
         Assert.IsFalse(infrastructureDiText.Contains("services.AddSr4Ruleset();", StringComparison.Ordinal));
         StringAssert.Contains(infrastructureDiText, "services.AddSr5Ruleset();");
@@ -2625,6 +2632,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(blazorProgramText, "builder.Services.AddSr6Ruleset();");
         StringAssert.Contains(blazorProgramText, "AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();");
         StringAssert.Contains(readmeText, "Default runtime registration currently enables SR5 and SR6 only.");
+        StringAssert.Contains(readmeText, "CHUMMER_DEFAULT_RULESET");
         StringAssert.Contains(readmeText, "`Chummer.Rulesets.Sr4` remains a scaffolded/experimental module");
         StringAssert.Contains(backlogText, "default headless/desktop/web paths register SR5 and SR6");
         StringAssert.Contains(backlogText, "`Chummer.Rulesets.Sr4` remains scaffolded/experimental");
