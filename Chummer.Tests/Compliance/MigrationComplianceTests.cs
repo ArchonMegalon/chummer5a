@@ -569,6 +569,14 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Project_paths_use_matching_primary_namespaces_for_application_hosting_and_infrastructure()
+    {
+        AssertProjectNamespacesMatch("Chummer.Application", "Chummer.Application");
+        AssertProjectNamespacesMatch("Chummer.Rulesets.Hosting", "Chummer.Rulesets.Hosting");
+        AssertProjectNamespacesMatch("Chummer.Infrastructure", "Chummer.Infrastructure");
+    }
+
+    [TestMethod]
     public void Public_api_bypass_is_driven_by_endpoint_metadata_instead_of_path_prefixes()
     {
         string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
@@ -3681,6 +3689,37 @@ public class MigrationComplianceTests
         }
 
         throw new FileNotFoundException("Could not locate file.", Path.Combine(parts));
+    }
+
+    private static void AssertProjectNamespacesMatch(string projectName, string expectedNamespacePrefix)
+    {
+        string projectFilePath = FindPath(projectName, $"{projectName}.csproj");
+        string projectDirectory = Path.GetDirectoryName(projectFilePath)
+            ?? throw new InvalidOperationException($"Could not resolve directory for project '{projectName}'.");
+
+        foreach (string filePath in Directory.EnumerateFiles(projectDirectory, "*.cs", SearchOption.AllDirectories))
+        {
+            if (filePath.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                || filePath.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            string? namespaceLine = File.ReadLines(filePath)
+                .FirstOrDefault(line => line.StartsWith("namespace ", StringComparison.Ordinal));
+            if (namespaceLine is null)
+            {
+                continue;
+            }
+
+            string declaredNamespace = namespaceLine["namespace ".Length..]
+                .Trim()
+                .TrimEnd(';')
+                .Trim();
+            Assert.IsTrue(
+                declaredNamespace.StartsWith(expectedNamespacePrefix, StringComparison.Ordinal),
+                $"File '{filePath}' should declare a namespace starting with '{expectedNamespacePrefix}', but declared '{declaredNamespace}'.");
+        }
     }
 
     private static bool PathExistsInCandidateRoots(params string[] parts)
