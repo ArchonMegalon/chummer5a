@@ -11,7 +11,7 @@ namespace Chummer.Tests.Presentation;
 public class WorkspaceSessionActivationServiceTests
 {
     [TestMethod]
-    public void Activate_without_seed_and_update_enabled_opens_workspace()
+    public void Activate_without_seed_and_update_enabled_opens_workspace_with_blank_ruleset_when_context_is_missing()
     {
         WorkspaceSessionPresenter sessionPresenter = new();
         WorkspaceSessionActivationService service = new();
@@ -27,7 +27,7 @@ public class WorkspaceSessionActivationServiceTests
         Assert.AreEqual("ws-1", state.ActiveWorkspaceId?.Value);
         Assert.HasCount(1, state.OpenWorkspaces);
         Assert.AreEqual("ws-1", state.OpenWorkspaces[0].Id.Value);
-        Assert.AreEqual(RulesetDefaults.Sr5, state.OpenWorkspaces[0].RulesetId);
+        Assert.AreEqual(string.Empty, state.OpenWorkspaces[0].RulesetId);
     }
 
     [TestMethod]
@@ -58,8 +58,8 @@ public class WorkspaceSessionActivationServiceTests
         CharacterWorkspaceId workspaceOne = new("ws-1");
         CharacterWorkspaceId workspaceTwo = new("ws-2");
 
-        sessionPresenter.Open(workspaceOne, CreateProfile("One", "A"));
-        WorkspaceSessionState seeded = sessionPresenter.Open(workspaceTwo, CreateProfile("Two", "B"));
+        sessionPresenter.Open(workspaceOne, CreateProfile("One", "A"), RulesetDefaults.Sr5);
+        WorkspaceSessionState seeded = sessionPresenter.Open(workspaceTwo, CreateProfile("Two", "B"), RulesetDefaults.Sr5);
 
         WorkspaceSessionState state = service.Activate(
             sessionPresenter,
@@ -83,7 +83,7 @@ public class WorkspaceSessionActivationServiceTests
         CharacterWorkspaceId workspaceOne = new("ws-1");
         CharacterWorkspaceId workspaceThree = new("ws-3");
 
-        sessionPresenter.Open(workspaceOne, CreateProfile("One", "A"));
+        sessionPresenter.Open(workspaceOne, CreateProfile("One", "A"), RulesetDefaults.Sr5);
 
         WorkspaceSessionState switchedState = service.Activate(
             sessionPresenter,

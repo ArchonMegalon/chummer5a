@@ -100,22 +100,29 @@ public sealed partial class CharacterOverviewPresenter
             return;
         }
 
-        string rulesetId = ResolveWorkspaceRulesetId(currentWorkspace.Value);
+        string? rulesetId = ResolveWorkspaceRulesetId(currentWorkspace.Value);
         NavigationTabDefinition? tab = State.NavigationTabs.FirstOrDefault(item => string.Equals(item.Id, tabId, StringComparison.Ordinal));
-        tab ??= RulesetShellCatalogResolver.ResolveNavigationTabs(rulesetId)
-            .FirstOrDefault(item => string.Equals(item.Id, tabId, StringComparison.Ordinal));
+        if (tab is null && !string.IsNullOrWhiteSpace(rulesetId))
+        {
+            tab = RulesetShellCatalogResolver.ResolveNavigationTabs(rulesetId)
+                .FirstOrDefault(item => string.Equals(item.Id, tabId, StringComparison.Ordinal));
+        }
         if (tab is null)
         {
             Publish(State with { Error = $"Unknown tab '{tabId}'." });
             return;
         }
 
-        WorkspaceSurfaceActionDefinition? defaultAction = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(
-                tab.Id,
-                rulesetId)
-            .FirstOrDefault(action =>
-                action.Kind == WorkspaceSurfaceActionKind.Section
-                && string.Equals(action.TargetId, tab.SectionId, StringComparison.Ordinal));
+        WorkspaceSurfaceActionDefinition? defaultAction = null;
+        if (!string.IsNullOrWhiteSpace(rulesetId))
+        {
+            defaultAction = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(
+                    tab.Id,
+                    rulesetId)
+                .FirstOrDefault(action =>
+                    action.Kind == WorkspaceSurfaceActionKind.Section
+                    && string.Equals(action.TargetId, tab.SectionId, StringComparison.Ordinal));
+        }
         if (defaultAction is not null)
         {
             await ExecuteWorkspaceActionAsync(defaultAction, ct);
@@ -125,12 +132,28 @@ public sealed partial class CharacterOverviewPresenter
         await LoadSectionAsync(tab.SectionId, tab.Id, $"{tab.Id}.{tab.SectionId}", ct);
     }
 
-    private string ResolveWorkspaceRulesetId(CharacterWorkspaceId workspaceId)
+    private string? ResolveWorkspaceRulesetId(CharacterWorkspaceId workspaceId)
     {
         OpenWorkspaceState? workspace = State.OpenWorkspaces.FirstOrDefault(
             candidate => string.Equals(candidate.Id.Value, workspaceId.Value, StringComparison.Ordinal));
-        return workspace is null
-            ? RulesetDefaults.Sr5
-            : RulesetDefaults.Normalize(workspace.RulesetId);
+        string? workspaceRulesetId = RulesetDefaults.NormalizeOptional(workspace?.RulesetId);
+        if (workspaceRulesetId is not null)
+            return workspaceRulesetId;
+
+        string? openWorkspaceRulesetId = State.OpenWorkspaces
+            .Select(openWorkspace => RulesetDefaults.NormalizeOptional(openWorkspace.RulesetId))
+            .FirstOrDefault(rulesetId => rulesetId is not null);
+        if (openWorkspaceRulesetId is not null)
+            return openWorkspaceRulesetId;
+
+        string? commandRulesetId = State.Commands
+            .Select(command => RulesetDefaults.NormalizeOptional(command.RulesetId))
+            .FirstOrDefault(rulesetId => rulesetId is not null);
+        if (commandRulesetId is not null)
+            return commandRulesetId;
+
+        return State.NavigationTabs
+            .Select(tab => RulesetDefaults.NormalizeOptional(tab.RulesetId))
+            .FirstOrDefault(rulesetId => rulesetId is not null);
     }
 }

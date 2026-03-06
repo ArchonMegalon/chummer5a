@@ -83,12 +83,13 @@ public class WorkspaceSessionPresenterTests
         CharacterWorkspaceId workspaceId = new("ws-open");
         CharacterProfileSection profile = CreateProfile("Opened Character", "OPEN");
 
-        WorkspaceSessionState opened = presenter.Open(workspaceId, profile);
+        WorkspaceSessionState opened = presenter.Open(workspaceId, profile, rulesetId: "sr6");
 
         Assert.AreEqual("ws-open", opened.ActiveWorkspaceId?.Value);
         Assert.HasCount(1, opened.OpenWorkspaces);
         Assert.AreEqual("Opened Character", opened.OpenWorkspaces[0].Name);
         Assert.AreEqual("OPEN", opened.OpenWorkspaces[0].Alias);
+        Assert.AreEqual("sr6", opened.OpenWorkspaces[0].RulesetId);
         string[] expectedRecent = ["ws-open"];
         CollectionAssert.AreEqual(
             expectedRecent,
@@ -121,8 +122,8 @@ public class WorkspaceSessionPresenterTests
     public void CloseAll_clears_open_workspaces_and_active_workspace()
     {
         WorkspaceSessionPresenter presenter = new();
-        presenter.Open(new CharacterWorkspaceId("ws-1"), CreateProfile("One", "A"));
-        presenter.Open(new CharacterWorkspaceId("ws-2"), CreateProfile("Two", "B"));
+        presenter.Open(new CharacterWorkspaceId("ws-1"), CreateProfile("One", "A"), rulesetId: "sr5");
+        presenter.Open(new CharacterWorkspaceId("ws-2"), CreateProfile("Two", "B"), rulesetId: "sr5");
 
         WorkspaceSessionState cleared = presenter.CloseAll();
 
@@ -138,8 +139,8 @@ public class WorkspaceSessionPresenterTests
     public void SetSavedStatus_updates_only_target_workspace()
     {
         WorkspaceSessionPresenter presenter = new();
-        presenter.Open(new CharacterWorkspaceId("ws-1"), CreateProfile("One", "A"));
-        presenter.Open(new CharacterWorkspaceId("ws-2"), CreateProfile("Two", "B"));
+        presenter.Open(new CharacterWorkspaceId("ws-1"), CreateProfile("One", "A"), rulesetId: "sr5");
+        presenter.Open(new CharacterWorkspaceId("ws-2"), CreateProfile("Two", "B"), rulesetId: "sr5");
 
         WorkspaceSessionState updated = presenter.SetSavedStatus(new CharacterWorkspaceId("ws-1"), hasSavedWorkspace: true);
 

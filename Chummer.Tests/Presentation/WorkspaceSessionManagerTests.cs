@@ -95,6 +95,38 @@ public class WorkspaceSessionManagerTests
     }
 
     [TestMethod]
+    public void Activate_uses_existing_workspace_context_when_explicit_ruleset_is_missing()
+    {
+        WorkspaceSessionManager manager = new();
+        OpenWorkspaceState[] existing =
+        [
+            new(new CharacterWorkspaceId("ws-sr6"), "Six", "S", DateTimeOffset.UtcNow.AddMinutes(-2), RulesetId: "sr6")
+        ];
+
+        IReadOnlyList<OpenWorkspaceState> updated = manager.Activate(
+            existing,
+            id: new CharacterWorkspaceId("ws-new"),
+            profile: CreateProfile("New", "N"));
+
+        Assert.AreEqual("ws-new", updated[0].Id.Value);
+        Assert.AreEqual("sr6", updated[0].RulesetId);
+    }
+
+    [TestMethod]
+    public void Activate_returns_blank_ruleset_when_no_context_is_available()
+    {
+        WorkspaceSessionManager manager = new();
+
+        IReadOnlyList<OpenWorkspaceState> updated = manager.Activate(
+            existing: [],
+            id: new CharacterWorkspaceId("ws-new"),
+            profile: CreateProfile("New", "N"));
+
+        Assert.AreEqual("ws-new", updated[0].Id.Value);
+        Assert.AreEqual(string.Empty, updated[0].RulesetId);
+    }
+
+    [TestMethod]
     public void Close_removes_workspace_and_select_next_returns_first_remaining()
     {
         WorkspaceSessionManager manager = new();

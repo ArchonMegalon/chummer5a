@@ -66,15 +66,19 @@ public sealed class WorkspaceSessionManager : IWorkspaceSessionManager
         CharacterWorkspaceId workspaceId,
         string? explicitRulesetId)
     {
-        if (!string.IsNullOrWhiteSpace(explicitRulesetId))
-        {
-            return RulesetDefaults.Normalize(explicitRulesetId);
-        }
+        string? normalizedExplicitRulesetId = RulesetDefaults.NormalizeOptional(explicitRulesetId);
+        if (normalizedExplicitRulesetId is not null)
+            return normalizedExplicitRulesetId;
 
         OpenWorkspaceState? currentWorkspace = existing.FirstOrDefault(
             workspace => string.Equals(workspace.Id.Value, workspaceId.Value, StringComparison.Ordinal));
-        return currentWorkspace is null
-            ? RulesetDefaults.Sr5
-            : RulesetDefaults.Normalize(currentWorkspace.RulesetId);
+        string? currentWorkspaceRulesetId = RulesetDefaults.NormalizeOptional(currentWorkspace?.RulesetId);
+        if (currentWorkspaceRulesetId is not null)
+            return currentWorkspaceRulesetId;
+
+        string? contextualRulesetId = existing
+            .Select(workspace => RulesetDefaults.NormalizeOptional(workspace.RulesetId))
+            .FirstOrDefault(rulesetId => rulesetId is not null);
+        return contextualRulesetId ?? string.Empty;
     }
 }
