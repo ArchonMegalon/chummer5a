@@ -150,7 +150,7 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         if (Enum.TryParse(format, ignoreCase: true, out WorkspaceDocumentFormat parsed))
             return parsed;
 
-        return WorkspaceDocumentFormat.Chum5Xml;
+        return WorkspaceDocumentFormat.NativeXml;
     }
 
     private static string? ResolveContent(PersistedWorkspaceRecord record)

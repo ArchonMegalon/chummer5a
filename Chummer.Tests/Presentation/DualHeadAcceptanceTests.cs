@@ -977,7 +977,7 @@ public class DualHeadAcceptanceTests
         PendingDownloadSnapshot avaloniaSaveAs = await CaptureAvaloniaDownloadSnapshotAsync(documentBytes, "save_character_as");
         PendingDownloadSnapshot blazorSaveAs = await CaptureBlazorDownloadSnapshotAsync(documentBytes, "save_character_as");
         AssertPendingDownloadSnapshotEqual(avaloniaSaveAs, blazorSaveAs, "save_character_as");
-        Assert.AreEqual(WorkspaceDocumentFormat.Chum5Xml, avaloniaSaveAs.Format);
+        Assert.AreEqual(WorkspaceDocumentFormat.NativeXml, avaloniaSaveAs.Format);
 
         PendingExportSnapshot avaloniaDataExporter = await CaptureAvaloniaExportSnapshotAsync(documentBytes, "data_exporter", dialogActionId: "download");
         PendingExportSnapshot blazorDataExporter = await CaptureBlazorExportSnapshotAsync(documentBytes, "data_exporter", dialogActionId: "download");

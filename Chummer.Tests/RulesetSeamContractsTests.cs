@@ -24,7 +24,7 @@ public class RulesetSeamContractsTests
         WorkspaceSaveReceipt saveReceipt = new(new CharacterWorkspaceId("ws-1"), DocumentLength: 128, RulesetId: RulesetDefaults.Sr5);
         WorkspaceDownloadReceipt downloadReceipt = new(
             new CharacterWorkspaceId("ws-1"),
-            WorkspaceDocumentFormat.Chum5Xml,
+            WorkspaceDocumentFormat.NativeXml,
             ContentBase64: "PGNoYXJhY3RlciAvPg==",
             FileName: "ws-1.chum5",
             DocumentLength: 128,

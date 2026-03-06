@@ -99,7 +99,7 @@ public class WorkspacePersistenceServiceTests
                 Success: true,
                 Value: new WorkspaceDownloadReceipt(
                     Id: new CharacterWorkspaceId("ws-persist"),
-                    Format: WorkspaceDocumentFormat.Chum5Xml,
+                    Format: WorkspaceDocumentFormat.NativeXml,
                     ContentBase64: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<character />")),
                     FileName: "ws-persist.chum5",
                     DocumentLength: 12,
@@ -157,7 +157,7 @@ public class WorkspacePersistenceServiceTests
             true,
             new WorkspaceDownloadReceipt(
                 new CharacterWorkspaceId("ws"),
-                WorkspaceDocumentFormat.Chum5Xml,
+                WorkspaceDocumentFormat.NativeXml,
                 Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<character />")),
                 "ws.chum5",
                 12,

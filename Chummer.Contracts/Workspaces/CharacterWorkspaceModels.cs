@@ -11,7 +11,8 @@ public readonly record struct CharacterWorkspaceId(string Value)
 
 public enum WorkspaceDocumentFormat
 {
-    Chum5Xml = 0,
+    NativeXml = 0,
+    Chum5Xml = NativeXml,
     Json = 1
 }
 
@@ -54,18 +55,18 @@ public sealed record WorkspaceDocumentState
 
 public sealed record WorkspaceDocument(
     WorkspaceDocumentState State,
-    WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.Chum5Xml)
+    WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml)
 {
     public WorkspaceDocument(
         WorkspacePayloadEnvelope PayloadEnvelope,
-        WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.Chum5Xml)
+        WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml)
         : this(new WorkspaceDocumentState(PayloadEnvelope), Format)
     {
     }
 
     public WorkspaceDocument(
         string Content,
-        WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.Chum5Xml,
+        WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml,
         string RulesetId = RulesetDefaults.Sr5)
         : this(
             new WorkspaceDocumentState(
@@ -90,12 +91,12 @@ public sealed record WorkspaceDocument(
 
 public sealed record WorkspaceImportDocument(
     string Content,
-    WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.Chum5Xml,
+    WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml,
     string RulesetId = RulesetDefaults.Sr5)
 {
     public static WorkspaceImportDocument FromUtf8Bytes(
         byte[] contentBytes,
-        WorkspaceDocumentFormat format = WorkspaceDocumentFormat.Chum5Xml,
+        WorkspaceDocumentFormat format = WorkspaceDocumentFormat.NativeXml,
         string rulesetId = RulesetDefaults.Sr5)
     {
         string content = Encoding.UTF8.GetString(contentBytes);

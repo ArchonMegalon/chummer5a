@@ -355,7 +355,7 @@ public sealed class HttpChummerClient : IChummerClient
                 Error: "Download response did not include workspace id.");
         }
 
-        WorkspaceDocumentFormat format = WorkspaceDocumentFormat.Chum5Xml;
+        WorkspaceDocumentFormat format = WorkspaceDocumentFormat.NativeXml;
         if (!string.IsNullOrWhiteSpace(payload.Format)
             && Enum.TryParse(payload.Format, ignoreCase: true, out WorkspaceDocumentFormat parsedFormat))
         {
@@ -473,7 +473,7 @@ public sealed class HttpChummerClient : IChummerClient
         return !string.IsNullOrWhiteSpace(rawFormat)
             && Enum.TryParse(rawFormat, ignoreCase: true, out WorkspaceDocumentFormat parsedFormat)
             ? parsedFormat
-            : WorkspaceDocumentFormat.Chum5Xml;
+            : WorkspaceDocumentFormat.NativeXml;
     }
 
     private async Task<T> GetRequiredAsync<T>(string path, CancellationToken ct)

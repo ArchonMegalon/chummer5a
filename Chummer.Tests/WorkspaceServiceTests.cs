@@ -32,7 +32,7 @@ public class WorkspaceServiceTests
 
         Assert.ThrowsExactly<FormatException>(() => workspaceService.Import(new WorkspaceImportDocument(
             "<character><name>Broken</name></character>",
-            WorkspaceDocumentFormat.Chum5Xml)));
+            WorkspaceDocumentFormat.NativeXml)));
         Assert.AreEqual(0, store.CreateCallCount);
     }
 
@@ -47,7 +47,7 @@ public class WorkspaceServiceTests
         ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
         WorkspaceService workspaceService = CreateWorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
 
-        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml, RulesetId: "SR6"));
+        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.NativeXml, RulesetId: "SR6"));
         Assert.IsFalse(string.IsNullOrWhiteSpace(imported.Id.Value));
         Assert.AreEqual("Neo", imported.Summary.Name);
         Assert.AreEqual("sr6", imported.RulesetId);
@@ -109,7 +109,7 @@ public class WorkspaceServiceTests
         ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
         WorkspaceService workspaceService = CreateWorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
 
-        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml));
+        WorkspaceImportResult imported = workspaceService.Import(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.NativeXml));
         Assert.IsFalse(string.IsNullOrWhiteSpace(imported.Id.Value));
         Assert.AreEqual("BOM Runner", imported.Summary.Name);
         Assert.AreEqual("BOM", imported.Summary.Alias);
@@ -125,9 +125,9 @@ public class WorkspaceServiceTests
         ICharacterMetadataCommands metadataCommands = new XmlCharacterMetadataCommands(new CharacterFileService());
         WorkspaceService workspaceService = CreateWorkspaceService(store, fileQueries, sectionQueries, metadataCommands);
 
-        workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "One"), WorkspaceDocumentFormat.Chum5Xml));
-        workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "Two"), WorkspaceDocumentFormat.Chum5Xml));
-        workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "Three"), WorkspaceDocumentFormat.Chum5Xml));
+        workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "One"), WorkspaceDocumentFormat.NativeXml));
+        workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "Two"), WorkspaceDocumentFormat.NativeXml));
+        workspaceService.Import(new WorkspaceImportDocument(string.Format(xmlTemplate, "Three"), WorkspaceDocumentFormat.NativeXml));
 
         IReadOnlyList<WorkspaceListItem> fullList = workspaceService.List();
         IReadOnlyList<WorkspaceListItem> cappedList = workspaceService.List(maxCount: 2);
@@ -147,7 +147,7 @@ public class WorkspaceServiceTests
                 SchemaVersion: 0,
                 PayloadKind: string.Empty,
                 Payload: "<codec-payload/>"),
-            Format: WorkspaceDocumentFormat.Chum5Xml));
+            Format: WorkspaceDocumentFormat.NativeXml));
         RecordingWorkspaceCodec codec = new();
         WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
 
@@ -171,7 +171,7 @@ public class WorkspaceServiceTests
                 SchemaVersion: 0,
                 PayloadKind: string.Empty,
                 Payload: "<codec-download/>"),
-            Format: WorkspaceDocumentFormat.Chum5Xml));
+            Format: WorkspaceDocumentFormat.NativeXml));
         RecordingWorkspaceCodec codec = new();
         WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
 
@@ -197,7 +197,7 @@ public class WorkspaceServiceTests
                 SchemaVersion: 0,
                 PayloadKind: string.Empty,
                 Payload: "<codec-export/>"),
-            Format: WorkspaceDocumentFormat.Chum5Xml));
+            Format: WorkspaceDocumentFormat.NativeXml));
         RecordingWorkspaceCodec codec = new();
         WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
 

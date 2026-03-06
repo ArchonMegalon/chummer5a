@@ -45,23 +45,23 @@ public sealed class Sr5WorkspaceCodec : IRulesetWorkspaceCodec
 
     public CharacterFileSummary ParseSummary(WorkspacePayloadEnvelope envelope)
     {
-        return _characterFileQueries.ParseSummary(new CharacterDocument(ToXmlContent(envelope.Payload, WorkspaceDocumentFormat.Chum5Xml)));
+        return _characterFileQueries.ParseSummary(new CharacterDocument(ToXmlContent(envelope.Payload, WorkspaceDocumentFormat.NativeXml)));
     }
 
     public object ParseSection(string sectionId, WorkspacePayloadEnvelope envelope)
     {
-        return _characterSectionQueries.ParseSection(sectionId, new CharacterDocument(ToXmlContent(envelope.Payload, WorkspaceDocumentFormat.Chum5Xml)));
+        return _characterSectionQueries.ParseSection(sectionId, new CharacterDocument(ToXmlContent(envelope.Payload, WorkspaceDocumentFormat.NativeXml)));
     }
 
     public CharacterValidationResult Validate(WorkspacePayloadEnvelope envelope)
     {
-        return _characterFileQueries.Validate(new CharacterDocument(ToXmlContent(envelope.Payload, WorkspaceDocumentFormat.Chum5Xml)));
+        return _characterFileQueries.Validate(new CharacterDocument(ToXmlContent(envelope.Payload, WorkspaceDocumentFormat.NativeXml)));
     }
 
     public WorkspacePayloadEnvelope UpdateMetadata(WorkspacePayloadEnvelope envelope, UpdateWorkspaceMetadata command)
     {
         UpdateCharacterMetadataResult result = _characterMetadataCommands.UpdateMetadata(new UpdateCharacterMetadataCommand(
-            Document: new CharacterDocument(ToXmlContent(envelope.Payload, WorkspaceDocumentFormat.Chum5Xml)),
+            Document: new CharacterDocument(ToXmlContent(envelope.Payload, WorkspaceDocumentFormat.NativeXml)),
             Update: new CharacterMetadataUpdate(
                 Name: command.Name,
                 Alias: command.Alias,
@@ -85,7 +85,7 @@ public sealed class Sr5WorkspaceCodec : IRulesetWorkspaceCodec
         string contentBase64 = Convert.ToBase64String(contentBytes);
         string fileName = format switch
         {
-            WorkspaceDocumentFormat.Chum5Xml => $"{id.Value}.chum5",
+            WorkspaceDocumentFormat.NativeXml => $"{id.Value}.chum5",
             _ => throw new InvalidOperationException($"Workspace format '{format}' is not supported.")
         };
 
@@ -126,7 +126,7 @@ public sealed class Sr5WorkspaceCodec : IRulesetWorkspaceCodec
 
     private static string ToXmlContent(string content, WorkspaceDocumentFormat format)
     {
-        if (format != WorkspaceDocumentFormat.Chum5Xml)
+        if (format != WorkspaceDocumentFormat.NativeXml)
         {
             throw new InvalidOperationException($"Workspace format '{format}' is not supported.");
         }

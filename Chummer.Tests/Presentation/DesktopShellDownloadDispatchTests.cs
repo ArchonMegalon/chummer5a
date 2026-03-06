@@ -163,7 +163,7 @@ public sealed class DesktopShellDownloadDispatchTests
 
     private static WorkspaceDownloadReceipt CreateReceipt(
         string workspaceId,
-        WorkspaceDocumentFormat format = WorkspaceDocumentFormat.Chum5Xml,
+        WorkspaceDocumentFormat format = WorkspaceDocumentFormat.NativeXml,
         string? fileName = null)
     {
         return new WorkspaceDownloadReceipt(

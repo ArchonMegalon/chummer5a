@@ -140,7 +140,7 @@ public class WorkspaceStoreTests
             Assert.IsTrue(found);
             StringAssert.Contains(loaded.PayloadEnvelope.Payload, "Legacy");
             StringAssert.Contains(loaded.State.Payload, "Legacy");
-            Assert.AreEqual(WorkspaceDocumentFormat.Chum5Xml, loaded.Format);
+            Assert.AreEqual(WorkspaceDocumentFormat.NativeXml, loaded.Format);
             Assert.AreEqual("sr6", loaded.PayloadEnvelope.RulesetId);
         }
         finally

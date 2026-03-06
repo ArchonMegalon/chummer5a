@@ -246,7 +246,7 @@ public static class WorkspaceEndpoints
         if (Enum.TryParse(rawFormat, ignoreCase: true, out WorkspaceDocumentFormat format))
             return format;
 
-        return WorkspaceDocumentFormat.Chum5Xml;
+        return WorkspaceDocumentFormat.NativeXml;
     }
 
     private static int ResolveWorkspaceListCount(int? requestedMaxCount)

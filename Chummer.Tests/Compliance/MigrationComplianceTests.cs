@@ -1235,6 +1235,8 @@ public class MigrationComplianceTests
         Assert.IsFalse(tabDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(actionDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(controlDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
+        StringAssert.Contains(workspaceModelsText, "NativeXml = 0");
+        StringAssert.Contains(workspaceModelsText, "WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml");
 
         StringAssert.Contains(commandCatalogText, "ForRuleset(string? rulesetId)");
         StringAssert.Contains(tabCatalogText, "ForRuleset(string? rulesetId)");
@@ -1307,7 +1309,7 @@ public class MigrationComplianceTests
         Assert.IsFalse(workspaceServiceText.Contains("TryParseExportSection", StringComparison.Ordinal));
         Assert.IsFalse(workspaceServiceText.Contains("DefaultEnvelopeSchemaVersion", StringComparison.Ordinal));
         Assert.IsFalse(workspaceServiceText.Contains("DefaultEnvelopePayloadKind", StringComparison.Ordinal));
-        Assert.IsFalse(workspaceServiceText.Contains("WorkspaceDocumentFormat.Chum5Xml => \".chum5\"", StringComparison.Ordinal));
+        Assert.IsFalse(workspaceServiceText.Contains("WorkspaceDocumentFormat.NativeXml => \".chum5\"", StringComparison.Ordinal));
 
         StringAssert.Contains(sr5CodecText, "public sealed class Sr5WorkspaceCodec");
         StringAssert.Contains(sr5CodecText, "public const string Sr5PayloadKind = \"sr5/chum5-xml\"");

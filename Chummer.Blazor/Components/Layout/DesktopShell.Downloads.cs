@@ -71,7 +71,7 @@ public partial class DesktopShell
 
     private static string ResolveDownloadMimeType(WorkspaceDocumentFormat format)
     {
-        return format == WorkspaceDocumentFormat.Chum5Xml
+        return format == WorkspaceDocumentFormat.NativeXml
             ? "application/xml"
             : format == WorkspaceDocumentFormat.Json
                 ? "application/json"

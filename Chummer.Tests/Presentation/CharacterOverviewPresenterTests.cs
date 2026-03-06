@@ -118,7 +118,7 @@ public class CharacterOverviewPresenterTests
         var presenter = new CharacterOverviewPresenter(client);
 
         await presenter.ImportAsync(
-            new WorkspaceImportDocument("<character><name>Imported</name></character>", WorkspaceDocumentFormat.Chum5Xml),
+            new WorkspaceImportDocument("<character><name>Imported</name></character>", WorkspaceDocumentFormat.NativeXml),
             CancellationToken.None);
 
         Assert.IsFalse(presenter.State.IsBusy);
@@ -1194,7 +1194,7 @@ public class CharacterOverviewPresenterTests
                 Success: true,
                 Value: new WorkspaceDownloadReceipt(
                     Id: id,
-                    Format: WorkspaceDocumentFormat.Chum5Xml,
+                    Format: WorkspaceDocumentFormat.NativeXml,
                     ContentBase64: Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<character><name>Download</name></character>")),
                     FileName: $"{id.Value}.chum5",
                     DocumentLength: 41,
