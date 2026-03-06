@@ -21,7 +21,7 @@ public class WorkspaceStoreTests
         try
         {
             FileWorkspaceStore store = new(stateDirectory);
-            WorkspaceDocument expected = new("<character><name>Neo</name></character>");
+            WorkspaceDocument expected = new("<character><name>Neo</name></character>", RulesetId: RulesetDefaults.Sr5);
 
             CharacterWorkspaceId id = store.Create(expected);
             bool found = store.TryGet(id, out WorkspaceDocument actual);
@@ -47,7 +47,7 @@ public class WorkspaceStoreTests
             CharacterWorkspaceId id;
             {
                 FileWorkspaceStore store = new(stateDirectory);
-                id = store.Create(new WorkspaceDocument("<character><alias>BLUE</alias></character>"));
+                id = store.Create(new WorkspaceDocument("<character><alias>BLUE</alias></character>", RulesetId: RulesetDefaults.Sr5));
             }
 
             {
@@ -172,7 +172,7 @@ public class WorkspaceStoreTests
         try
         {
             FileWorkspaceStore store = new(stateDirectory);
-            CharacterWorkspaceId id = store.Create(new WorkspaceDocument("<character><name>Neo</name></character>"));
+            CharacterWorkspaceId id = store.Create(new WorkspaceDocument("<character><name>Neo</name></character>", RulesetId: RulesetDefaults.Sr5));
             string persistedPath = Path.Combine(stateDirectory, "workspaces", $"{id.Value}.json");
 
             File.WriteAllText(persistedPath, "{invalid-json");
@@ -193,8 +193,8 @@ public class WorkspaceStoreTests
         try
         {
             FileWorkspaceStore store = new(stateDirectory);
-            CharacterWorkspaceId first = store.Create(new WorkspaceDocument("<character><name>First</name></character>"));
-            CharacterWorkspaceId second = store.Create(new WorkspaceDocument("<character><name>Second</name></character>"));
+            CharacterWorkspaceId first = store.Create(new WorkspaceDocument("<character><name>First</name></character>", RulesetId: RulesetDefaults.Sr5));
+            CharacterWorkspaceId second = store.Create(new WorkspaceDocument("<character><name>Second</name></character>", RulesetId: RulesetDefaults.Sr5));
 
             IReadOnlyList<WorkspaceStoreEntry> listed = store.List();
 
@@ -215,7 +215,7 @@ public class WorkspaceStoreTests
         try
         {
             FileWorkspaceStore store = new(stateDirectory);
-            CharacterWorkspaceId id = store.Create(new WorkspaceDocument("<character><name>DeleteMe</name></character>"));
+            CharacterWorkspaceId id = store.Create(new WorkspaceDocument("<character><name>DeleteMe</name></character>", RulesetId: RulesetDefaults.Sr5));
 
             bool deleted = store.Delete(id);
             bool found = store.TryGet(id, out _);

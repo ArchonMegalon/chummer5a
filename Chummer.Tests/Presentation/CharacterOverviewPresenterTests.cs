@@ -118,7 +118,7 @@ public class CharacterOverviewPresenterTests
         var presenter = new CharacterOverviewPresenter(client);
 
         await presenter.ImportAsync(
-            new WorkspaceImportDocument("<character><name>Imported</name></character>", WorkspaceDocumentFormat.NativeXml),
+            new WorkspaceImportDocument("<character><name>Imported</name></character>", RulesetDefaults.Sr5, WorkspaceDocumentFormat.NativeXml),
             CancellationToken.None);
 
         Assert.IsFalse(presenter.State.IsBusy);
@@ -131,6 +131,39 @@ public class CharacterOverviewPresenterTests
         Assert.IsNotNull(presenter.State.Build);
         Assert.IsNotNull(presenter.State.Movement);
         Assert.IsNotNull(presenter.State.Awakening);
+    }
+
+    [TestMethod]
+    public async Task ImportAsync_resolves_ruleset_from_bootstrap_when_document_seed_is_blank()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.ImportAsync(
+            new WorkspaceImportDocument("<character><name>Imported</name></character>", string.Empty, WorkspaceDocumentFormat.NativeXml),
+            CancellationToken.None);
+
+        Assert.IsNotNull(client.LastImportedDocument);
+        Assert.AreEqual(RulesetDefaults.Sr5, client.LastImportedDocument!.RulesetId);
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
+    }
+
+    [TestMethod]
+    public async Task ImportAsync_resolves_ruleset_from_document_gameedition_when_document_seed_is_blank()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.ImportAsync(
+            new WorkspaceImportDocument(
+                "<character><gameedition>SR6</gameedition><name>Imported</name></character>",
+                string.Empty,
+                WorkspaceDocumentFormat.NativeXml),
+            CancellationToken.None);
+
+        Assert.IsNotNull(client.LastImportedDocument);
+        Assert.AreEqual("sr6", client.LastImportedDocument!.RulesetId);
+        Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
     }
 
     [TestMethod]

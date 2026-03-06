@@ -6,7 +6,7 @@ public sealed partial class CharacterOverviewPresenter
 {
     public async Task UpdateMetadataAsync(UpdateWorkspaceMetadata command, CancellationToken ct)
     {
-        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        CharacterWorkspaceId? currentWorkspace = ResolveCurrentWorkspaceId();
         if (currentWorkspace is null)
         {
             Publish(State with
@@ -68,7 +68,7 @@ public sealed partial class CharacterOverviewPresenter
 
     public async Task SaveAsync(CancellationToken ct)
     {
-        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        CharacterWorkspaceId? currentWorkspace = ResolveCurrentWorkspaceId();
         if (currentWorkspace is null)
         {
             Publish(State with
@@ -127,7 +127,7 @@ public sealed partial class CharacterOverviewPresenter
 
     public async Task DownloadAsync(CancellationToken ct)
     {
-        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        CharacterWorkspaceId? currentWorkspace = ResolveCurrentWorkspaceId();
         if (currentWorkspace is null)
         {
             Publish(State with
@@ -188,7 +188,7 @@ public sealed partial class CharacterOverviewPresenter
 
     public async Task ExportAsync(CancellationToken ct)
     {
-        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        CharacterWorkspaceId? currentWorkspace = ResolveCurrentWorkspaceId();
         if (currentWorkspace is null)
         {
             Publish(State with
@@ -251,7 +251,7 @@ public sealed partial class CharacterOverviewPresenter
 
     public async Task PrintAsync(CancellationToken ct)
     {
-        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        CharacterWorkspaceId? currentWorkspace = ResolveCurrentWorkspaceId();
         if (currentWorkspace is null)
         {
             Publish(State with

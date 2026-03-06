@@ -66,8 +66,8 @@ public sealed record WorkspaceDocument(
 
     public WorkspaceDocument(
         string Content,
-        WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml,
-        string RulesetId = RulesetDefaults.Sr5)
+        string RulesetId,
+        WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml)
         : this(
             new WorkspaceDocumentState(
                 rulesetId: RulesetId,
@@ -91,16 +91,16 @@ public sealed record WorkspaceDocument(
 
 public sealed record WorkspaceImportDocument(
     string Content,
-    WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml,
-    string RulesetId = RulesetDefaults.Sr5)
+    string RulesetId,
+    WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml)
 {
     public static WorkspaceImportDocument FromUtf8Bytes(
         byte[] contentBytes,
-        WorkspaceDocumentFormat format = WorkspaceDocumentFormat.NativeXml,
-        string rulesetId = RulesetDefaults.Sr5)
+        string rulesetId,
+        WorkspaceDocumentFormat format = WorkspaceDocumentFormat.NativeXml)
     {
         string content = Encoding.UTF8.GetString(contentBytes);
-        return new WorkspaceImportDocument(content, format, rulesetId);
+        return new WorkspaceImportDocument(content, rulesetId, format);
     }
 }
 

@@ -22,7 +22,7 @@ public sealed partial class CharacterOverviewPresenter
 
         OverviewCommandExecutionContext context = new(
             State: State,
-            CurrentWorkspace: _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId,
+            CurrentWorkspace: ResolveCurrentWorkspaceId(),
             DialogFactory: _dialogFactory,
             Publish: Publish,
             SaveAsync: SaveAsync,
@@ -38,7 +38,7 @@ public sealed partial class CharacterOverviewPresenter
 
     public async Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
     {
-        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        CharacterWorkspaceId? currentWorkspace = ResolveCurrentWorkspaceId();
         if (action is null)
         {
             Publish(State with { Error = "Workspace action is required." });
@@ -87,7 +87,7 @@ public sealed partial class CharacterOverviewPresenter
 
     public async Task SelectTabAsync(string tabId, CancellationToken ct)
     {
-        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        CharacterWorkspaceId? currentWorkspace = ResolveCurrentWorkspaceId();
         if (string.IsNullOrWhiteSpace(tabId))
         {
             Publish(State with { Error = "Tab id is required." });

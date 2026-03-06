@@ -24,7 +24,10 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public WorkspaceImportResult Import(WorkspaceImportDocument document)
     {
-        string rulesetId = RulesetDefaults.Normalize(document.RulesetId);
+        string? rulesetId = RulesetDefaults.NormalizeOptional(document.RulesetId);
+        if (rulesetId is null)
+            throw new InvalidOperationException("Workspace ruleset is required.");
+
         IRulesetWorkspaceCodec codec = _workspaceCodecResolver.Resolve(rulesetId);
         WorkspacePayloadEnvelope envelope = codec.WrapImport(rulesetId, document);
         CharacterFileSummary summary = codec.ParseSummary(envelope);

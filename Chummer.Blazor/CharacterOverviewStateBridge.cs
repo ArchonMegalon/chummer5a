@@ -1,5 +1,6 @@
 using Chummer.Contracts.Workspaces;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Presentation.Overview;
 
 namespace Chummer.Blazor;
@@ -77,7 +78,12 @@ public sealed class CharacterOverviewStateBridge : IDisposable
 
     public Task ImportAsync(byte[] documentBytes, CancellationToken ct)
     {
-        return _presenter.ImportAsync(WorkspaceImportDocument.FromUtf8Bytes(documentBytes), ct);
+        return _presenter.ImportAsync(
+            WorkspaceImportDocument.FromUtf8Bytes(
+                documentBytes,
+                ResolveImportRulesetId(),
+                WorkspaceDocumentFormat.NativeXml),
+            ct);
     }
 
     public void Dispose()
@@ -88,5 +94,25 @@ public sealed class CharacterOverviewStateBridge : IDisposable
     private void HandlePresenterStateChanged(object? sender, EventArgs args)
     {
         _onStateChanged(_presenter.State);
+    }
+
+    private string ResolveImportRulesetId()
+    {
+        CharacterOverviewState state = _presenter.State;
+        CharacterWorkspaceId? activeWorkspaceId = state.WorkspaceId;
+        if (activeWorkspaceId is not null)
+        {
+            OpenWorkspaceState? activeWorkspace = state.OpenWorkspaces.FirstOrDefault(
+                workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal));
+            if (activeWorkspace is not null)
+                return RulesetDefaults.Normalize(activeWorkspace.RulesetId);
+        }
+
+        string? commandRulesetId = state.Commands.FirstOrDefault()?.RulesetId;
+        if (!string.IsNullOrWhiteSpace(commandRulesetId))
+            return RulesetDefaults.NormalizeRequired(commandRulesetId);
+
+        string? tabRulesetId = state.NavigationTabs.FirstOrDefault()?.RulesetId;
+        return RulesetDefaults.NormalizeOptional(tabRulesetId) ?? string.Empty;
     }
 }

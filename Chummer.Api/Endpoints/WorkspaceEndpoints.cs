@@ -220,6 +220,9 @@ public static class WorkspaceEndpoints
     private static WorkspaceImportDocument ToImportDocument(WorkspaceImportRequest request)
     {
         WorkspaceDocumentFormat format = ParseFormatOrDefault(request.Format);
+        string? rulesetId = RulesetDefaults.NormalizeOptional(request.RulesetId);
+        if (rulesetId is null)
+            throw new InvalidOperationException("Workspace import rulesetId is required.");
 
         if (!string.IsNullOrWhiteSpace(request.ContentBase64))
         {
@@ -227,7 +230,7 @@ public static class WorkspaceEndpoints
             {
                 byte[] bytes = Convert.FromBase64String(request.ContentBase64);
                 string content = Encoding.UTF8.GetString(bytes);
-                return new WorkspaceImportDocument(content, format, RulesetDefaults.Normalize(request.RulesetId));
+                return new WorkspaceImportDocument(content, rulesetId, format);
             }
             catch (FormatException ex)
             {
@@ -236,7 +239,7 @@ public static class WorkspaceEndpoints
         }
 
         if (!string.IsNullOrWhiteSpace(request.Xml))
-            return new WorkspaceImportDocument(request.Xml, format, RulesetDefaults.Normalize(request.RulesetId));
+            return new WorkspaceImportDocument(request.Xml, rulesetId, format);
 
         throw new InvalidOperationException("Workspace import requires either contentBase64 or xml.");
     }

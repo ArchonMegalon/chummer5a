@@ -7,7 +7,7 @@ public sealed partial class CharacterOverviewPresenter
 {
     private async Task LoadSectionAsync(string sectionId, string? tabId, string? actionId, CancellationToken ct)
     {
-        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        CharacterWorkspaceId? currentWorkspace = ResolveCurrentWorkspaceId();
         if (string.IsNullOrWhiteSpace(sectionId))
         {
             Publish(State with { Error = "Section id is required." });
@@ -61,7 +61,7 @@ public sealed partial class CharacterOverviewPresenter
 
     private async Task RenderSummaryAction(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
     {
-        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        CharacterWorkspaceId? currentWorkspace = ResolveCurrentWorkspaceId();
         if (currentWorkspace is null)
         {
             Publish(State with { Error = "No workspace loaded." });
@@ -105,7 +105,7 @@ public sealed partial class CharacterOverviewPresenter
 
     private async Task RenderValidateAction(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
     {
-        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        CharacterWorkspaceId? currentWorkspace = ResolveCurrentWorkspaceId();
         if (currentWorkspace is null)
         {
             Publish(State with { Error = "No workspace loaded." });

@@ -37,8 +37,8 @@ public class RestartSafeWorkspacePersistenceTests
             WorkspaceImportResult imported = await initial.Client.ImportAsync(
                 new WorkspaceImportDocument(
                     payload,
-                    WorkspaceDocumentFormat.Json,
-                    RulesetId: "SR6"),
+                    RulesetId: "SR6",
+                    Format: WorkspaceDocumentFormat.Json),
                 CancellationToken.None);
 
             await initial.Client.SaveShellPreferencesAsync(

@@ -17,10 +17,10 @@ namespace Chummer.Tests;
 public class RulesetSeamContractsTests
 {
     [TestMethod]
-    public void Workspace_models_keep_document_defaults_but_require_explicit_receipt_and_list_rulesets()
+    public void Workspace_models_keep_native_format_defaults_but_require_explicit_ruleset_inputs()
     {
-        WorkspaceDocument workspaceDocument = new("<character />");
-        WorkspaceImportDocument importDocument = new("<character />");
+        WorkspaceDocument workspaceDocument = new("<character />", RulesetId: RulesetDefaults.Sr5);
+        WorkspaceImportDocument importDocument = new("<character />", RulesetId: RulesetDefaults.Sr5);
         WorkspaceSaveReceipt saveReceipt = new(new CharacterWorkspaceId("ws-1"), DocumentLength: 128, RulesetId: RulesetDefaults.Sr5);
         WorkspaceDownloadReceipt downloadReceipt = new(
             new CharacterWorkspaceId("ws-1"),
@@ -46,11 +46,13 @@ public class RulesetSeamContractsTests
         WorkspacePayloadEnvelope envelope = new(RulesetDefaults.Sr5, SchemaVersion: 1, PayloadKind: "workspace", Payload: "{}");
 
         Assert.AreEqual(RulesetDefaults.Sr5, workspaceDocument.State.RulesetId);
+        Assert.AreEqual(WorkspaceDocumentFormat.NativeXml, workspaceDocument.Format);
         Assert.AreEqual(1, workspaceDocument.State.SchemaVersion);
         Assert.AreEqual("workspace", workspaceDocument.State.PayloadKind);
         Assert.AreEqual("<character />", workspaceDocument.State.Payload);
         Assert.AreEqual(RulesetDefaults.Sr5, workspaceDocument.PayloadEnvelope.RulesetId);
         Assert.AreEqual(RulesetDefaults.Sr5, importDocument.RulesetId);
+        Assert.AreEqual(WorkspaceDocumentFormat.NativeXml, importDocument.Format);
         Assert.AreEqual(RulesetDefaults.Sr5, saveReceipt.RulesetId);
         Assert.AreEqual(RulesetDefaults.Sr5, downloadReceipt.RulesetId);
         Assert.AreEqual(RulesetDefaults.Sr5, listItem.RulesetId);

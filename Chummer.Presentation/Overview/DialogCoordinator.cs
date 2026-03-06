@@ -322,7 +322,7 @@ public sealed class DialogCoordinator : IDialogCoordinator
         if (rulesetId is null)
             return;
 
-        await context.ImportAsync(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.NativeXml, rulesetId), ct);
+        await context.ImportAsync(new WorkspaceImportDocument(xml, rulesetId, WorkspaceDocumentFormat.NativeXml), ct);
 
         CharacterOverviewState stateAfterImport = context.GetState();
         if (stateAfterImport.Error is not null)
