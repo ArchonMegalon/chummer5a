@@ -5,11 +5,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using Chummer.Infrastructure.Xml;
 using Chummer.Rulesets.Sr4;
 using Chummer.Rulesets.Sr5;
 using Chummer.Rulesets.Sr6;
@@ -124,6 +126,27 @@ public class RulesetSeamContractsTests
         Assert.IsNull(RulesetDefaults.NormalizeOptional(" "));
         Assert.AreEqual(RulesetDefaults.Sr4, RulesetDefaults.NormalizeRequired(" SR4 "));
         Assert.AreEqual(RulesetDefaults.Sr6, RulesetDefaults.NormalizeOrDefault(null, RulesetDefaults.Sr6));
+    }
+
+    [TestMethod]
+    public void Ruleset_workspace_codecs_require_explicit_ruleset_id_for_wrap_import()
+    {
+        IRulesetWorkspaceCodec[] codecs =
+        [
+            new Sr4WorkspaceCodec(),
+            new Sr5WorkspaceCodec(
+                new XmlCharacterFileQueries(new CharacterFileService()),
+                new XmlCharacterSectionQueries(new CharacterSectionService()),
+                new XmlCharacterMetadataCommands(new CharacterFileService())),
+            new Sr6WorkspaceCodec()
+        ];
+
+        foreach (IRulesetWorkspaceCodec codec in codecs)
+        {
+            Assert.ThrowsExactly<ArgumentException>(() => codec.WrapImport(
+                string.Empty,
+                new WorkspaceImportDocument("<character />", string.Empty)));
+        }
     }
 
     [TestMethod]

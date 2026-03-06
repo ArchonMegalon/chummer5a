@@ -1658,7 +1658,15 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(sr5CodecText, "public sealed class Sr5WorkspaceCodec");
         StringAssert.Contains(sr5CodecText, "public const string Sr5PayloadKind = \"sr5/chum5-xml\"");
-        StringAssert.Contains(sr5CodecText, "RulesetDefaults.NormalizeOrDefault(rulesetId, RulesetDefaults.Sr5)");
+        StringAssert.Contains(sr4CodecText, "RulesetDefaults.NormalizeRequired(rulesetId)");
+        StringAssert.Contains(sr5CodecText, "RulesetDefaults.NormalizeRequired(rulesetId)");
+        StringAssert.Contains(sr6CodecText, "RulesetDefaults.NormalizeRequired(rulesetId)");
+        StringAssert.Contains(sr4CodecText, "RulesetDefaults.NormalizeOptional(envelope.RulesetId) ?? RulesetDefaults.Sr4");
+        StringAssert.Contains(sr5CodecText, "RulesetDefaults.NormalizeOptional(envelope.RulesetId) ?? RulesetDefaults.Sr5");
+        StringAssert.Contains(sr6CodecText, "RulesetDefaults.NormalizeOptional(envelope.RulesetId) ?? RulesetDefaults.Sr6");
+        Assert.IsFalse(sr4CodecText.Contains("RulesetDefaults.NormalizeOrDefault(", StringComparison.Ordinal));
+        Assert.IsFalse(sr5CodecText.Contains("RulesetDefaults.NormalizeOrDefault(", StringComparison.Ordinal));
+        Assert.IsFalse(sr6CodecText.Contains("RulesetDefaults.NormalizeOrDefault(", StringComparison.Ordinal));
         StringAssert.Contains(sr5CodecText, "UpdateMetadata");
         StringAssert.Contains(sr5CodecText, "WorkspaceDownloadReceipt BuildDownload");
         StringAssert.Contains(sr5CodecText, "DataExportBundle BuildExportBundle");

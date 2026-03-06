@@ -34,7 +34,7 @@ public sealed class Sr5WorkspaceCodec : IRulesetWorkspaceCodec
 
     public WorkspacePayloadEnvelope WrapImport(string rulesetId, WorkspaceImportDocument document)
     {
-        string normalizedRulesetId = RulesetDefaults.NormalizeOrDefault(rulesetId, RulesetDefaults.Sr5);
+        string normalizedRulesetId = RulesetDefaults.NormalizeRequired(rulesetId);
         string xml = ToXmlContent(document.Content, document.Format);
         return new WorkspacePayloadEnvelope(
             RulesetId: normalizedRulesetId,
@@ -95,7 +95,7 @@ public sealed class Sr5WorkspaceCodec : IRulesetWorkspaceCodec
             ContentBase64: contentBase64,
             FileName: fileName,
             DocumentLength: xml.Length,
-            RulesetId: RulesetDefaults.NormalizeOrDefault(envelope.RulesetId, RulesetDefaults.Sr5));
+            RulesetId: RulesetDefaults.NormalizeOptional(envelope.RulesetId) ?? RulesetDefaults.Sr5);
     }
 
     public DataExportBundle BuildExportBundle(WorkspacePayloadEnvelope envelope)
