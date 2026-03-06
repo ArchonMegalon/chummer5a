@@ -60,6 +60,7 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<ICharacterSocialNarrativeQueries>()));
         services.AddSingleton<IContentOverlayCatalogService>(overlays);
         services.AddSingleton<IRulePackRegistryService, OverlayRulePackRegistryService>();
+        services.AddSingleton<IRuleProfileRegistryService, DefaultRuleProfileRegistryService>();
 
         services.AddSingleton<ILifeModulesCatalogService>(provider =>
         {

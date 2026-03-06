@@ -148,6 +148,36 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Profiles_endpoint_reports_curated_install_targets_for_registered_rulesets()
+    {
+        using var client = CreateClient();
+
+        JsonObject profiles = await GetRequiredJsonObject(client, "/api/profiles?ruleset=sr5");
+        Assert.IsNotNull(profiles["count"]);
+        Assert.IsInstanceOfType<JsonArray>(profiles["entries"]);
+
+        JsonArray items = (JsonArray)profiles["entries"]!;
+        bool found = items.OfType<JsonObject>()
+            .Any(item => string.Equals(item["manifest"]?["profileId"]?.GetValue<string>(), "official.sr5.core", StringComparison.Ordinal));
+        Assert.IsTrue(found, "Expected default RuleProfile id 'official.sr5.core' was not found.");
+    }
+
+    [TestMethod]
+    public async Task Profile_detail_endpoint_returns_not_found_for_unknown_profile()
+    {
+        using var client = CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync("/api/profiles/missing-profile?ruleset=sr5");
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual("ruleprofile_not_found", payload["error"]?.GetValue<string>());
+        Assert.AreEqual("missing-profile", payload["profileId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Health_endpoint_reports_ok()
     {
         using var client = CreateClient();
@@ -182,6 +212,12 @@ public class ApiIntegrationTests
 
         JsonObject info = await GetRequiredJsonObject(client, "/api/info");
         Assert.AreEqual("Chummer", info["service"]?.GetValue<string>());
+
+        JsonObject rulepacks = await GetRequiredJsonObject(client, "/api/rulepacks?ruleset=sr5");
+        Assert.IsNotNull(rulepacks["count"]);
+
+        JsonObject profiles = await GetRequiredJsonObject(client, "/api/profiles?ruleset=sr5");
+        Assert.IsNotNull(profiles["count"]);
     }
 
     [TestMethod]

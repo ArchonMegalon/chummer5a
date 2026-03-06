@@ -266,6 +266,41 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Ruleprofile_registry_surface_is_separate_from_rulepack_registry_surface()
+    {
+        string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
+        string apiProgramText = File.ReadAllText(apiProgramPath);
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string ruleProfileRegistryEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RuleProfileRegistryEndpoints.cs");
+        string ruleProfileRegistryEndpointsText = File.ReadAllText(ruleProfileRegistryEndpointsPath);
+        string ruleProfileRegistryServiceContractPath = FindPath("Chummer.Application", "Content", "IRuleProfileRegistryService.cs");
+        string ruleProfileRegistryServiceContractText = File.ReadAllText(ruleProfileRegistryServiceContractPath);
+        string defaultRuleProfileRegistryServicePath = FindPath("Chummer.Application", "Content", "DefaultRuleProfileRegistryService.cs");
+        string defaultRuleProfileRegistryServiceText = File.ReadAllText(defaultRuleProfileRegistryServicePath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(apiProgramText, "app.MapRuleProfileRegistryEndpoints();");
+        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/profiles\"");
+        StringAssert.Contains(infoEndpointsText, "/api/profiles");
+        StringAssert.Contains(ruleProfileRegistryEndpointsText, "/api/profiles");
+        StringAssert.Contains(ruleProfileRegistryEndpointsText, "IRuleProfileRegistryService");
+        StringAssert.Contains(ruleProfileRegistryEndpointsText, "ruleProfileRegistryService.List");
+        StringAssert.Contains(ruleProfileRegistryEndpointsText, "ruleprofile_not_found");
+        StringAssert.Contains(ruleProfileRegistryServiceContractText, "public interface IRuleProfileRegistryService");
+        StringAssert.Contains(ruleProfileRegistryServiceContractText, "IReadOnlyList<RuleProfileRegistryEntry> List");
+        StringAssert.Contains(defaultRuleProfileRegistryServiceText, "public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryService");
+        StringAssert.Contains(defaultRuleProfileRegistryServiceText, "IRulePackRegistryService");
+        StringAssert.Contains(defaultRuleProfileRegistryServiceText, "official.");
+        StringAssert.Contains(defaultRuleProfileRegistryServiceText, "current-overlays");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuleProfileRegistryService, DefaultRuleProfileRegistryService>()");
+        StringAssert.Contains(readmeText, "/api/profiles/*");
+    }
+
+    [TestMethod]
     public void Solution_includes_headless_and_dual_head_projects()
     {
         string solutionPath = FindPath("Chummer.sln");
@@ -603,6 +638,25 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulePackRegistryContractsText, "Campaign");
         StringAssert.Contains(rulePackRegistryContractsText, "Fork");
         StringAssert.Contains(rulePackRegistryContractsText, "DateTimeOffset? PublishedAtUtc = null");
+    }
+
+    [TestMethod]
+    public void Ruleprofile_registry_contracts_lock_in_curated_install_target_and_runtime_preview_vocabulary()
+    {
+        string ruleProfileRegistryContractsPath = FindPath("Chummer.Contracts", "Content", "RuleProfileRegistryContracts.cs");
+        string ruleProfileRegistryContractsText = File.ReadAllText(ruleProfileRegistryContractsPath);
+
+        StringAssert.Contains(ruleProfileRegistryContractsText, "public static class RuleProfileAudienceKinds");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "public static class RuleProfileCatalogKinds");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "public static class RuleProfilePublicationStatuses");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "public static class RuleProfileUpdateChannels");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "public sealed record RuleProfilePackSelection");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "public sealed record RuleProfileDefaultToggle");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "public sealed record RuleProfileManifest");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "public sealed record RuleProfilePublicationMetadata");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "public sealed record RuleProfileRegistryEntry");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "ResolvedRuntimeLock RuntimeLock");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "RulePackReviewDecision Review");
     }
 
     [TestMethod]

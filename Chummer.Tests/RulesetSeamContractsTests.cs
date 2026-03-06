@@ -188,6 +188,73 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Ruleprofile_taxonomy_distinguishes_curated_install_targets_from_rulepacks_and_runtime_locks()
+    {
+        ResolvedRuntimeLock runtimeLock = new(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles:
+            [
+                new ContentBundleDescriptor(
+                    BundleId: "sr5-core",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Version: "2026.03.06",
+                    Title: "SR5 Core Bundle",
+                    Description: "Official base data.",
+                    AssetPaths: ["data/", "lang/"])
+            ],
+            RulePacks: [new ArtifactVersionReference("house-rules", "1.2.0")],
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal),
+            EngineApiVersion: "rulepack-v1",
+            RuntimeFingerprint: "runtime-lock-sha256");
+        RuleProfileManifest profile = new(
+            ProfileId: "official.sr5.core",
+            Title: "Official SR5 Core",
+            Description: "Curated default runtime profile.",
+            RulesetId: RulesetDefaults.Sr5,
+            Audience: RuleProfileAudienceKinds.General,
+            CatalogKind: RuleProfileCatalogKinds.Official,
+            RulePacks:
+            [
+                new RuleProfilePackSelection(
+                    RulePack: new ArtifactVersionReference("house-rules", "1.2.0"),
+                    Required: true,
+                    EnabledByDefault: true)
+            ],
+            DefaultToggles:
+            [
+                new RuleProfileDefaultToggle(
+                    ToggleId: "creation.street-scum",
+                    Value: "false",
+                    Label: "Street Scum")
+            ],
+            RuntimeLock: runtimeLock,
+            UpdateChannel: RuleProfileUpdateChannels.Stable,
+            Notes: "Default install target.");
+        RuleProfileRegistryEntry entry = new(
+            profile,
+            new RuleProfilePublicationMetadata(
+                OwnerId: "system",
+                Visibility: ArtifactVisibilityModes.Public,
+                PublicationStatus: RuleProfilePublicationStatuses.Published,
+                Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                Shares:
+                [
+                    new RulePackShareGrant(
+                        SubjectKind: RulePackShareSubjectKinds.PublicCatalog,
+                        SubjectId: "profiles",
+                        AccessLevel: RulePackShareAccessLevels.Install)
+                ]));
+
+        Assert.AreEqual("official.sr5.core", entry.Manifest.ProfileId);
+        Assert.AreEqual(RuleProfileCatalogKinds.Official, entry.Manifest.CatalogKind);
+        Assert.AreEqual(RuleProfileAudienceKinds.General, entry.Manifest.Audience);
+        Assert.AreEqual("house-rules", entry.Manifest.RulePacks[0].RulePack.Id);
+        Assert.AreEqual("runtime-lock-sha256", entry.Manifest.RuntimeLock.RuntimeFingerprint);
+        Assert.AreEqual(RuleProfileUpdateChannels.Stable, entry.Manifest.UpdateChannel);
+        Assert.AreEqual(RuleProfilePublicationStatuses.Published, entry.Publication.PublicationStatus);
+    }
+
+    [TestMethod]
     public void Session_taxonomy_distinguishes_ledger_snapshot_and_runtime_bundle()
     {
         ResolvedRuntimeLock runtimeLock = new(
