@@ -61,6 +61,9 @@ public sealed record RulePackRegistryEntry(
     RulePackPublicationMetadata Publication,
     ArtifactInstallState Install);
 
+public sealed record RulePackManifestRecord(
+    RulePackManifest Manifest);
+
 public sealed record RulePackPublicationRecord(
     string PackId,
     string Version,

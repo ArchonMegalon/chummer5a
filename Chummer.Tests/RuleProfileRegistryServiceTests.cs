@@ -67,6 +67,7 @@ public class RuleProfileRegistryServiceTests
                         Shares: []),
                     new ArtifactInstallState(ArtifactInstallStates.Installed))
             ]),
+            new RuleProfileManifestStoreStub(),
             new RuleProfilePublicationStoreStub(),
             new RuleProfileInstallStateStoreStub(),
             new DefaultRuntimeFingerprintService());
@@ -89,6 +90,7 @@ public class RuleProfileRegistryServiceTests
         DefaultRuleProfileRegistryService service = new(
             new RulesetPluginRegistry([new StubRulesetPlugin(RulesetDefaults.Sr5, "Shadowrun Fifth Edition", schemaVersion: 5)]),
             new RulePackRegistryServiceStub([]),
+            new RuleProfileManifestStoreStub(),
             new RuleProfilePublicationStoreStub(),
             new RuleProfileInstallStateStoreStub(),
             new DefaultRuntimeFingerprintService());
@@ -141,6 +143,7 @@ public class RuleProfileRegistryServiceTests
                         Shares: []),
                     new ArtifactInstallState(ArtifactInstallStates.Installed))
             ]),
+            new RuleProfileManifestStoreStub(),
             new RuleProfilePublicationStoreStub(
             [
                 new RuleProfilePublicationRecord(
@@ -182,6 +185,108 @@ public class RuleProfileRegistryServiceTests
         Assert.HasCount(1, entry.Publication.Shares);
         Assert.AreEqual(ArtifactInstallStates.Pinned, entry.Install.State);
         Assert.AreEqual("workspace-1", entry.Install.InstalledTargetId);
+    }
+
+    [TestMethod]
+    public void Default_registry_service_merges_owner_backed_profile_manifests_and_prefers_persisted_entries_on_key_collisions()
+    {
+        RulesetPluginRegistry pluginRegistry =
+            new([new StubRulesetPlugin(RulesetDefaults.Sr5, "Shadowrun Fifth Edition", schemaVersion: 5)]);
+        ResolvedRuntimeLock persistedRuntimeLock = new(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles:
+            [
+                new ContentBundleDescriptor(
+                    BundleId: "official.sr5.base",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Version: "schema-5",
+                    Title: "SR5 Base Content",
+                    Description: "Persisted runtime bundle.",
+                    AssetPaths: ["data/", "lang/"])
+            ],
+            RulePacks: [new ArtifactVersionReference("house-rules", "1.0.0")],
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal),
+            EngineApiVersion: "rulepack-v1",
+            RuntimeFingerprint: "sha256:persisted");
+        DefaultRuleProfileRegistryService service = new(
+            pluginRegistry,
+            new RulePackRegistryServiceStub(
+            [
+                new RulePackRegistryEntry(
+                    new RulePackManifest(
+                        PackId: "house-rules",
+                        Version: "1.0.0",
+                        Title: "House Rules",
+                        Author: "GM",
+                        Description: "Campaign overlay.",
+                        Targets: [RulesetDefaults.Sr5],
+                        EngineApiVersion: "rulepack-v1",
+                        DependsOn: [],
+                        ConflictsWith: [],
+                        Visibility: ArtifactVisibilityModes.LocalOnly,
+                        TrustTier: ArtifactTrustTiers.LocalOnly,
+                        Assets: [],
+                        Capabilities: [],
+                        ExecutionPolicies: []),
+                    new RulePackPublicationMetadata(
+                        OwnerId: "alice",
+                        Visibility: ArtifactVisibilityModes.Private,
+                        PublicationStatus: RulePackPublicationStatuses.Published,
+                        Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                        Shares: []),
+                    new ArtifactInstallState(ArtifactInstallStates.Installed))
+            ]),
+            new RuleProfileManifestStoreStub(
+            [
+                new RuleProfileManifestRecord(
+                    new RuleProfileManifest(
+                        ProfileId: "local.sr5.current-overlays",
+                        Title: "Persisted Overlay Runtime",
+                        Description: "Owner-backed runtime projection.",
+                        RulesetId: RulesetDefaults.Sr5,
+                        Audience: RuleProfileAudienceKinds.Advanced,
+                        CatalogKind: RuleProfileCatalogKinds.Personal,
+                        RulePacks:
+                        [
+                            new RuleProfilePackSelection(
+                                RulePack: new ArtifactVersionReference("house-rules", "1.0.0"),
+                                Required: true,
+                                EnabledByDefault: true)
+                        ],
+                        DefaultToggles: [],
+                        RuntimeLock: persistedRuntimeLock,
+                        UpdateChannel: RuleProfileUpdateChannels.Preview,
+                        Notes: "Persisted owner copy.")),
+                new RuleProfileManifestRecord(
+                    new RuleProfileManifest(
+                        ProfileId: "campaign.seattle.runtime",
+                        Title: "Seattle Campaign Runtime",
+                        Description: "Extra owner-backed profile.",
+                        RulesetId: RulesetDefaults.Sr5,
+                        Audience: RuleProfileAudienceKinds.Campaign,
+                        CatalogKind: RuleProfileCatalogKinds.Personal,
+                        RulePacks: [],
+                        DefaultToggles: [],
+                        RuntimeLock: persistedRuntimeLock,
+                        UpdateChannel: RuleProfileUpdateChannels.CampaignPinned,
+                        Notes: "Campaign shared profile.")) 
+            ]),
+            new RuleProfilePublicationStoreStub(),
+            new RuleProfileInstallStateStoreStub(),
+            new DefaultRuntimeFingerprintService());
+
+        IReadOnlyList<RuleProfileRegistryEntry> entries = service.List(new OwnerScope("alice"), RulesetDefaults.Sr5);
+
+        Assert.HasCount(3, entries);
+        RuleProfileRegistryEntry persistedCollision = entries.Single(entry => string.Equals(entry.Manifest.ProfileId, "local.sr5.current-overlays", StringComparison.Ordinal));
+        RuleProfileRegistryEntry persistedOnly = entries.Single(entry => string.Equals(entry.Manifest.ProfileId, "campaign.seattle.runtime", StringComparison.Ordinal));
+        Assert.AreEqual("Persisted Overlay Runtime", persistedCollision.Manifest.Title);
+        Assert.AreEqual("sha256:persisted", persistedCollision.Manifest.RuntimeLock.RuntimeFingerprint);
+        Assert.AreEqual("alice", persistedCollision.Publication.OwnerId);
+        Assert.AreEqual(RuleProfilePublicationStatuses.Draft, persistedCollision.Publication.PublicationStatus);
+        Assert.AreEqual(ArtifactInstallStates.Available, persistedCollision.Install.State);
+        Assert.AreEqual("Seattle Campaign Runtime", persistedOnly.Manifest.Title);
+        Assert.AreEqual(ArtifactVisibilityModes.LocalOnly, persistedOnly.Publication.Visibility);
     }
 
     private static DefaultRuleProfileRegistryService CreateServiceWithRulePackChecksum(string checksum)
@@ -227,6 +332,7 @@ public class RuleProfileRegistryServiceTests
                         Shares: []),
                     new ArtifactInstallState(ArtifactInstallStates.Installed))
             ]),
+            new RuleProfileManifestStoreStub(),
             new RuleProfilePublicationStoreStub(),
             new RuleProfileInstallStateStoreStub(),
             new DefaultRuntimeFingerprintService());
@@ -281,6 +387,35 @@ public class RuleProfileRegistryServiceTests
         }
 
         public RuleProfilePublicationRecord Upsert(OwnerScope owner, RuleProfilePublicationRecord record)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    private sealed class RuleProfileManifestStoreStub : IRuleProfileManifestStore
+    {
+        private readonly IReadOnlyList<RuleProfileManifestRecord> _records;
+
+        public RuleProfileManifestStoreStub(IReadOnlyList<RuleProfileManifestRecord>? records = null)
+        {
+            _records = records ?? [];
+        }
+
+        public IReadOnlyList<RuleProfileManifestRecord> List(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return normalizedRulesetId is null
+                ? _records
+                : _records.Where(record => string.Equals(record.Manifest.RulesetId, normalizedRulesetId, StringComparison.Ordinal)).ToArray();
+        }
+
+        public RuleProfileManifestRecord? Get(OwnerScope owner, string profileId, string rulesetId)
+        {
+            return List(owner, rulesetId).FirstOrDefault(
+                record => string.Equals(record.Manifest.ProfileId, profileId, StringComparison.Ordinal));
+        }
+
+        public RuleProfileManifestRecord Upsert(OwnerScope owner, RuleProfileManifestRecord record)
         {
             throw new NotSupportedException();
         }

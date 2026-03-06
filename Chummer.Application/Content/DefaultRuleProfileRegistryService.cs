@@ -9,6 +9,7 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
     private const string EngineApiVersion = "rulepack-v1";
     private const string SystemOwnerId = "system";
     private readonly IRuleProfileInstallStateStore _installStateStore;
+    private readonly IRuleProfileManifestStore _manifestStore;
     private readonly IRulesetPluginRegistry _pluginRegistry;
     private readonly IRuleProfilePublicationStore _publicationStore;
     private readonly IRulePackRegistryService _rulePackRegistryService;
@@ -17,12 +18,14 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
     public DefaultRuleProfileRegistryService(
         IRulesetPluginRegistry pluginRegistry,
         IRulePackRegistryService rulePackRegistryService,
+        IRuleProfileManifestStore manifestStore,
         IRuleProfilePublicationStore publicationStore,
         IRuleProfileInstallStateStore installStateStore,
         IRuntimeFingerprintService runtimeFingerprintService)
     {
         _pluginRegistry = pluginRegistry;
         _rulePackRegistryService = rulePackRegistryService;
+        _manifestStore = manifestStore;
         _publicationStore = publicationStore;
         _installStateStore = installStateStore;
         _runtimeFingerprintService = runtimeFingerprintService;
@@ -79,6 +82,13 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
         if (rulePacks.Count > 0)
         {
             entries.Add(CreateOverlayProfile(plugin, owner, rulePacks, publicationLookup, installStateLookup));
+        }
+
+        foreach (RuleProfileManifestRecord record in _manifestStore.List(owner, rulesetId))
+        {
+            UpsertEntry(
+                entries,
+                CreatePersistedProfile(record.Manifest, owner, publicationLookup, installStateLookup));
         }
 
         return entries;
@@ -179,6 +189,49 @@ public sealed class DefaultRuleProfileRegistryService : IRuleProfileRegistryServ
                 RuntimeFingerprint: runtimeLock.RuntimeFingerprint);
 
         return new RuleProfileRegistryEntry(manifest, publication, install);
+    }
+
+    private static RuleProfileRegistryEntry CreatePersistedProfile(
+        RuleProfileManifest manifest,
+        OwnerScope owner,
+        IReadOnlyDictionary<string, RuleProfilePublicationMetadata> publicationLookup,
+        IReadOnlyDictionary<string, ArtifactInstallState> installStateLookup)
+    {
+        string key = CreatePublicationKey(manifest.ProfileId, manifest.RulesetId);
+        RuleProfilePublicationMetadata publication = publicationLookup.TryGetValue(
+            key,
+            out RuleProfilePublicationMetadata? persisted)
+            ? persisted
+            : new RuleProfilePublicationMetadata(
+                OwnerId: owner.NormalizedValue,
+                Visibility: ArtifactVisibilityModes.LocalOnly,
+                PublicationStatus: RuleProfilePublicationStatuses.Draft,
+                Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                Shares: []);
+        ArtifactInstallState install = installStateLookup.TryGetValue(
+            key,
+            out ArtifactInstallState? persistedInstall)
+            ? persistedInstall
+            : new ArtifactInstallState(
+                ArtifactInstallStates.Available,
+                RuntimeFingerprint: manifest.RuntimeLock.RuntimeFingerprint);
+
+        return new RuleProfileRegistryEntry(manifest, publication, install);
+    }
+
+    private static void UpsertEntry(List<RuleProfileRegistryEntry> entries, RuleProfileRegistryEntry entry)
+    {
+        int existingIndex = entries.FindIndex(current =>
+            string.Equals(current.Manifest.ProfileId, entry.Manifest.ProfileId, StringComparison.Ordinal)
+            && string.Equals(current.Manifest.RulesetId, entry.Manifest.RulesetId, StringComparison.Ordinal));
+        if (existingIndex >= 0)
+        {
+            entries[existingIndex] = entry;
+        }
+        else
+        {
+            entries.Add(entry);
+        }
     }
 
     private ResolvedRuntimeLock CreateRuntimeLock(

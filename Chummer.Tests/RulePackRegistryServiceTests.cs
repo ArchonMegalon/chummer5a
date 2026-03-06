@@ -36,6 +36,7 @@ public class RulePackRegistryServiceTests
                     Description: "Campaign overlay.")
             ]);
         OverlayRulePackRegistryService service = new(
+            new RulePackManifestStoreStub(),
             new ContentOverlayCatalogServiceStub(catalog),
             new RulesetSelectionPolicyStub(),
             new RulePackPublicationStoreStub(),
@@ -71,6 +72,7 @@ public class RulePackRegistryServiceTests
                     Description: "Campaign overlay.")
             ]);
         OverlayRulePackRegistryService service = new(
+            new RulePackManifestStoreStub(),
             new ContentOverlayCatalogServiceStub(catalog),
             new RulesetSelectionPolicyStub(),
             new RulePackPublicationStoreStub(
@@ -121,6 +123,7 @@ public class RulePackRegistryServiceTests
     public void Overlay_registry_service_returns_null_for_unknown_pack()
     {
         OverlayRulePackRegistryService service = new(
+            new RulePackManifestStoreStub(),
             new ContentOverlayCatalogServiceStub(new ContentOverlayCatalog("/app/data", "/app/lang", [])),
             new RulesetSelectionPolicyStub(),
             new RulePackPublicationStoreStub(),
@@ -129,6 +132,79 @@ public class RulePackRegistryServiceTests
         RulePackRegistryEntry? entry = service.Get(OwnerScope.LocalSingleUser, "missing-pack", RulesetDefaults.Sr5);
 
         Assert.IsNull(entry);
+    }
+
+    [TestMethod]
+    public void Overlay_registry_service_merges_owner_backed_manifests_and_prefers_persisted_entries_on_key_collisions()
+    {
+        ContentOverlayCatalog catalog = new(
+            BaseDataPath: "/app/data",
+            BaseLanguagePath: "/app/lang",
+            Overlays:
+            [
+                new ContentOverlayPack(
+                    Id: "house-rules",
+                    Name: "House Rules",
+                    RootPath: "/packs/house-rules",
+                    DataPath: "/packs/house-rules/data",
+                    LanguagePath: "/packs/house-rules/lang",
+                    Priority: 50,
+                    Enabled: true,
+                    Mode: ContentOverlayModes.MergeCatalog,
+                    Description: "Campaign overlay.")
+            ]);
+        OverlayRulePackRegistryService service = new(
+            new RulePackManifestStoreStub(
+            [
+                new RulePackManifestRecord(
+                    new RulePackManifest(
+                        PackId: "house-rules",
+                        Version: "overlay-v1",
+                        Title: "Persisted House Rules",
+                        Author: "alice",
+                        Description: "Owner-backed registry copy.",
+                        Targets: [RulesetDefaults.Sr5],
+                        EngineApiVersion: "rulepack-v1",
+                        DependsOn: [],
+                        ConflictsWith: [],
+                        Visibility: ArtifactVisibilityModes.Private,
+                        TrustTier: ArtifactTrustTiers.Private,
+                        Assets: [],
+                        Capabilities: [],
+                        ExecutionPolicies: [])),
+                new RulePackManifestRecord(
+                    new RulePackManifest(
+                        PackId: "gm-tools",
+                        Version: "1.0.0",
+                        Title: "GM Tools",
+                        Author: "alice",
+                        Description: "Extra owner-backed pack.",
+                        Targets: [RulesetDefaults.Sr5],
+                        EngineApiVersion: "rulepack-v1",
+                        DependsOn: [],
+                        ConflictsWith: [],
+                        Visibility: ArtifactVisibilityModes.LocalOnly,
+                        TrustTier: ArtifactTrustTiers.LocalOnly,
+                        Assets: [],
+                        Capabilities: [],
+                        ExecutionPolicies: []))
+            ]),
+            new ContentOverlayCatalogServiceStub(catalog),
+            new RulesetSelectionPolicyStub(),
+            new RulePackPublicationStoreStub(),
+            new RulePackInstallStateStoreStub());
+
+        IReadOnlyList<RulePackRegistryEntry> entries = service.List(new OwnerScope("alice"), RulesetDefaults.Sr5);
+
+        Assert.HasCount(2, entries);
+        RulePackRegistryEntry persistedCollision = entries.Single(entry => string.Equals(entry.Manifest.PackId, "house-rules", StringComparison.Ordinal));
+        RulePackRegistryEntry persistedOnly = entries.Single(entry => string.Equals(entry.Manifest.PackId, "gm-tools", StringComparison.Ordinal));
+        Assert.AreEqual("Persisted House Rules", persistedCollision.Manifest.Title);
+        Assert.AreEqual("alice", persistedCollision.Publication.OwnerId);
+        Assert.AreEqual(RulePackPublicationStatuses.Draft, persistedCollision.Publication.PublicationStatus);
+        Assert.AreEqual(ArtifactInstallStates.Available, persistedCollision.Install.State);
+        Assert.AreEqual("GM Tools", persistedOnly.Manifest.Title);
+        Assert.AreEqual(ArtifactVisibilityModes.LocalOnly, persistedOnly.Publication.Visibility);
     }
 
     private sealed class ContentOverlayCatalogServiceStub : IContentOverlayCatalogService
@@ -152,6 +228,36 @@ public class RulePackRegistryServiceTests
     private sealed class RulesetSelectionPolicyStub : IRulesetSelectionPolicy
     {
         public string GetDefaultRulesetId() => RulesetDefaults.Sr5;
+    }
+
+    private sealed class RulePackManifestStoreStub : IRulePackManifestStore
+    {
+        private readonly IReadOnlyList<RulePackManifestRecord> _records;
+
+        public RulePackManifestStoreStub(IReadOnlyList<RulePackManifestRecord>? records = null)
+        {
+            _records = records ?? [];
+        }
+
+        public IReadOnlyList<RulePackManifestRecord> List(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return normalizedRulesetId is null
+                ? _records
+                : _records.Where(record => record.Manifest.Targets.Contains(normalizedRulesetId, StringComparer.Ordinal)).ToArray();
+        }
+
+        public RulePackManifestRecord? Get(OwnerScope owner, string packId, string version, string rulesetId)
+        {
+            return List(owner, rulesetId).FirstOrDefault(
+                record => string.Equals(record.Manifest.PackId, packId, StringComparison.Ordinal)
+                    && string.Equals(record.Manifest.Version, version, StringComparison.Ordinal));
+        }
+
+        public RulePackManifestRecord Upsert(OwnerScope owner, RulePackManifestRecord record)
+        {
+            throw new NotSupportedException();
+        }
     }
 
     private sealed class RulePackPublicationStoreStub : IRulePackPublicationStore

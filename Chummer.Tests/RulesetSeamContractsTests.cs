@@ -1532,6 +1532,66 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Owner_backed_manifest_store_contracts_define_registry_asset_persistence_vocabulary()
+    {
+        ResolvedRuntimeLock runtimeLock = new(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles:
+            [
+                new ContentBundleDescriptor(
+                    BundleId: "official.sr5.base",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Version: "schema-5",
+                    Title: "SR5 Base Content",
+                    Description: "Base content.",
+                    AssetPaths: ["data/", "lang/"])
+            ],
+            RulePacks: [new ArtifactVersionReference("house-rules", "1.0.0")],
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal),
+            EngineApiVersion: "rulepack-v1",
+            RuntimeFingerprint: "sha256:runtime");
+        RulePackManifestRecord rulePackManifest = new(
+            new RulePackManifest(
+                PackId: "house-rules",
+                Version: "1.0.0",
+                Title: "House Rules",
+                Author: "alice",
+                Description: "Owner-backed manifest.",
+                Targets: [RulesetDefaults.Sr5],
+                EngineApiVersion: "rulepack-v1",
+                DependsOn: [],
+                ConflictsWith: [],
+                Visibility: ArtifactVisibilityModes.Private,
+                TrustTier: ArtifactTrustTiers.Private,
+                Assets: [],
+                Capabilities: [],
+                ExecutionPolicies: []));
+        RuleProfileManifestRecord ruleProfileManifest = new(
+            new RuleProfileManifest(
+                ProfileId: "campaign.seattle.runtime",
+                Title: "Seattle Runtime",
+                Description: "Owner-backed profile.",
+                RulesetId: RulesetDefaults.Sr5,
+                Audience: RuleProfileAudienceKinds.Campaign,
+                CatalogKind: RuleProfileCatalogKinds.Personal,
+                RulePacks:
+                [
+                    new RuleProfilePackSelection(
+                        RulePack: new ArtifactVersionReference("house-rules", "1.0.0"),
+                        Required: true,
+                        EnabledByDefault: true)
+                ],
+                DefaultToggles: [],
+                RuntimeLock: runtimeLock,
+                UpdateChannel: RuleProfileUpdateChannels.CampaignPinned));
+
+        Assert.AreEqual("house-rules", rulePackManifest.Manifest.PackId);
+        Assert.AreEqual(RulesetDefaults.Sr5, rulePackManifest.Manifest.Targets[0]);
+        Assert.AreEqual("campaign.seattle.runtime", ruleProfileManifest.Manifest.ProfileId);
+        Assert.AreEqual("sha256:runtime", ruleProfileManifest.Manifest.RuntimeLock.RuntimeFingerprint);
+    }
+
+    [TestMethod]
     public void Session_runtime_bundle_issue_contracts_define_issue_rotation_and_trust_vocabulary()
     {
         CharacterVersionReference baseCharacterVersion = new(
