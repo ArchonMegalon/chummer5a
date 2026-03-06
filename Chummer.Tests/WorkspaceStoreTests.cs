@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Chummer.Contracts.Owners;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -222,6 +223,34 @@ public class WorkspaceStoreTests
 
             Assert.IsTrue(deleted);
             Assert.IsFalse(found);
+        }
+        finally
+        {
+            Directory.Delete(stateDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void File_workspace_store_isolates_owner_scopes_and_preserves_local_single_user_path()
+    {
+        string stateDirectory = CreateTempStateDirectory();
+        try
+        {
+            FileWorkspaceStore store = new(stateDirectory);
+            OwnerScope alice = new("Alice@example.com");
+
+            CharacterWorkspaceId globalId = store.Create(new WorkspaceDocument("<character><name>Global</name></character>", RulesetId: RulesetDefaults.Sr5));
+            CharacterWorkspaceId aliceId = store.Create(alice, new WorkspaceDocument("<character><name>Alice</name></character>", RulesetId: RulesetDefaults.Sr6));
+
+            Assert.IsTrue(store.TryGet(globalId, out WorkspaceDocument globalDocument));
+            Assert.IsFalse(store.TryGet(alice, globalId, out _));
+            Assert.IsTrue(store.TryGet(alice, aliceId, out WorkspaceDocument aliceDocument));
+            Assert.AreEqual(RulesetDefaults.Sr5, globalDocument.PayloadEnvelope.RulesetId);
+            Assert.AreEqual(RulesetDefaults.Sr6, aliceDocument.PayloadEnvelope.RulesetId);
+            Assert.HasCount(1, store.List());
+            Assert.HasCount(1, store.List(alice));
+            Assert.IsTrue(File.Exists(Path.Combine(stateDirectory, "workspaces", $"{globalId.Value}.json")));
+            Assert.IsTrue(Directory.Exists(Path.Combine(stateDirectory, "owners")));
         }
         finally
         {

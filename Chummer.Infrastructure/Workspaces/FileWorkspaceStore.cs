@@ -1,8 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using Chummer.Infrastructure.Files;
 
 namespace Chummer.Infrastructure.Workspaces;
 
@@ -10,26 +12,42 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
 {
     private const int CurrentWorkspaceSchemaVersion = 1;
     private const string WorkspacePayloadKind = "workspace";
-    private readonly string _workspaceDirectory;
+    private readonly string _stateDirectory;
 
     public FileWorkspaceStore(string? stateDirectory = null)
     {
-        string directory = stateDirectory ?? Path.Combine(Path.GetTempPath(), "chummer-state");
-        _workspaceDirectory = Path.Combine(directory, "workspaces");
-        Directory.CreateDirectory(_workspaceDirectory);
+        _stateDirectory = stateDirectory ?? Path.Combine(Path.GetTempPath(), "chummer-state");
+        Directory.CreateDirectory(_stateDirectory);
+        Directory.CreateDirectory(GetWorkspaceDirectory(OwnerScope.LocalSingleUser));
     }
 
     public CharacterWorkspaceId Create(WorkspaceDocument document)
     {
+        return Create(OwnerScope.LocalSingleUser, document);
+    }
+
+    public CharacterWorkspaceId Create(OwnerScope owner, WorkspaceDocument document)
+    {
         string id = Guid.NewGuid().ToString("N");
         CharacterWorkspaceId workspaceId = new(id);
-        Save(workspaceId, document);
+        Save(owner, workspaceId, document);
         return workspaceId;
     }
 
     public IReadOnlyList<WorkspaceStoreEntry> List()
     {
-        return Directory.EnumerateFiles(_workspaceDirectory, "*.json", SearchOption.TopDirectoryOnly)
+        return List(OwnerScope.LocalSingleUser);
+    }
+
+    public IReadOnlyList<WorkspaceStoreEntry> List(OwnerScope owner)
+    {
+        string workspaceDirectory = GetWorkspaceDirectory(owner);
+        if (!Directory.Exists(workspaceDirectory))
+        {
+            return [];
+        }
+
+        return Directory.EnumerateFiles(workspaceDirectory, "*.json", SearchOption.TopDirectoryOnly)
             .Select(path => new
             {
                 FileName = Path.GetFileNameWithoutExtension(path),
@@ -40,13 +58,18 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
             .Select(item => new WorkspaceStoreEntry(
                 Id: new CharacterWorkspaceId(item.FileName),
                 LastUpdatedUtc: item.LastUpdatedUtc))
-            .Where(entry => TryGetPath(entry.Id) is not null)
+            .Where(entry => TryGetPath(owner, entry.Id) is not null)
             .ToArray();
     }
 
     public bool TryGet(CharacterWorkspaceId id, out WorkspaceDocument document)
     {
-        string? path = TryGetPath(id);
+        return TryGet(OwnerScope.LocalSingleUser, id, out document);
+    }
+
+    public bool TryGet(OwnerScope owner, CharacterWorkspaceId id, out WorkspaceDocument document)
+    {
+        string? path = TryGetPath(owner, id);
         if (path is null || !File.Exists(path))
         {
             document = null!;
@@ -97,10 +120,16 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
 
     public void Save(CharacterWorkspaceId id, WorkspaceDocument document)
     {
-        string? path = TryGetPath(id);
+        Save(OwnerScope.LocalSingleUser, id, document);
+    }
+
+    public void Save(OwnerScope owner, CharacterWorkspaceId id, WorkspaceDocument document)
+    {
+        string? path = TryGetPath(owner, id);
         if (path is null)
             throw new InvalidOperationException("Workspace id contains unsupported characters.");
 
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         PersistedWorkspaceRecord record = new(document.Format.ToString())
         {
             Envelope = NormalizeEnvelope(document.State)
@@ -112,7 +141,12 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
 
     public bool Delete(CharacterWorkspaceId id)
     {
-        string? path = TryGetPath(id);
+        return Delete(OwnerScope.LocalSingleUser, id);
+    }
+
+    public bool Delete(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        string? path = TryGetPath(owner, id);
         if (path is null || !File.Exists(path))
             return false;
 
@@ -131,7 +165,7 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         }
     }
 
-    private string? TryGetPath(CharacterWorkspaceId id)
+    private string? TryGetPath(OwnerScope owner, CharacterWorkspaceId id)
     {
         if (string.IsNullOrWhiteSpace(id.Value))
             return null;
@@ -142,7 +176,13 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
                 return null;
         }
 
-        return Path.Combine(_workspaceDirectory, $"{id.Value}.json");
+        return Path.Combine(GetWorkspaceDirectory(owner), $"{id.Value}.json");
+    }
+
+    private string GetWorkspaceDirectory(OwnerScope owner)
+    {
+        string ownerDirectory = OwnerScopedStatePath.ResolveOwnerDirectory(_stateDirectory, owner);
+        return Path.Combine(ownerDirectory, "workspaces");
     }
 
     private static WorkspaceDocumentFormat ParseFormat(string? format)

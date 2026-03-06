@@ -451,6 +451,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
     {
         public WorkspaceImportResult Import(WorkspaceImportDocument document) => throw new NotSupportedException();
 
+        public WorkspaceImportResult Import(OwnerScope owner, WorkspaceImportDocument document) => Import(document);
+
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; init; } = Array.Empty<WorkspaceListItem>();
 
         public IReadOnlyList<WorkspaceListItem> List(int? maxCount = null)
@@ -463,39 +465,73 @@ public sealed class InProcessChummerClientRulesetPluginTests
             return Workspaces;
         }
 
+        public IReadOnlyList<WorkspaceListItem> List(OwnerScope owner, int? maxCount = null) => List(maxCount);
+
         public bool Close(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public bool Close(OwnerScope owner, CharacterWorkspaceId id) => Close(id);
 
         public object? GetSection(CharacterWorkspaceId id, string sectionId) => throw new NotSupportedException();
 
+        public object? GetSection(OwnerScope owner, CharacterWorkspaceId id, string sectionId) => GetSection(id, sectionId);
+
         public CharacterFileSummary? GetSummary(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterFileSummary? GetSummary(OwnerScope owner, CharacterWorkspaceId id) => GetSummary(id);
 
         public CharacterValidationResult? Validate(CharacterWorkspaceId id) => throw new NotSupportedException();
 
+        public CharacterValidationResult? Validate(OwnerScope owner, CharacterWorkspaceId id) => Validate(id);
+
         public CharacterProfileSection? GetProfile(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterProfileSection? GetProfile(OwnerScope owner, CharacterWorkspaceId id) => GetProfile(id);
 
         public CharacterProgressSection? GetProgress(CharacterWorkspaceId id) => throw new NotSupportedException();
 
+        public CharacterProgressSection? GetProgress(OwnerScope owner, CharacterWorkspaceId id) => GetProgress(id);
+
         public CharacterSkillsSection? GetSkills(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterSkillsSection? GetSkills(OwnerScope owner, CharacterWorkspaceId id) => GetSkills(id);
 
         public CharacterRulesSection? GetRules(CharacterWorkspaceId id) => throw new NotSupportedException();
 
+        public CharacterRulesSection? GetRules(OwnerScope owner, CharacterWorkspaceId id) => GetRules(id);
+
         public CharacterBuildSection? GetBuild(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterBuildSection? GetBuild(OwnerScope owner, CharacterWorkspaceId id) => GetBuild(id);
 
         public CharacterMovementSection? GetMovement(CharacterWorkspaceId id) => throw new NotSupportedException();
 
+        public CharacterMovementSection? GetMovement(OwnerScope owner, CharacterWorkspaceId id) => GetMovement(id);
+
         public CharacterAwakeningSection? GetAwakening(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterAwakeningSection? GetAwakening(OwnerScope owner, CharacterWorkspaceId id) => GetAwakening(id);
 
         public CommandResult<CharacterProfileSection> UpdateMetadata(CharacterWorkspaceId id, UpdateWorkspaceMetadata command) => throw new NotSupportedException();
 
+        public CommandResult<CharacterProfileSection> UpdateMetadata(OwnerScope owner, CharacterWorkspaceId id, UpdateWorkspaceMetadata command) => UpdateMetadata(id, command);
+
         public CommandResult<WorkspaceSaveReceipt> Save(CharacterWorkspaceId id) => throw new NotSupportedException();
 
+        public CommandResult<WorkspaceSaveReceipt> Save(OwnerScope owner, CharacterWorkspaceId id) => Save(id);
+
         public CommandResult<WorkspaceDownloadReceipt> Download(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<WorkspaceDownloadReceipt> Download(OwnerScope owner, CharacterWorkspaceId id) => Download(id);
 
         public CommandResult<WorkspaceExportReceipt> ExportResult { get; init; } = new(false, null, "Export not configured.");
 
         public CommandResult<WorkspaceExportReceipt> Export(CharacterWorkspaceId id) => ExportResult;
 
+        public CommandResult<WorkspaceExportReceipt> Export(OwnerScope owner, CharacterWorkspaceId id) => Export(id);
+
         public CommandResult<WorkspacePrintReceipt> Print(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<WorkspacePrintReceipt> Print(OwnerScope owner, CharacterWorkspaceId id) => Print(id);
     }
 
     private static WorkspaceListItem CreateWorkspace(

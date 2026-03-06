@@ -8,6 +8,7 @@ using Chummer.Contracts.Api;
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Infrastructure.Xml;
@@ -35,6 +36,27 @@ public class WorkspaceServiceTests
             RulesetDefaults.Sr5,
             WorkspaceDocumentFormat.NativeXml)));
         Assert.AreEqual(0, store.CreateCallCount);
+    }
+
+    [TestMethod]
+    public void Import_with_owner_scope_routes_create_through_owner_scoped_store()
+    {
+        TrackingWorkspaceStore store = new();
+        WorkspaceService workspaceService = CreateWorkspaceService(
+            store,
+            new XmlCharacterFileQueries(new CharacterFileService()),
+            new XmlCharacterSectionQueries(new CharacterSectionService()),
+            new XmlCharacterMetadataCommands(new CharacterFileService()));
+
+        WorkspaceImportResult imported = workspaceService.Import(
+            new OwnerScope("Alice@example.com"),
+            new WorkspaceImportDocument(
+                "<character><name>Scoped</name><alias>Owner</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>0</karma><nuyen>0</nuyen><created>True</created></character>",
+                RulesetDefaults.Sr5,
+                WorkspaceDocumentFormat.NativeXml));
+
+        Assert.IsFalse(string.IsNullOrWhiteSpace(imported.Id.Value));
+        Assert.AreEqual("alice@example.com", store.LastCreateOwner?.NormalizedValue);
     }
 
     [TestMethod]
@@ -240,13 +262,26 @@ public class WorkspaceServiceTests
     {
         public int CreateCallCount { get; private set; }
 
+        public OwnerScope? LastCreateOwner { get; private set; }
+
         public CharacterWorkspaceId Create(WorkspaceDocument document)
         {
+            return Create(OwnerScope.LocalSingleUser, document);
+        }
+
+        public CharacterWorkspaceId Create(OwnerScope owner, WorkspaceDocument document)
+        {
             CreateCallCount++;
+            LastCreateOwner = owner;
             return new CharacterWorkspaceId(Guid.NewGuid().ToString("N"));
         }
 
         public bool TryGet(CharacterWorkspaceId id, out WorkspaceDocument document)
+        {
+            return TryGet(OwnerScope.LocalSingleUser, id, out document);
+        }
+
+        public bool TryGet(OwnerScope owner, CharacterWorkspaceId id, out WorkspaceDocument document)
         {
             document = null!;
             return false;
@@ -254,14 +289,29 @@ public class WorkspaceServiceTests
 
         public IReadOnlyList<WorkspaceStoreEntry> List()
         {
+            return List(OwnerScope.LocalSingleUser);
+        }
+
+        public IReadOnlyList<WorkspaceStoreEntry> List(OwnerScope owner)
+        {
             return [];
         }
 
         public void Save(CharacterWorkspaceId id, WorkspaceDocument document)
         {
+            Save(OwnerScope.LocalSingleUser, id, document);
+        }
+
+        public void Save(OwnerScope owner, CharacterWorkspaceId id, WorkspaceDocument document)
+        {
         }
 
         public bool Delete(CharacterWorkspaceId id)
+        {
+            return Delete(OwnerScope.LocalSingleUser, id);
+        }
+
+        public bool Delete(OwnerScope owner, CharacterWorkspaceId id)
         {
             return false;
         }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Chummer.Contracts.Api;
+using Chummer.Contracts.Owners;
 using Chummer.Infrastructure.Files;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -46,6 +47,29 @@ public class RosterStoreTests
 
             IReadOnlyList<RosterEntry> entries = store.Load();
             Assert.HasCount(50, entries);
+        }
+        finally
+        {
+            Directory.Delete(stateDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Upsert_isolates_owner_scopes_and_preserves_local_single_user_path()
+    {
+        string stateDirectory = CreateTempStateDirectory();
+        try
+        {
+            FileRosterStore store = new(stateDirectory);
+            OwnerScope alice = new("Alice@example.com");
+
+            store.Upsert(new RosterEntry("Global", "Runner", "Human", DateTimeOffset.UtcNow.ToString("O")));
+            store.Upsert(alice, new RosterEntry("Alice", "Mage", "Elf", DateTimeOffset.UtcNow.ToString("O")));
+
+            Assert.HasCount(1, store.Load());
+            Assert.HasCount(1, store.Load(alice));
+            Assert.IsTrue(File.Exists(Path.Combine(stateDirectory, "roster.json")));
+            Assert.IsTrue(Directory.Exists(Path.Combine(stateDirectory, "owners")));
         }
         finally
         {

@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
@@ -24,6 +25,11 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public WorkspaceImportResult Import(WorkspaceImportDocument document)
     {
+        return Import(OwnerScope.LocalSingleUser, document);
+    }
+
+    public WorkspaceImportResult Import(OwnerScope owner, WorkspaceImportDocument document)
+    {
         string? rulesetId = RulesetDefaults.NormalizeOptional(document.RulesetId);
         if (rulesetId is null)
             throw new InvalidOperationException("Workspace ruleset is required.");
@@ -32,7 +38,7 @@ public sealed class WorkspaceService : IWorkspaceService
         WorkspacePayloadEnvelope envelope = codec.WrapImport(rulesetId, document);
         CharacterFileSummary summary = codec.ParseSummary(envelope);
 
-        CharacterWorkspaceId id = _workspaceStore.Create(new WorkspaceDocument(
+        CharacterWorkspaceId id = _workspaceStore.Create(owner, new WorkspaceDocument(
             PayloadEnvelope: envelope,
             Format: document.Format));
         return new WorkspaceImportResult(id, summary, envelope.RulesetId);
@@ -40,10 +46,15 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public IReadOnlyList<WorkspaceListItem> List(int? maxCount = null)
     {
+        return List(OwnerScope.LocalSingleUser, maxCount);
+    }
+
+    public IReadOnlyList<WorkspaceListItem> List(OwnerScope owner, int? maxCount = null)
+    {
         List<WorkspaceListItem> workspaces = [];
         int? normalizedMaxCount = maxCount is > 0 ? maxCount : null;
 
-        foreach (WorkspaceStoreEntry entry in _workspaceStore.List())
+        foreach (WorkspaceStoreEntry entry in _workspaceStore.List(owner))
         {
             if (normalizedMaxCount is not null && workspaces.Count >= normalizedMaxCount.Value)
             {
@@ -51,7 +62,7 @@ public sealed class WorkspaceService : IWorkspaceService
             }
 
             CharacterWorkspaceId id = entry.Id;
-            if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+            if (!_workspaceStore.TryGet(owner, id, out WorkspaceDocument document))
             {
                 continue;
             }
@@ -89,12 +100,22 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public bool Close(CharacterWorkspaceId id)
     {
-        return _workspaceStore.Delete(id);
+        return Close(OwnerScope.LocalSingleUser, id);
+    }
+
+    public bool Close(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        return _workspaceStore.Delete(owner, id);
     }
 
     public object? GetSection(CharacterWorkspaceId id, string sectionId)
     {
-        if (!TryResolveEnvelope(id, out WorkspacePayloadEnvelope envelope))
+        return GetSection(OwnerScope.LocalSingleUser, id, sectionId);
+    }
+
+    public object? GetSection(OwnerScope owner, CharacterWorkspaceId id, string sectionId)
+    {
+        if (!TryResolveEnvelope(owner, id, out WorkspacePayloadEnvelope envelope))
         {
             return null;
         }
@@ -105,7 +126,12 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public CharacterFileSummary? GetSummary(CharacterWorkspaceId id)
     {
-        if (!TryResolveEnvelope(id, out WorkspacePayloadEnvelope envelope))
+        return GetSummary(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CharacterFileSummary? GetSummary(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        if (!TryResolveEnvelope(owner, id, out WorkspacePayloadEnvelope envelope))
         {
             return null;
         }
@@ -116,7 +142,12 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public CharacterValidationResult? Validate(CharacterWorkspaceId id)
     {
-        if (!TryResolveEnvelope(id, out WorkspacePayloadEnvelope envelope))
+        return Validate(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CharacterValidationResult? Validate(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        if (!TryResolveEnvelope(owner, id, out WorkspacePayloadEnvelope envelope))
         {
             return null;
         }
@@ -127,42 +158,82 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public CharacterProfileSection? GetProfile(CharacterWorkspaceId id)
     {
-        return TryParseSection<CharacterProfileSection>(id, "profile");
+        return GetProfile(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CharacterProfileSection? GetProfile(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterProfileSection>(owner, id, "profile");
     }
 
     public CharacterProgressSection? GetProgress(CharacterWorkspaceId id)
     {
-        return TryParseSection<CharacterProgressSection>(id, "progress");
+        return GetProgress(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CharacterProgressSection? GetProgress(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterProgressSection>(owner, id, "progress");
     }
 
     public CharacterSkillsSection? GetSkills(CharacterWorkspaceId id)
     {
-        return TryParseSection<CharacterSkillsSection>(id, "skills");
+        return GetSkills(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CharacterSkillsSection? GetSkills(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterSkillsSection>(owner, id, "skills");
     }
 
     public CharacterRulesSection? GetRules(CharacterWorkspaceId id)
     {
-        return TryParseSection<CharacterRulesSection>(id, "rules");
+        return GetRules(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CharacterRulesSection? GetRules(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterRulesSection>(owner, id, "rules");
     }
 
     public CharacterBuildSection? GetBuild(CharacterWorkspaceId id)
     {
-        return TryParseSection<CharacterBuildSection>(id, "build");
+        return GetBuild(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CharacterBuildSection? GetBuild(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterBuildSection>(owner, id, "build");
     }
 
     public CharacterMovementSection? GetMovement(CharacterWorkspaceId id)
     {
-        return TryParseSection<CharacterMovementSection>(id, "movement");
+        return GetMovement(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CharacterMovementSection? GetMovement(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterMovementSection>(owner, id, "movement");
     }
 
     public CharacterAwakeningSection? GetAwakening(CharacterWorkspaceId id)
     {
-        return TryParseSection<CharacterAwakeningSection>(id, "awakening");
+        return GetAwakening(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CharacterAwakeningSection? GetAwakening(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        return TryParseSection<CharacterAwakeningSection>(owner, id, "awakening");
     }
 
     public CommandResult<CharacterProfileSection> UpdateMetadata(CharacterWorkspaceId id, UpdateWorkspaceMetadata command)
     {
-        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+        return UpdateMetadata(OwnerScope.LocalSingleUser, id, command);
+    }
+
+    public CommandResult<CharacterProfileSection> UpdateMetadata(OwnerScope owner, CharacterWorkspaceId id, UpdateWorkspaceMetadata command)
+    {
+        if (!_workspaceStore.TryGet(owner, id, out WorkspaceDocument document))
         {
             return new CommandResult<CharacterProfileSection>(
                 Success: false,
@@ -174,7 +245,7 @@ public sealed class WorkspaceService : IWorkspaceService
         IRulesetWorkspaceCodec codec = _workspaceCodecResolver.Resolve(envelope.RulesetId);
         WorkspacePayloadEnvelope updatedEnvelope = codec.UpdateMetadata(envelope, command);
 
-        _workspaceStore.Save(id, CreateUpdatedDocument(document, updatedEnvelope));
+        _workspaceStore.Save(owner, id, CreateUpdatedDocument(document, updatedEnvelope));
 
         CharacterProfileSection? profile = codec.ParseSection("profile", updatedEnvelope) as CharacterProfileSection;
         if (profile is null)
@@ -193,7 +264,12 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public CommandResult<WorkspaceSaveReceipt> Save(CharacterWorkspaceId id)
     {
-        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+        return Save(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CommandResult<WorkspaceSaveReceipt> Save(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        if (!_workspaceStore.TryGet(owner, id, out WorkspaceDocument document))
         {
             return new CommandResult<WorkspaceSaveReceipt>(
                 Success: false,
@@ -213,7 +289,12 @@ public sealed class WorkspaceService : IWorkspaceService
 
     public CommandResult<WorkspaceDownloadReceipt> Download(CharacterWorkspaceId id)
     {
-        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+        return Download(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CommandResult<WorkspaceDownloadReceipt> Download(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        if (!_workspaceStore.TryGet(owner, id, out WorkspaceDocument document))
         {
             return new CommandResult<WorkspaceDownloadReceipt>(
                 Success: false,
@@ -228,12 +309,17 @@ public sealed class WorkspaceService : IWorkspaceService
         return new CommandResult<WorkspaceDownloadReceipt>(
             Success: true,
             Value: receipt,
-            Error: null);
+                Error: null);
     }
 
     public CommandResult<WorkspaceExportReceipt> Export(CharacterWorkspaceId id)
     {
-        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+        return Export(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CommandResult<WorkspaceExportReceipt> Export(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        if (!_workspaceStore.TryGet(owner, id, out WorkspaceDocument document))
         {
             return new CommandResult<WorkspaceExportReceipt>(
                 Success: false,
@@ -249,12 +335,17 @@ public sealed class WorkspaceService : IWorkspaceService
         return new CommandResult<WorkspaceExportReceipt>(
             Success: true,
             Value: receipt,
-            Error: null);
+                Error: null);
     }
 
     public CommandResult<WorkspacePrintReceipt> Print(CharacterWorkspaceId id)
     {
-        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+        return Print(OwnerScope.LocalSingleUser, id);
+    }
+
+    public CommandResult<WorkspacePrintReceipt> Print(OwnerScope owner, CharacterWorkspaceId id)
+    {
+        if (!_workspaceStore.TryGet(owner, id, out WorkspaceDocument document))
         {
             return new CommandResult<WorkspacePrintReceipt>(
                 Success: false,
@@ -270,13 +361,13 @@ public sealed class WorkspaceService : IWorkspaceService
         return new CommandResult<WorkspacePrintReceipt>(
             Success: true,
             Value: receipt,
-            Error: null);
+                Error: null);
     }
 
-    private TSection? TryParseSection<TSection>(CharacterWorkspaceId id, string sectionId)
+    private TSection? TryParseSection<TSection>(OwnerScope owner, CharacterWorkspaceId id, string sectionId)
         where TSection : class
     {
-        return GetSection(id, sectionId) as TSection;
+        return GetSection(owner, id, sectionId) as TSection;
     }
 
     private static WorkspaceExportReceipt BuildExportReceipt(
@@ -402,9 +493,9 @@ public sealed class WorkspaceService : IWorkspaceService
         return string.IsNullOrWhiteSpace(sanitized) ? "workspace" : sanitized;
     }
 
-    private bool TryResolveEnvelope(CharacterWorkspaceId id, out WorkspacePayloadEnvelope envelope)
+    private bool TryResolveEnvelope(OwnerScope owner, CharacterWorkspaceId id, out WorkspacePayloadEnvelope envelope)
     {
-        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+        if (!_workspaceStore.TryGet(owner, id, out WorkspaceDocument document))
         {
             envelope = default!;
             return false;

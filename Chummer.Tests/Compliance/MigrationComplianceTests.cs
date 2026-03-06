@@ -217,6 +217,18 @@ public class MigrationComplianceTests
     {
         string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
         string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string workspaceStoreContractPath = FindPath("Chummer.Application", "Workspaces", "IWorkspaceStore.cs");
+        string workspaceStoreContractText = File.ReadAllText(workspaceStoreContractPath);
+        string workspaceServiceContractPath = FindPath("Chummer.Application", "Workspaces", "IWorkspaceService.cs");
+        string workspaceServiceContractText = File.ReadAllText(workspaceServiceContractPath);
+        string rosterStoreContractPath = FindPath("Chummer.Application", "Tools", "IRosterStore.cs");
+        string rosterStoreContractText = File.ReadAllText(rosterStoreContractPath);
+        string fileWorkspaceStorePath = FindPath("Chummer.Infrastructure", "Workspaces", "FileWorkspaceStore.cs");
+        string fileWorkspaceStoreText = File.ReadAllText(fileWorkspaceStorePath);
+        string fileRosterStorePath = FindPath("Chummer.Infrastructure", "Files", "FileRosterStore.cs");
+        string fileRosterStoreText = File.ReadAllText(fileRosterStorePath);
+        string ownerScopedStatePath = FindPath("Chummer.Infrastructure", "Files", "OwnerScopedStatePath.cs");
+        string ownerScopedStateText = File.ReadAllText(ownerScopedStatePath);
 
         StringAssert.Contains(serviceRegistrationText, "CHUMMER_STATE_PATH");
         StringAssert.Contains(serviceRegistrationText, "new FileSettingsStore(stateDirectory)");
@@ -226,6 +238,21 @@ public class MigrationComplianceTests
         StringAssert.Contains(serviceRegistrationText, "CHUMMER_AMENDS_PATH");
         StringAssert.Contains(serviceRegistrationText, "IContentOverlayCatalogService");
         Assert.IsFalse(serviceRegistrationText.Contains("new InMemoryWorkspaceStore()", StringComparison.Ordinal));
+        StringAssert.Contains(workspaceStoreContractText, "Create(OwnerScope owner, WorkspaceDocument document)");
+        StringAssert.Contains(workspaceStoreContractText, "List(OwnerScope owner)");
+        StringAssert.Contains(workspaceStoreContractText, "TryGet(OwnerScope owner, CharacterWorkspaceId id, out WorkspaceDocument document)");
+        StringAssert.Contains(workspaceStoreContractText, "Save(OwnerScope owner, CharacterWorkspaceId id, WorkspaceDocument document)");
+        StringAssert.Contains(workspaceStoreContractText, "Delete(OwnerScope owner, CharacterWorkspaceId id)");
+        StringAssert.Contains(workspaceServiceContractText, "Import(OwnerScope owner, WorkspaceImportDocument document)");
+        StringAssert.Contains(workspaceServiceContractText, "List(OwnerScope owner, int? maxCount = null)");
+        StringAssert.Contains(rosterStoreContractText, "Load(OwnerScope owner)");
+        StringAssert.Contains(rosterStoreContractText, "Upsert(OwnerScope owner, RosterEntry entry)");
+        StringAssert.Contains(fileWorkspaceStoreText, "OwnerScopedStatePath.ResolveOwnerDirectory");
+        StringAssert.Contains(fileWorkspaceStoreText, "OwnerScope.LocalSingleUser");
+        StringAssert.Contains(fileRosterStoreText, "OwnerScopedStatePath.ResolveOwnerDirectory");
+        StringAssert.Contains(fileRosterStoreText, "OwnerScope.LocalSingleUser");
+        StringAssert.Contains(ownerScopedStateText, "OwnerScope owner");
+        StringAssert.Contains(ownerScopedStateText, "Path.Combine(");
     }
 
     [TestMethod]
