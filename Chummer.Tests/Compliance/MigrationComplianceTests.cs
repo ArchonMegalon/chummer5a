@@ -657,6 +657,27 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Session_runtime_bundle_issue_contracts_lock_in_issue_rotation_and_trust_vocabulary()
+    {
+        string sessionRuntimeBundleIssueContractsPath = FindPath("Chummer.Contracts", "Session", "SessionRuntimeBundleIssueContracts.cs");
+        string sessionRuntimeBundleIssueContractsText = File.ReadAllText(sessionRuntimeBundleIssueContractsPath);
+
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "public static class SessionRuntimeBundleIssueOutcomes");
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "public static class SessionRuntimeBundleDeliveryModes");
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "public static class SessionRuntimeBundleTrustStates");
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "public static class SessionRuntimeBundleRotationReasons");
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "public sealed record SessionRuntimeBundleSignatureEnvelope");
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "public sealed record SessionRuntimeBundleTrustDiagnostic");
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "public sealed record SessionRuntimeBundleIssueReceipt");
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "public sealed record SessionRuntimeBundleRotationNotice");
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "expiring-soon");
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "runtime-fingerprint-changed");
+        StringAssert.Contains(sessionRuntimeBundleIssueContractsText, "SessionRuntimeBundle Bundle");
+        Assert.IsFalse(sessionRuntimeBundleIssueContractsText.Contains("LuaSource", StringComparison.Ordinal));
+        Assert.IsFalse(sessionRuntimeBundleIssueContractsText.Contains("HttpContext", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");

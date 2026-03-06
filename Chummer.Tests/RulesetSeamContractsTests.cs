@@ -1362,6 +1362,78 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Session_runtime_bundle_issue_contracts_define_issue_rotation_and_trust_vocabulary()
+    {
+        CharacterVersionReference baseCharacterVersion = new(
+            CharacterId: "char-1",
+            VersionId: "charv-1",
+            RulesetId: RulesetDefaults.Sr5,
+            RuntimeFingerprint: "runtime-lock-sha256");
+        SessionRuntimeBundle bundle = new(
+            BundleId: "bundle-1",
+            BaseCharacterVersion: baseCharacterVersion,
+            EngineApiVersion: "rulepack-v1",
+            SignedAtUtc: DateTimeOffset.UtcNow,
+            Signature: "sig-1",
+            QuickActions:
+            [
+                new SessionQuickActionPin(
+                    ActionId: "fire-weapon",
+                    Label: "Fire Weapon",
+                    CapabilityId: "session.quick-actions")
+            ],
+            Trackers:
+            [
+                new TrackerDefinition(
+                    TrackerId: "stun",
+                    Category: TrackerCategories.Condition,
+                    Label: "Stun",
+                    DefaultValue: 0,
+                    MinimumValue: 0,
+                    MaximumValue: 10,
+                    Thresholds: [])
+            ],
+            ReducerBindings: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["tracker.increment"] = "sr5-core/reducers/tracker.increment"
+            });
+        SessionRuntimeBundleIssueReceipt receipt = new(
+            Outcome: SessionRuntimeBundleIssueOutcomes.Rotated,
+            Bundle: bundle,
+            SignatureEnvelope: new SessionRuntimeBundleSignatureEnvelope(
+                BundleId: bundle.BundleId,
+                KeyId: "key-1",
+                Signature: bundle.Signature,
+                SignedAtUtc: bundle.SignedAtUtc,
+                ExpiresAtUtc: bundle.SignedAtUtc.AddDays(7)),
+            DeliveryMode: SessionRuntimeBundleDeliveryModes.Cached,
+            Diagnostics:
+            [
+                new SessionRuntimeBundleTrustDiagnostic(
+                    State: SessionRuntimeBundleTrustStates.Trusted,
+                    Message: "Signature verified.",
+                    KeyId: "key-1",
+                    RuntimeFingerprint: baseCharacterVersion.RuntimeFingerprint),
+                new SessionRuntimeBundleTrustDiagnostic(
+                    State: SessionRuntimeBundleTrustStates.ExpiringSoon,
+                    Message: "Rotate before the next session.",
+                    KeyId: "key-1")
+            ]);
+        SessionRuntimeBundleRotationNotice rotation = new(
+            PreviousBundleId: "bundle-0",
+            CurrentBundleId: bundle.BundleId,
+            Reason: SessionRuntimeBundleRotationReasons.RuntimeFingerprintChanged,
+            RotatedAtUtc: DateTimeOffset.UtcNow,
+            RequiresClientReload: true);
+
+        Assert.AreEqual(SessionRuntimeBundleIssueOutcomes.Rotated, receipt.Outcome);
+        Assert.AreEqual(SessionRuntimeBundleDeliveryModes.Cached, receipt.DeliveryMode);
+        Assert.AreEqual(SessionRuntimeBundleTrustStates.Trusted, receipt.Diagnostics[0].State);
+        Assert.AreEqual(SessionRuntimeBundleRotationReasons.RuntimeFingerprintChanged, rotation.Reason);
+        Assert.IsTrue(rotation.RequiresClientReload);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);
