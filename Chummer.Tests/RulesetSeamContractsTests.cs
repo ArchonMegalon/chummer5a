@@ -17,7 +17,7 @@ namespace Chummer.Tests;
 public class RulesetSeamContractsTests
 {
     [TestMethod]
-    public void Workspace_models_default_to_sr5_ruleset_and_expose_payload_envelope()
+    public void Workspace_models_default_to_sr5_ruleset_and_expose_document_state()
     {
         WorkspaceDocument workspaceDocument = new("<character />");
         WorkspaceImportDocument importDocument = new("<character />");
@@ -43,6 +43,10 @@ public class RulesetSeamContractsTests
             LastUpdatedUtc: DateTimeOffset.UtcNow);
         WorkspacePayloadEnvelope envelope = new(RulesetDefaults.Sr5, SchemaVersion: 1, PayloadKind: "workspace", Payload: "{}");
 
+        Assert.AreEqual(RulesetDefaults.Sr5, workspaceDocument.State.RulesetId);
+        Assert.AreEqual(1, workspaceDocument.State.SchemaVersion);
+        Assert.AreEqual("workspace", workspaceDocument.State.PayloadKind);
+        Assert.AreEqual("<character />", workspaceDocument.State.Payload);
         Assert.AreEqual(RulesetDefaults.Sr5, workspaceDocument.PayloadEnvelope.RulesetId);
         Assert.AreEqual(RulesetDefaults.Sr5, importDocument.RulesetId);
         Assert.AreEqual(RulesetDefaults.Sr5, saveReceipt.RulesetId);

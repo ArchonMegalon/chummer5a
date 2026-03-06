@@ -87,12 +87,23 @@ public class RestartSafeWorkspacePersistenceTests
                 expectedDownloadPayload,
                 Encoding.UTF8.GetString(Convert.FromBase64String(download.Value.ContentBase64)));
 
-            DataExportBundle export = await restarted.Client.ExportAsync(imported.Id, CancellationToken.None);
-            Assert.AreEqual("Restart Safe Runner", export.Summary.Name);
-            Assert.IsNotNull(export.Attributes);
-            Assert.AreEqual("Reaction", export.Attributes!.Attributes[0].Name);
-            Assert.IsNotNull(export.Contacts);
-            Assert.AreEqual("Fixer", export.Contacts!.Contacts[0].Name);
+            CommandResult<WorkspaceExportReceipt> export = await restarted.Client.ExportAsync(imported.Id, CancellationToken.None);
+            Assert.IsTrue(export.Success);
+            Assert.IsNotNull(export.Value);
+            Assert.AreEqual("Restart Safe Runner-export.json", export.Value.FileName);
+            string exportPayload = Encoding.UTF8.GetString(Convert.FromBase64String(export.Value.ContentBase64));
+            StringAssert.Contains(exportPayload, "\"Name\": \"Restart Safe Runner\"");
+            StringAssert.Contains(exportPayload, "\"Reaction\"");
+            StringAssert.Contains(exportPayload, "\"Fixer\"");
+
+            CommandResult<WorkspacePrintReceipt> print = await restarted.Client.PrintAsync(imported.Id, CancellationToken.None);
+            Assert.IsTrue(print.Success);
+            Assert.IsNotNull(print.Value);
+            Assert.AreEqual("Restart Safe Runner-print.html", print.Value.FileName);
+            Assert.AreEqual("text/html", print.Value.MimeType);
+            string printPayload = Encoding.UTF8.GetString(Convert.FromBase64String(print.Value.ContentBase64));
+            StringAssert.Contains(printPayload, "Restart Safe Runner");
+            StringAssert.Contains(printPayload, "<html");
 
             string persistedPath = Path.Combine(stateDirectory, "workspaces", $"{imported.Id.Value}.json");
             using JsonDocument json = JsonDocument.Parse(File.ReadAllText(persistedPath));
@@ -230,6 +241,19 @@ public class RestartSafeWorkspacePersistenceTests
                 FileName: "restart-safe.sr6pkg",
                 DocumentLength: downloadPayload.Length,
                 RulesetId: envelope.RulesetId);
+        }
+
+        public DataExportBundle BuildExportBundle(WorkspacePayloadEnvelope envelope)
+        {
+            return new DataExportBundle(
+                Summary: ParseSummary(envelope),
+                Profile: ParseSection("profile", envelope) as CharacterProfileSection,
+                Progress: ParseSection("progress", envelope) as CharacterProgressSection,
+                Attributes: ParseSection("attributes", envelope) as CharacterAttributesSection,
+                Skills: null,
+                Inventory: null,
+                Qualities: null,
+                Contacts: ParseSection("contacts", envelope) as CharacterContactsSection);
         }
     }
 }

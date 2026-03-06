@@ -1,3 +1,7 @@
+using System.IO;
+using System.Net;
+using System.Text;
+using System.Text.Json;
 using Chummer.Contracts.Api;
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
@@ -245,11 +249,11 @@ public sealed class WorkspaceService : IWorkspaceService
             Error: null);
     }
 
-    public CommandResult<DataExportBundle> Export(CharacterWorkspaceId id)
+    public CommandResult<WorkspaceExportReceipt> Export(CharacterWorkspaceId id)
     {
         if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
         {
-            return new CommandResult<DataExportBundle>(
+            return new CommandResult<WorkspaceExportReceipt>(
                 Success: false,
                 Value: null,
                 Error: "Workspace not found.");
@@ -257,19 +261,33 @@ public sealed class WorkspaceService : IWorkspaceService
 
         WorkspacePayloadEnvelope envelope = ResolveEnvelope(document);
         IRulesetWorkspaceCodec codec = _workspaceCodecResolver.Resolve(envelope.RulesetId);
-        DataExportBundle bundle = new(
-            Summary: codec.ParseSummary(envelope),
-            Profile: TryParseExportSection<CharacterProfileSection>(codec, envelope, "profile"),
-            Progress: TryParseExportSection<CharacterProgressSection>(codec, envelope, "progress"),
-            Attributes: TryParseExportSection<CharacterAttributesSection>(codec, envelope, "attributes"),
-            Skills: TryParseExportSection<CharacterSkillsSection>(codec, envelope, "skills"),
-            Inventory: TryParseExportSection<CharacterInventorySection>(codec, envelope, "inventory"),
-            Qualities: TryParseExportSection<CharacterQualitiesSection>(codec, envelope, "qualities"),
-            Contacts: TryParseExportSection<CharacterContactsSection>(codec, envelope, "contacts"));
+        DataExportBundle bundle = codec.BuildExportBundle(envelope);
+        WorkspaceExportReceipt receipt = BuildExportReceipt(id, envelope.RulesetId, bundle);
 
-        return new CommandResult<DataExportBundle>(
+        return new CommandResult<WorkspaceExportReceipt>(
             Success: true,
-            Value: bundle,
+            Value: receipt,
+            Error: null);
+    }
+
+    public CommandResult<WorkspacePrintReceipt> Print(CharacterWorkspaceId id)
+    {
+        if (!_workspaceStore.TryGet(id, out WorkspaceDocument document))
+        {
+            return new CommandResult<WorkspacePrintReceipt>(
+                Success: false,
+                Value: null,
+                Error: "Workspace not found.");
+        }
+
+        WorkspacePayloadEnvelope envelope = ResolveEnvelope(document);
+        IRulesetWorkspaceCodec codec = _workspaceCodecResolver.Resolve(envelope.RulesetId);
+        DataExportBundle bundle = codec.BuildExportBundle(envelope);
+        WorkspacePrintReceipt receipt = BuildPrintReceipt(id, envelope.RulesetId, bundle);
+
+        return new CommandResult<WorkspacePrintReceipt>(
+            Success: true,
+            Value: receipt,
             Error: null);
     }
 
@@ -279,20 +297,127 @@ public sealed class WorkspaceService : IWorkspaceService
         return GetSection(id, sectionId) as TSection;
     }
 
-    private static TSection? TryParseExportSection<TSection>(
-        IRulesetWorkspaceCodec codec,
-        WorkspacePayloadEnvelope envelope,
-        string sectionId)
-        where TSection : class
+    private static WorkspaceExportReceipt BuildExportReceipt(
+        CharacterWorkspaceId id,
+        string rulesetId,
+        DataExportBundle bundle)
     {
-        try
+        string json = JsonSerializer.Serialize(bundle, new JsonSerializerOptions
         {
-            return codec.ParseSection(sectionId, envelope) as TSection;
-        }
-        catch
+            WriteIndented = true
+        });
+        byte[] bytes = Encoding.UTF8.GetBytes(json);
+        string baseFileName = string.IsNullOrWhiteSpace(bundle.Summary.Name) ? id.Value : bundle.Summary.Name;
+        string fileName = $"{SanitizeFileName(baseFileName)}-export.json";
+
+        return new WorkspaceExportReceipt(
+            Id: id,
+            Format: WorkspaceDocumentFormat.Json,
+            ContentBase64: Convert.ToBase64String(bytes),
+            FileName: fileName,
+            DocumentLength: bytes.Length,
+            RulesetId: RulesetDefaults.Normalize(rulesetId));
+    }
+
+    private static WorkspacePrintReceipt BuildPrintReceipt(
+        CharacterWorkspaceId id,
+        string rulesetId,
+        DataExportBundle bundle)
+    {
+        string title = string.IsNullOrWhiteSpace(bundle.Summary.Name)
+            ? $"Character {id.Value}"
+            : bundle.Summary.Name;
+        string html = BuildPrintHtml(bundle, title);
+        byte[] bytes = Encoding.UTF8.GetBytes(html);
+
+        return new WorkspacePrintReceipt(
+            Id: id,
+            ContentBase64: Convert.ToBase64String(bytes),
+            FileName: $"{SanitizeFileName(title)}-print.html",
+            MimeType: "text/html",
+            DocumentLength: bytes.Length,
+            Title: title,
+            RulesetId: RulesetDefaults.Normalize(rulesetId));
+    }
+
+    private static string BuildPrintHtml(DataExportBundle bundle, string title)
+    {
+        string encodedTitle = WebUtility.HtmlEncode(title);
+        string alias = WebUtility.HtmlEncode(bundle.Profile?.Alias ?? bundle.Summary.Alias);
+        string metatype = WebUtility.HtmlEncode(bundle.Profile?.Metatype ?? bundle.Summary.Metatype);
+        string buildMethod = WebUtility.HtmlEncode(bundle.Profile?.BuildMethod ?? bundle.Summary.BuildMethod);
+        string playerName = WebUtility.HtmlEncode(bundle.Profile?.PlayerName ?? string.Empty);
+        string concept = WebUtility.HtmlEncode(bundle.Profile?.Concept ?? string.Empty);
+        string karma = bundle.Progress?.Karma.ToString("0.##") ?? bundle.Summary.Karma.ToString("0.##");
+        string nuyen = bundle.Progress?.Nuyen.ToString("0.##") ?? bundle.Summary.Nuyen.ToString("0.##");
+        string streetCred = bundle.Progress?.StreetCred.ToString() ?? "0";
+        string initiative = bundle.Progress?.InitiateGrade.ToString() ?? "0";
+        string attributeCount = bundle.Attributes?.Count.ToString() ?? "0";
+        string skillCount = bundle.Skills?.Count.ToString() ?? "0";
+        string gearCount = bundle.Inventory?.GearCount.ToString() ?? "0";
+        string contactCount = bundle.Contacts?.Count.ToString() ?? "0";
+
+        StringBuilder html = new();
+        html.AppendLine("<!DOCTYPE html>");
+        html.AppendLine("<html lang=\"en\">");
+        html.AppendLine("<head>");
+        html.AppendLine("  <meta charset=\"utf-8\" />");
+        html.AppendLine($"  <title>{encodedTitle}</title>");
+        html.AppendLine("  <style>");
+        html.AppendLine("    body { font-family: 'Segoe UI', sans-serif; margin: 2rem; color: #111827; }");
+        html.AppendLine("    h1, h2 { margin-bottom: 0.5rem; }");
+        html.AppendLine("    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem 1.5rem; }");
+        html.AppendLine("    .card { border: 1px solid #d1d5db; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }");
+        html.AppendLine("    dt { font-weight: 700; }");
+        html.AppendLine("    dd { margin: 0 0 0.5rem 0; }");
+        html.AppendLine("  </style>");
+        html.AppendLine("</head>");
+        html.AppendLine("<body>");
+        html.AppendLine($"  <h1>{encodedTitle}</h1>");
+        html.AppendLine("  <div class=\"card\">");
+        html.AppendLine("    <h2>Profile</h2>");
+        html.AppendLine("    <dl class=\"grid\">");
+        html.AppendLine($"      <dt>Alias</dt><dd>{alias}</dd>");
+        html.AppendLine($"      <dt>Metatype</dt><dd>{metatype}</dd>");
+        html.AppendLine($"      <dt>Build Method</dt><dd>{buildMethod}</dd>");
+        html.AppendLine($"      <dt>Player</dt><dd>{playerName}</dd>");
+        html.AppendLine($"      <dt>Concept</dt><dd>{concept}</dd>");
+        html.AppendLine("    </dl>");
+        html.AppendLine("  </div>");
+        html.AppendLine("  <div class=\"card\">");
+        html.AppendLine("    <h2>Progress</h2>");
+        html.AppendLine("    <dl class=\"grid\">");
+        html.AppendLine($"      <dt>Karma</dt><dd>{WebUtility.HtmlEncode(karma)}</dd>");
+        html.AppendLine($"      <dt>Nuyen</dt><dd>{WebUtility.HtmlEncode(nuyen)}</dd>");
+        html.AppendLine($"      <dt>Street Cred</dt><dd>{WebUtility.HtmlEncode(streetCred)}</dd>");
+        html.AppendLine($"      <dt>Initiate Grade</dt><dd>{WebUtility.HtmlEncode(initiative)}</dd>");
+        html.AppendLine("    </dl>");
+        html.AppendLine("  </div>");
+        html.AppendLine("  <div class=\"card\">");
+        html.AppendLine("    <h2>Coverage</h2>");
+        html.AppendLine("    <dl class=\"grid\">");
+        html.AppendLine($"      <dt>Attributes</dt><dd>{WebUtility.HtmlEncode(attributeCount)}</dd>");
+        html.AppendLine($"      <dt>Skills</dt><dd>{WebUtility.HtmlEncode(skillCount)}</dd>");
+        html.AppendLine($"      <dt>Gear</dt><dd>{WebUtility.HtmlEncode(gearCount)}</dd>");
+        html.AppendLine($"      <dt>Contacts</dt><dd>{WebUtility.HtmlEncode(contactCount)}</dd>");
+        html.AppendLine("    </dl>");
+        html.AppendLine("  </div>");
+        html.AppendLine("</body>");
+        html.AppendLine("</html>");
+        return html.ToString();
+    }
+
+    private static string SanitizeFileName(string value)
+    {
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+        StringBuilder builder = new(value.Length);
+        foreach (char character in value)
         {
-            return null;
+            builder.Append(invalidChars.Contains(character) ? '_' : character);
         }
+
+        string sanitized = builder.ToString().Trim();
+        return string.IsNullOrWhiteSpace(sanitized) ? "workspace" : sanitized;
     }
 
     private bool TryResolveEnvelope(CharacterWorkspaceId id, out WorkspacePayloadEnvelope envelope)
@@ -309,27 +434,26 @@ public sealed class WorkspaceService : IWorkspaceService
 
     private WorkspacePayloadEnvelope ResolveEnvelope(WorkspaceDocument document)
     {
-        WorkspacePayloadEnvelope existing = document.PayloadEnvelope;
-        string normalizedRulesetId = RulesetDefaults.Normalize(
-            existing.RulesetId);
+        WorkspaceDocumentState state = document.State;
+        string normalizedRulesetId = state.RulesetId;
         IRulesetWorkspaceCodec codec = _workspaceCodecResolver.Resolve(normalizedRulesetId);
-        int schemaVersion = existing.SchemaVersion > 0
-            ? existing.SchemaVersion
+        int schemaVersion = state.SchemaVersion > 0
+            ? state.SchemaVersion
             : codec.SchemaVersion;
-        string payloadKind = string.IsNullOrWhiteSpace(existing.PayloadKind)
+        string payloadKind = string.IsNullOrWhiteSpace(state.PayloadKind)
             ? codec.PayloadKind
-            : existing.PayloadKind;
+            : state.PayloadKind;
         return new WorkspacePayloadEnvelope(
             RulesetId: normalizedRulesetId,
             SchemaVersion: schemaVersion,
             PayloadKind: payloadKind,
-            Payload: existing.Payload);
+            Payload: state.Payload);
     }
 
     private static WorkspaceDocument CreateUpdatedDocument(WorkspaceDocument current, WorkspacePayloadEnvelope updatedEnvelope)
     {
         return new WorkspaceDocument(
-            PayloadEnvelope: updatedEnvelope,
+            State: new WorkspaceDocumentState(updatedEnvelope),
             Format: current.Format);
     }
 }

@@ -1,13 +1,13 @@
 # UI Parity Checklist
 
-Generated automatically from the legacy shell contract and current contracts catalogs.
+Generated automatically from the parity oracle and current contracts catalogs.
 
 - Regenerate command: `RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh`
-- Legacy shell source: `Chummer.Web/wwwroot/index.html`
+- Parity oracle source: `docs/PARITY_ORACLE.json`
 - Tab catalog source: `Chummer.Contracts/Presentation/NavigationTabCatalog.cs`
 - Action catalog source: `Chummer.Contracts/Presentation/WorkspaceSurfaceActionCatalog.cs`
 - Control catalog source: `Chummer.Contracts/Presentation/DesktopUiControlCatalog.cs`
-- Workspace Actions coverage compares legacy `data-action` IDs to action `TargetId` values.
+- Workspace Actions coverage compares parity-oracle action IDs to action `TargetId` values.
 
 ## Summary
 

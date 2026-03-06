@@ -21,6 +21,16 @@ public interface IWorkspacePersistenceService
         IChummerClient client,
         CharacterWorkspaceId workspaceId,
         CancellationToken ct);
+
+    Task<WorkspaceExportResult> ExportAsync(
+        IChummerClient client,
+        CharacterWorkspaceId workspaceId,
+        CancellationToken ct);
+
+    Task<WorkspacePrintResult> PrintAsync(
+        IChummerClient client,
+        CharacterWorkspaceId workspaceId,
+        CancellationToken ct);
 }
 
 public sealed record WorkspaceMetadataUpdateResult(
@@ -36,4 +46,14 @@ public sealed record WorkspaceSaveResult(
 public sealed record WorkspaceDownloadResult(
     bool Success,
     WorkspaceDownloadReceipt? Receipt,
+    string? Error);
+
+public sealed record WorkspaceExportResult(
+    bool Success,
+    WorkspaceExportReceipt? Receipt,
+    string? Error);
+
+public sealed record WorkspacePrintResult(
+    bool Success,
+    WorkspacePrintReceipt? Receipt,
     string? Error);

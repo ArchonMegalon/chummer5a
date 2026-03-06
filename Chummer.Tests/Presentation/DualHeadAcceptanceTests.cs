@@ -969,7 +969,7 @@ public class DualHeadAcceptanceTests
     }
 
     [TestMethod]
-    public async Task Avalonia_and_Blazor_download_and_export_commands_prepare_matching_receipts()
+    public async Task Avalonia_and_Blazor_download_export_and_print_commands_prepare_matching_receipts()
     {
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
         byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
@@ -979,15 +979,20 @@ public class DualHeadAcceptanceTests
         AssertPendingDownloadSnapshotEqual(avaloniaSaveAs, blazorSaveAs, "save_character_as");
         Assert.AreEqual(WorkspaceDocumentFormat.Chum5Xml, avaloniaSaveAs.Format);
 
-        PendingDownloadSnapshot avaloniaDataExporter = await CaptureAvaloniaDownloadSnapshotAsync(documentBytes, "data_exporter", dialogActionId: "download");
-        PendingDownloadSnapshot blazorDataExporter = await CaptureBlazorDownloadSnapshotAsync(documentBytes, "data_exporter", dialogActionId: "download");
-        AssertPendingDownloadSnapshotEqual(avaloniaDataExporter, blazorDataExporter, "data_exporter.download");
+        PendingExportSnapshot avaloniaDataExporter = await CaptureAvaloniaExportSnapshotAsync(documentBytes, "data_exporter", dialogActionId: "download");
+        PendingExportSnapshot blazorDataExporter = await CaptureBlazorExportSnapshotAsync(documentBytes, "data_exporter", dialogActionId: "download");
+        AssertPendingExportSnapshotEqual(avaloniaDataExporter, blazorDataExporter, "data_exporter.download");
         Assert.AreEqual(WorkspaceDocumentFormat.Json, avaloniaDataExporter.Format);
 
-        PendingDownloadSnapshot avaloniaExportCharacter = await CaptureAvaloniaDownloadSnapshotAsync(documentBytes, "export_character", dialogActionId: "download");
-        PendingDownloadSnapshot blazorExportCharacter = await CaptureBlazorDownloadSnapshotAsync(documentBytes, "export_character", dialogActionId: "download");
-        AssertPendingDownloadSnapshotEqual(avaloniaExportCharacter, blazorExportCharacter, "export_character.download");
+        PendingExportSnapshot avaloniaExportCharacter = await CaptureAvaloniaExportSnapshotAsync(documentBytes, "export_character", dialogActionId: "download");
+        PendingExportSnapshot blazorExportCharacter = await CaptureBlazorExportSnapshotAsync(documentBytes, "export_character", dialogActionId: "download");
+        AssertPendingExportSnapshotEqual(avaloniaExportCharacter, blazorExportCharacter, "export_character.download");
         Assert.AreEqual(WorkspaceDocumentFormat.Json, avaloniaExportCharacter.Format);
+
+        PendingPrintSnapshot avaloniaPrint = await CaptureAvaloniaPrintSnapshotAsync(documentBytes, "print_character");
+        PendingPrintSnapshot blazorPrint = await CaptureBlazorPrintSnapshotAsync(documentBytes, "print_character");
+        AssertPendingPrintSnapshotEqual(avaloniaPrint, blazorPrint, "print_character");
+        Assert.AreEqual("text/html", avaloniaPrint.MimeType);
     }
 
     [TestMethod]
@@ -1308,6 +1313,72 @@ public class DualHeadAcceptanceTests
         return TakePendingDownloadSnapshot(ResolveBridgeState(callbackState, bridge));
     }
 
+    private static async Task<PendingExportSnapshot> CaptureAvaloniaExportSnapshotAsync(
+        byte[] documentBytes,
+        string commandId,
+        string? dialogActionId = null)
+    {
+        using HttpClient http = CreateClient();
+        var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+        using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+        await adapter.InitializeAsync(CancellationToken.None);
+        await adapter.ImportAsync(documentBytes, CancellationToken.None);
+        await adapter.ExecuteCommandAsync(commandId, CancellationToken.None);
+        if (!string.IsNullOrWhiteSpace(dialogActionId))
+        {
+            await adapter.ExecuteDialogActionAsync(dialogActionId, CancellationToken.None);
+        }
+
+        return TakePendingExportSnapshot(adapter.State);
+    }
+
+    private static async Task<PendingExportSnapshot> CaptureBlazorExportSnapshotAsync(
+        byte[] documentBytes,
+        string commandId,
+        string? dialogActionId = null)
+    {
+        using HttpClient http = CreateClient();
+        var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+        CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+        using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+        await bridge.InitializeAsync(CancellationToken.None);
+        await bridge.ImportAsync(documentBytes, CancellationToken.None);
+        await bridge.ExecuteCommandAsync(commandId, CancellationToken.None);
+        if (!string.IsNullOrWhiteSpace(dialogActionId))
+        {
+            await bridge.ExecuteDialogActionAsync(dialogActionId, CancellationToken.None);
+        }
+
+        return TakePendingExportSnapshot(ResolveBridgeState(callbackState, bridge));
+    }
+
+    private static async Task<PendingPrintSnapshot> CaptureAvaloniaPrintSnapshotAsync(
+        byte[] documentBytes,
+        string commandId)
+    {
+        using HttpClient http = CreateClient();
+        var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+        using var adapter = new CharacterOverviewViewModelAdapter(presenter);
+        await adapter.InitializeAsync(CancellationToken.None);
+        await adapter.ImportAsync(documentBytes, CancellationToken.None);
+        await adapter.ExecuteCommandAsync(commandId, CancellationToken.None);
+        return TakePendingPrintSnapshot(adapter.State);
+    }
+
+    private static async Task<PendingPrintSnapshot> CaptureBlazorPrintSnapshotAsync(
+        byte[] documentBytes,
+        string commandId)
+    {
+        using HttpClient http = CreateClient();
+        var presenter = new CharacterOverviewPresenter(new HttpChummerClient(http));
+        CharacterOverviewState callbackState = CharacterOverviewState.Empty;
+        using var bridge = new CharacterOverviewStateBridge(presenter, state => callbackState = state);
+        await bridge.InitializeAsync(CancellationToken.None);
+        await bridge.ImportAsync(documentBytes, CancellationToken.None);
+        await bridge.ExecuteCommandAsync(commandId, CancellationToken.None);
+        return TakePendingPrintSnapshot(ResolveBridgeState(callbackState, bridge));
+    }
+
     private static CharacterOverviewState ResolveBridgeState(
         CharacterOverviewState callbackState,
         CharacterOverviewStateBridge bridge)
@@ -1350,6 +1421,31 @@ public class DualHeadAcceptanceTests
             state.PendingDownload?.DocumentLength,
             state.PendingDownload?.RulesetId,
             state.PendingDownload?.ContentBase64,
+            NormalizeDownloadNotice(state.Notice));
+    }
+
+    private static PendingExportSnapshot TakePendingExportSnapshot(CharacterOverviewState state)
+    {
+        return new PendingExportSnapshot(
+            state.LastCommandId,
+            state.PendingExport?.Format,
+            NormalizeDownloadFileName(state.PendingExport?.FileName),
+            state.PendingExport?.DocumentLength,
+            state.PendingExport?.RulesetId,
+            state.PendingExport?.ContentBase64,
+            NormalizeDownloadNotice(state.Notice));
+    }
+
+    private static PendingPrintSnapshot TakePendingPrintSnapshot(CharacterOverviewState state)
+    {
+        return new PendingPrintSnapshot(
+            state.LastCommandId,
+            NormalizeDownloadFileName(state.PendingPrint?.FileName),
+            state.PendingPrint?.DocumentLength,
+            state.PendingPrint?.RulesetId,
+            state.PendingPrint?.ContentBase64,
+            state.PendingPrint?.MimeType,
+            state.PendingPrint?.Title,
             NormalizeDownloadNotice(state.Notice));
     }
 
@@ -1412,6 +1508,41 @@ public class DualHeadAcceptanceTests
         Assert.AreEqual(avalonia.RulesetId, blazor.RulesetId, $"Download ruleset mismatch for '{commandId}'.");
         Assert.AreEqual(avalonia.ContentBase64, blazor.ContentBase64, $"Download payload mismatch for '{commandId}'.");
         Assert.AreEqual(avalonia.Notice, blazor.Notice, $"Download notice mismatch for '{commandId}'.");
+    }
+
+    private static void AssertPendingExportSnapshotEqual(
+        PendingExportSnapshot avalonia,
+        PendingExportSnapshot blazor,
+        string commandId)
+    {
+        Assert.AreEqual(commandId.Split('.')[0], avalonia.LastCommandId, $"Unexpected Avalonia last command for '{commandId}'.");
+        Assert.AreEqual(commandId.Split('.')[0], blazor.LastCommandId, $"Unexpected Blazor last command for '{commandId}'.");
+        Assert.IsNotNull(avalonia.Format, $"Missing Avalonia export receipt for '{commandId}'.");
+        Assert.IsNotNull(blazor.Format, $"Missing Blazor export receipt for '{commandId}'.");
+        Assert.AreEqual(avalonia.Format, blazor.Format, $"Export format mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.FileName, blazor.FileName, $"Export file name mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.DocumentLength, blazor.DocumentLength, $"Export length mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.RulesetId, blazor.RulesetId, $"Export ruleset mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.ContentBase64, blazor.ContentBase64, $"Export payload mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.Notice, blazor.Notice, $"Export notice mismatch for '{commandId}'.");
+    }
+
+    private static void AssertPendingPrintSnapshotEqual(
+        PendingPrintSnapshot avalonia,
+        PendingPrintSnapshot blazor,
+        string commandId)
+    {
+        Assert.AreEqual(commandId, avalonia.LastCommandId, $"Unexpected Avalonia last command for '{commandId}'.");
+        Assert.AreEqual(commandId, blazor.LastCommandId, $"Unexpected Blazor last command for '{commandId}'.");
+        Assert.IsNotNull(avalonia.FileName, $"Missing Avalonia print receipt for '{commandId}'.");
+        Assert.IsNotNull(blazor.FileName, $"Missing Blazor print receipt for '{commandId}'.");
+        Assert.AreEqual(avalonia.FileName, blazor.FileName, $"Print file name mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.DocumentLength, blazor.DocumentLength, $"Print length mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.RulesetId, blazor.RulesetId, $"Print ruleset mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.ContentBase64, blazor.ContentBase64, $"Print payload mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.MimeType, blazor.MimeType, $"Print mime type mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.Title, blazor.Title, $"Print title mismatch for '{commandId}'.");
+        Assert.AreEqual(avalonia.Notice, blazor.Notice, $"Print notice mismatch for '{commandId}'.");
     }
 
     private static ShellRegionSnapshot BuildShellRegionSnapshot(CharacterOverviewState state, DefaultCommandAvailabilityEvaluator evaluator)
@@ -1521,6 +1652,25 @@ public class DualHeadAcceptanceTests
         int? DocumentLength,
         string? RulesetId,
         string? ContentBase64,
+        string? Notice);
+
+    private sealed record PendingExportSnapshot(
+        string? LastCommandId,
+        WorkspaceDocumentFormat? Format,
+        string? FileName,
+        int? DocumentLength,
+        string? RulesetId,
+        string? ContentBase64,
+        string? Notice);
+
+    private sealed record PendingPrintSnapshot(
+        string? LastCommandId,
+        string? FileName,
+        int? DocumentLength,
+        string? RulesetId,
+        string? ContentBase64,
+        string? MimeType,
+        string? Title,
         string? Notice);
 
     private static string ResolveActiveRulesetId(CharacterOverviewState state)

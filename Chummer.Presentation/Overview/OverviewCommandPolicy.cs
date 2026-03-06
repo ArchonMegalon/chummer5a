@@ -21,7 +21,6 @@ public static class OverviewCommandPolicy
         "dumpshock",
         "print_setup",
         "print_multiple",
-        "print_character",
         "dice_roller",
         "global_settings",
         "switch_ruleset",
@@ -47,6 +46,7 @@ public static class OverviewCommandPolicy
     {
         "save_character",
         "save_character_as",
+        "print_character",
         "refresh_character",
         "new_character",
         "new_critter",

@@ -362,9 +362,51 @@ public sealed class HttpChummerClient : IChummerClient
             Error: null);
     }
 
-    public Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct)
+    public async Task<CommandResult<WorkspaceExportReceipt>> ExportAsync(CharacterWorkspaceId id, CancellationToken ct)
     {
-        return GetRequiredAsync<DataExportBundle>($"/api/workspaces/{id.Value}/export", ct);
+        WorkspaceExportResponse payload = await GetRequiredAsync<WorkspaceExportResponse>($"/api/workspaces/{id.Value}/export", ct);
+        if (string.IsNullOrWhiteSpace(payload.Id))
+        {
+            return new CommandResult<WorkspaceExportReceipt>(
+                Success: false,
+                Value: null,
+                Error: "Export response did not include workspace id.");
+        }
+
+        return new CommandResult<WorkspaceExportReceipt>(
+            Success: true,
+            Value: new WorkspaceExportReceipt(
+                Id: new CharacterWorkspaceId(payload.Id),
+                Format: ParseWorkspaceDocumentFormat(payload.Format),
+                ContentBase64: payload.ContentBase64 ?? string.Empty,
+                FileName: payload.FileName ?? $"{payload.Id}-export.json",
+                DocumentLength: payload.DocumentLength,
+                RulesetId: RulesetDefaults.Normalize(payload.RulesetId)),
+            Error: null);
+    }
+
+    public async Task<CommandResult<WorkspacePrintReceipt>> PrintAsync(CharacterWorkspaceId id, CancellationToken ct)
+    {
+        WorkspacePrintResponse payload = await GetRequiredAsync<WorkspacePrintResponse>($"/api/workspaces/{id.Value}/print", ct);
+        if (string.IsNullOrWhiteSpace(payload.Id))
+        {
+            return new CommandResult<WorkspacePrintReceipt>(
+                Success: false,
+                Value: null,
+                Error: "Print response did not include workspace id.");
+        }
+
+        return new CommandResult<WorkspacePrintReceipt>(
+            Success: true,
+            Value: new WorkspacePrintReceipt(
+                Id: new CharacterWorkspaceId(payload.Id),
+                ContentBase64: payload.ContentBase64 ?? string.Empty,
+                FileName: payload.FileName ?? $"{payload.Id}-print.html",
+                MimeType: string.IsNullOrWhiteSpace(payload.MimeType) ? "text/html" : payload.MimeType,
+                DocumentLength: payload.DocumentLength,
+                Title: payload.Title ?? "Character Print",
+                RulesetId: RulesetDefaults.Normalize(payload.RulesetId)),
+            Error: null);
     }
 
     private static string? NormalizeWorkspaceId(string? workspaceId)
@@ -412,6 +454,14 @@ public sealed class HttpChummerClient : IChummerClient
         return normalized is null
             ? null
             : new CharacterWorkspaceId(normalized);
+    }
+
+    private static WorkspaceDocumentFormat ParseWorkspaceDocumentFormat(string? rawFormat)
+    {
+        return !string.IsNullOrWhiteSpace(rawFormat)
+            && Enum.TryParse(rawFormat, ignoreCase: true, out WorkspaceDocumentFormat parsedFormat)
+            ? parsedFormat
+            : WorkspaceDocumentFormat.Chum5Xml;
     }
 
     private async Task<T> GetRequiredAsync<T>(string path, CancellationToken ct)

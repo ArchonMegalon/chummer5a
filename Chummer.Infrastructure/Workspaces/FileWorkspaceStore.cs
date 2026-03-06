@@ -90,10 +90,8 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
 
         WorkspaceDocumentFormat format = ParseFormat(record.Format);
         string rulesetId = ResolveRulesetId(record);
-        WorkspacePayloadEnvelope envelope = ResolveEnvelope(record, content, rulesetId);
-        document = new WorkspaceDocument(
-            PayloadEnvelope: envelope,
-            Format: format);
+        WorkspaceDocumentState state = ResolveState(record, content, rulesetId);
+        document = new WorkspaceDocument(state, format);
         return true;
     }
 
@@ -103,10 +101,9 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         if (path is null)
             throw new InvalidOperationException("Workspace id contains unsupported characters.");
 
-        WorkspacePayloadEnvelope envelope = ResolveEnvelope(document);
         PersistedWorkspaceRecord record = new(document.Format.ToString())
         {
-            Envelope = envelope
+            Envelope = NormalizeEnvelope(document.State)
         };
         string tempPath = $"{path}.tmp";
         File.WriteAllText(tempPath, JsonSerializer.Serialize(record));
@@ -181,26 +178,7 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         return RulesetDefaults.Normalize(record.RulesetId);
     }
 
-    private static WorkspacePayloadEnvelope ResolveEnvelope(
-        WorkspaceDocument document)
-    {
-        WorkspacePayloadEnvelope existingEnvelope = document.PayloadEnvelope;
-        string normalizedRulesetId = RulesetDefaults.Normalize(
-            existingEnvelope.RulesetId);
-        int schemaVersion = existingEnvelope.SchemaVersion > 0
-            ? existingEnvelope.SchemaVersion
-            : CurrentWorkspaceSchemaVersion;
-        string payloadKind = string.IsNullOrWhiteSpace(existingEnvelope.PayloadKind)
-            ? WorkspacePayloadKind
-            : existingEnvelope.PayloadKind;
-        return new WorkspacePayloadEnvelope(
-            RulesetId: normalizedRulesetId,
-            SchemaVersion: schemaVersion,
-            PayloadKind: payloadKind,
-            Payload: existingEnvelope.Payload);
-    }
-
-    private static WorkspacePayloadEnvelope ResolveEnvelope(
+    private static WorkspaceDocumentState ResolveState(
         PersistedWorkspaceRecord record,
         string content,
         string fallbackRulesetId)
@@ -214,11 +192,26 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
             ? WorkspacePayloadKind
             : envelope.PayloadKind;
         string payload = envelope?.Payload ?? content;
+        return new WorkspaceDocumentState(
+            rulesetId: normalizedRulesetId,
+            schemaVersion: schemaVersion,
+            payloadKind: payloadKind,
+            payload: payload);
+    }
+
+    private static WorkspacePayloadEnvelope NormalizeEnvelope(WorkspaceDocumentState state)
+    {
+        int schemaVersion = state.SchemaVersion > 0
+            ? state.SchemaVersion
+            : CurrentWorkspaceSchemaVersion;
+        string payloadKind = string.IsNullOrWhiteSpace(state.PayloadKind)
+            ? WorkspacePayloadKind
+            : state.PayloadKind;
         return new WorkspacePayloadEnvelope(
-            RulesetId: normalizedRulesetId,
+            RulesetId: state.RulesetId,
             SchemaVersion: schemaVersion,
             PayloadKind: payloadKind,
-            Payload: payload);
+            Payload: state.Payload);
     }
 
     private sealed record PersistedWorkspaceRecord(string Format)

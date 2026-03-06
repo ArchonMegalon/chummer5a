@@ -4,8 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Chummer.Contracts.Presentation;
+using Chummer.Presentation.Overview;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests.Compliance;
@@ -16,12 +18,7 @@ public class MigrationComplianceTests
     private static readonly Regex SectionMethodRegex = new(@"\bCharacter[A-Za-z0-9_]+\s+Parse([A-Za-z0-9_]+)\(string xml\)", RegexOptions.Compiled);
     private static readonly Regex SectionEndpointRegex = new(@"/api/characters/sections/([a-z0-9]+)", RegexOptions.Compiled);
     private static readonly Regex SectionMapCallRegex = new(@"MapSection\(app,\s*""([a-z0-9]+)""", RegexOptions.Compiled);
-    private static readonly Regex UiActionRegex = new(@"data-action=""([a-z0-9]+)""", RegexOptions.Compiled);
-    private static readonly Regex CommandRegex = new(@"data-command=""([a-z_]+)""", RegexOptions.Compiled);
-    private static readonly Regex RunCommandRegex = new(@"data-run-command=""([a-z_]+)""", RegexOptions.Compiled);
-    private static readonly Regex MenuCommandRegex = new(@"\[\s*""([a-z_]+)""\s*,", RegexOptions.Compiled);
-    private static readonly Regex TabButtonRegex = new(@"<button class=""tab-btn""\s+data-tab=""([a-z0-9-]+)""", RegexOptions.Compiled);
-    private static readonly Regex UiControlRegex = new(@"data-ui-control=""([a-z_]+)""", RegexOptions.Compiled);
+    private static readonly string[] SummaryValidateMetadataTargets = ["summary", "validate", "metadata"];
 
     private static readonly HashSet<string> RequiredDesktopCommands = AppCommandCatalog.All
         .Select(command => command.Id)
@@ -33,7 +30,7 @@ public class MigrationComplianceTests
     {
         string interfacePath = FindPath("Chummer.Infrastructure", "Xml", "ICharacterSectionService.cs");
         string endpointDirectory = FindDirectory("Chummer.Api", "Endpoints");
-        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
+        HashSet<string> parityOracleActions = LoadParityOracleIds("workspaceActions");
 
         string interfaceText = File.ReadAllText(interfacePath);
         string endpointText = string.Join(
@@ -41,7 +38,6 @@ public class MigrationComplianceTests
             Directory.EnumerateFiles(endpointDirectory, "*.cs", SearchOption.AllDirectories)
                 .OrderBy(path => path, StringComparer.Ordinal)
                 .Select(File.ReadAllText));
-        string indexText = File.ReadAllText(indexPath);
 
         HashSet<string> expectedSections = SectionMethodRegex.Matches(interfaceText)
             .Select(match => ToSectionName(match.Groups[1].Value))
@@ -53,43 +49,32 @@ public class MigrationComplianceTests
         endpointSections.UnionWith(SectionMapCallRegex.Matches(endpointText)
             .Select(match => match.Groups[1].Value));
 
-        HashSet<string> uiActions = UiActionRegex.Matches(indexText)
-            .Select(match => match.Groups[1].Value)
-            .ToHashSet(StringComparer.Ordinal);
-
         CollectionAssert.AreEquivalent(expectedSections.OrderBy(x => x).ToList(), endpointSections.OrderBy(x => x).ToList(),
             "API endpoint set must match ICharacterSectionService parser set.");
 
-        List<string> missingInUi = expectedSections.Where(section => !uiActions.Contains(section)).OrderBy(x => x).ToList();
+        List<string> missingInUi = expectedSections.Where(section => !parityOracleActions.Contains(section)).OrderBy(x => x).ToList();
         Assert.IsEmpty(missingInUi, "Missing UI actions for sections: " + string.Join(", ", missingInUi));
     }
 
     [TestMethod]
-    [TestCategory("LegacyShellRegression")]
     public void Desktop_shell_commands_exist_and_have_handlers()
     {
-        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
-        string indexText = File.ReadAllText(indexPath);
-
-        HashSet<string> commandIds = CommandRegex.Matches(indexText)
-            .Select(match => match.Groups[1].Value)
-            .ToHashSet(StringComparer.Ordinal);
-        HashSet<string> runCommands = RunCommandRegex.Matches(indexText)
-            .Select(match => match.Groups[1].Value)
-            .ToHashSet(StringComparer.Ordinal);
-        HashSet<string> menuCommands = MenuCommandRegex.Matches(indexText)
-            .Select(match => match.Groups[1].Value)
-            .ToHashSet(StringComparer.Ordinal);
-        commandIds.UnionWith(runCommands);
-        commandIds.UnionWith(menuCommands);
-
-        List<string> missingCommands = RequiredDesktopCommands.Where(command => !commandIds.Contains(command)).OrderBy(x => x).ToList();
-        Assert.IsEmpty(missingCommands, "Missing desktop command buttons: " + string.Join(", ", missingCommands));
+        string dialogFactoryPath = FindPath("Chummer.Presentation", "Overview", "DesktopDialogFactory.cs");
+        string dialogFactoryText = File.ReadAllText(dialogFactoryPath);
+        string presenterTestsPath = FindPath("Chummer.Tests", "Presentation", "CharacterOverviewPresenterTests.cs");
+        string presenterTestsText = File.ReadAllText(presenterTestsPath);
 
         foreach (string command in RequiredDesktopCommands)
         {
-            StringAssert.Contains(indexText, $"{command}:", $"Missing command handler for '{command}'.");
+            Assert.IsTrue(OverviewCommandPolicy.IsKnownSharedCommand(command), $"Missing shared command classification for '{command}'.");
+            if (OverviewCommandPolicy.IsDialogCommand(command))
+            {
+                StringAssert.Contains(dialogFactoryText, $"\"{command}\" =>", $"Missing dialog template for '{command}'.");
+            }
         }
+
+        StringAssert.Contains(presenterTestsText, "ExecuteCommandAsync_all_catalog_commands_are_handled");
+        StringAssert.Contains(presenterTestsText, "ExecuteCommandAsync_dialog_commands_use_non_generic_dialog_templates");
     }
 
     [TestMethod]
@@ -165,7 +150,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(workspaceEndpointsText, "workspaceService.Validate(workspaceId)");
         StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/export");
         StringAssert.Contains(workspaceEndpointsText, "workspaceService.Export(workspaceId)");
-        StringAssert.Contains(clientContractText, "Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct);");
+        StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/print");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Print(workspaceId)");
+        StringAssert.Contains(clientContractText, "Task<CommandResult<WorkspaceExportReceipt>> ExportAsync(CharacterWorkspaceId id, CancellationToken ct);");
+        StringAssert.Contains(clientContractText, "Task<CommandResult<WorkspacePrintReceipt>> PrintAsync(CharacterWorkspaceId id, CancellationToken ct);");
     }
 
     [TestMethod]
@@ -276,12 +264,7 @@ public class MigrationComplianceTests
     [TestMethod]
     public void Navigation_tab_catalog_ids_are_unique_and_cover_legacy_shell_tabs()
     {
-        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
-        string indexText = File.ReadAllText(indexPath);
-
-        HashSet<string> legacyTabIds = TabButtonRegex.Matches(indexText)
-            .Select(match => match.Groups[1].Value)
-            .ToHashSet(StringComparer.Ordinal);
+        HashSet<string> legacyTabIds = LoadParityOracleIds("tabs");
 
         List<string> duplicateIds = NavigationTabCatalog.All
             .GroupBy(tab => tab.Id, StringComparer.Ordinal)
@@ -315,12 +298,7 @@ public class MigrationComplianceTests
     [TestMethod]
     public void Workspace_surface_action_catalog_covers_legacy_shell_actions()
     {
-        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
-        string indexText = File.ReadAllText(indexPath);
-
-        HashSet<string> legacyActionIds = UiActionRegex.Matches(indexText)
-            .Select(match => match.Groups[1].Value)
-            .ToHashSet(StringComparer.Ordinal);
+        HashSet<string> legacyActionIds = LoadParityOracleIds("workspaceActions");
 
         HashSet<string> catalogTargets = WorkspaceSurfaceActionCatalog.All
             .Select(action => action.TargetId)
@@ -344,8 +322,6 @@ public class MigrationComplianceTests
     [TestMethod]
     public void Desktop_ui_control_catalog_covers_legacy_shell_controls()
     {
-        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
-        string indexText = File.ReadAllText(indexPath);
         string presenterPath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.cs");
         string dialogFactoryPath = FindPath("Chummer.Presentation", "Overview", "DesktopDialogFactory.cs");
         string dialogTemplateText = string.Join(
@@ -353,9 +329,7 @@ public class MigrationComplianceTests
             File.ReadAllText(presenterPath),
             File.ReadAllText(dialogFactoryPath));
 
-        HashSet<string> legacyControlIds = UiControlRegex.Matches(indexText)
-            .Select(match => match.Groups[1].Value)
-            .ToHashSet(StringComparer.Ordinal);
+        HashSet<string> legacyControlIds = LoadParityOracleIds("desktopControls");
         HashSet<string> catalogControlIds = DesktopUiControlCatalog.All
             .Select(control => control.Id)
             .ToHashSet(StringComparer.Ordinal);
@@ -374,130 +348,164 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
-    [TestCategory("LegacyShellRegression")]
     public void Ui_exposes_summary_validate_and_metadata_actions()
     {
-        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
-        string indexText = File.ReadAllText(indexPath);
-
-        StringAssert.Contains(indexText, "data-action=\"summary\"");
-        StringAssert.Contains(indexText, "data-action=\"validate\"");
-        StringAssert.Contains(indexText, "data-action=\"metadata\"");
-
-        StringAssert.Contains(indexText, "action === \"summary\"");
-        StringAssert.Contains(indexText, "action === \"validate\"");
-        StringAssert.Contains(indexText, "action === \"metadata\"");
-    }
-
-    [TestMethod]
-    [TestCategory("LegacyShellRegression")]
-    public void Critical_commands_are_not_placeholder_stubs()
-    {
-        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
-        string indexText = File.ReadAllText(indexPath);
-
-        string[] disallowedPatterns =
-        {
-            "hero_lab_importer: () => showNote(",
-            "print_setup: () => showNote(",
-            "close_all: () => showNote(",
-            "restart: () => location.reload()"
-        };
-
-        foreach (string pattern in disallowedPatterns)
-        {
-            Assert.IsFalse(indexText.Contains(pattern, StringComparison.Ordinal),
-                $"Placeholder command implementation still present: {pattern}");
-        }
-    }
-
-    [TestMethod]
-    [TestCategory("LegacyShellRegression")]
-    public void Desktop_shell_layout_contains_core_winforms_like_regions()
-    {
-        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
-        string indexText = File.ReadAllText(indexPath);
-
-        StringAssert.Contains(indexText, "class=\"menu-bar\"");
-        StringAssert.Contains(indexText, "id=\"mdiStrip\"");
-        StringAssert.Contains(indexText, "Character Navigator");
-        StringAssert.Contains(indexText, "id=\"openCharactersTree\"");
-        StringAssert.Contains(indexText, "id=\"charState\"");
-        StringAssert.Contains(indexText, "id=\"serviceState\"");
-        StringAssert.Contains(indexText, "id=\"timeState\"");
-        StringAssert.Contains(indexText, "id=\"complianceState\"");
-        StringAssert.Contains(indexText, "Desktop Summary Header");
-        StringAssert.Contains(indexText, "data-ui-control=");
-        StringAssert.Contains(indexText, "function handleUiControl(");
-
-        HashSet<string> tabIds = TabButtonRegex.Matches(indexText)
-            .Select(match => match.Groups[1].Value)
+        HashSet<string> actionTargets = WorkspaceSurfaceActionCatalog.All
+            .Select(action => action.TargetId)
             .ToHashSet(StringComparer.Ordinal);
 
-        Assert.IsGreaterThanOrEqualTo(16, tabIds.Count, $"Expected at least 16 desktop-style navigation tabs, got {tabIds.Count}.");
-        CollectionAssert.Contains(tabIds.ToList(), "tab-info", "Missing Info navigation tab.");
-        CollectionAssert.Contains(tabIds.ToList(), "tab-gear", "Missing Gear navigation tab.");
-        CollectionAssert.Contains(tabIds.ToList(), "tab-magician", "Missing Magician navigation tab.");
-        CollectionAssert.Contains(tabIds.ToList(), "tab-improvements", "Missing Improvements navigation tab.");
+        CollectionAssert.IsSubsetOf(
+            SummaryValidateMetadataTargets,
+            actionTargets.OrderBy(value => value, StringComparer.Ordinal).ToArray());
+        Assert.IsTrue(WorkspaceSurfaceActionCatalog.All.Any(action => action.Kind == WorkspaceSurfaceActionKind.Summary));
+        Assert.IsTrue(WorkspaceSurfaceActionCatalog.All.Any(action => action.Kind == WorkspaceSurfaceActionKind.Validate));
+        Assert.IsTrue(WorkspaceSurfaceActionCatalog.All.Any(action => action.Kind == WorkspaceSurfaceActionKind.Metadata));
     }
 
     [TestMethod]
-    [TestCategory("LegacyShellRegression")]
+    public void Critical_commands_are_not_placeholder_stubs()
+    {
+        string presenterTestsPath = FindPath("Chummer.Tests", "Presentation", "CharacterOverviewPresenterTests.cs");
+        string presenterTestsText = File.ReadAllText(presenterTestsPath);
+
+        StringAssert.Contains(presenterTestsText, "ExecuteCommandAsync_all_catalog_commands_are_handled");
+        StringAssert.Contains(presenterTestsText, "ExecuteCommandAsync_dialog_commands_use_non_generic_dialog_templates");
+        StringAssert.Contains(presenterTestsText, "Print_character_command_prepares_html_preview");
+    }
+
+    [TestMethod]
+    public void Desktop_shell_layout_contains_core_winforms_like_regions()
+    {
+        string blazorShellPath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor");
+        string blazorShellText = File.ReadAllText(blazorShellPath);
+        string avaloniaWindowPath = FindPath("Chummer.Avalonia", "MainWindow.axaml");
+        string avaloniaWindowText = File.ReadAllText(avaloniaWindowPath);
+
+        StringAssert.Contains(blazorShellText, "<MenuBar");
+        StringAssert.Contains(blazorShellText, "<ToolStrip");
+        StringAssert.Contains(blazorShellText, "<MdiStrip");
+        StringAssert.Contains(blazorShellText, "<WorkspaceLeftPane");
+        StringAssert.Contains(blazorShellText, "<SummaryHeader");
+        StringAssert.Contains(blazorShellText, "<SectionPane");
+        StringAssert.Contains(blazorShellText, "<StatusStrip");
+        StringAssert.Contains(blazorShellText, "<DialogHost");
+
+        StringAssert.Contains(avaloniaWindowText, "x:Name=\"ShellMenuBarControl\"");
+        StringAssert.Contains(avaloniaWindowText, "x:Name=\"WorkspaceStripControl\"");
+        StringAssert.Contains(avaloniaWindowText, "x:Name=\"NavigatorPaneControl\"");
+        StringAssert.Contains(avaloniaWindowText, "x:Name=\"SectionHostControl\"");
+        StringAssert.Contains(avaloniaWindowText, "x:Name=\"SummaryHeaderControl\"");
+        StringAssert.Contains(avaloniaWindowText, "x:Name=\"StatusStripControl\"");
+
+        HashSet<string> tabIds = NavigationTabCatalog.All
+            .Select(tab => tab.Id)
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.IsGreaterThanOrEqualTo(LoadParityOracleIds("tabs").Count, tabIds.Count);
+        CollectionAssert.Contains(tabIds.ToList(), "tab-info");
+        CollectionAssert.Contains(tabIds.ToList(), "tab-gear");
+        CollectionAssert.Contains(tabIds.ToList(), "tab-magician");
+        CollectionAssert.Contains(tabIds.ToList(), "tab-improvements");
+    }
+
+    [TestMethod]
     public void Workspace_uses_live_document_state_and_recent_file_hooks()
     {
-        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
-        string indexText = File.ReadAllText(indexPath);
+        string sessionStatePath = FindPath("Chummer.Presentation", "Overview", "WorkspaceSessionState.cs");
+        string sessionStateText = File.ReadAllText(sessionStatePath);
+        string sessionPresenterPath = FindPath("Chummer.Presentation", "Overview", "WorkspaceSessionPresenter.cs");
+        string sessionPresenterText = File.ReadAllText(sessionPresenterPath);
+        string shellPresenterPath = FindPath("Chummer.Presentation", "Shell", "ShellPresenter.cs");
+        string shellPresenterText = File.ReadAllText(shellPresenterPath);
 
-        StringAssert.Contains(indexText, "const openDocs = [];");
-        StringAssert.Contains(indexText, "const recentFiles = [];");
-        StringAssert.Contains(indexText, "function syncCurrentDocumentFromForm()");
-        StringAssert.Contains(indexText, "function openDocument(");
-        StringAssert.Contains(indexText, "function addRecentFile(");
-        StringAssert.Contains(indexText, "function executeCommand(");
-        StringAssert.Contains(indexText, "open_recent_");
-        StringAssert.Contains(indexText, "clear_unpinned_items");
-        StringAssert.Contains(indexText, "openCharactersTreeEl.addEventListener(\"click\"");
-        StringAssert.Contains(indexText, "mdiStripEl.addEventListener(\"click\"");
+        StringAssert.Contains(sessionStateText, "ActiveWorkspaceId");
+        StringAssert.Contains(sessionStateText, "OpenWorkspaces");
+        StringAssert.Contains(sessionStateText, "RecentWorkspaceIds");
+        StringAssert.Contains(sessionPresenterText, "TouchRecent");
+        StringAssert.Contains(sessionPresenterText, "BuildRecentList");
+        StringAssert.Contains(sessionPresenterText, "SelectMostRecentOpenWorkspace");
+        StringAssert.Contains(shellPresenterText, "ActiveWorkspaceId");
+        StringAssert.Contains(shellPresenterText, "OpenWorkspaces");
+        StringAssert.Contains(shellPresenterText, "BuildUpdatedWorkspaceTabMap");
     }
 
     [TestMethod]
-    [TestCategory("LegacyShellRegression")]
+    public void Character_overview_presenter_delegates_workspace_lifecycle_sequencing_to_coordinator()
+    {
+        string presenterPath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.cs");
+        string presenterText = File.ReadAllText(presenterPath);
+        string presenterWorkspacePath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.Workspace.cs");
+        string presenterWorkspaceText = File.ReadAllText(presenterWorkspacePath);
+        string coordinatorContractPath = FindPath("Chummer.Presentation", "Overview", "IWorkspaceOverviewLifecycleCoordinator.cs");
+        string coordinatorContractText = File.ReadAllText(coordinatorContractPath);
+        string coordinatorPath = FindPath("Chummer.Presentation", "Overview", "WorkspaceOverviewLifecycleCoordinator.cs");
+        string coordinatorText = File.ReadAllText(coordinatorPath);
+
+        StringAssert.Contains(presenterText, "IWorkspaceOverviewLifecycleCoordinator");
+        StringAssert.Contains(coordinatorContractText, "interface IWorkspaceOverviewLifecycleCoordinator");
+        StringAssert.Contains(presenterWorkspaceText, "_workspaceOverviewLifecycleCoordinator.ImportAsync");
+        StringAssert.Contains(presenterWorkspaceText, "_workspaceOverviewLifecycleCoordinator.LoadAsync");
+        StringAssert.Contains(presenterWorkspaceText, "_workspaceOverviewLifecycleCoordinator.SwitchAsync");
+        StringAssert.Contains(presenterWorkspaceText, "_workspaceOverviewLifecycleCoordinator.CloseAsync");
+        StringAssert.Contains(presenterWorkspaceText, "_workspaceOverviewLifecycleCoordinator.CloseAllAsync");
+        StringAssert.Contains(presenterWorkspaceText, "_workspaceOverviewLifecycleCoordinator.CreateResetState");
+
+        Assert.IsFalse(
+            presenterWorkspaceText.Contains("_client.ImportAsync", StringComparison.Ordinal),
+            "CharacterOverviewPresenter workspace flow should not import workspaces directly.");
+        Assert.IsFalse(
+            presenterWorkspaceText.Contains("_workspaceSessionPresenter.Close(", StringComparison.Ordinal),
+            "CharacterOverviewPresenter workspace flow should not own close sequencing directly.");
+        Assert.IsFalse(
+            presenterWorkspaceText.Contains("_workspaceSessionActivationService.Activate", StringComparison.Ordinal),
+            "CharacterOverviewPresenter workspace flow should not own workspace activation sequencing directly.");
+        Assert.IsFalse(
+            presenterWorkspaceText.Contains("_workspaceOverviewLoader.LoadAsync", StringComparison.Ordinal),
+            "CharacterOverviewPresenter workspace flow should not load overview payloads directly.");
+
+        StringAssert.Contains(coordinatorText, "_workspaceOverviewLoader.LoadAsync");
+        StringAssert.Contains(coordinatorText, "_workspaceRemoteCloseService.TryCloseAsync");
+        StringAssert.Contains(coordinatorText, "_workspaceSessionActivationService.Activate");
+        StringAssert.Contains(coordinatorText, "_workspaceViewStateStore.Capture");
+        StringAssert.Contains(coordinatorText, "_workspaceShellStateFactory.CreateEmptyShellState");
+    }
+
+    [TestMethod]
     public void Ui_click_paths_are_wired_for_commands_controls_and_dialogs()
     {
-        string indexPath = FindPath("Chummer.Web", "wwwroot", "index.html");
-        string indexText = File.ReadAllText(indexPath);
+        string blazorShellPath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor");
+        string blazorShellText = File.ReadAllText(blazorShellPath);
+        string dialogFactoryPath = FindPath("Chummer.Presentation", "Overview", "DesktopDialogFactory.cs");
+        string dialogFactoryText = File.ReadAllText(dialogFactoryPath);
 
-        StringAssert.Contains(indexText, "for (const button of document.querySelectorAll(\"[data-command]\"))");
-        StringAssert.Contains(indexText, "await executeCommand(command)");
-        StringAssert.Contains(indexText, "for (const button of document.querySelectorAll(\"[data-ui-control]\"))");
-        StringAssert.Contains(indexText, "handleUiControl(button.dataset.uiControl)");
-        StringAssert.Contains(indexText, "openDesktopDialog(");
-        StringAssert.Contains(indexText, "dialogCloseEl.addEventListener(\"click\", closeDesktopDialog)");
-        StringAssert.Contains(indexText, "dialogBackdropEl.addEventListener(\"click\"");
-        StringAssert.Contains(indexText, "event.key === \"Escape\"");
+        StringAssert.Contains(blazorShellText, "ExecuteCommandRequested=\"@ExecuteCommandAsync\"");
+        StringAssert.Contains(blazorShellText, "HandleUiControlRequested=\"@HandleUiControlAsync\"");
+        StringAssert.Contains(blazorShellText, "ExecuteDialogActionRequested=\"@ExecuteDialogActionAsync\"");
+        StringAssert.Contains(blazorShellText, "CloseRequested=\"@CloseDialogAsync\"");
+        StringAssert.Contains(blazorShellText, "FieldInputRequested=\"@OnDialogFieldInputAsync\"");
+        StringAssert.Contains(blazorShellText, "FieldCheckboxRequested=\"@OnDialogCheckboxChangedAsync\"");
 
         string[] dialogBackedCommands =
-        {
-            "print_setup: () => {",
-            "dice_roller: async () => {",
-            "global_settings: () => {",
-            "character_settings: () => {",
-            "translator: async () => {",
-            "xml_editor: () => {",
-            "master_index: async () => {",
-            "character_roster: async () => {",
-            "data_exporter: async () => {",
-            "report_bug: () => {",
-            "about: async () => {"
-        };
+        [
+            "print_setup",
+            "dice_roller",
+            "global_settings",
+            "character_settings",
+            "translator",
+            "xml_editor",
+            "master_index",
+            "character_roster",
+            "data_exporter",
+            "report_bug",
+            "about"
+        ];
 
         foreach (string command in dialogBackedCommands)
         {
-            StringAssert.Contains(indexText, command, $"Expected dialog-backed command definition missing: {command}");
+            StringAssert.Contains(dialogFactoryText, $"\"{command}\" =>", $"Expected dialog-backed command definition missing: {command}");
         }
 
         string[] dialogControlIds =
-        {
+        [
             "globalUiScale",
             "globalTheme",
             "globalLanguage",
@@ -510,24 +518,12 @@ public class MigrationComplianceTests
             "translatorSearch",
             "xmlEditorDialog",
             "dataExportPreview"
-        };
+        ];
 
         foreach (string controlId in dialogControlIds)
         {
-            StringAssert.Contains(indexText, controlId, $"Expected dialog control id missing: {controlId}");
+            StringAssert.Contains(dialogFactoryText, controlId, $"Expected dialog control id missing: {controlId}");
         }
-
-        StringAssert.Contains(indexText, "const uiControlHandlers = {");
-        HashSet<string> declaredControls = UiControlRegex.Matches(indexText)
-            .Select(match => match.Groups[1].Value)
-            .ToHashSet(StringComparer.Ordinal);
-        List<string> missingHandlers = declaredControls
-            .Where(controlId => !indexText.Contains($"{controlId}:", StringComparison.Ordinal))
-            .OrderBy(x => x)
-            .ToList();
-        Assert.IsEmpty(missingHandlers, "Missing ui control handler mappings: " + string.Join(", ", missingHandlers));
-        Assert.IsFalse(indexText.Contains("showNote(`Desktop control '${controlId}' invoked on", StringComparison.Ordinal),
-            "Generic ui control placeholder behavior is still present.");
     }
 
     [TestMethod]
@@ -854,8 +850,11 @@ public class MigrationComplianceTests
         string portalSettingsPath = FindPath("Chummer.Portal", "appsettings.json");
         string portalSettingsText = File.ReadAllText(portalSettingsPath);
 
-        StringAssert.Contains(readmeText, "Modern migration path (Docker branch)");
+        StringAssert.Contains(readmeText, "Current multi-head runtime (Docker branch)");
         StringAssert.Contains(readmeText, "multi-head UI stack (`Chummer.Blazor`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`)");
+        StringAssert.Contains(readmeText, "## Decommissioned Legacy Runtime Components");
+        StringAssert.Contains(readmeText, "`chummer-web` is no longer an active runtime service or parity-test dependency.");
+        StringAssert.Contains(readmeText, "Static parity extraction from `Chummer.Web/wwwroot/index.html` has been replaced by the checked-in parity oracle");
         StringAssert.Contains(readmeText, "chummer-blazor-portal");
         StringAssert.Contains(readmeText, "chummer-avalonia-browser");
         StringAssert.Contains(readmeText, "chummer-portal");
@@ -1237,6 +1236,10 @@ public class MigrationComplianceTests
     {
         string workspaceServicePath = FindPath("Chummer.Infrastructure", "Workspaces", "WorkspaceService.cs");
         string workspaceServiceText = File.ReadAllText(workspaceServicePath);
+        string workspaceModelsPath = FindPath("Chummer.Contracts", "Workspaces", "CharacterWorkspaceModels.cs");
+        string workspaceModelsText = File.ReadAllText(workspaceModelsPath);
+        string workspaceStorePath = FindPath("Chummer.Infrastructure", "Workspaces", "FileWorkspaceStore.cs");
+        string workspaceStoreText = File.ReadAllText(workspaceStorePath);
         string codecContractPath = FindPath("Chummer.Application", "Workspaces", "IRulesetWorkspaceCodec.cs");
         string codecContractText = File.ReadAllText(codecContractPath);
         string codecResolverContractPath = FindPath("Chummer.Application", "Workspaces", "IRulesetWorkspaceCodecResolver.cs");
@@ -1254,16 +1257,25 @@ public class MigrationComplianceTests
         StringAssert.Contains(codecContractText, "Validate");
         StringAssert.Contains(codecContractText, "UpdateMetadata");
         StringAssert.Contains(codecContractText, "WorkspaceDownloadReceipt BuildDownload");
+        StringAssert.Contains(codecContractText, "DataExportBundle BuildExportBundle");
         StringAssert.Contains(codecResolverContractText, "public interface IRulesetWorkspaceCodecResolver");
+        StringAssert.Contains(workspaceModelsText, "public sealed record WorkspaceDocumentState");
+        StringAssert.Contains(workspaceModelsText, "WorkspaceDocumentState State");
+        StringAssert.Contains(workspaceModelsText, "public WorkspacePayloadEnvelope PayloadEnvelope => State.ToEnvelope();");
+        StringAssert.Contains(workspaceModelsText, "public string Content => State.Payload;");
+        StringAssert.Contains(workspaceStoreText, "WorkspaceDocumentState state = ResolveState(record, content, rulesetId);");
+        StringAssert.Contains(workspaceStoreText, "Envelope = NormalizeEnvelope(document.State)");
 
         StringAssert.Contains(workspaceServiceText, "IRulesetWorkspaceCodecResolver _workspaceCodecResolver");
         StringAssert.Contains(workspaceServiceText, "_workspaceCodecResolver.Resolve");
         StringAssert.Contains(workspaceServiceText, "codec.SchemaVersion");
         StringAssert.Contains(workspaceServiceText, "codec.PayloadKind");
         StringAssert.Contains(workspaceServiceText, "codec.BuildDownload(id, envelope, document.Format)");
+        StringAssert.Contains(workspaceServiceText, "codec.BuildExportBundle(envelope)");
         Assert.IsFalse(workspaceServiceText.Contains("_characterFileQueries.ParseSummary", StringComparison.Ordinal));
         Assert.IsFalse(workspaceServiceText.Contains("_characterSectionQueries.ParseSection", StringComparison.Ordinal));
         Assert.IsFalse(workspaceServiceText.Contains("_characterMetadataCommands.UpdateMetadata", StringComparison.Ordinal));
+        Assert.IsFalse(workspaceServiceText.Contains("TryParseExportSection", StringComparison.Ordinal));
         Assert.IsFalse(workspaceServiceText.Contains("DefaultEnvelopeSchemaVersion", StringComparison.Ordinal));
         Assert.IsFalse(workspaceServiceText.Contains("DefaultEnvelopePayloadKind", StringComparison.Ordinal));
         Assert.IsFalse(workspaceServiceText.Contains("WorkspaceDocumentFormat.Chum5Xml => \".chum5\"", StringComparison.Ordinal));
@@ -1272,6 +1284,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(sr5CodecText, "public const string Sr5PayloadKind = \"sr5/chum5-xml\"");
         StringAssert.Contains(sr5CodecText, "UpdateMetadata");
         StringAssert.Contains(sr5CodecText, "WorkspaceDownloadReceipt BuildDownload");
+        StringAssert.Contains(sr5CodecText, "DataExportBundle BuildExportBundle");
 
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IRulesetWorkspaceCodec, Sr5WorkspaceCodec>();");
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();");
@@ -1454,10 +1467,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(amendValidatorText, "missing checksum entry");
         StringAssert.Contains(amendValidatorText, "data");
         StringAssert.Contains(amendValidatorText, "lang");
-        StringAssert.Contains(parityGeneratorText, "data-action");
-        StringAssert.Contains(parityGeneratorText, "Workspace Actions coverage compares legacy `data-action` IDs to action `TargetId` values.");
+        StringAssert.Contains(parityGeneratorText, "PARITY_ORACLE.json");
+        StringAssert.Contains(parityGeneratorText, "Workspace Actions coverage compares parity-oracle action IDs to action `TargetId` values.");
         StringAssert.Contains(parityGeneratorText, "Wrote parity checklist");
         StringAssert.Contains(parityChecklistText, "# UI Parity Checklist");
+        StringAssert.Contains(parityChecklistText, "Parity oracle source");
         StringAssert.Contains(parityChecklistText, "| Workspace Actions |");
     }
 
@@ -1515,7 +1529,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj Chummer.Blazor.Desktop/");
         StringAssert.Contains(dockerfileText, "COPY Chummer.Blazor.Desktop/ Chummer.Blazor.Desktop/");
         StringAssert.Contains(dockerfileText, "COPY README.md ./");
+        StringAssert.Contains(dockerfileText, "COPY docs/ docs/");
+        StringAssert.Contains(dockerfileText, "COPY .github/PULL_REQUEST_TEMPLATE.md .github/");
         StringAssert.Contains(dockerfileText, "COPY Docker/Amends/ Docker/Amends/");
+        StringAssert.Contains(dockerfileText, "COPY Docker/Downloads/ Docker/Downloads/");
     }
 
     [TestMethod]
@@ -1532,7 +1549,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "Net-new user-facing behavior belongs in the shared seam and active heads;");
         StringAssert.Contains(readmeText, "legacy changes must be limited to regression-oracle maintenance, parity extraction, or compatibility verification.");
 
-        StringAssert.Contains(backlogText, "Guardrail: until this phase is complete, `Chummer` (WinForms) and `Chummer.Web` remain oracle/parity assets only.");
+        StringAssert.Contains(backlogText, "Exit state: `Chummer` (WinForms) and `Chummer.Web` are oracle/parity assets only.");
         StringAssert.Contains(backlogText, "Net-new user-facing behavior must land in the shared seam and active heads;");
         StringAssert.Contains(backlogText, "legacy changes are limited to parity extraction, regression-oracle maintenance, or compatibility verification.");
 
@@ -1614,7 +1631,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(stateText, "ApplyPostRefreshEffects(state);");
         StringAssert.Contains(stateText, "_controls.ApplyShellFrame(shellFrame);");
         StringAssert.Contains(stateText, "private void ApplyPostRefreshEffects(CharacterOverviewState state)");
-        StringAssert.Contains(stateText, "PendingDownloadDispatchRequest? pendingDownloadRequest = _transientStateCoordinator.ApplyPostRefresh(");
+        StringAssert.Contains(stateText, "MainWindowTransientDispatchSet pendingDispatches = _transientStateCoordinator.ApplyPostRefresh(");
         Assert.IsFalse(stateText.Contains("private void ApplyHeaderState", StringComparison.Ordinal));
         Assert.IsFalse(stateText.Contains("private void ApplyChromeState", StringComparison.Ordinal));
         StringAssert.Contains(navigatorCodeText, "public void SetState(NavigatorPaneState state)");
@@ -1642,6 +1659,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(postRefreshCoordinatorText, "public static MainWindowPostRefreshResult Apply(");
         StringAssert.Contains(postRefreshCoordinatorText, "private static DesktopDialogWindow? SyncDialogWindow(");
         StringAssert.Contains(postRefreshCoordinatorText, "private static PendingDownloadDispatchRequest? TryCreatePendingDownload(");
+        StringAssert.Contains(postRefreshCoordinatorText, "private static PendingExportDispatchRequest? TryCreatePendingExport(");
+        StringAssert.Contains(postRefreshCoordinatorText, "private static PendingPrintDispatchRequest? TryCreatePendingPrint(");
         StringAssert.Contains(projectorText, "BuildWorkspaceActionLookup");
         StringAssert.Contains(projectorText, "WorkspaceActionsById");
         StringAssert.Contains(projectorText, "HeaderState: new MainWindowHeaderState(");
@@ -1716,12 +1735,14 @@ public class MigrationComplianceTests
         string coordinatorPath = FindPath("Chummer.Avalonia", "MainWindow.PostRefreshCoordinators.cs");
         string coordinatorText = File.ReadAllText(coordinatorPath);
 
-        StringAssert.Contains(stateRefreshText, "PendingDownloadDispatchRequest? pendingDownloadRequest = _transientStateCoordinator.ApplyPostRefresh(");
+        StringAssert.Contains(stateRefreshText, "MainWindowTransientDispatchSet pendingDispatches = _transientStateCoordinator.ApplyPostRefresh(");
         Assert.IsFalse(stateRefreshText.Contains("MainWindowDialogWindowCoordinator.Sync", StringComparison.Ordinal));
         Assert.IsFalse(stateRefreshText.Contains("PendingDownloadDispatchCoordinator.TryCreate", StringComparison.Ordinal));
         StringAssert.Contains(coordinatorText, "internal static class MainWindowPostRefreshCoordinator");
         StringAssert.Contains(coordinatorText, "DesktopDialogWindow? dialogWindow = SyncDialogWindow(");
         StringAssert.Contains(coordinatorText, "PendingDownloadDispatchRequest? pendingDownloadRequest = TryCreatePendingDownload(");
+        StringAssert.Contains(coordinatorText, "PendingExportDispatchRequest? pendingExportRequest = TryCreatePendingExport(");
+        StringAssert.Contains(coordinatorText, "PendingPrintDispatchRequest? pendingPrintRequest = TryCreatePendingPrint(");
         StringAssert.Contains(coordinatorText, "internal sealed record MainWindowPostRefreshResult(");
     }
 
@@ -1738,10 +1759,14 @@ public class MigrationComplianceTests
         StringAssert.Contains(coordinatorText, "internal static class MainWindowDesktopFileCoordinator");
         StringAssert.Contains(coordinatorText, "public static async Task<DesktopImportFileResult> OpenImportFileAsync");
         StringAssert.Contains(coordinatorText, "public static async Task<DesktopDownloadSaveResult> SaveDownloadAsync");
+        StringAssert.Contains(coordinatorText, "public static async Task<DesktopDownloadSaveResult> SaveExportAsync");
+        StringAssert.Contains(coordinatorText, "public static async Task<DesktopDownloadSaveResult> SavePrintAsync");
         StringAssert.Contains(coordinatorText, "storageProvider.OpenFilePickerAsync");
         StringAssert.Contains(coordinatorText, "storageProvider.SaveFilePickerAsync");
         StringAssert.Contains(eventHandlersText, "MainWindowDesktopFileCoordinator.OpenImportFileAsync(");
         StringAssert.Contains(downloadsText, "MainWindowDesktopFileCoordinator.SaveDownloadAsync(");
+        StringAssert.Contains(downloadsText, "MainWindowDesktopFileCoordinator.SaveExportAsync(");
+        StringAssert.Contains(downloadsText, "MainWindowDesktopFileCoordinator.SavePrintAsync(");
         Assert.IsFalse(eventHandlersText.Contains("StorageProvider.OpenFilePickerAsync", StringComparison.Ordinal));
         Assert.IsFalse(downloadsText.Contains("StorageProvider.SaveFilePickerAsync", StringComparison.Ordinal));
     }
@@ -1765,6 +1790,12 @@ public class MigrationComplianceTests
         StringAssert.Contains(feedbackText, "public static void ShowDownloadUnavailable");
         StringAssert.Contains(feedbackText, "public static void ShowDownloadCancelled");
         StringAssert.Contains(feedbackText, "public static void ShowDownloadCompleted");
+        StringAssert.Contains(feedbackText, "public static void ShowExportUnavailable");
+        StringAssert.Contains(feedbackText, "public static void ShowExportCancelled");
+        StringAssert.Contains(feedbackText, "public static void ShowExportCompleted");
+        StringAssert.Contains(feedbackText, "public static void ShowPrintUnavailable");
+        StringAssert.Contains(feedbackText, "public static void ShowPrintCancelled");
+        StringAssert.Contains(feedbackText, "public static void ShowPrintCompleted");
         StringAssert.Contains(feedbackText, "public static void ApplyUiActionFailure(");
         StringAssert.Contains(eventHandlersText, "MainWindowFeedbackCoordinator.ShowImportRawRequired(_controls.ToolStrip);");
         StringAssert.Contains(eventHandlersText, "MainWindowFeedbackCoordinator.ShowImportFileUnavailable(_controls.ToolStrip);");
@@ -1772,6 +1803,12 @@ public class MigrationComplianceTests
         StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowDownloadUnavailable(_controls.SectionHost);");
         StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowDownloadCancelled(_controls.SectionHost);");
         StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowDownloadCompleted(");
+        StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowExportUnavailable(_controls.SectionHost);");
+        StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowExportCancelled(_controls.SectionHost);");
+        StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowExportCompleted(");
+        StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowPrintUnavailable(_controls.SectionHost);");
+        StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowPrintCancelled(_controls.SectionHost);");
+        StringAssert.Contains(downloadsText, "MainWindowFeedbackCoordinator.ShowPrintCompleted(");
         StringAssert.Contains(uiFeedbackText, "MainWindowFeedbackCoordinator.ApplyUiActionFailure(");
         Assert.IsFalse(eventHandlersText.Contains("_toolStrip.SetStatusText(", StringComparison.Ordinal));
         Assert.IsFalse(downloadsText.Contains("_sectionHost.SetNotice(", StringComparison.Ordinal));
@@ -1846,13 +1883,15 @@ public class MigrationComplianceTests
         Assert.IsFalse(mainWindowText.Contains("_lastDownloadVersionHandled", StringComparison.Ordinal));
         Assert.IsFalse(mainWindowText.Contains("_workspaceActionsById", StringComparison.Ordinal));
         StringAssert.Contains(stateRefreshText, "_transientStateCoordinator.ApplyShellFrame(shellFrame);");
-        StringAssert.Contains(stateRefreshText, "PendingDownloadDispatchRequest? pendingDownloadRequest = _transientStateCoordinator.ApplyPostRefresh(");
+        StringAssert.Contains(stateRefreshText, "MainWindowTransientDispatchSet pendingDispatches = _transientStateCoordinator.ApplyPostRefresh(");
         StringAssert.Contains(selectionHandlersText, "_transientStateCoordinator.TryResolveWorkspaceAction(actionId, out WorkspaceSurfaceActionDefinition? action)");
         StringAssert.Contains(dialogsText, "_transientStateCoordinator.ClearDialogWindow(sender);");
         StringAssert.Contains(downloadsText, "if (!_transientStateCoordinator.ShouldHandleDownload(request))");
+        StringAssert.Contains(downloadsText, "if (!_transientStateCoordinator.ShouldHandleExport(request))");
+        StringAssert.Contains(downloadsText, "if (!_transientStateCoordinator.ShouldHandlePrint(request))");
         StringAssert.Contains(coordinatorText, "internal sealed class MainWindowTransientStateCoordinator");
         StringAssert.Contains(coordinatorText, "public void ApplyShellFrame(MainWindowShellFrame shellFrame)");
-        StringAssert.Contains(coordinatorText, "public PendingDownloadDispatchRequest? ApplyPostRefresh(");
+        StringAssert.Contains(coordinatorText, "public MainWindowTransientDispatchSet ApplyPostRefresh(");
         StringAssert.Contains(coordinatorText, "public bool TryResolveWorkspaceAction(string actionId, out WorkspaceSurfaceActionDefinition? action)");
         StringAssert.Contains(coordinatorText, "public DesktopDialogWindow? DetachDialogWindow()");
     }
@@ -1932,6 +1971,18 @@ public class MigrationComplianceTests
     private static string ToSectionName(string pascalName)
     {
         return pascalName.ToLowerInvariant();
+    }
+
+    private static HashSet<string> LoadParityOracleIds(string propertyName)
+    {
+        string parityOraclePath = FindPath("docs", "PARITY_ORACLE.json");
+        using JsonDocument oracle = JsonDocument.Parse(File.ReadAllText(parityOraclePath));
+        return oracle.RootElement.GetProperty(propertyName)
+            .EnumerateArray()
+            .Select(item => item.GetString())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!)
+            .ToHashSet(StringComparer.Ordinal);
     }
 
     private static string FindPath(params string[] parts)

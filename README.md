@@ -12,24 +12,33 @@
 
 Chummer is a character creation and management application for the tabletop RPG [Shadowrun, Fifth Edition](https://www.shadowruntabletop.com/products-page/getting-started/shadowrun-fifth-edition).
 
-This repository currently has two active tracks:
+This repository currently has two tracks:
 
 * **Legacy path**: the WinForms desktop app (`Chummer`) that continues to serve as compatibility reference and regression oracle.
-* **Modern migration path (Docker branch)**: API + shared presentation seam + gateway + multi-head UI stack (`Chummer.Blazor`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`).
+* **Current multi-head runtime (Docker branch)**: API + shared presentation seam + gateway + multi-head UI stack (`Chummer.Blazor`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`).
 
-## Docker Branch Status
+## Current Multi-Head Runtime (Docker Branch)
 
-The `Docker` branch is an active migration branch and no longer follows a WinForms-only architecture:
+The `Docker` branch is the current multi-head runtime architecture for this repository:
 
 * `Chummer.Api` is the HTTP host for headless services and workspace routes.
 * `Chummer.Application`, `Chummer.Contracts`, `Chummer.Infrastructure`, and `Chummer.Presentation` provide the shared behavior seam.
 * `Chummer.Contracts.Rulesets` defines host-neutral ruleset/plugin/script interfaces plus a shared workspace payload envelope for future SR6-style expansion without changing current SR5 behavior.
 * `Chummer.Blazor` is the browser/web head, `Chummer.Avalonia` is the native desktop head, and `Chummer.Blazor.Desktop` is the desktop webview host.
 * `Chummer.Portal` is the single public gateway surface and `Chummer.Avalonia.Browser` provides the browser-hosted `/avalonia` route behind the portal profile.
-* `Chummer.Web` is currently retained as a temporary legacy-shell parity artifact during migration.
+* `Chummer.Web` is retained only as a compatibility/oracle asset and is not part of the default runtime or parity-check contract.
 * Legacy head policy: `Chummer` and `Chummer.Web` are oracle/parity assets only. Net-new user-facing behavior belongs in the shared seam and active heads; legacy changes must be limited to regression-oracle maintenance, parity extraction, or compatibility verification.
-* Runtime compose flows target `chummer-api` and `chummer-blazor`; no `chummer-web` service is part of the active product path.
+* Runtime compose flows target `chummer-api` and `chummer-blazor`; portal flows add `chummer-portal`, `chummer-blazor-portal`, and `chummer-avalonia-browser`; no `chummer-web` service is part of the active product path.
 * Migration execution backlog: [`docs/MIGRATION_BACKLOG.md`](docs/MIGRATION_BACKLOG.md).
+
+## Decommissioned Legacy Runtime Components
+
+The following legacy components are no longer part of the active product/runtime path:
+
+* `Chummer.Web` is no longer part of the default compose/runtime stack and remains only as a compatibility/oracle asset.
+* `chummer-web` is no longer an active runtime service or parity-test dependency.
+* Static parity extraction from `Chummer.Web/wwwroot/index.html` has been replaced by the checked-in parity oracle at [`docs/PARITY_ORACLE.json`](docs/PARITY_ORACLE.json).
+* `Chummer` (WinForms) remains a compatibility reference and regression oracle, not an active multi-head runtime host.
 
 `docker-compose.yml` exposes:
 
@@ -190,7 +199,7 @@ Desktop artifact workflow:
 * Local verification helper: `bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
 * Optional local strict artifact check: `DOWNLOADS_VERIFY_LINKS=1 bash scripts/runbook.sh downloads-verify <portalBaseOrManifestPath>`.
 * Repo-local smoke helper for downloads sync + verify flow: `RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh`.
-* Parity checklist generator: `RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh` (writes `docs/PARITY_CHECKLIST.md`).
+* Parity checklist generator: `RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh` (writes `docs/PARITY_CHECKLIST.md` from `docs/PARITY_ORACLE.json` plus the active catalogs).
 * Host readiness probe for strict gates: `RUNBOOK_MODE=host-prereqs bash scripts/runbook.sh`.
 * Strict host-side gate wrapper (no soft-skips, defaults to `net10.0`): `bash scripts/runbook-strict-host-gates.sh [optionalTestFilter] [optionalFramework]`.
 * Optional unattended path overrides: `RUNBOOK_LOG_DIR` controls runbook log placement and `RUNBOOK_STATE_DIR` controls writable state such as `DOTNET_CLI_HOME`.

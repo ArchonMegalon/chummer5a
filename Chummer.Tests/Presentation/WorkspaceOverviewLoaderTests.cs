@@ -216,6 +216,8 @@ public class WorkspaceOverviewLoaderTests
 
         public Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
 
-        public Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
+        public Task<CommandResult<WorkspaceExportReceipt>> ExportAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
+
+        public Task<CommandResult<WorkspacePrintReceipt>> PrintAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
     }
 }

@@ -30,7 +30,11 @@ public sealed record CharacterOverviewState(
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     bool HasSavedWorkspace,
     WorkspaceDownloadReceipt? PendingDownload = null,
-    long PendingDownloadVersion = 0)
+    long PendingDownloadVersion = 0,
+    WorkspaceExportReceipt? PendingExport = null,
+    long PendingExportVersion = 0,
+    WorkspacePrintReceipt? PendingPrint = null,
+    long PendingPrintVersion = 0)
 {
     public static CharacterOverviewState Empty { get; } = new(
         IsBusy: false,
@@ -58,5 +62,9 @@ public sealed record CharacterOverviewState(
         NavigationTabs: [],
         HasSavedWorkspace: false,
         PendingDownload: null,
-        PendingDownloadVersion: 0);
+        PendingDownloadVersion: 0,
+        PendingExport: null,
+        PendingExportVersion: 0,
+        PendingPrint: null,
+        PendingPrintVersion: 0);
 }

@@ -71,4 +71,44 @@ public sealed class WorkspacePersistenceService : IWorkspacePersistenceService
             Receipt: result.Value,
             Error: null);
     }
+
+    public async Task<WorkspaceExportResult> ExportAsync(
+        IChummerClient client,
+        CharacterWorkspaceId workspaceId,
+        CancellationToken ct)
+    {
+        CommandResult<WorkspaceExportReceipt> result = await client.ExportAsync(workspaceId, ct);
+        if (!result.Success || result.Value is null)
+        {
+            return new WorkspaceExportResult(
+                Success: false,
+                Receipt: null,
+                Error: result.Error ?? "Export failed.");
+        }
+
+        return new WorkspaceExportResult(
+            Success: true,
+            Receipt: result.Value,
+            Error: null);
+    }
+
+    public async Task<WorkspacePrintResult> PrintAsync(
+        IChummerClient client,
+        CharacterWorkspaceId workspaceId,
+        CancellationToken ct)
+    {
+        CommandResult<WorkspacePrintReceipt> result = await client.PrintAsync(workspaceId, ct);
+        if (!result.Success || result.Value is null)
+        {
+            return new WorkspacePrintResult(
+                Success: false,
+                Receipt: null,
+                Error: result.Error ?? "Print preview failed.");
+        }
+
+        return new WorkspacePrintResult(
+            Success: true,
+            Receipt: result.Value,
+            Error: null);
+    }
 }

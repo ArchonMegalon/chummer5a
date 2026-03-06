@@ -38,8 +38,11 @@ COPY Chummer.Tests/ Chummer.Tests/
 COPY README.md ./
 COPY Chummer.Web/ Chummer.Web/
 COPY Chummer/ Chummer/
+COPY docs/ docs/
 COPY scripts/ scripts/
+COPY .github/PULL_REQUEST_TEMPLATE.md .github/
 COPY .github/workflows/ .github/workflows/
 COPY Docker/Dockerfile.tests Docker/
 COPY Docker/Amends/ Docker/Amends/
+COPY Docker/Downloads/ Docker/Downloads/
 RUN dotnet build Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0 --no-restore -p:TargetFramework=net10.0

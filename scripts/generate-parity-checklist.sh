@@ -11,13 +11,14 @@ from __future__ import annotations
 import pathlib
 import re
 import sys
-from typing import Iterable, Sequence
+import json
+from typing import Sequence
 
 
 repo_root = pathlib.Path(sys.argv[1])
 output_path = pathlib.Path(sys.argv[2])
 
-legacy_shell_path = repo_root / "Chummer.Web" / "wwwroot" / "index.html"
+parity_oracle_path = repo_root / "docs" / "PARITY_ORACLE.json"
 navigation_catalog_path = repo_root / "Chummer.Contracts" / "Presentation" / "NavigationTabCatalog.cs"
 action_catalog_path = repo_root / "Chummer.Contracts" / "Presentation" / "WorkspaceSurfaceActionCatalog.cs"
 control_catalog_path = repo_root / "Chummer.Contracts" / "Presentation" / "DesktopUiControlCatalog.cs"
@@ -27,8 +28,8 @@ def read_text(path: pathlib.Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def parse_legacy_ids(text: str, attribute: str) -> list[str]:
-    return sorted(set(re.findall(rf'{attribute}="([^"]+)"', text)))
+def parse_oracle_ids(oracle: dict[str, list[str]], key: str) -> list[str]:
+    return sorted(set(oracle[key]))
 
 
 def parse_catalog_ids(text: str) -> list[str]:
@@ -73,14 +74,14 @@ def write_coverage_table(title: str, covered: Sequence[str], missing: Sequence[s
     return lines
 
 
-legacy_shell_text = read_text(legacy_shell_path)
+parity_oracle = json.loads(read_text(parity_oracle_path))
 navigation_catalog_text = read_text(navigation_catalog_path)
 action_catalog_text = read_text(action_catalog_path)
 control_catalog_text = read_text(control_catalog_path)
 
-legacy_tabs = parse_legacy_ids(legacy_shell_text, "data-tab")
-legacy_actions = parse_legacy_ids(legacy_shell_text, "data-action")
-legacy_controls = parse_legacy_ids(legacy_shell_text, "data-ui-control")
+legacy_tabs = parse_oracle_ids(parity_oracle, "tabs")
+legacy_actions = parse_oracle_ids(parity_oracle, "workspaceActions")
+legacy_controls = parse_oracle_ids(parity_oracle, "desktopControls")
 
 catalog_tabs = parse_catalog_ids(navigation_catalog_text)
 catalog_actions = parse_workspace_action_target_ids(action_catalog_text)
@@ -93,14 +94,14 @@ covered_controls, missing_controls, catalog_only_controls = partition_coverage(l
 output_lines: list[str] = [
     "# UI Parity Checklist",
     "",
-    "Generated automatically from the legacy shell contract and current contracts catalogs.",
+    "Generated automatically from the parity oracle and current contracts catalogs.",
     "",
     "- Regenerate command: `RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh`",
-    f"- Legacy shell source: `{legacy_shell_path.relative_to(repo_root)}`",
+    f"- Parity oracle source: `{parity_oracle_path.relative_to(repo_root)}`",
     f"- Tab catalog source: `{navigation_catalog_path.relative_to(repo_root)}`",
     f"- Action catalog source: `{action_catalog_path.relative_to(repo_root)}`",
     f"- Control catalog source: `{control_catalog_path.relative_to(repo_root)}`",
-    "- Workspace Actions coverage compares legacy `data-action` IDs to action `TargetId` values.",
+    "- Workspace Actions coverage compares parity-oracle action IDs to action `TargetId` values.",
     "",
     "## Summary",
     "",

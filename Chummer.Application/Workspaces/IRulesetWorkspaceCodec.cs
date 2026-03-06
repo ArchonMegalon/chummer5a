@@ -1,3 +1,4 @@
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -26,4 +27,6 @@ public interface IRulesetWorkspaceCodec
         CharacterWorkspaceId id,
         WorkspacePayloadEnvelope envelope,
         WorkspaceDocumentFormat format);
+
+    DataExportBundle BuildExportBundle(WorkspacePayloadEnvelope envelope);
 }

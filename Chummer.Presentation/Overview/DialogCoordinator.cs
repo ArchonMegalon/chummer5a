@@ -40,12 +40,34 @@ public sealed class DialogCoordinator : IDialogCoordinator
             return;
         }
 
-        if ((string.Equals(dialog.Id, "dialog.open_character", StringComparison.Ordinal)
-            || string.Equals(dialog.Id, "dialog.open_for_printing", StringComparison.Ordinal)
-            || string.Equals(dialog.Id, "dialog.open_for_export", StringComparison.Ordinal))
+        if (string.Equals(dialog.Id, "dialog.open_character", StringComparison.Ordinal)
             && string.Equals(actionId, "import", StringComparison.Ordinal))
         {
             await ImportCharacterDialogAsync(dialog, context, ct);
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.open_for_printing", StringComparison.Ordinal)
+            && string.Equals(actionId, "import", StringComparison.Ordinal))
+        {
+            await ImportCharacterDialogAsync(
+                dialog,
+                context,
+                ct,
+                successNotice: "Character imported for printing.",
+                afterImportAsync: context.PrintAsync);
+            return;
+        }
+
+        if (string.Equals(dialog.Id, "dialog.open_for_export", StringComparison.Ordinal)
+            && string.Equals(actionId, "import", StringComparison.Ordinal))
+        {
+            await ImportCharacterDialogAsync(
+                dialog,
+                context,
+                ct,
+                successNotice: "Character imported for export.",
+                afterImportAsync: context.ExportAsync);
             return;
         }
 
@@ -225,6 +247,19 @@ public sealed class DialogCoordinator : IDialogCoordinator
             return;
         }
 
+        if (string.Equals(dialog.Id, "dialog.print_character", StringComparison.Ordinal)
+            && string.Equals(actionId, "print", StringComparison.Ordinal))
+        {
+            if (context.PrintAsync is null)
+            {
+                PublishDialogNotice(context, "Print preview prepared.");
+                return;
+            }
+
+            await context.PrintAsync(ct);
+            return;
+        }
+
         context.Publish(context.State with
         {
             ActiveDialog = null,
@@ -266,7 +301,8 @@ public sealed class DialogCoordinator : IDialogCoordinator
         string fieldId = "openCharacterXml",
         string rulesetFieldId = "importRulesetId",
         string requiredError = "Character XML is required.",
-        string successNotice = "Character imported.")
+        string successNotice = "Character imported.",
+        Func<CancellationToken, Task>? afterImportAsync = null)
     {
         string xml = DesktopDialogFieldValueParser.GetValue(dialog, fieldId) ?? string.Empty;
         string rulesetId = RulesetDefaults.Normalize(DesktopDialogFieldValueParser.GetValue(dialog, rulesetFieldId));
@@ -283,15 +319,33 @@ public sealed class DialogCoordinator : IDialogCoordinator
         await context.ImportAsync(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml, rulesetId), ct);
 
         CharacterOverviewState stateAfterImport = context.GetState();
-        if (stateAfterImport.Error is null)
+        if (stateAfterImport.Error is not null)
         {
-            context.Publish(stateAfterImport with
-            {
-                ActiveDialog = null,
-                Error = null,
-                Notice = successNotice
-            });
+            return;
         }
+
+        if (afterImportAsync is not null)
+        {
+            await afterImportAsync(ct);
+            CharacterOverviewState stateAfterFollowUp = context.GetState();
+            if (stateAfterFollowUp.Error is null && stateAfterFollowUp.ActiveDialog is not null)
+            {
+                context.Publish(stateAfterFollowUp with
+                {
+                    ActiveDialog = null,
+                    Error = null
+                });
+            }
+
+            return;
+        }
+
+        context.Publish(stateAfterImport with
+        {
+            ActiveDialog = null,
+            Error = null,
+            Notice = successNotice
+        });
     }
 
     private static void ApplyGlobalSettings(DesktopDialogState dialog, DialogCoordinationContext context)

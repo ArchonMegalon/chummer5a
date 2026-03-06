@@ -184,11 +184,34 @@ public static class WorkspaceEndpoints
         app.MapGet("/api/workspaces/{id}/export", (string id, IWorkspaceService workspaceService) =>
         {
             CharacterWorkspaceId workspaceId = new(id);
-            CommandResult<DataExportBundle> result = workspaceService.Export(workspaceId);
+            CommandResult<WorkspaceExportReceipt> result = workspaceService.Export(workspaceId);
             if (!result.Success || result.Value is null)
                 return Results.NotFound(new { error = result.Error ?? "Workspace not found." });
 
-            return Results.Ok(result.Value);
+            return Results.Ok(new WorkspaceExportResponse(
+                Id: result.Value.Id.Value,
+                Format: result.Value.Format.ToString(),
+                ContentBase64: result.Value.ContentBase64,
+                FileName: result.Value.FileName,
+                DocumentLength: result.Value.DocumentLength,
+                RulesetId: result.Value.RulesetId));
+        });
+
+        app.MapGet("/api/workspaces/{id}/print", (string id, IWorkspaceService workspaceService) =>
+        {
+            CharacterWorkspaceId workspaceId = new(id);
+            CommandResult<WorkspacePrintReceipt> result = workspaceService.Print(workspaceId);
+            if (!result.Success || result.Value is null)
+                return Results.NotFound(new { error = result.Error ?? "Workspace not found." });
+
+            return Results.Ok(new WorkspacePrintResponse(
+                Id: result.Value.Id.Value,
+                ContentBase64: result.Value.ContentBase64,
+                FileName: result.Value.FileName,
+                MimeType: result.Value.MimeType,
+                DocumentLength: result.Value.DocumentLength,
+                Title: result.Value.Title,
+                RulesetId: result.Value.RulesetId));
         });
 
         return app;

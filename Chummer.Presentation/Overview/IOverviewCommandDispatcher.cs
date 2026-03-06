@@ -14,6 +14,7 @@ public sealed record OverviewCommandExecutionContext(
     Action<CharacterOverviewState> Publish,
     Func<CancellationToken, Task> SaveAsync,
     Func<CancellationToken, Task> DownloadAsync,
+    Func<CancellationToken, Task> PrintAsync,
     Func<CharacterWorkspaceId, CancellationToken, Task> LoadAsync,
     Func<string, string, CharacterOverviewState> CreateResetState,
     Func<CancellationToken, string, Task> CloseAllAsync,

@@ -12,17 +12,11 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
     private readonly IDesktopDialogFactory _dialogFactory;
     private readonly IOverviewCommandDispatcher _commandDispatcher;
     private readonly IDialogCoordinator _dialogCoordinator;
-    private readonly IWorkspaceOverviewLoader _workspaceOverviewLoader;
     private readonly IWorkspaceSectionRenderer _workspaceSectionRenderer;
     private readonly IWorkspacePersistenceService _workspacePersistenceService;
-    private readonly IWorkspaceViewStateStore _workspaceViewStateStore;
-    private readonly IWorkspaceShellStateFactory _workspaceShellStateFactory;
-    private readonly IWorkspaceRemoteCloseService _workspaceRemoteCloseService;
-    private readonly IWorkspaceSessionActivationService _workspaceSessionActivationService;
-    private readonly IWorkspaceOverviewStateFactory _workspaceOverviewStateFactory;
+    private readonly IWorkspaceOverviewLifecycleCoordinator _workspaceOverviewLifecycleCoordinator;
     private readonly IShellBootstrapDataProvider _bootstrapDataProvider;
     private readonly IShellPresenter? _shellPresenter;
-    private CharacterWorkspaceId? _currentWorkspace;
 
     public CharacterOverviewPresenter(
         IChummerClient client,
@@ -39,6 +33,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         IWorkspaceRemoteCloseService? workspaceRemoteCloseService = null,
         IWorkspaceSessionActivationService? workspaceSessionActivationService = null,
         IWorkspaceOverviewStateFactory? workspaceOverviewStateFactory = null,
+        IWorkspaceOverviewLifecycleCoordinator? workspaceOverviewLifecycleCoordinator = null,
         IShellBootstrapDataProvider? bootstrapDataProvider = null,
         IShellPresenter? shellPresenter = null)
     {
@@ -48,14 +43,24 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         _dialogFactory = dialogFactory ?? new DesktopDialogFactory();
         _commandDispatcher = commandDispatcher ?? new OverviewCommandDispatcher();
         _dialogCoordinator = dialogCoordinator ?? new DialogCoordinator();
-        _workspaceOverviewLoader = workspaceOverviewLoader ?? new WorkspaceOverviewLoader();
+        IWorkspaceOverviewLoader resolvedWorkspaceOverviewLoader = workspaceOverviewLoader ?? new WorkspaceOverviewLoader();
         _workspaceSectionRenderer = workspaceSectionRenderer ?? new WorkspaceSectionRenderer();
         _workspacePersistenceService = workspacePersistenceService ?? new WorkspacePersistenceService();
-        _workspaceViewStateStore = workspaceViewStateStore ?? new WorkspaceViewStateStore();
-        _workspaceShellStateFactory = workspaceShellStateFactory ?? new WorkspaceShellStateFactory();
-        _workspaceRemoteCloseService = workspaceRemoteCloseService ?? new WorkspaceRemoteCloseService();
-        _workspaceSessionActivationService = workspaceSessionActivationService ?? new WorkspaceSessionActivationService();
-        _workspaceOverviewStateFactory = workspaceOverviewStateFactory ?? new WorkspaceOverviewStateFactory();
+        IWorkspaceViewStateStore resolvedWorkspaceViewStateStore = workspaceViewStateStore ?? new WorkspaceViewStateStore();
+        IWorkspaceShellStateFactory resolvedWorkspaceShellStateFactory = workspaceShellStateFactory ?? new WorkspaceShellStateFactory();
+        IWorkspaceRemoteCloseService resolvedWorkspaceRemoteCloseService = workspaceRemoteCloseService ?? new WorkspaceRemoteCloseService();
+        IWorkspaceSessionActivationService resolvedWorkspaceSessionActivationService = workspaceSessionActivationService ?? new WorkspaceSessionActivationService();
+        IWorkspaceOverviewStateFactory resolvedWorkspaceOverviewStateFactory = workspaceOverviewStateFactory ?? new WorkspaceOverviewStateFactory();
+        _workspaceOverviewLifecycleCoordinator = workspaceOverviewLifecycleCoordinator
+            ?? new WorkspaceOverviewLifecycleCoordinator(
+                client,
+                _workspaceSessionPresenter,
+                resolvedWorkspaceOverviewLoader,
+                resolvedWorkspaceViewStateStore,
+                resolvedWorkspaceShellStateFactory,
+                resolvedWorkspaceRemoteCloseService,
+                resolvedWorkspaceSessionActivationService,
+                resolvedWorkspaceOverviewStateFactory);
         _bootstrapDataProvider = bootstrapDataProvider ?? new ShellBootstrapDataProvider(client);
         _shellPresenter = shellPresenter;
     }

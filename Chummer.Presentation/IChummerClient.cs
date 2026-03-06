@@ -57,5 +57,7 @@ public interface IChummerClient
 
     Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct);
 
-    Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct);
+    Task<CommandResult<WorkspaceExportReceipt>> ExportAsync(CharacterWorkspaceId id, CancellationToken ct);
+
+    Task<CommandResult<WorkspacePrintReceipt>> PrintAsync(CharacterWorkspaceId id, CancellationToken ct);
 }

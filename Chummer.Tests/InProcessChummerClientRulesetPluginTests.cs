@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Application.Tools;
@@ -222,28 +223,42 @@ public sealed class InProcessChummerClientRulesetPluginTests
     {
         NoOpWorkspaceService workspaceService = new()
         {
-            ExportResult = new CommandResult<DataExportBundle>(
+            ExportResult = new CommandResult<WorkspaceExportReceipt>(
                 Success: true,
-                Value: new DataExportBundle(
-                    Summary: new CharacterFileSummary("Runner", "Alias", "Human", "Priority", "5", "5", 3m, 100m, true),
-                    Profile: null,
-                    Progress: null,
-                    Attributes: new CharacterAttributesSection(1, [new CharacterAttributeSummary("REA", 4, 5)]),
-                    Skills: null,
-                    Inventory: null,
-                    Qualities: null,
-                    Contacts: null),
+                Value: new WorkspaceExportReceipt(
+                    Id: new CharacterWorkspaceId("ws-export"),
+                    Format: WorkspaceDocumentFormat.Json,
+                    ContentBase64: Convert.ToBase64String(Encoding.UTF8.GetBytes("""
+                        {
+                          "Summary": {
+                            "Name": "Runner"
+                          },
+                          "Attributes": {
+                            "Attributes": [
+                              {
+                                "Name": "REA"
+                              }
+                            ]
+                          }
+                        }
+                        """)),
+                    FileName: "runner-export.json",
+                    DocumentLength: 109,
+                    RulesetId: "sr5"),
                 Error: null)
         };
         InProcessChummerClient client = new(
             workspaceService,
             new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())));
 
-        DataExportBundle bundle = await client.ExportAsync(new CharacterWorkspaceId("ws-export"), CancellationToken.None);
+        CommandResult<WorkspaceExportReceipt> export = await client.ExportAsync(new CharacterWorkspaceId("ws-export"), CancellationToken.None);
 
-        Assert.AreEqual("Runner", bundle.Summary.Name);
-        Assert.IsNotNull(bundle.Attributes);
-        Assert.AreEqual("REA", bundle.Attributes.Attributes[0].Name);
+        Assert.IsTrue(export.Success);
+        Assert.IsNotNull(export.Value);
+        Assert.AreEqual("runner-export.json", export.Value.FileName);
+        string payload = Encoding.UTF8.GetString(Convert.FromBase64String(export.Value.ContentBase64));
+        StringAssert.Contains(payload, "\"Name\": \"Runner\"");
+        StringAssert.Contains(payload, "\"REA\"");
     }
 
     private sealed class StubRulesetPlugin : IRulesetPlugin
@@ -445,9 +460,11 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
         public CommandResult<WorkspaceDownloadReceipt> Download(CharacterWorkspaceId id) => throw new NotSupportedException();
 
-        public CommandResult<DataExportBundle> ExportResult { get; init; } = new(false, null, "Export not configured.");
+        public CommandResult<WorkspaceExportReceipt> ExportResult { get; init; } = new(false, null, "Export not configured.");
 
-        public CommandResult<DataExportBundle> Export(CharacterWorkspaceId id) => ExportResult;
+        public CommandResult<WorkspaceExportReceipt> Export(CharacterWorkspaceId id) => ExportResult;
+
+        public CommandResult<WorkspacePrintReceipt> Print(CharacterWorkspaceId id) => throw new NotSupportedException();
     }
 
     private static WorkspaceListItem CreateWorkspace(

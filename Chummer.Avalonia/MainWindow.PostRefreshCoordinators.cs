@@ -12,6 +12,8 @@ internal static class MainWindowPostRefreshCoordinator
         CharacterOverviewState state,
         CharacterOverviewViewModelAdapter adapter,
         long lastHandledDownloadVersion,
+        long lastHandledExportVersion,
+        long lastHandledPrintVersion,
         EventHandler onDialogClosed)
     {
         DesktopDialogWindow? dialogWindow = SyncDialogWindow(
@@ -24,12 +26,24 @@ internal static class MainWindowPostRefreshCoordinator
         PendingDownloadDispatchRequest? pendingDownloadRequest = TryCreatePendingDownload(
             state,
             lastHandledDownloadVersion);
+        PendingExportDispatchRequest? pendingExportRequest = TryCreatePendingExport(
+            state,
+            lastHandledExportVersion);
+        PendingPrintDispatchRequest? pendingPrintRequest = TryCreatePendingPrint(
+            state,
+            lastHandledPrintVersion);
         long nextHandledDownloadVersion = pendingDownloadRequest?.Version ?? lastHandledDownloadVersion;
+        long nextHandledExportVersion = pendingExportRequest?.Version ?? lastHandledExportVersion;
+        long nextHandledPrintVersion = pendingPrintRequest?.Version ?? lastHandledPrintVersion;
 
         return new MainWindowPostRefreshResult(
             dialogWindow,
             pendingDownloadRequest,
-            nextHandledDownloadVersion);
+            pendingExportRequest,
+            pendingPrintRequest,
+            nextHandledDownloadVersion,
+            nextHandledExportVersion,
+            nextHandledPrintVersion);
     }
 
     private static DesktopDialogWindow? SyncDialogWindow(
@@ -82,13 +96,55 @@ internal static class MainWindowPostRefreshCoordinator
             pendingDownload,
             state.PendingDownloadVersion);
     }
+
+    private static PendingExportDispatchRequest? TryCreatePendingExport(
+        CharacterOverviewState state,
+        long lastHandledVersion)
+    {
+        WorkspaceExportReceipt? pendingExport = state.PendingExport;
+        if (pendingExport is null || state.PendingExportVersion <= lastHandledVersion)
+        {
+            return null;
+        }
+
+        return new PendingExportDispatchRequest(
+            pendingExport,
+            state.PendingExportVersion);
+    }
+
+    private static PendingPrintDispatchRequest? TryCreatePendingPrint(
+        CharacterOverviewState state,
+        long lastHandledVersion)
+    {
+        WorkspacePrintReceipt? pendingPrint = state.PendingPrint;
+        if (pendingPrint is null || state.PendingPrintVersion <= lastHandledVersion)
+        {
+            return null;
+        }
+
+        return new PendingPrintDispatchRequest(
+            pendingPrint,
+            state.PendingPrintVersion);
+    }
 }
 
 internal sealed record PendingDownloadDispatchRequest(
     WorkspaceDownloadReceipt Download,
     long Version);
 
+internal sealed record PendingExportDispatchRequest(
+    WorkspaceExportReceipt Export,
+    long Version);
+
+internal sealed record PendingPrintDispatchRequest(
+    WorkspacePrintReceipt Print,
+    long Version);
+
 internal sealed record MainWindowPostRefreshResult(
     DesktopDialogWindow? DialogWindow,
     PendingDownloadDispatchRequest? PendingDownloadRequest,
-    long LastHandledDownloadVersion);
+    PendingExportDispatchRequest? PendingExportRequest,
+    PendingPrintDispatchRequest? PendingPrintRequest,
+    long LastHandledDownloadVersion,
+    long LastHandledExportVersion,
+    long LastHandledPrintVersion);

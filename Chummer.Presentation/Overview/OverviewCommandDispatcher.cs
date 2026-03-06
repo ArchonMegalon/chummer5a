@@ -58,6 +58,9 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
             case "save_character_as":
                 await context.DownloadAsync(ct);
                 return;
+            case "print_character":
+                await context.PrintAsync(ct);
+                return;
             case "refresh_character":
                 if (context.CurrentWorkspace is null)
                 {

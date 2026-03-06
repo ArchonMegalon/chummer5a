@@ -9,13 +9,15 @@ internal sealed class MainWindowTransientStateCoordinator
         = new Dictionary<string, WorkspaceSurfaceActionDefinition>(StringComparer.Ordinal);
     private DesktopDialogWindow? _dialogWindow;
     private long _lastHandledDownloadVersion;
+    private long _lastHandledExportVersion;
+    private long _lastHandledPrintVersion;
 
     public void ApplyShellFrame(MainWindowShellFrame shellFrame)
     {
         _workspaceActionsById = shellFrame.WorkspaceActionsById;
     }
 
-    public PendingDownloadDispatchRequest? ApplyPostRefresh(
+    public MainWindowTransientDispatchSet ApplyPostRefresh(
         MainWindow owner,
         CharacterOverviewState state,
         CharacterOverviewViewModelAdapter adapter,
@@ -27,22 +29,45 @@ internal sealed class MainWindowTransientStateCoordinator
             state: state,
             adapter: adapter,
             lastHandledDownloadVersion: _lastHandledDownloadVersion,
+            lastHandledExportVersion: _lastHandledExportVersion,
+            lastHandledPrintVersion: _lastHandledPrintVersion,
             onDialogClosed: onDialogClosed);
         _dialogWindow = postRefresh.DialogWindow;
 
-        PendingDownloadDispatchRequest? pendingDownloadRequest = postRefresh.PendingDownloadRequest;
-        if (pendingDownloadRequest is null)
+        if (postRefresh.PendingDownloadRequest is not null)
         {
-            return null;
+            _lastHandledDownloadVersion = postRefresh.LastHandledDownloadVersion;
         }
 
-        _lastHandledDownloadVersion = postRefresh.LastHandledDownloadVersion;
-        return pendingDownloadRequest;
+        if (postRefresh.PendingExportRequest is not null)
+        {
+            _lastHandledExportVersion = postRefresh.LastHandledExportVersion;
+        }
+
+        if (postRefresh.PendingPrintRequest is not null)
+        {
+            _lastHandledPrintVersion = postRefresh.LastHandledPrintVersion;
+        }
+
+        return new MainWindowTransientDispatchSet(
+            postRefresh.PendingDownloadRequest,
+            postRefresh.PendingExportRequest,
+            postRefresh.PendingPrintRequest);
     }
 
     public bool ShouldHandleDownload(PendingDownloadDispatchRequest request)
     {
         return request.Version >= _lastHandledDownloadVersion;
+    }
+
+    public bool ShouldHandleExport(PendingExportDispatchRequest request)
+    {
+        return request.Version >= _lastHandledExportVersion;
+    }
+
+    public bool ShouldHandlePrint(PendingPrintDispatchRequest request)
+    {
+        return request.Version >= _lastHandledPrintVersion;
     }
 
     public bool TryResolveWorkspaceAction(string actionId, out WorkspaceSurfaceActionDefinition? action)
@@ -65,3 +90,8 @@ internal sealed class MainWindowTransientStateCoordinator
         return dialogWindow;
     }
 }
+
+internal sealed record MainWindowTransientDispatchSet(
+    PendingDownloadDispatchRequest? PendingDownloadRequest,
+    PendingExportDispatchRequest? PendingExportRequest,
+    PendingPrintDispatchRequest? PendingPrintRequest);

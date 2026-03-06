@@ -7,13 +7,14 @@ public sealed partial class CharacterOverviewPresenter
 {
     private async Task LoadSectionAsync(string sectionId, string? tabId, string? actionId, CancellationToken ct)
     {
+        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
         if (string.IsNullOrWhiteSpace(sectionId))
         {
             Publish(State with { Error = "Section id is required." });
             return;
         }
 
-        if (_currentWorkspace is null)
+        if (currentWorkspace is null)
         {
             Publish(State with { Error = "No workspace loaded." });
             return;
@@ -29,7 +30,7 @@ public sealed partial class CharacterOverviewPresenter
         {
             WorkspaceSectionRenderResult section = await _workspaceSectionRenderer.RenderSectionAsync(
                 _client,
-                _currentWorkspace.Value,
+                currentWorkspace.Value,
                 sectionId,
                 tabId,
                 actionId,
@@ -46,7 +47,7 @@ public sealed partial class CharacterOverviewPresenter
                 ActiveSectionJson = section.ActiveSectionJson,
                 ActiveSectionRows = section.ActiveSectionRows
             });
-            CaptureWorkspaceView();
+            _workspaceOverviewLifecycleCoordinator.CaptureCurrentWorkspaceView(State);
         }
         catch (Exception ex)
         {
@@ -60,7 +61,8 @@ public sealed partial class CharacterOverviewPresenter
 
     private async Task RenderSummaryAction(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
     {
-        if (_currentWorkspace is null)
+        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        if (currentWorkspace is null)
         {
             Publish(State with { Error = "No workspace loaded." });
             return;
@@ -76,7 +78,7 @@ public sealed partial class CharacterOverviewPresenter
         {
             WorkspaceSectionRenderResult summary = await _workspaceSectionRenderer.RenderSummaryAsync(
                 _client,
-                _currentWorkspace.Value,
+                currentWorkspace.Value,
                 action,
                 ct);
             Publish(State with
@@ -89,7 +91,7 @@ public sealed partial class CharacterOverviewPresenter
                 ActiveSectionJson = summary.ActiveSectionJson,
                 ActiveSectionRows = summary.ActiveSectionRows
             });
-            CaptureWorkspaceView();
+            _workspaceOverviewLifecycleCoordinator.CaptureCurrentWorkspaceView(State);
         }
         catch (Exception ex)
         {
@@ -103,7 +105,8 @@ public sealed partial class CharacterOverviewPresenter
 
     private async Task RenderValidateAction(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
     {
-        if (_currentWorkspace is null)
+        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
+        if (currentWorkspace is null)
         {
             Publish(State with { Error = "No workspace loaded." });
             return;
@@ -119,7 +122,7 @@ public sealed partial class CharacterOverviewPresenter
         {
             WorkspaceSectionRenderResult validation = await _workspaceSectionRenderer.RenderValidationAsync(
                 _client,
-                _currentWorkspace.Value,
+                currentWorkspace.Value,
                 action,
                 ct);
             Publish(State with
@@ -132,7 +135,7 @@ public sealed partial class CharacterOverviewPresenter
                 ActiveSectionJson = validation.ActiveSectionJson,
                 ActiveSectionRows = validation.ActiveSectionRows
             });
-            CaptureWorkspaceView();
+            _workspaceOverviewLifecycleCoordinator.CaptureCurrentWorkspaceView(State);
         }
         catch (Exception ex)
         {
@@ -142,18 +145,5 @@ public sealed partial class CharacterOverviewPresenter
                 Error = ex.Message
             });
         }
-    }
-
-    private void CaptureWorkspaceView()
-    {
-        if (_currentWorkspace is null)
-            return;
-
-        _workspaceViewStateStore.Capture(_currentWorkspace.Value, State);
-    }
-
-    private WorkspaceViewState? RestoreWorkspaceView(CharacterWorkspaceId id)
-    {
-        return _workspaceViewStateStore.Restore(id);
     }
 }

@@ -45,3 +45,20 @@ public sealed record WorkspaceDownloadResponse(
     string FileName,
     int DocumentLength,
     string RulesetId = RulesetDefaults.Sr5);
+
+public sealed record WorkspaceExportResponse(
+    string Id,
+    string Format,
+    string ContentBase64,
+    string FileName,
+    int DocumentLength,
+    string RulesetId = RulesetDefaults.Sr5);
+
+public sealed record WorkspacePrintResponse(
+    string Id,
+    string ContentBase64,
+    string FileName,
+    string MimeType,
+    int DocumentLength,
+    string Title,
+    string RulesetId = RulesetDefaults.Sr5);

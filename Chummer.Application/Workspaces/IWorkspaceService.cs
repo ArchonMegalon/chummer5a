@@ -38,5 +38,7 @@ public interface IWorkspaceService
 
     CommandResult<WorkspaceDownloadReceipt> Download(CharacterWorkspaceId id);
 
-    CommandResult<DataExportBundle> Export(CharacterWorkspaceId id);
+    CommandResult<WorkspaceExportReceipt> Export(CharacterWorkspaceId id);
+
+    CommandResult<WorkspacePrintReceipt> Print(CharacterWorkspaceId id);
 }

@@ -211,6 +211,8 @@ public class WorkspacePersistenceServiceTests
         public Task<CommandResult<WorkspaceDownloadReceipt>> DownloadAsync(CharacterWorkspaceId id, CancellationToken ct)
             => Task.FromResult(DownloadResult);
 
-        public Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
+        public Task<CommandResult<WorkspaceExportReceipt>> ExportAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
+
+        public Task<CommandResult<WorkspacePrintReceipt>> PrintAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();
     }
 }

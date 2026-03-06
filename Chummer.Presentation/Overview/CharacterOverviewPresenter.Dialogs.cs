@@ -55,6 +55,7 @@ public sealed partial class CharacterOverviewPresenter
             Publish: Publish,
             ImportAsync: ImportAsync,
             ExportAsync: ExportAsync,
+            PrintAsync: PrintAsync,
             UpdateMetadataAsync: UpdateMetadataAsync,
             GetState: () => State,
             SetPreferredRulesetAsync: SetPreferredRulesetAsync);

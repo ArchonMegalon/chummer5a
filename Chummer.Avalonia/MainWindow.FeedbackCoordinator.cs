@@ -37,6 +37,42 @@ internal static class MainWindowFeedbackCoordinator
         sectionHost.SetNotice(notice ?? $"Notice: downloaded {fallbackFileName}.");
     }
 
+    public static void ShowExportUnavailable(SectionHostControl sectionHost)
+    {
+        sectionHost.SetNotice("Notice: export requested but file save is unavailable on this platform.");
+    }
+
+    public static void ShowExportCancelled(SectionHostControl sectionHost)
+    {
+        sectionHost.SetNotice("Notice: export canceled.");
+    }
+
+    public static void ShowExportCompleted(
+        SectionHostControl sectionHost,
+        string? notice,
+        string fallbackFileName)
+    {
+        sectionHost.SetNotice(notice ?? $"Notice: exported {fallbackFileName}.");
+    }
+
+    public static void ShowPrintUnavailable(SectionHostControl sectionHost)
+    {
+        sectionHost.SetNotice("Notice: print preview requested but file save is unavailable on this platform.");
+    }
+
+    public static void ShowPrintCancelled(SectionHostControl sectionHost)
+    {
+        sectionHost.SetNotice("Notice: print preview canceled.");
+    }
+
+    public static void ShowPrintCompleted(
+        SectionHostControl sectionHost,
+        string? notice,
+        string fallbackFileName)
+    {
+        sectionHost.SetNotice(notice ?? $"Notice: saved print preview {fallbackFileName}.");
+    }
+
     public static void ApplyUiActionFailure(
         ToolStripControl toolStrip,
         SectionHostControl sectionHost,

@@ -25,18 +25,31 @@ public partial class MainWindow
 
     private void ApplyPostRefreshEffects(CharacterOverviewState state)
     {
-        PendingDownloadDispatchRequest? pendingDownloadRequest = _transientStateCoordinator.ApplyPostRefresh(
+        MainWindowTransientDispatchSet pendingDispatches = _transientStateCoordinator.ApplyPostRefresh(
             this,
             state,
             _adapter,
             DialogWindow_OnClosed);
-        if (pendingDownloadRequest is null)
+
+        if (pendingDispatches.PendingDownloadRequest is not null)
         {
-            return;
+            _ = RunUiActionAsync(
+                () => HandlePendingDownloadAsync(pendingDispatches.PendingDownloadRequest),
+                "pending download");
         }
 
-        _ = RunUiActionAsync(
-            () => HandlePendingDownloadAsync(pendingDownloadRequest),
-            "pending download");
+        if (pendingDispatches.PendingExportRequest is not null)
+        {
+            _ = RunUiActionAsync(
+                () => HandlePendingExportAsync(pendingDispatches.PendingExportRequest),
+                "pending export");
+        }
+
+        if (pendingDispatches.PendingPrintRequest is not null)
+        {
+            _ = RunUiActionAsync(
+                () => HandlePendingPrintAsync(pendingDispatches.PendingPrintRequest),
+                "pending print");
+        }
     }
 }

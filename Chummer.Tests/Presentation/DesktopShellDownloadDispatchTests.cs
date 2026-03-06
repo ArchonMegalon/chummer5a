@@ -80,18 +80,84 @@ public sealed class DesktopShellDownloadDispatchTests
         Assert.AreEqual("application/json", invocation.Arguments[2]?.ToString());
     }
 
+    [TestMethod]
+    public void OnAfterRenderAsync_dispatches_pending_export_once_per_version()
+    {
+        using var context = new BunitContext();
+        context.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        FakeCharacterOverviewPresenter presenter = new();
+        presenter.Publish(CreateOverviewState(exportReceipt: CreateExportReceipt("ws-1"), exportVersion: 1));
+        TrackingShellPresenter shellPresenter = new(ShellState.Empty);
+        RegisterDesktopShellServices(context, presenter, shellPresenter);
+
+        IRenderedComponent<DesktopShell> cut = context.Render<DesktopShell>();
+
+        cut.WaitForAssertion(() => Assert.AreEqual(1, ExportInvocationCount(context)));
+        var invocation = context.JSInterop.Invocations
+            .First(item => string.Equals(item.Identifier, "chummerExports.downloadBase64", StringComparison.Ordinal));
+        Assert.AreEqual("ws-1-export.json", invocation.Arguments[0]?.ToString());
+        Assert.AreEqual("application/json", invocation.Arguments[2]?.ToString());
+
+        presenter.Publish(CreateOverviewState(exportReceipt: CreateExportReceipt("ws-1"), exportVersion: 1));
+        cut.WaitForAssertion(() => Assert.AreEqual(1, ExportInvocationCount(context)));
+    }
+
+    [TestMethod]
+    public void OnAfterRenderAsync_dispatches_pending_print_once_per_version()
+    {
+        using var context = new BunitContext();
+        context.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        FakeCharacterOverviewPresenter presenter = new();
+        presenter.Publish(CreateOverviewState(printReceipt: CreatePrintReceipt("ws-1"), printVersion: 1));
+        TrackingShellPresenter shellPresenter = new(ShellState.Empty);
+        RegisterDesktopShellServices(context, presenter, shellPresenter);
+
+        IRenderedComponent<DesktopShell> cut = context.Render<DesktopShell>();
+
+        cut.WaitForAssertion(() => Assert.AreEqual(1, PrintInvocationCount(context)));
+        var invocation = context.JSInterop.Invocations
+            .First(item => string.Equals(item.Identifier, "chummerPrints.openBase64", StringComparison.Ordinal));
+        Assert.AreEqual("ws-1-print.html", invocation.Arguments[0]?.ToString());
+        Assert.AreEqual("text/html", invocation.Arguments[2]?.ToString());
+        Assert.AreEqual("Runner", invocation.Arguments[3]?.ToString());
+    }
+
     private static int DownloadInvocationCount(BunitContext context)
     {
         return context.JSInterop.Invocations.Count(invocation =>
             string.Equals(invocation.Identifier, "chummerDownloads.downloadBase64", StringComparison.Ordinal));
     }
 
-    private static CharacterOverviewState CreateOverviewState(WorkspaceDownloadReceipt? receipt, long version)
+    private static int ExportInvocationCount(BunitContext context)
+    {
+        return context.JSInterop.Invocations.Count(invocation =>
+            string.Equals(invocation.Identifier, "chummerExports.downloadBase64", StringComparison.Ordinal));
+    }
+
+    private static int PrintInvocationCount(BunitContext context)
+    {
+        return context.JSInterop.Invocations.Count(invocation =>
+            string.Equals(invocation.Identifier, "chummerPrints.openBase64", StringComparison.Ordinal));
+    }
+
+    private static CharacterOverviewState CreateOverviewState(
+        WorkspaceDownloadReceipt? receipt = null,
+        long version = 0,
+        WorkspaceExportReceipt? exportReceipt = null,
+        long exportVersion = 0,
+        WorkspacePrintReceipt? printReceipt = null,
+        long printVersion = 0)
     {
         return CharacterOverviewState.Empty with
         {
             PendingDownload = receipt,
-            PendingDownloadVersion = version
+            PendingDownloadVersion = version,
+            PendingExport = exportReceipt,
+            PendingExportVersion = exportVersion,
+            PendingPrint = printReceipt,
+            PendingPrintVersion = printVersion
         };
     }
 
@@ -106,6 +172,29 @@ public sealed class DesktopShellDownloadDispatchTests
             ContentBase64: Convert.ToBase64String(Encoding.UTF8.GetBytes("<character/>")),
             FileName: fileName ?? $"{workspaceId}.chum5",
             DocumentLength: 12,
+            RulesetId: "sr5");
+    }
+
+    private static WorkspaceExportReceipt CreateExportReceipt(string workspaceId)
+    {
+        return new WorkspaceExportReceipt(
+            Id: new CharacterWorkspaceId(workspaceId),
+            Format: WorkspaceDocumentFormat.Json,
+            ContentBase64: Convert.ToBase64String(Encoding.UTF8.GetBytes("{\"summary\":true}")),
+            FileName: $"{workspaceId}-export.json",
+            DocumentLength: 16,
+            RulesetId: "sr5");
+    }
+
+    private static WorkspacePrintReceipt CreatePrintReceipt(string workspaceId)
+    {
+        return new WorkspacePrintReceipt(
+            Id: new CharacterWorkspaceId(workspaceId),
+            ContentBase64: Convert.ToBase64String(Encoding.UTF8.GetBytes("<html><body>Runner</body></html>")),
+            FileName: $"{workspaceId}-print.html",
+            MimeType: "text/html",
+            DocumentLength: 32,
+            Title: "Runner",
             RulesetId: "sr5");
     }
 

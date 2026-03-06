@@ -22,11 +22,12 @@ public sealed partial class CharacterOverviewPresenter
 
         OverviewCommandExecutionContext context = new(
             State: State,
-            CurrentWorkspace: _currentWorkspace,
+            CurrentWorkspace: _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId,
             DialogFactory: _dialogFactory,
             Publish: Publish,
             SaveAsync: SaveAsync,
             DownloadAsync: DownloadAsync,
+            PrintAsync: PrintAsync,
             LoadAsync: LoadAsync,
             CreateResetState: CreateWorkspaceResetState,
             CloseAllAsync: CloseAllWorkspacesAsync,
@@ -37,13 +38,14 @@ public sealed partial class CharacterOverviewPresenter
 
     public async Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action, CancellationToken ct)
     {
+        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
         if (action is null)
         {
             Publish(State with { Error = "Workspace action is required." });
             return;
         }
 
-        if (action.RequiresOpenCharacter && _currentWorkspace is null)
+        if (action.RequiresOpenCharacter && currentWorkspace is null)
         {
             Publish(State with { Error = "No workspace loaded." });
             return;
@@ -85,19 +87,20 @@ public sealed partial class CharacterOverviewPresenter
 
     public async Task SelectTabAsync(string tabId, CancellationToken ct)
     {
+        CharacterWorkspaceId? currentWorkspace = _workspaceOverviewLifecycleCoordinator.CurrentWorkspaceId;
         if (string.IsNullOrWhiteSpace(tabId))
         {
             Publish(State with { Error = "Tab id is required." });
             return;
         }
 
-        if (_currentWorkspace is null)
+        if (currentWorkspace is null)
         {
             Publish(State with { Error = "No workspace loaded." });
             return;
         }
 
-        string rulesetId = ResolveWorkspaceRulesetId(_currentWorkspace.Value);
+        string rulesetId = ResolveWorkspaceRulesetId(currentWorkspace.Value);
         NavigationTabDefinition? tab = State.NavigationTabs.FirstOrDefault(item => string.Equals(item.Id, tabId, StringComparison.Ordinal));
         tab ??= RulesetShellCatalogResolver.ResolveNavigationTabs(rulesetId)
             .FirstOrDefault(item => string.Equals(item.Id, tabId, StringComparison.Ordinal));
@@ -122,4 +125,12 @@ public sealed partial class CharacterOverviewPresenter
         await LoadSectionAsync(tab.SectionId, tab.Id, $"{tab.Id}.{tab.SectionId}", ct);
     }
 
+    private string ResolveWorkspaceRulesetId(CharacterWorkspaceId workspaceId)
+    {
+        OpenWorkspaceState? workspace = State.OpenWorkspaces.FirstOrDefault(
+            candidate => string.Equals(candidate.Id.Value, workspaceId.Value, StringComparison.Ordinal));
+        return workspace is null
+            ? RulesetDefaults.Sr5
+            : RulesetDefaults.Normalize(workspace.RulesetId);
+    }
 }

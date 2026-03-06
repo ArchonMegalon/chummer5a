@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Chummer.Contracts.Api;
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
@@ -186,7 +187,7 @@ public class WorkspaceServiceTests
     }
 
     [TestMethod]
-    public void Export_builds_bundle_from_ruleset_codec_sections()
+    public void Export_builds_receipt_from_ruleset_codec_sections()
     {
         InMemoryWorkspaceStore store = new();
         CharacterWorkspaceId id = store.Create(new WorkspaceDocument(
@@ -199,15 +200,20 @@ public class WorkspaceServiceTests
         RecordingWorkspaceCodec codec = new();
         WorkspaceService workspaceService = new(store, new RulesetWorkspaceCodecResolver([codec]));
 
-        CommandResult<DataExportBundle> result = workspaceService.Export(id);
+        CommandResult<WorkspaceExportReceipt> result = workspaceService.Export(id);
 
         Assert.IsTrue(result.Success);
         Assert.IsNotNull(result.Value);
-        Assert.AreEqual("Codec Runner", result.Value.Summary.Name);
-        Assert.IsNotNull(result.Value.Attributes);
-        Assert.AreEqual("Reaction", result.Value.Attributes!.Attributes[0].Name);
-        Assert.IsNotNull(result.Value.Contacts);
-        Assert.AreEqual("Fixer", result.Value.Contacts!.Contacts[0].Name);
+        Assert.IsNotNull(codec.LastExportEnvelope);
+        Assert.AreEqual("sr6", codec.LastExportEnvelope.RulesetId);
+        Assert.AreEqual(7, codec.LastExportEnvelope.SchemaVersion);
+        Assert.AreEqual("sr6/custom-payload", codec.LastExportEnvelope.PayloadKind);
+        Assert.AreEqual("Codec Runner-export.json", result.Value.FileName);
+        Assert.AreEqual(WorkspaceDocumentFormat.Json, result.Value.Format);
+        string payload = Encoding.UTF8.GetString(Convert.FromBase64String(result.Value.ContentBase64));
+        StringAssert.Contains(payload, "\"Name\": \"Codec Runner\"");
+        StringAssert.Contains(payload, "\"Reaction\"");
+        StringAssert.Contains(payload, "\"Fixer\"");
     }
 
     private sealed class TrackingWorkspaceStore : IWorkspaceStore
@@ -298,6 +304,8 @@ public class WorkspaceServiceTests
 
         public WorkspacePayloadEnvelope? LastDownloadEnvelope { get; private set; }
 
+        public WorkspacePayloadEnvelope? LastExportEnvelope { get; private set; }
+
         public WorkspacePayloadEnvelope WrapImport(string rulesetId, WorkspaceImportDocument document)
         {
             return new WorkspacePayloadEnvelope(
@@ -383,6 +391,20 @@ public class WorkspaceServiceTests
                 FileName: "codec-export.sr6pkg",
                 DocumentLength: 16,
                 RulesetId: envelope.RulesetId);
+        }
+
+        public DataExportBundle BuildExportBundle(WorkspacePayloadEnvelope envelope)
+        {
+            LastExportEnvelope = envelope;
+            return new DataExportBundle(
+                Summary: ParseSummary(envelope),
+                Profile: (CharacterProfileSection)ParseSection("profile", envelope),
+                Progress: (CharacterProgressSection)ParseSection("progress", envelope),
+                Attributes: (CharacterAttributesSection)ParseSection("attributes", envelope),
+                Skills: (CharacterSkillsSection)ParseSection("skills", envelope),
+                Inventory: (CharacterInventorySection)ParseSection("inventory", envelope),
+                Qualities: (CharacterQualitiesSection)ParseSection("qualities", envelope),
+                Contacts: (CharacterContactsSection)ParseSection("contacts", envelope));
         }
     }
 }

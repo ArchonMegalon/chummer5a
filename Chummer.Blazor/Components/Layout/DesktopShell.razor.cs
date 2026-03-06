@@ -37,6 +37,8 @@ public partial class DesktopShell : IDisposable
     private string MetadataNotes { get; set; } = string.Empty;
     private string _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
     private long _lastDownloadVersionHandled;
+    private long _lastExportVersionHandled;
+    private long _lastPrintVersionHandled;
     private bool _isDisposed;
     private ShellSurfaceState _shellSurfaceState = ShellSurfaceState.Empty;
 
@@ -92,6 +94,8 @@ public partial class DesktopShell : IDisposable
         }
 
         await DispatchPendingDownloadAsync();
+        await DispatchPendingExportAsync();
+        await DispatchPendingPrintAsync();
     }
 
     private void OnShellStateChanged(object? sender, EventArgs e)

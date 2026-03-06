@@ -29,7 +29,7 @@ Finish migration execution without re-architecting again. Keep existing seams (`
 
 - [ ] `MIG-001` CI: make `scripts/migration-loop.sh 1` a required PR check.
 Acceptance criteria: CI blocks merge on loop failure; required status check is enforced in branch protection.
-Progress: workflow job `linux-migration-loop` added in `.github/workflows/docker-architecture-guardrails.yml`; branch protection enforcement still requires GitHub repo settings update.
+Progress: workflow job `linux-migration-loop` added in `.github/workflows/docker-architecture-guardrails.yml`; branch protection enforcement still requires GitHub repo settings update and is now the only remaining external/non-repo blocker for the migration parity phases.
 
 - [x] `MIG-002` Guardrails: extend architecture tests to fail when UI heads reference `Chummer.Application`, `Chummer.Core`, or `Chummer.Infrastructure`.
 Acceptance criteria: new/updated tests fail on forbidden project references and pass on current allowed topology.
@@ -37,7 +37,7 @@ Acceptance criteria: new/updated tests fail on forbidden project references and 
 - [x] `MIG-003` API host discipline: add a compliance test asserting no workspace/business logic implementation in `Chummer.Api/Program.cs` or endpoint files beyond wiring.
 Acceptance criteria: test fails if XML parsing, file I/O, or orchestration logic appears in API host code.
 
-- [x] `MIG-004` Documentation alignment: keep `Chummer.Web` documented as temporary parity artifact only.
+- [x] `MIG-004` Documentation alignment: keep `Chummer.Web` documented as a compatibility/oracle asset only.
 Acceptance criteria: README + compose docs consistently position `Chummer.Web` as non-target runtime.
 
 ### Phase 1: Promote catalogs into a shell contract
@@ -94,9 +94,9 @@ Progress: added `IDialogCoordinator` + `DialogCoordinator`; presenter delegates 
 Acceptance criteria: open/close/switch/recent rules are testable in isolation from section rendering.
 Progress: workspace lifecycle rules are centralized in `IWorkspaceSessionPresenter`/`WorkspaceSessionPresenter` with isolated coverage in `WorkspaceSessionPresenterTests`.
 
-- [ ] `MIG-033` Narrow `CharacterOverviewPresenter` responsibility to overview composition.
+- [x] `MIG-033` Narrow `CharacterOverviewPresenter` responsibility to overview composition.
 Acceptance criteria: presenter owns overview state composition only; command/dialog/workspace concerns are delegated.
-Progress: command routing (`OverviewCommandDispatcher`), dialog orchestration (`DialogCoordinator`), workspace session ordering (`WorkspaceSessionPresenter`), workspace session activation (`WorkspaceSessionActivationService`), remote close handling (`WorkspaceRemoteCloseService`), overview snapshot loading (`WorkspaceOverviewLoader`), loaded-state composition (`WorkspaceOverviewStateFactory`), section payload rendering (`WorkspaceSectionRenderer`), metadata/save orchestration (`WorkspacePersistenceService`), workspace-view persistence (`WorkspaceViewStateStore`), and empty-shell state composition (`WorkspaceShellStateFactory`) are delegated; remaining presenter hotspot is end-to-end lifecycle sequencing around import/load/close flows.
+Progress: command routing (`OverviewCommandDispatcher`), dialog orchestration (`DialogCoordinator`), workspace session ordering (`WorkspaceSessionPresenter`), workspace lifecycle sequencing (`WorkspaceOverviewLifecycleCoordinator`), overview snapshot loading (`WorkspaceOverviewLoader`), loaded-state composition (`WorkspaceOverviewStateFactory`), section payload rendering (`WorkspaceSectionRenderer`), metadata/save orchestration (`WorkspacePersistenceService`), workspace-view persistence (`WorkspaceViewStateStore`), and empty-shell state composition (`WorkspaceShellStateFactory`) are delegated; compliance now locks the presenter onto composition/publish responsibilities instead of end-to-end import/load/close orchestration.
 
 ### Phase 4: Finish Blazor shell as thin renderer
 
@@ -158,38 +158,45 @@ Progress: covered by `Avalonia_and_Blazor_support_family_workspace_actions_rende
 
 - [x] `MIG-065` Family migration: `Tools` (settings, roster, translator, XML editor, index, export/print entry points).
 Acceptance criteria: tool command handling is shared and no head-specific business logic is added.
-Progress: covered by `Avalonia_and_Blazor_dialog_and_import_commands_expose_matching_dialog_contracts`, `Avalonia_and_Blazor_character_settings_save_updates_shared_state`, and `Avalonia_and_Blazor_download_and_export_commands_prepare_matching_receipts`.
+Progress: covered by `Avalonia_and_Blazor_dialog_and_import_commands_expose_matching_dialog_contracts`, `Avalonia_and_Blazor_character_settings_save_updates_shared_state`, and `Avalonia_and_Blazor_download_export_and_print_commands_prepare_matching_receipts`.
 
 ### Phase 7: Save/export semantics and XML boundary cleanup
 
-- [ ] `MIG-070` Separate `Save` vs `Save As/Download` semantics in API and presentation contracts.
+- [x] `MIG-070` Separate `Save` vs `Save As/Download` semantics in API and presentation contracts.
 Acceptance criteria: save persists workspace/session state; download returns document payload explicitly.
+Progress: `WorkspaceSaveReceipt` remains persistence-only while save-as/download stays on explicit `WorkspaceDownloadReceipt`, presenter state now tracks `PendingDownload` independently from save state, and both local/runtime plus dual-head/docker coverage validate the split.
 
-- [ ] `MIG-071` Introduce explicit export/print workflows (contracts + endpoints + presenter commands).
+- [x] `MIG-071` Introduce explicit export/print workflows (contracts + endpoints + presenter commands).
 Acceptance criteria: export and print are not overloaded through generic save paths.
+Progress: added first-class `WorkspaceExportReceipt` and `WorkspacePrintReceipt` contracts, `/api/workspaces/{id}/export` and `/api/workspaces/{id}/print` endpoints, explicit presenter/client/runtime flows, head-specific pending export/print dispatch in Blazor and Avalonia, and dual-head parity coverage in `Avalonia_and_Blazor_download_export_and_print_commands_prepare_matching_receipts`.
 
-- [ ] `MIG-072` Refactor workspace internals away from raw XML-only mutation toward richer workspace/session model.
+- [x] `MIG-072` Refactor workspace internals away from raw XML-only mutation toward richer workspace/session model.
 Acceptance criteria: XML remains an import/export boundary while in-memory/session model carries behavioral state.
+Progress: `WorkspaceDocument` now carries first-class `WorkspaceDocumentState` (`RulesetId`, `SchemaVersion`, `PayloadKind`, `Payload`) so store/service paths work with richer in-memory state instead of only a raw envelope wrapper, codec defaults still resolve incomplete metadata at the service boundary, and export-bundle construction now lives in `IRulesetWorkspaceCodec`/`Sr5WorkspaceCodec` instead of `WorkspaceService`. XML parsing is contained to the ruleset codec/import-export boundary instead of shared workspace orchestration.
 
-- [ ] `MIG-073` Add restart-safe persistence tests for workspace/session state and save/download flows.
+- [x] `MIG-073` Add restart-safe persistence tests for workspace/session state and save/download flows.
 Acceptance criteria: after process restart, persisted workspaces reopen with deterministic metadata and receipts.
+Progress: `RestartSafeWorkspacePersistenceTests` now verify restart-safe bootstrap/session restore plus explicit save, download, export, and print receipts after process restart.
 
-- [ ] `MIG-074` Make content packaging deterministic (data/lang assets) for docker runtime.
+- [x] `MIG-074` Make content packaging deterministic (data/lang assets) for docker runtime.
 Acceptance criteria: API container startup validates required content bundle and fails fast when missing.
-Progress: introduced `CHUMMER_AMENDS_PATH` overlay discovery in infrastructure with deterministic priority ordering, docker-mounted sample pack (`Docker/Amends`), API visibility via `/api/info` + `/api/content/overlays`, fail-fast startup validation (`requireContentBundle: true` in `Chummer.Api` + `CHUMMER_REQUIRE_CONTENT_BUNDLE` host toggle), optional amend-manifest SHA-256 checksum validation (`checksums` map), and CI policy enforcement for release/sample packs via `scripts/validate-amend-manifests.sh`. Next step is signed provenance for published overlay bundles.
+Progress: introduced `CHUMMER_AMENDS_PATH` overlay discovery in infrastructure with deterministic priority ordering, docker-mounted sample pack (`Docker/Amends`), API visibility via `/api/info` + `/api/content/overlays`, fail-fast startup validation (`requireContentBundle: true` in `Chummer.Api` + `CHUMMER_REQUIRE_CONTENT_BUNDLE` host toggle), optional amend-manifest SHA-256 checksum validation (`checksums` map), and CI policy enforcement for release/sample packs via `scripts/validate-amend-manifests.sh`. Signed provenance for published overlay bundles is a later hardening/release follow-up, not a migration-parity blocker.
 
 ### Phase 8: Retire static legacy shell
 
-Guardrail: until this phase is complete, `Chummer` (WinForms) and `Chummer.Web` remain oracle/parity assets only. Net-new user-facing behavior must land in the shared seam and active heads; legacy changes are limited to parity extraction, regression-oracle maintenance, or compatibility verification.
+Exit state: `Chummer` (WinForms) and `Chummer.Web` are oracle/parity assets only. Net-new user-facing behavior must land in the shared seam and active heads; legacy changes are limited to parity extraction, regression-oracle maintenance, or compatibility verification.
 
-- [ ] `MIG-080` Remove `Chummer.Web` from default product runtime path once parity gates are met.
+- [x] `MIG-080` Remove `Chummer.Web` from default product runtime path once parity gates are met.
 Acceptance criteria: compose and README primary flows reference API + Blazor + Avalonia only.
+Progress: default `docker-compose.yml` runtime continues to expose only `chummer-api` and `chummer-blazor`, portal flows use `chummer-blazor-portal` + `chummer-avalonia-browser`, and README primary startup paths reference active heads only while legacy heads remain documentation-only.
 
-- [ ] `MIG-081` Replace any remaining legacy-shell-coupled checks with head-agnostic parity tests.
+- [x] `MIG-081` Replace any remaining legacy-shell-coupled checks with head-agnostic parity tests.
 Acceptance criteria: migration/compliance tests no longer require `Chummer.Web` artifacts to assert parity.
+Progress: compliance parity checks now use `docs/PARITY_ORACLE.json` plus active-head source assertions, the parity checklist generator consumes the oracle instead of `Chummer.Web/wwwroot/index.html`, and docker test containers ship the repo docs/oracle inputs needed for those guardrails.
 
-- [ ] `MIG-082` Cleanup branch artifacts and finalize migration status documentation.
+- [x] `MIG-082` Cleanup branch artifacts and finalize migration status documentation.
 Acceptance criteria: docs describe migrated architecture as current state and list decommissioned legacy shell components.
+Progress: README now frames the Docker branch as the current multi-head runtime, explicitly inventories decommissioned legacy runtime components (`Chummer.Web`, `chummer-web`, and legacy HTML-derived parity extraction), parity documentation points at the checked-in oracle instead of `Chummer.Web`, and the backlog/audit docs now use current-state wording instead of migration-in-flight language.
 
 ### Phase 9: Security and operations hardening
 

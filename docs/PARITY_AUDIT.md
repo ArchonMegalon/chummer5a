@@ -5,10 +5,11 @@ Scope: shared behavior parity across `Chummer.Blazor` and `Chummer.Avalonia` ove
 
 ## Current status
 
-- The Docker branch is now a real multi-head migration path.
+- The Docker branch is the current multi-head runtime for this repository.
 - `Chummer.Api` remains a thin host with workspace-focused endpoints.
 - `Chummer.Blazor` and `Chummer.Avalonia` both render shared presenter state.
-- `Chummer.Web` is treated as a temporary legacy-shell parity artifact, not the target UI path.
+- The checked-in parity oracle (`docs/PARITY_ORACLE.json`) now captures the cross-head surface contract without requiring `Chummer.Web` artifacts at test time.
+- `Chummer.Web`, the `chummer-web` runtime service path, and legacy HTML-derived parity extraction are decommissioned from runtime-critical flows.
 - Architecture/compliance tests and Linux docker migration loop are green.
 
 ## Primary risk

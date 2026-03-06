@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
@@ -371,16 +372,40 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual(1, client.ExportCalls);
         Assert.IsNull(presenter.State.ActiveDialog);
         Assert.IsNull(presenter.State.Error);
-        Assert.IsNotNull(presenter.State.PendingDownload);
-        Assert.AreEqual(WorkspaceDocumentFormat.Json, presenter.State.PendingDownload?.Format);
-        StringAssert.EndsWith(presenter.State.PendingDownload?.FileName ?? string.Empty, "-export.json");
-        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Export bundle prepared:");
-        string payload = Encoding.UTF8.GetString(Convert.FromBase64String(presenter.State.PendingDownload!.ContentBase64));
+        Assert.IsNull(presenter.State.PendingDownload);
+        Assert.IsNotNull(presenter.State.PendingExport);
+        Assert.AreEqual(WorkspaceDocumentFormat.Json, presenter.State.PendingExport?.Format);
+        StringAssert.EndsWith(presenter.State.PendingExport?.FileName ?? string.Empty, "-export.json");
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Export prepared:");
+        string payload = Encoding.UTF8.GetString(Convert.FromBase64String(presenter.State.PendingExport!.ContentBase64));
         StringAssert.Contains(payload, "\"Summary\"");
         StringAssert.Contains(payload, "\"Profile\"");
         StringAssert.Contains(payload, "\"Progress\"");
         StringAssert.Contains(payload, "\"Reaction\"");
         StringAssert.Contains(payload, "\"Fixer\"");
+    }
+
+    [TestMethod]
+    public async Task Print_character_command_prepares_html_preview()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+        await presenter.ExecuteCommandAsync("print_character", CancellationToken.None);
+
+        Assert.AreEqual(1, client.PrintCalls);
+        Assert.IsNull(presenter.State.ActiveDialog);
+        Assert.IsNull(presenter.State.Error);
+        Assert.IsNull(presenter.State.PendingDownload);
+        Assert.IsNull(presenter.State.PendingExport);
+        Assert.IsNotNull(presenter.State.PendingPrint);
+        StringAssert.EndsWith(presenter.State.PendingPrint?.FileName ?? string.Empty, "-print.html");
+        Assert.AreEqual("text/html", presenter.State.PendingPrint?.MimeType);
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Print preview prepared:");
+        string payload = Encoding.UTF8.GetString(Convert.FromBase64String(presenter.State.PendingPrint!.ContentBase64));
+        StringAssert.Contains(payload, "<html");
+        StringAssert.Contains(payload, "Troy Simmons");
     }
 
     [TestMethod]
@@ -590,7 +615,6 @@ public class CharacterOverviewPresenterTests
             "dumpshock",
             "print_setup",
             "print_multiple",
-            "print_character",
             "dice_roller",
             "global_settings",
             "switch_ruleset",
@@ -762,6 +786,7 @@ public class CharacterOverviewPresenterTests
         public int ListWorkspacesCalls { get; private set; }
         public int GetProfileCalls { get; private set; }
         public int ExportCalls { get; private set; }
+        public int PrintCalls { get; private set; }
         public UpdateWorkspaceMetadata? LastUpdateMetadata { get; private set; }
         public WorkspaceImportDocument? LastImportedDocument { get; private set; }
         public static IReadOnlyList<AppCommandDefinition> Commands { get; } =
@@ -1168,7 +1193,7 @@ public class CharacterOverviewPresenterTests
                 Error: null));
         }
 
-        public Task<DataExportBundle> ExportAsync(CharacterWorkspaceId id, CancellationToken ct)
+        public Task<CommandResult<WorkspaceExportReceipt>> ExportAsync(CharacterWorkspaceId id, CancellationToken ct)
         {
             ExportCalls++;
             SeedWorkspace(id.Value, _name, _alias);
@@ -1267,7 +1292,38 @@ public class CharacterOverviewPresenterTests
                         new CharacterContactSummary("Fixer", "Broker", "Seattle", 4, 3)
                     ]));
 
-            return Task.FromResult(bundle);
+            string json = JsonSerializer.Serialize(bundle);
+            byte[] payloadBytes = Encoding.UTF8.GetBytes(json);
+            return Task.FromResult(new CommandResult<WorkspaceExportReceipt>(
+                Success: true,
+                Value: new WorkspaceExportReceipt(
+                    Id: id,
+                    Format: WorkspaceDocumentFormat.Json,
+                    ContentBase64: Convert.ToBase64String(payloadBytes),
+                    FileName: $"{id.Value}-export.json",
+                    DocumentLength: payloadBytes.Length,
+                    RulesetId: RulesetDefaults.Sr5),
+                Error: null));
+        }
+
+        public Task<CommandResult<WorkspacePrintReceipt>> PrintAsync(CharacterWorkspaceId id, CancellationToken ct)
+        {
+            PrintCalls++;
+            SeedWorkspace(id.Value, _name, _alias);
+
+            string html = $"<!DOCTYPE html><html><head><title>{_name}</title></head><body><h1>{_name}</h1><p>{_alias}</p></body></html>";
+            byte[] payloadBytes = Encoding.UTF8.GetBytes(html);
+            return Task.FromResult(new CommandResult<WorkspacePrintReceipt>(
+                Success: true,
+                Value: new WorkspacePrintReceipt(
+                    Id: id,
+                    ContentBase64: Convert.ToBase64String(payloadBytes),
+                    FileName: $"{id.Value}-print.html",
+                    MimeType: "text/html",
+                    DocumentLength: payloadBytes.Length,
+                    Title: _name,
+                    RulesetId: RulesetDefaults.Sr5),
+                Error: null));
         }
 
         private static string? NormalizeWorkspaceId(string? workspaceId)

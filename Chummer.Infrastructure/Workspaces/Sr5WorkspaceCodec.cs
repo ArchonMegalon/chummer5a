@@ -1,5 +1,6 @@
 using Chummer.Application.Characters;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -95,6 +96,32 @@ public sealed class Sr5WorkspaceCodec : IRulesetWorkspaceCodec
             FileName: fileName,
             DocumentLength: xml.Length,
             RulesetId: RulesetDefaults.Normalize(envelope.RulesetId));
+    }
+
+    public DataExportBundle BuildExportBundle(WorkspacePayloadEnvelope envelope)
+    {
+        return new DataExportBundle(
+            Summary: ParseSummary(envelope),
+            Profile: TryParseExportSection<CharacterProfileSection>("profile", envelope),
+            Progress: TryParseExportSection<CharacterProgressSection>("progress", envelope),
+            Attributes: TryParseExportSection<CharacterAttributesSection>("attributes", envelope),
+            Skills: TryParseExportSection<CharacterSkillsSection>("skills", envelope),
+            Inventory: TryParseExportSection<CharacterInventorySection>("inventory", envelope),
+            Qualities: TryParseExportSection<CharacterQualitiesSection>("qualities", envelope),
+            Contacts: TryParseExportSection<CharacterContactsSection>("contacts", envelope));
+    }
+
+    private TSection? TryParseExportSection<TSection>(string sectionId, WorkspacePayloadEnvelope envelope)
+        where TSection : class
+    {
+        try
+        {
+            return ParseSection(sectionId, envelope) as TSection;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string ToXmlContent(string content, WorkspaceDocumentFormat format)
