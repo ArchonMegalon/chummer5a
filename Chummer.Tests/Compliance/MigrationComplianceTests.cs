@@ -293,6 +293,12 @@ public class MigrationComplianceTests
         string apiProgramText = File.ReadAllText(apiProgramPath);
         string requestOwnerAccessorPath = FindPath("Chummer.Api", "Owners", "RequestOwnerContextAccessor.cs");
         string requestOwnerAccessorText = File.ReadAllText(requestOwnerAccessorPath);
+        string portalProgramPath = FindPath("Chummer.Portal", "Program.cs");
+        string portalProgramText = File.ReadAllText(portalProgramPath);
+        string portalOwnerPropagationPath = FindPath("Chummer.Portal", "PortalAuthenticatedOwnerPropagation.cs");
+        string portalOwnerPropagationText = File.ReadAllText(portalOwnerPropagationPath);
+        string ownerContractPath = FindPath("Chummer.Contracts", "Owners", "PortalOwnerPropagationContract.cs");
+        string ownerContractText = File.ReadAllText(ownerContractPath);
         string readmePath = FindPath("README.md");
         string readmeText = File.ReadAllText(readmePath);
         string backlogPath = FindPath("docs", "MIGRATION_BACKLOG.md");
@@ -301,18 +307,36 @@ public class MigrationComplianceTests
         StringAssert.Contains(apiProgramText, "AddHttpContextAccessor();");
         StringAssert.Contains(apiProgramText, "CHUMMER_ALLOW_OWNER_HEADER");
         StringAssert.Contains(apiProgramText, "CHUMMER_OWNER_HEADER_NAME");
+        StringAssert.Contains(apiProgramText, "CHUMMER_PORTAL_OWNER_MAX_AGE_SECONDS");
+        StringAssert.Contains(apiProgramText, "PortalOwnerPropagationContract.SharedKeyEnvironmentVariable");
         StringAssert.Contains(apiProgramText, "AddSingleton<IOwnerContextAccessor>(");
         StringAssert.Contains(apiProgramText, "new RequestOwnerContextAccessor(");
         StringAssert.Contains(apiProgramText, "\"X-Chummer-Owner\"");
+        StringAssert.Contains(apiProgramText, "ResolvePortalOwnerSharedKey");
 
         StringAssert.Contains(requestOwnerAccessorText, "public sealed class RequestOwnerContextAccessor");
         StringAssert.Contains(requestOwnerAccessorText, "OwnerScope.LocalSingleUser");
         StringAssert.Contains(requestOwnerAccessorText, "ClaimTypes.NameIdentifier");
         StringAssert.Contains(requestOwnerAccessorText, "principal.FindFirst(\"sub\")?.Value");
+        StringAssert.Contains(requestOwnerAccessorText, "PortalOwnerPropagationContract.OwnerHeaderName");
+        StringAssert.Contains(requestOwnerAccessorText, "ResolvePortalAuthenticatedOwner");
         StringAssert.Contains(requestOwnerAccessorText, "context.Request.Headers[_headerName].FirstOrDefault()");
+        StringAssert.Contains(requestOwnerAccessorText, "CreatePortalOwnerSignature");
+        StringAssert.Contains(requestOwnerAccessorText, "CryptographicOperations.FixedTimeEquals");
+        StringAssert.Contains(portalProgramText, "PortalOwnerPropagationContract.SharedKeyEnvironmentVariable");
+        StringAssert.Contains(portalProgramText, "PortalAuthenticatedOwnerPropagation.Apply");
+        StringAssert.Contains(portalOwnerPropagationText, "public static class PortalAuthenticatedOwnerPropagation");
+        StringAssert.Contains(portalOwnerPropagationText, "PortalOwnerPropagationContract.OwnerHeaderName");
+        StringAssert.Contains(portalOwnerPropagationText, "ClaimTypes.NameIdentifier");
+        StringAssert.Contains(portalOwnerPropagationText, "path.StartsWithSegments(\"/api\"");
+        StringAssert.Contains(ownerContractText, "X-Chummer-Portal-Owner");
+        StringAssert.Contains(ownerContractText, "X-Chummer-Portal-Owner-Signature");
+        StringAssert.Contains(ownerContractText, "BuildSignaturePayload");
         StringAssert.Contains(readmeText, "CHUMMER_ALLOW_OWNER_HEADER=true");
         StringAssert.Contains(readmeText, "It is not public authentication");
-        StringAssert.Contains(backlogText, "disabled-by-default forwarded owner header seam");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_OWNER_SHARED_KEY");
+        StringAssert.Contains(readmeText, "signed authenticated owner headers");
+        StringAssert.Contains(backlogText, "signed portal-owner propagation seam");
     }
 
     [TestMethod]

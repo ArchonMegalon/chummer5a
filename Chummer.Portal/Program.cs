@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Chummer.Contracts.Owners;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,11 @@ string avaloniaBrowserBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Co
 string avaloniaProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:AvaloniaProxyBaseUrl", "CHUMMER_PORTAL_AVALONIA_PROXY_URL", string.Empty);
 string apiBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ApiBaseUrl", "CHUMMER_PORTAL_API_URL", "http://chummer-api:8080/");
 string apiProxyKey = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ApiKey", "CHUMMER_PORTAL_API_KEY", Environment.GetEnvironmentVariable("CHUMMER_API_KEY") ?? string.Empty);
+string portalOwnerSharedKey = PortalSettingsResolver.ResolveSetting(
+    builder.Configuration,
+    "Portal:OwnerSharedKey",
+    PortalOwnerPropagationContract.SharedKeyEnvironmentVariable,
+    string.Empty);
 string downloadsBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "/downloads/");
 string downloadsProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsProxyBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_PROXY_URL", string.Empty);
 string downloadsFallbackUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsFallbackUrl", "CHUMMER_PORTAL_DOWNLOADS_FALLBACK_URL", string.Empty);
@@ -20,6 +26,7 @@ bool useBlazorProxy = !string.IsNullOrWhiteSpace(blazorProxyBaseUrl);
 bool useAvaloniaProxy = !string.IsNullOrWhiteSpace(avaloniaProxyBaseUrl);
 bool useDownloadsProxy = !string.IsNullOrWhiteSpace(downloadsProxyBaseUrl);
 bool isApiKeyForwardingEnabled = !string.IsNullOrWhiteSpace(apiProxyKey);
+bool isPortalOwnerForwardingEnabled = !string.IsNullOrWhiteSpace(portalOwnerSharedKey);
 IReadOnlyList<IReadOnlyDictionary<string, string>>? apiRouteTransforms = PortalProxyUtils.BuildApiRouteTransforms(apiProxyKey);
 
 var proxyRoutes = new List<RouteConfig>
@@ -150,6 +157,11 @@ builder.Services.AddReverseProxy()
     .LoadFromMemory(proxyRoutes, proxyClusters);
 
 var app = builder.Build();
+app.Use((context, next) =>
+{
+    PortalAuthenticatedOwnerPropagation.Apply(context, portalOwnerSharedKey);
+    return next();
+});
 
 app.MapGet("/health", () => Results.Ok(new
 {
@@ -168,6 +180,7 @@ app.MapGet("/", () => Results.Content(
         useAvaloniaProxy,
         apiBaseUrl,
         isApiKeyForwardingEnabled,
+        isPortalOwnerForwardingEnabled,
         downloadsBaseUrl,
         downloadsProxyBaseUrl,
         useDownloadsProxy),

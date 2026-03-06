@@ -87,6 +87,13 @@ Owner-scope dev/test bridge:
 * Authenticated user identity still wins when present; the forwarded owner header path is disabled by default.
 * This header seam is for local/test harnesses and portal-edge development only. It is not public authentication, and production/public deployments should use real portal or edge identity instead of trusting forwarded arbitrary owner headers.
 
+Portal-auth owner propagation seam:
+
+* `CHUMMER_PORTAL_OWNER_SHARED_KEY` enables signed portal-to-API owner propagation for authenticated portal requests.
+* Configure the same shared key in both `Chummer.Portal` and `Chummer.Api`; the portal strips incoming signed-owner headers and emits fresh signed authenticated owner headers only for `/api`, `/openapi`, and `/docs` proxy traffic.
+* `Chummer.Api` prefers this signed portal-owner context ahead of the dev/test `X-Chummer-Owner` bridge when both are present.
+* Optional `CHUMMER_PORTAL_OWNER_MAX_AGE_SECONDS` tightens signature freshness validation on the API side (default: `300` seconds).
+
 Run migration/compliance test loop (branch helper script):
 
 ```bash
@@ -149,6 +156,7 @@ Portal notes (current milestone):
 * `docker-compose.yml` mounts `./Docker/Downloads` into `/app/downloads` for the portal service; sync `desktop-download-bundle` into this folder to make `/downloads` serve real binaries.
 * Local sync helper: `bash scripts/runbook.sh downloads-sync <bundleDir> <deployDir>` (defaults: `dist` -> `Docker/Downloads`).
 * Portal can forward `X-Api-Key` to API/docs/openapi upstream routes when `CHUMMER_PORTAL_API_KEY` is set (or when `CHUMMER_API_KEY` is present in the portal service environment).
+* Portal can also forward signed authenticated owner context to the API/docs/openapi upstream when `CHUMMER_PORTAL_OWNER_SHARED_KEY` is configured on both services; this is the forward path for future portal-backed identity, while `CHUMMER_ALLOW_OWNER_HEADER` remains a disabled-by-default dev/test bridge only.
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
 
 Cloudflare Tunnel target (portal profile):

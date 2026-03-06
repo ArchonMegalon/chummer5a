@@ -190,6 +190,7 @@ internal static class PortalPageBuilder
         bool useAvaloniaProxy,
         string apiBaseUrl,
         bool isApiKeyForwardingEnabled,
+        bool isPortalOwnerForwardingEnabled,
         string downloadsBaseUrl,
         string downloadsProxyBaseUrl,
         bool useDownloadsProxy)
@@ -318,6 +319,7 @@ internal static class PortalPageBuilder
         html.AppendLine("      <div><code>/avalonia</code> " + (useAvaloniaProxy ? "proxy upstream → " + HtmlEncode(avaloniaProxyBaseUrl) : "placeholder route at " + HtmlEncode(avaloniaBrowserBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/downloads</code> " + (useDownloadsProxy ? "proxy upstream → " + HtmlEncode(downloadsProxyBaseUrl) : "local files + manifest with fallback feed → " + HtmlEncode(downloadsBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>X-Api-Key</code> forwarding → " + (isApiKeyForwardingEnabled ? "enabled for <code>/api</code>, <code>/openapi</code>, and <code>/docs</code>" : "disabled") + "</div>");
+        html.AppendLine("      <div><code>Portal owner propagation</code> → " + (isPortalOwnerForwardingEnabled ? "signed authenticated owner headers enabled for <code>/api</code>, <code>/openapi</code>, and <code>/docs</code>" : "disabled") + "</div>");
         html.AppendLine("    </footer>");
         html.AppendLine("  </main>");
         html.AppendLine("</body>");

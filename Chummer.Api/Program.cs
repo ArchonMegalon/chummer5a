@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Chummer.Application.Owners;
+using Chummer.Contracts.Owners;
 using Chummer.Infrastructure.DependencyInjection;
 using Chummer.Api.Endpoints;
 using Chummer.Api.Owners;
@@ -17,10 +18,18 @@ bool allowOwnerHeader = ResolveBoolean(
 string ownerHeaderName = ResolveOwnerHeaderName(
     builder.Configuration["Chummer:OwnerHeaderName"],
     Environment.GetEnvironmentVariable("CHUMMER_OWNER_HEADER_NAME"));
+string portalOwnerSharedKey = ResolvePortalOwnerSharedKey(
+    builder.Configuration["Chummer:PortalOwnerSharedKey"],
+    Environment.GetEnvironmentVariable(PortalOwnerPropagationContract.SharedKeyEnvironmentVariable));
+TimeSpan portalOwnerMaxAge = ResolvePortalOwnerMaxAge(
+    builder.Configuration["Chummer:PortalOwnerMaxAgeSeconds"],
+    Environment.GetEnvironmentVariable("CHUMMER_PORTAL_OWNER_MAX_AGE_SECONDS"));
 builder.Services.AddSingleton<IOwnerContextAccessor>(provider =>
     new RequestOwnerContextAccessor(
         provider.GetRequiredService<IHttpContextAccessor>(),
-        allowOwnerHeader ? ownerHeaderName : null));
+        allowOwnerHeader ? ownerHeaderName : null,
+        portalOwnerSharedKey,
+        portalOwnerMaxAge));
 
 var app = builder.Build();
 app.UseDefaultFiles();
@@ -125,6 +134,25 @@ static string ResolveOwnerHeaderName(string? configuredValue, string? environmen
     return string.IsNullOrWhiteSpace(raw)
         ? "X-Chummer-Owner"
         : raw.Trim();
+}
+
+static string ResolvePortalOwnerSharedKey(string? configuredValue, string? environmentValue)
+{
+    string? raw = configuredValue ?? environmentValue;
+    return string.IsNullOrWhiteSpace(raw)
+        ? string.Empty
+        : raw.Trim();
+}
+
+static TimeSpan ResolvePortalOwnerMaxAge(string? configuredValue, string? environmentValue)
+{
+    string? raw = configuredValue ?? environmentValue;
+    if (!int.TryParse(raw, out int seconds) || seconds <= 0)
+    {
+        seconds = PortalOwnerPropagationContract.DefaultMaxAgeSeconds;
+    }
+
+    return TimeSpan.FromSeconds(seconds);
 }
 
 static bool ConstantTimeEquals(string left, string right)
