@@ -1100,8 +1100,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.DesktopUiControls");
         StringAssert.Contains(avaloniaProjectorText, "ProjectCommandDialogState(");
 
-        StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(");
-        StringAssert.Contains(dualHeadAcceptanceText, "RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(");
+        StringAssert.Contains(dualHeadAcceptanceText, "ShellCatalogResolver.ResolveWorkspaceActionsForTab(");
+        StringAssert.Contains(dualHeadAcceptanceText, "ShellCatalogResolver.ResolveDesktopUiControlsForTab(");
         Assert.IsFalse(dualHeadAcceptanceText.Contains("WorkspaceSurfaceActionCatalog.ForTab(avaloniaState.ActiveTabId", StringComparison.Ordinal));
         Assert.IsFalse(dualHeadAcceptanceText.Contains("DesktopUiControlCatalog.ForTab(avaloniaState.ActiveTabId", StringComparison.Ordinal));
     }
@@ -1144,6 +1144,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetShellCatalogResolver");
         Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetPluginRegistry", StringComparison.Ordinal));
         Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetShellCatalogResolverService", StringComparison.Ordinal));
+        Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Rulesets", "RulesetShellCatalogResolver.cs"));
         StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetPluginRegistry");
         StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetShellCatalogResolverService");
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Rulesets", "Sr5RulesetPlugin.cs"));
@@ -1256,6 +1257,9 @@ public class MigrationComplianceTests
         string presenterCommandsText = File.ReadAllText(presenterCommandsPath);
         Assert.IsFalse(workspaceSessionManagerText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(presenterCommandsText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
+        Assert.IsFalse(presenterCommandsText.Contains("RulesetShellCatalogResolver.", StringComparison.Ordinal));
+        StringAssert.Contains(presenterCommandsText, "_shellCatalogResolver.ResolveNavigationTabs(");
+        StringAssert.Contains(presenterCommandsText, "_shellCatalogResolver.ResolveWorkspaceActionsForTab(");
         string shellStatePath = FindPath("Chummer.Presentation", "Shell", "ShellState.cs");
         string shellStateText = File.ReadAllText(shellStatePath);
         string shellContractsPath = FindPath("Chummer.Contracts", "Presentation", "ShellBootstrapContracts.cs");

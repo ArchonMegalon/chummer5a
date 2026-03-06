@@ -1,5 +1,6 @@
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Shell;
 
@@ -16,6 +17,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
     private readonly IWorkspacePersistenceService _workspacePersistenceService;
     private readonly IWorkspaceOverviewLifecycleCoordinator _workspaceOverviewLifecycleCoordinator;
     private readonly IShellBootstrapDataProvider _bootstrapDataProvider;
+    private readonly IRulesetShellCatalogResolver _shellCatalogResolver;
     private readonly IShellPresenter? _shellPresenter;
 
     public CharacterOverviewPresenter(
@@ -35,6 +37,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
         IWorkspaceOverviewStateFactory? workspaceOverviewStateFactory = null,
         IWorkspaceOverviewLifecycleCoordinator? workspaceOverviewLifecycleCoordinator = null,
         IShellBootstrapDataProvider? bootstrapDataProvider = null,
+        IRulesetShellCatalogResolver? shellCatalogResolver = null,
         IShellPresenter? shellPresenter = null)
     {
         _client = client;
@@ -62,6 +65,7 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
                 resolvedWorkspaceSessionActivationService,
                 resolvedWorkspaceOverviewStateFactory);
         _bootstrapDataProvider = bootstrapDataProvider ?? new ShellBootstrapDataProvider(client);
+        _shellCatalogResolver = shellCatalogResolver ?? new CatalogOnlyRulesetShellCatalogResolver();
         _shellPresenter = shellPresenter;
     }
 

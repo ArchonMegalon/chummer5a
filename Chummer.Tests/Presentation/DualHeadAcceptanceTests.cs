@@ -27,6 +27,8 @@ public class DualHeadAcceptanceTests
 {
     private static readonly Uri BaseUri = ResolveBaseUri();
     private static readonly string? ApiKey = ResolveApiKey();
+    private static readonly RulesetShellCatalogResolverService ShellCatalogResolver =
+        new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>()));
     private static readonly Regex WorkspaceTokenRegex = new("(?<=Workspace:\\s)[A-Za-z0-9-]+", RegexOptions.Compiled);
     private static readonly Regex WorkspaceFileNameRegex = new("^[a-f0-9]{32}(?:-[a-f0-9]{4}){0,4}\\.(?:chum5|json)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex WorkspaceFileTokenRegex = new("[a-f0-9]{32}(?:-[a-f0-9]{4}){0,4}\\.(?:chum5|json)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -1049,14 +1051,14 @@ public class DualHeadAcceptanceTests
             .ToArray();
         CollectionAssert.AreEquivalent(avaloniaTabIds, blazorTabIds);
 
-        string[] avaloniaActionIds = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(
+        string[] avaloniaActionIds = ShellCatalogResolver.ResolveWorkspaceActionsForTab(
                 avaloniaState.ActiveTabId,
                 ResolveActiveRulesetId(avaloniaState))
             .Where(action => evaluator.IsWorkspaceActionEnabled(action, avaloniaState))
             .Select(action => action.Id)
             .OrderBy(id => id, StringComparer.Ordinal)
             .ToArray();
-        string[] blazorActionIds = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(
+        string[] blazorActionIds = ShellCatalogResolver.ResolveWorkspaceActionsForTab(
                 blazorState.ActiveTabId,
                 ResolveActiveRulesetId(blazorState))
             .Where(action => evaluator.IsWorkspaceActionEnabled(action, blazorState))
@@ -1065,14 +1067,14 @@ public class DualHeadAcceptanceTests
             .ToArray();
         CollectionAssert.AreEquivalent(avaloniaActionIds, blazorActionIds);
 
-        string[] avaloniaControlIds = RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(
+        string[] avaloniaControlIds = ShellCatalogResolver.ResolveDesktopUiControlsForTab(
                 avaloniaState.ActiveTabId,
                 ResolveActiveRulesetId(avaloniaState))
             .Where(control => evaluator.IsUiControlEnabled(control, avaloniaState))
             .Select(control => control.Id)
             .OrderBy(id => id, StringComparer.Ordinal)
             .ToArray();
-        string[] blazorControlIds = RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(
+        string[] blazorControlIds = ShellCatalogResolver.ResolveDesktopUiControlsForTab(
                 blazorState.ActiveTabId,
                 ResolveActiveRulesetId(blazorState))
             .Where(control => evaluator.IsUiControlEnabled(control, blazorState))
@@ -1677,13 +1679,26 @@ public class DualHeadAcceptanceTests
     {
         CharacterWorkspaceId? activeWorkspaceId = state.Session.ActiveWorkspaceId ?? state.WorkspaceId;
         if (activeWorkspaceId is null)
-            return RulesetDefaults.Sr5;
+        {
+            return state.Commands
+                .Select(command => RulesetDefaults.NormalizeOptional(command.RulesetId))
+                .FirstOrDefault(rulesetId => rulesetId is not null)
+                ?? state.NavigationTabs
+                    .Select(tab => RulesetDefaults.NormalizeOptional(tab.RulesetId))
+                    .FirstOrDefault(rulesetId => rulesetId is not null)
+                ?? string.Empty;
+        }
 
         OpenWorkspaceState? openWorkspace = state.Session.OpenWorkspaces
             .FirstOrDefault(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal));
-        return openWorkspace is null
-            ? RulesetDefaults.Sr5
-            : RulesetDefaults.Normalize(openWorkspace.RulesetId);
+        return RulesetDefaults.NormalizeOptional(openWorkspace?.RulesetId)
+            ?? state.Commands
+                .Select(command => RulesetDefaults.NormalizeOptional(command.RulesetId))
+                .FirstOrDefault(rulesetId => rulesetId is not null)
+            ?? state.NavigationTabs
+                .Select(tab => RulesetDefaults.NormalizeOptional(tab.RulesetId))
+                .FirstOrDefault(rulesetId => rulesetId is not null)
+            ?? string.Empty;
     }
 
     private static HttpClient CreateClient()

@@ -17,9 +17,8 @@ public sealed class RulesetShellCatalogResolverTests
     [TestMethod]
     public void ResolveCommands_prefers_ruleset_plugin_when_available()
     {
-        IReadOnlyList<AppCommandDefinition> commands = RulesetShellCatalogResolver.ResolveCommands(
-            "sr6",
-            [new StubRulesetPlugin(
+        RulesetShellCatalogResolverService resolver = CreateResolver(
+            new StubRulesetPlugin(
                 rulesetId: "sr6",
                 commands:
                 [
@@ -31,7 +30,8 @@ public sealed class RulesetShellCatalogResolverTests
                         EnabledByDefault: true,
                         RulesetId: "sr6")
                 ],
-                tabs: [])]);
+                tabs: []));
+        IReadOnlyList<AppCommandDefinition> commands = resolver.ResolveCommands("sr6");
 
         Assert.HasCount(1, commands);
         Assert.AreEqual("sr6-only", commands[0].Id);
@@ -40,9 +40,8 @@ public sealed class RulesetShellCatalogResolverTests
     [TestMethod]
     public void ResolveNavigationTabs_falls_back_to_catalog_without_matching_plugin()
     {
-        IReadOnlyList<NavigationTabDefinition> tabs = RulesetShellCatalogResolver.ResolveNavigationTabs(
-            "sr5",
-            [new StubRulesetPlugin("sr6", commands: [], tabs: [])]);
+        RulesetShellCatalogResolverService resolver = CreateResolver(new StubRulesetPlugin("sr6", commands: [], tabs: []));
+        IReadOnlyList<NavigationTabDefinition> tabs = resolver.ResolveNavigationTabs("sr5");
 
         Assert.HasCount(NavigationTabCatalog.ForRuleset("sr5").Count, tabs);
         Assert.IsTrue(tabs.Any(tab => string.Equals(tab.Id, "tab-info", StringComparison.Ordinal)));
@@ -51,24 +50,22 @@ public sealed class RulesetShellCatalogResolverTests
     [TestMethod]
     public void ResolveCommands_uses_last_matching_plugin_when_multiple_are_registered()
     {
-        IReadOnlyList<AppCommandDefinition> commands = RulesetShellCatalogResolver.ResolveCommands(
-            "sr6",
-            [
-                new StubRulesetPlugin(
-                    "sr6",
-                    commands:
-                    [
-                        new AppCommandDefinition("first", "command.first", "tools", false, true, "sr6")
-                    ],
-                    tabs: []),
-                new StubRulesetPlugin(
-                    "sr6",
-                    commands:
-                    [
-                        new AppCommandDefinition("second", "command.second", "tools", false, true, "sr6")
-                    ],
-                    tabs: [])
-            ]);
+        RulesetShellCatalogResolverService resolver = CreateResolver(
+            new StubRulesetPlugin(
+                "sr6",
+                commands:
+                [
+                    new AppCommandDefinition("first", "command.first", "tools", false, true, "sr6")
+                ],
+                tabs: []),
+            new StubRulesetPlugin(
+                "sr6",
+                commands:
+                [
+                    new AppCommandDefinition("second", "command.second", "tools", false, true, "sr6")
+                ],
+                tabs: []));
+        IReadOnlyList<AppCommandDefinition> commands = resolver.ResolveCommands("sr6");
 
         Assert.HasCount(1, commands);
         Assert.AreEqual("second", commands[0].Id);
@@ -77,29 +74,25 @@ public sealed class RulesetShellCatalogResolverTests
     [TestMethod]
     public void ResolveWorkspaceActionsForTab_prefers_ruleset_plugin_catalogs()
     {
-        IReadOnlyList<WorkspaceSurfaceActionDefinition> actions = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(
-            tabId: "tab-sr6",
-            rulesetId: "sr6",
-            plugins:
-            [
-                new StubRulesetPlugin(
-                    rulesetId: "sr6",
-                    commands: [],
-                    tabs: [],
-                    actions:
-                    [
-                        new WorkspaceSurfaceActionDefinition(
-                            Id: "tab-sr6.summary",
-                            Label: "SR6 Summary",
-                            TabId: "tab-sr6",
-                            Kind: WorkspaceSurfaceActionKind.Summary,
-                            TargetId: "summary",
-                            RequiresOpenCharacter: true,
-                            EnabledByDefault: true,
-                            RulesetId: "sr6")
-                    ],
-                    controls: [])
-            ]);
+        RulesetShellCatalogResolverService resolver = CreateResolver(
+            new StubRulesetPlugin(
+                rulesetId: "sr6",
+                commands: [],
+                tabs: [],
+                actions:
+                [
+                    new WorkspaceSurfaceActionDefinition(
+                        Id: "tab-sr6.summary",
+                        Label: "SR6 Summary",
+                        TabId: "tab-sr6",
+                        Kind: WorkspaceSurfaceActionKind.Summary,
+                        TargetId: "summary",
+                        RequiresOpenCharacter: true,
+                        EnabledByDefault: true,
+                        RulesetId: "sr6")
+                ],
+                controls: []));
+        IReadOnlyList<WorkspaceSurfaceActionDefinition> actions = resolver.ResolveWorkspaceActionsForTab("tab-sr6", "sr6");
 
         Assert.HasCount(1, actions);
         Assert.AreEqual("tab-sr6.summary", actions[0].Id);
@@ -109,10 +102,8 @@ public sealed class RulesetShellCatalogResolverTests
     [TestMethod]
     public void ResolveDesktopUiControlsForTab_falls_back_to_catalog_without_matching_plugin()
     {
-        IReadOnlyList<DesktopUiControlDefinition> controls = RulesetShellCatalogResolver.ResolveDesktopUiControlsForTab(
-            tabId: "tab-info",
-            rulesetId: "sr5",
-            plugins: [new StubRulesetPlugin("sr6", commands: [], tabs: [])]);
+        RulesetShellCatalogResolverService resolver = CreateResolver(new StubRulesetPlugin("sr6", commands: [], tabs: []));
+        IReadOnlyList<DesktopUiControlDefinition> controls = resolver.ResolveDesktopUiControlsForTab("tab-info", "sr5");
 
         Assert.HasCount(DesktopUiControlCatalog.ForTab("tab-info", "sr5").Count, controls);
         Assert.IsTrue(controls.Any(control => string.Equals(control.TabId, "tab-info", StringComparison.Ordinal)));
@@ -126,6 +117,11 @@ public sealed class RulesetShellCatalogResolverTests
         Assert.IsNull(registry.Resolve(null));
         Assert.IsNull(registry.Resolve(" "));
         Assert.IsNotNull(registry.Resolve("sr5"));
+    }
+
+    private static RulesetShellCatalogResolverService CreateResolver(params IRulesetPlugin[] plugins)
+    {
+        return new RulesetShellCatalogResolverService(new RulesetPluginRegistry(plugins));
     }
 
     private sealed class StubRulesetPlugin : IRulesetPlugin

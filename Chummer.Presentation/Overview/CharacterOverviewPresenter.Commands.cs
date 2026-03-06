@@ -104,7 +104,7 @@ public sealed partial class CharacterOverviewPresenter
         NavigationTabDefinition? tab = State.NavigationTabs.FirstOrDefault(item => string.Equals(item.Id, tabId, StringComparison.Ordinal));
         if (tab is null && !string.IsNullOrWhiteSpace(rulesetId))
         {
-            tab = RulesetShellCatalogResolver.ResolveNavigationTabs(rulesetId)
+            tab = _shellCatalogResolver.ResolveNavigationTabs(rulesetId)
                 .FirstOrDefault(item => string.Equals(item.Id, tabId, StringComparison.Ordinal));
         }
         if (tab is null)
@@ -116,7 +116,7 @@ public sealed partial class CharacterOverviewPresenter
         WorkspaceSurfaceActionDefinition? defaultAction = null;
         if (!string.IsNullOrWhiteSpace(rulesetId))
         {
-            defaultAction = RulesetShellCatalogResolver.ResolveWorkspaceActionsForTab(
+            defaultAction = _shellCatalogResolver.ResolveWorkspaceActionsForTab(
                     tab.Id,
                     rulesetId)
                 .FirstOrDefault(action =>
