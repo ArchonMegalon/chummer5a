@@ -521,6 +521,37 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Hub_project_compatibility_surface_is_exposed_through_hub_api_seam()
+    {
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string hubCatalogEndpointsPath = FindPath("Chummer.Api", "Endpoints", "HubCatalogEndpoints.cs");
+        string hubCatalogEndpointsText = File.ReadAllText(hubCatalogEndpointsPath);
+        string hubCompatibilityServiceContractPath = FindPath("Chummer.Application", "Hub", "IHubProjectCompatibilityService.cs");
+        string hubCompatibilityServiceContractText = File.ReadAllText(hubCompatibilityServiceContractPath);
+        string hubCompatibilityServicePath = FindPath("Chummer.Application", "Hub", "DefaultHubProjectCompatibilityService.cs");
+        string hubCompatibilityServiceText = File.ReadAllText(hubCompatibilityServicePath);
+        string hubCompatibilityContractsPath = FindPath("Chummer.Contracts", "Hub", "HubProjectCompatibilityContracts.cs");
+        string hubCompatibilityContractsText = File.ReadAllText(hubCompatibilityContractsPath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(infoEndpointsText, "/api/hub/projects/{kind}/{itemId}/compatibility");
+        StringAssert.Contains(hubCatalogEndpointsText, "/api/hub/projects/{kind}/{itemId}/compatibility");
+        StringAssert.Contains(hubCatalogEndpointsText, "IHubProjectCompatibilityService");
+        StringAssert.Contains(hubCatalogEndpointsText, "hub_project_not_found");
+        StringAssert.Contains(hubCompatibilityServiceContractText, "public interface IHubProjectCompatibilityService");
+        StringAssert.Contains(hubCompatibilityServiceContractText, "HubProjectCompatibilityMatrix? GetMatrix");
+        StringAssert.Contains(hubCompatibilityServiceText, "public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibilityService");
+        StringAssert.Contains(hubCompatibilityServiceText, "HubProjectCompatibilityStates.Compatible");
+        StringAssert.Contains(hubCompatibilityContractsText, "public sealed record HubProjectCompatibilityMatrix");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubProjectCompatibilityService, DefaultHubProjectCompatibilityService>()");
+        StringAssert.Contains(readmeText, "/api/hub/projects/*/compatibility");
+    }
+
+    [TestMethod]
     public void Solution_includes_headless_and_dual_head_projects()
     {
         string solutionPath = FindPath("Chummer.sln");
@@ -945,6 +976,22 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubInstallPreviewContractsText, "RuleProfileApplyTarget Target");
         StringAssert.Contains(hubInstallPreviewContractsText, "string? RuntimeFingerprint");
         StringAssert.Contains(hubInstallPreviewContractsText, "string? DeferredReason = null");
+    }
+
+    [TestMethod]
+    public void Hub_project_compatibility_contracts_lock_in_row_state_and_matrix_vocabulary()
+    {
+        string hubCompatibilityContractsPath = FindPath("Chummer.Contracts", "Hub", "HubProjectCompatibilityContracts.cs");
+        string hubCompatibilityContractsText = File.ReadAllText(hubCompatibilityContractsPath);
+
+        StringAssert.Contains(hubCompatibilityContractsText, "public static class HubProjectCompatibilityRowKinds");
+        StringAssert.Contains(hubCompatibilityContractsText, "public static class HubProjectCompatibilityStates");
+        StringAssert.Contains(hubCompatibilityContractsText, "public sealed record HubProjectCompatibilityRow");
+        StringAssert.Contains(hubCompatibilityContractsText, "public sealed record HubProjectCompatibilityMatrix");
+        StringAssert.Contains(hubCompatibilityContractsText, "IReadOnlyList<HubProjectCompatibilityRow> Rows");
+        StringAssert.Contains(hubCompatibilityContractsText, "DateTimeOffset GeneratedAtUtc");
+        StringAssert.Contains(hubCompatibilityContractsText, "SessionRuntime");
+        StringAssert.Contains(hubCompatibilityContractsText, "HostedPublic");
     }
 
     [TestMethod]

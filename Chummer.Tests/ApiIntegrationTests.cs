@@ -207,6 +207,34 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_project_compatibility_endpoint_returns_registered_profile_matrix()
+    {
+        using var client = CreateClient();
+
+        JsonObject payload = await GetRequiredJsonObject(client, "/api/hub/projects/ruleprofile/official.sr5.core/compatibility?ruleset=sr5");
+
+        Assert.AreEqual(HubCatalogItemKinds.RuleProfile, payload["kind"]?.GetValue<string>());
+        Assert.AreEqual("official.sr5.core", payload["itemId"]?.GetValue<string>());
+        Assert.IsInstanceOfType<JsonArray>(payload["rows"]);
+    }
+
+    [TestMethod]
+    public async Task Hub_project_compatibility_endpoint_returns_not_found_for_unknown_project()
+    {
+        using var client = CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync("/api/hub/projects/ruleprofile/missing-profile/compatibility?ruleset=sr5");
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual("hub_project_not_found", payload["error"]?.GetValue<string>());
+        Assert.AreEqual(HubCatalogItemKinds.RuleProfile, payload["kind"]?.GetValue<string>());
+        Assert.AreEqual("missing-profile", payload["itemId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Buildkits_endpoint_reports_registry_entries_for_registered_rulesets()
     {
         using var client = CreateClient();

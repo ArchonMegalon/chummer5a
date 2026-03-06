@@ -39,6 +39,19 @@ public static class HubCatalogEndpoints
                 : Results.Ok(preview);
         });
 
+        app.MapGet("/api/hub/projects/{kind}/{itemId}/compatibility", (string kind, string itemId, string? ruleset, IHubProjectCompatibilityService hubProjectCompatibilityService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            HubProjectCompatibilityMatrix? matrix = hubProjectCompatibilityService.GetMatrix(ownerContextAccessor.Current, kind, itemId, ruleset);
+            return matrix is null
+                ? Results.NotFound(new
+                {
+                    error = "hub_project_not_found",
+                    kind,
+                    itemId
+                })
+                : Results.Ok(matrix);
+        });
+
         return app;
     }
 }

@@ -18,6 +18,7 @@ public static class InfoEndpoints
                 "/api/hub/search",
                 "/api/hub/projects/{kind}/{itemId}",
                 "/api/hub/projects/{kind}/{itemId}/install-preview",
+                "/api/hub/projects/{kind}/{itemId}/compatibility",
                 "/api/content/overlays",
                 "/api/buildkits",
                 "/api/rulepacks",
