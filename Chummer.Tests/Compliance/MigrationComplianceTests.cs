@@ -393,6 +393,27 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Rulepack_compiler_contracts_lock_in_resolution_diagnostic_and_compile_receipt_vocabulary()
+    {
+        string rulePackCompilerContractsPath = FindPath("Chummer.Contracts", "Content", "RulePackCompilerContracts.cs");
+        string rulePackCompilerContractsText = File.ReadAllText(rulePackCompilerContractsPath);
+
+        StringAssert.Contains(rulePackCompilerContractsText, "public static class RulePackResolutionDiagnosticKinds");
+        StringAssert.Contains(rulePackCompilerContractsText, "public static class RulePackResolutionSeverityLevels");
+        StringAssert.Contains(rulePackCompilerContractsText, "public static class RulePackCompileStatuses");
+        StringAssert.Contains(rulePackCompilerContractsText, "public sealed record RulePackCompilerRequest");
+        StringAssert.Contains(rulePackCompilerContractsText, "public sealed record RulePackResolutionDiagnostic");
+        StringAssert.Contains(rulePackCompilerContractsText, "public sealed record RulePackResolutionResult");
+        StringAssert.Contains(rulePackCompilerContractsText, "public sealed record RulePackCompileReceipt");
+        StringAssert.Contains(rulePackCompilerContractsText, "MissingDependency");
+        StringAssert.Contains(rulePackCompilerContractsText, "TrustTierViolation");
+        StringAssert.Contains(rulePackCompilerContractsText, "CapabilityBlocked");
+        StringAssert.Contains(rulePackCompilerContractsText, "CompiledWithReview");
+        StringAssert.Contains(rulePackCompilerContractsText, "ResolvedRuntimeLock? RuntimeLock");
+        StringAssert.Contains(rulePackCompilerContractsText, "DateTimeOffset CompiledAtUtc");
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");

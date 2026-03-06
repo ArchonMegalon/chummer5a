@@ -616,6 +616,70 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Rulepack_compiler_contracts_define_resolution_diagnostics_and_runtime_lock_receipts()
+    {
+        RulePackCompilerRequest request = new(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles:
+            [
+                new ContentBundleDescriptor(
+                    BundleId: "sr5-core",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Version: "2026.03.06",
+                    Title: "SR5 Core Bundle",
+                    Description: "Official base data.",
+                    AssetPaths: ["data/", "lang/"])
+            ],
+            SelectedRulePacks:
+            [
+                new ArtifactVersionReference("official-errata", "1.0.0"),
+                new ArtifactVersionReference("house-rules", "1.2.0")
+            ],
+            EngineApiVersion: "rulepack-v1",
+            Environment: RulePackExecutionEnvironments.HostedServer,
+            MinimumTrustTier: ArtifactTrustTiers.Curated);
+        RulePackResolutionResult resolution = new(
+            RulesetId: request.RulesetId,
+            RequestedRulePacks: request.SelectedRulePacks,
+            ResolvedRulePacks: request.SelectedRulePacks,
+            Diagnostics:
+            [
+                new RulePackResolutionDiagnostic(
+                    Kind: RulePackResolutionDiagnosticKinds.ReviewRequired,
+                    Severity: RulePackResolutionSeverityLevels.Warning,
+                    SubjectId: "house-rules",
+                    Message: "Private pack requires hosted review.",
+                    RelatedPackId: "house-rules")
+            ],
+            RequiresReview: true);
+        ResolvedRuntimeLock runtimeLock = new(
+            RulesetId: request.RulesetId,
+            ContentBundles: request.ContentBundles,
+            RulePacks: resolution.ResolvedRulePacks,
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["validate.character"] = "house-rules/validate.character"
+            },
+            EngineApiVersion: request.EngineApiVersion,
+            RuntimeFingerprint: "runtime-lock-sha256");
+        RulePackCompileReceipt receipt = new(
+            Status: RulePackCompileStatuses.CompiledWithReview,
+            Request: request,
+            Resolution: resolution,
+            RuntimeLock: runtimeLock,
+            CompiledAtUtc: DateTimeOffset.UtcNow);
+
+        Assert.AreEqual(RulePackExecutionEnvironments.HostedServer, request.Environment);
+        Assert.AreEqual(ArtifactTrustTiers.Curated, request.MinimumTrustTier);
+        Assert.AreEqual(RulePackResolutionDiagnosticKinds.ReviewRequired, resolution.Diagnostics[0].Kind);
+        Assert.AreEqual(RulePackResolutionSeverityLevels.Warning, resolution.Diagnostics[0].Severity);
+        Assert.IsTrue(resolution.RequiresReview);
+        Assert.AreEqual(RulePackCompileStatuses.CompiledWithReview, receipt.Status);
+        Assert.AreEqual("runtime-lock-sha256", receipt.RuntimeLock!.RuntimeFingerprint);
+        Assert.AreEqual("house-rules/validate.character", receipt.RuntimeLock.ProviderBindings["validate.character"]);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);
