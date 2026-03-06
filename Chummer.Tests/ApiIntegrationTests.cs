@@ -647,7 +647,8 @@ public class ApiIntegrationTests
         string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
         JsonObject importBody = new()
         {
-            ["xml"] = xml
+            ["xml"] = xml,
+            ["rulesetId"] = "sr5"
         };
 
         JsonObject importResponse = await PostRequiredJsonObject(client, "/api/workspaces/import", importBody);
@@ -699,7 +700,7 @@ public class ApiIntegrationTests
 
         JsonObject downloadResponse = await PostRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/download", new JsonObject());
         Assert.AreEqual(workspaceId, downloadResponse["id"]?.GetValue<string>());
-        Assert.AreEqual("Chum5Xml", downloadResponse["format"]?.GetValue<string>());
+        Assert.AreEqual("NativeXml", downloadResponse["format"]?.GetValue<string>());
         Assert.AreEqual("sr5", (downloadResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.IsTrue((downloadResponse["fileName"]?.GetValue<string>() ?? string.Empty).EndsWith(".chum5", StringComparison.Ordinal));
         string contentBase64 = downloadResponse["contentBase64"]?.GetValue<string>() ?? string.Empty;
@@ -716,7 +717,8 @@ public class ApiIntegrationTests
         JsonObject importBody = new()
         {
             ["contentBase64"] = Convert.ToBase64String(xmlBytes),
-            ["format"] = "Chum5Xml"
+            ["format"] = "NativeXml",
+            ["rulesetId"] = "sr5"
         };
 
         JsonObject importResponse = await PostRequiredJsonObject(client, "/api/workspaces/import", importBody);
@@ -769,8 +771,8 @@ public class ApiIntegrationTests
 
         string xmlA = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
         string xmlB = File.ReadAllText(FindTestFilePath("BLUE.chum5"));
-        JsonObject importBodyA = new() { ["xml"] = xmlA };
-        JsonObject importBodyB = new() { ["xml"] = xmlB };
+        JsonObject importBodyA = new() { ["xml"] = xmlA, ["rulesetId"] = "sr5" };
+        JsonObject importBodyB = new() { ["xml"] = xmlB, ["rulesetId"] = "sr5" };
 
         JsonObject importA = await PostRequiredJsonObject(client, "/api/workspaces/import", importBodyA);
         JsonObject importB = await PostRequiredJsonObject(client, "/api/workspaces/import", importBodyB);
@@ -805,8 +807,8 @@ public class ApiIntegrationTests
 
         string xmlA = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
         string xmlB = File.ReadAllText(FindTestFilePath("BLUE.chum5"));
-        await PostRequiredJsonObject(client, "/api/workspaces/import", new JsonObject { ["xml"] = xmlA });
-        await PostRequiredJsonObject(client, "/api/workspaces/import", new JsonObject { ["xml"] = xmlB });
+        await PostRequiredJsonObject(client, "/api/workspaces/import", new JsonObject { ["xml"] = xmlA, ["rulesetId"] = "sr5" });
+        await PostRequiredJsonObject(client, "/api/workspaces/import", new JsonObject { ["xml"] = xmlB, ["rulesetId"] = "sr5" });
 
         JsonObject listed = await GetRequiredJsonObject(client, "/api/workspaces?maxCount=1");
         Assert.AreEqual(1, listed["count"]?.GetValue<int>());
@@ -821,7 +823,8 @@ public class ApiIntegrationTests
 
         JsonObject payload = new()
         {
-            ["xml"] = "<character><name>Broken</name><alias>X</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>not-a-number</karma><nuyen>2500</nuyen><created>True</created></character>"
+            ["xml"] = "<character><name>Broken</name><alias>X</alias><metatype>Human</metatype><buildmethod>Priority</buildmethod><createdversion>1.0</createdversion><appversion>1.0</appversion><karma>not-a-number</karma><nuyen>2500</nuyen><created>True</created></character>",
+            ["rulesetId"] = "sr5"
         };
 
         using StringContent request = new(payload.ToJsonString(), Encoding.UTF8, "application/json");
@@ -840,7 +843,8 @@ public class ApiIntegrationTests
         string xml = File.ReadAllText(FindTestFilePath("BLUE.chum5"));
         JsonObject payload = new()
         {
-            ["xml"] = xml
+            ["xml"] = xml,
+            ["rulesetId"] = "sr5"
         };
 
         JsonObject importResponse = await PostRequiredJsonObject(client, "/api/workspaces/import", payload);

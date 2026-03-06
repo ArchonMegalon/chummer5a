@@ -1,6 +1,8 @@
 using System.Linq;
+using Chummer.Application.Owners;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -11,33 +13,38 @@ public static class ShellEndpoints
 {
     public static IEndpointRouteBuilder MapShellEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/shell/preferences", (IShellPreferencesService shellPreferencesService) =>
+        app.MapGet("/api/shell/preferences", (IShellPreferencesService shellPreferencesService, IOwnerContextAccessor ownerContextAccessor) =>
         {
-            return Results.Ok(shellPreferencesService.Load());
+            OwnerScope owner = ownerContextAccessor.Current;
+            return Results.Ok(shellPreferencesService.Load(owner));
         });
 
-        app.MapPost("/api/shell/preferences", (ShellPreferences? preferences, IShellPreferencesService shellPreferencesService) =>
+        app.MapPost("/api/shell/preferences", (ShellPreferences? preferences, IShellPreferencesService shellPreferencesService, IOwnerContextAccessor ownerContextAccessor) =>
         {
-            shellPreferencesService.Save(preferences ?? ShellPreferences.Default);
-            return Results.Ok(shellPreferencesService.Load());
+            OwnerScope owner = ownerContextAccessor.Current;
+            shellPreferencesService.Save(owner, preferences ?? ShellPreferences.Default);
+            return Results.Ok(shellPreferencesService.Load(owner));
         });
 
-        app.MapGet("/api/shell/session", (IShellSessionService shellSessionService) =>
+        app.MapGet("/api/shell/session", (IShellSessionService shellSessionService, IOwnerContextAccessor ownerContextAccessor) =>
         {
-            return Results.Ok(shellSessionService.Load());
+            OwnerScope owner = ownerContextAccessor.Current;
+            return Results.Ok(shellSessionService.Load(owner));
         });
 
-        app.MapPost("/api/shell/session", (ShellSessionState? session, IShellSessionService shellSessionService) =>
+        app.MapPost("/api/shell/session", (ShellSessionState? session, IShellSessionService shellSessionService, IOwnerContextAccessor ownerContextAccessor) =>
         {
-            shellSessionService.Save(session ?? ShellSessionState.Default);
-            return Results.Ok(shellSessionService.Load());
+            OwnerScope owner = ownerContextAccessor.Current;
+            shellSessionService.Save(owner, session ?? ShellSessionState.Default);
+            return Results.Ok(shellSessionService.Load(owner));
         });
 
-        app.MapGet("/api/shell/bootstrap", (string? ruleset, IWorkspaceService workspaceService, IRulesetShellCatalogResolver shellCatalogResolver, IRulesetSelectionPolicy rulesetSelectionPolicy, IShellPreferencesService shellPreferencesService, IShellSessionService shellSessionService) =>
+        app.MapGet("/api/shell/bootstrap", (string? ruleset, IWorkspaceService workspaceService, IRulesetShellCatalogResolver shellCatalogResolver, IRulesetSelectionPolicy rulesetSelectionPolicy, IShellPreferencesService shellPreferencesService, IShellSessionService shellSessionService, IOwnerContextAccessor ownerContextAccessor) =>
         {
-            IReadOnlyList<WorkspaceListItem> workspaceList = workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
-            ShellPreferences preferences = shellPreferencesService.Load();
-            ShellSessionState session = shellSessionService.Load();
+            OwnerScope owner = ownerContextAccessor.Current;
+            IReadOnlyList<WorkspaceListItem> workspaceList = workspaceService.List(owner, ShellBootstrapDefaults.MaxWorkspaces);
+            ShellPreferences preferences = shellPreferencesService.Load(owner);
+            ShellSessionState session = shellSessionService.Load(owner);
             string fallbackRulesetId = rulesetSelectionPolicy.GetDefaultRulesetId();
             string preferredRulesetId = ResolvePreferredRulesetId(preferences.PreferredRulesetId, workspaceList, fallbackRulesetId);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaceList, session.ActiveWorkspaceId);

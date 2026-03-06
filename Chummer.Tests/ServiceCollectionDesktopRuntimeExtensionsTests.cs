@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using Chummer.Application.Owners;
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Rulesets;
 using Chummer.Desktop.Runtime;
 using Chummer.Presentation;
@@ -33,9 +35,11 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
 
                     using ServiceProvider provider = services.BuildServiceProvider();
                     IChummerClient client = provider.GetRequiredService<IChummerClient>();
+                    IOwnerContextAccessor ownerContextAccessor = provider.GetRequiredService<IOwnerContextAccessor>();
                     IReadOnlyList<IRulesetPlugin> plugins = provider.GetServices<IRulesetPlugin>().ToArray();
 
                     Assert.IsInstanceOfType<InProcessChummerClient>(client);
+                    Assert.AreEqual(OwnerScope.LocalSingleUser.NormalizedValue, ownerContextAccessor.Current.NormalizedValue);
                     Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr5, StringComparison.Ordinal)));
                 });
             }

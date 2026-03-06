@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Chummer.Application.Owners;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Api;
@@ -120,6 +121,88 @@ public sealed class InProcessChummerClientRulesetPluginTests
         ShellSessionState restored = await client.GetShellSessionAsync(CancellationToken.None);
 
         Assert.AreEqual("ws-sr6", restored.ActiveWorkspaceId);
+    }
+
+    [TestMethod]
+    public async Task SaveShellPreferences_routes_persistence_through_owner_context()
+    {
+        OwnerScope owner = new("alice@example.com");
+        var preferencesStore = new InMemoryShellPreferencesStore();
+        var client = new InProcessChummerClient(
+            new NoOpWorkspaceService(),
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            shellPreferencesService: new ShellPreferencesService(preferencesStore),
+            ownerContextAccessor: new StubOwnerContextAccessor(owner));
+
+        await client.SaveShellPreferencesAsync(new ShellPreferences("sr6"), CancellationToken.None);
+
+        Assert.AreEqual(owner.NormalizedValue, preferencesStore.LastSavedOwner?.NormalizedValue);
+        Assert.AreEqual("sr6", preferencesStore.Load(owner).PreferredRulesetId);
+        Assert.AreEqual(RulesetDefaults.Sr5, preferencesStore.Load(OwnerScope.LocalSingleUser).PreferredRulesetId);
+    }
+
+    [TestMethod]
+    public async Task GetShellBootstrap_routes_shell_state_and_workspace_listing_through_owner_context()
+    {
+        OwnerScope owner = new("alice@example.com");
+        var workspaceService = new NoOpWorkspaceService
+        {
+            Workspaces =
+            [
+                CreateWorkspace("ws-sr6", DateTimeOffset.UtcNow, "sr6")
+            ]
+        };
+        var preferencesStore = new InMemoryShellPreferencesStore();
+        preferencesStore.Save(owner, new ShellPreferences("sr6"));
+        var sessionStore = new InMemoryShellSessionStore();
+        sessionStore.Save(owner, new ShellSessionState(ActiveTabId: "tab-rules"));
+        var client = new InProcessChummerClient(
+            workspaceService,
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            shellPreferencesService: new ShellPreferencesService(preferencesStore),
+            shellSessionService: new ShellSessionService(sessionStore),
+            ownerContextAccessor: new StubOwnerContextAccessor(owner));
+
+        ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
+
+        Assert.AreEqual(owner.NormalizedValue, preferencesStore.LastLoadedOwner?.NormalizedValue);
+        Assert.AreEqual(owner.NormalizedValue, sessionStore.LastLoadedOwner?.NormalizedValue);
+        Assert.AreEqual(owner.NormalizedValue, workspaceService.LastListOwner?.NormalizedValue);
+        Assert.AreEqual("sr6", snapshot.RulesetId);
+        Assert.AreEqual("tab-rules", snapshot.ActiveTabId);
+    }
+
+    [TestMethod]
+    public async Task ImportAsync_routes_workspace_import_through_owner_context()
+    {
+        OwnerScope owner = new("alice@example.com");
+        NoOpWorkspaceService workspaceService = new()
+        {
+            ImportResult = new WorkspaceImportResult(
+                Id: new CharacterWorkspaceId("ws-owner"),
+                Summary: new CharacterFileSummary(
+                    Name: "Owner Runner",
+                    Alias: "Owner Runner",
+                    Metatype: "Human",
+                    BuildMethod: "Priority",
+                    CreatedVersion: "6",
+                    AppVersion: "6",
+                    Karma: 0m,
+                    Nuyen: 0m,
+                    Created: true),
+                RulesetId: "sr6")
+        };
+        InProcessChummerClient client = new(
+            workspaceService,
+            new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
+            ownerContextAccessor: new StubOwnerContextAccessor(owner));
+
+        WorkspaceImportResult result = await client.ImportAsync(
+            new WorkspaceImportDocument("<character />", "sr6", WorkspaceDocumentFormat.NativeXml),
+            CancellationToken.None);
+
+        Assert.AreEqual(owner.NormalizedValue, workspaceService.LastImportOwner?.NormalizedValue);
+        Assert.AreEqual("sr6", result.RulesetId);
     }
 
     [TestMethod]
@@ -370,6 +453,10 @@ public sealed class InProcessChummerClientRulesetPluginTests
             [OwnerScope.LocalSingleUser.NormalizedValue] = new(RulesetDefaults.Sr5)
         };
 
+        public OwnerScope? LastLoadedOwner { get; private set; }
+
+        public OwnerScope? LastSavedOwner { get; private set; }
+
         public ShellPreferences Load()
         {
             return Load(OwnerScope.LocalSingleUser);
@@ -377,6 +464,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
         public ShellPreferences Load(OwnerScope owner)
         {
+            LastLoadedOwner = owner;
             return _preferencesByOwner.GetValueOrDefault(
                 owner.NormalizedValue,
                 ShellPreferences.Default);
@@ -389,6 +477,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
         public void Save(OwnerScope owner, ShellPreferences preferences)
         {
+            LastSavedOwner = owner;
             _preferencesByOwner[owner.NormalizedValue] = preferences;
         }
     }
@@ -400,6 +489,10 @@ public sealed class InProcessChummerClientRulesetPluginTests
             [OwnerScope.LocalSingleUser.NormalizedValue] = ShellSessionState.Default
         };
 
+        public OwnerScope? LastLoadedOwner { get; private set; }
+
+        public OwnerScope? LastSavedOwner { get; private set; }
+
         public ShellSessionState Load()
         {
             return Load(OwnerScope.LocalSingleUser);
@@ -407,6 +500,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
         public ShellSessionState Load(OwnerScope owner)
         {
+            LastLoadedOwner = owner;
             return _sessionsByOwner.GetValueOrDefault(
                 owner.NormalizedValue,
                 ShellSessionState.Default);
@@ -419,6 +513,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
         public void Save(OwnerScope owner, ShellSessionState session)
         {
+            LastSavedOwner = owner;
             _sessionsByOwner[owner.NormalizedValue] = new ShellSessionState(
                 ActiveWorkspaceId: session.ActiveWorkspaceId,
                 ActiveTabId: session.ActiveTabId,
@@ -449,9 +544,31 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
     private sealed class NoOpWorkspaceService : IWorkspaceService
     {
-        public WorkspaceImportResult Import(WorkspaceImportDocument document) => throw new NotSupportedException();
+        public WorkspaceImportResult ImportResult { get; init; } = new(
+            Id: new CharacterWorkspaceId("ws-import"),
+            Summary: new CharacterFileSummary(
+                Name: "Runner",
+                Alias: "Runner",
+                Metatype: "Human",
+                BuildMethod: "Priority",
+                CreatedVersion: "5",
+                AppVersion: "5",
+                Karma: 0m,
+                Nuyen: 0m,
+                Created: true),
+            RulesetId: RulesetDefaults.Sr5);
 
-        public WorkspaceImportResult Import(OwnerScope owner, WorkspaceImportDocument document) => Import(document);
+        public OwnerScope? LastImportOwner { get; private set; }
+
+        public OwnerScope? LastListOwner { get; private set; }
+
+        public WorkspaceImportResult Import(WorkspaceImportDocument document) => ImportResult;
+
+        public WorkspaceImportResult Import(OwnerScope owner, WorkspaceImportDocument document)
+        {
+            LastImportOwner = owner;
+            return Import(document);
+        }
 
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; init; } = Array.Empty<WorkspaceListItem>();
 
@@ -465,7 +582,11 @@ public sealed class InProcessChummerClientRulesetPluginTests
             return Workspaces;
         }
 
-        public IReadOnlyList<WorkspaceListItem> List(OwnerScope owner, int? maxCount = null) => List(maxCount);
+        public IReadOnlyList<WorkspaceListItem> List(OwnerScope owner, int? maxCount = null)
+        {
+            LastListOwner = owner;
+            return List(maxCount);
+        }
 
         public bool Close(CharacterWorkspaceId id) => throw new NotSupportedException();
 
@@ -532,6 +653,16 @@ public sealed class InProcessChummerClientRulesetPluginTests
         public CommandResult<WorkspacePrintReceipt> Print(CharacterWorkspaceId id) => throw new NotSupportedException();
 
         public CommandResult<WorkspacePrintReceipt> Print(OwnerScope owner, CharacterWorkspaceId id) => Print(id);
+    }
+
+    private sealed class StubOwnerContextAccessor : IOwnerContextAccessor
+    {
+        public StubOwnerContextAccessor(OwnerScope current)
+        {
+            Current = current;
+        }
+
+        public OwnerScope Current { get; }
     }
 
     private static WorkspaceListItem CreateWorkspace(

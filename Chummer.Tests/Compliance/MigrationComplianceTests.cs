@@ -143,15 +143,15 @@ public class MigrationComplianceTests
         string clientContractText = File.ReadAllText(clientContractPath);
 
         StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/sections/{sectionId}");
-        StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSection(workspaceId, sectionId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSection(owner, workspaceId, sectionId)");
         StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/summary");
-        StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSummary(workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSummary(owner, workspaceId)");
         StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/validate");
-        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Validate(workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Validate(owner, workspaceId)");
         StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/export");
-        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Export(workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Export(owner, workspaceId)");
         StringAssert.Contains(workspaceEndpointsText, "/api/workspaces/{id}/print");
-        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Print(workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Print(owner, workspaceId)");
         StringAssert.Contains(clientContractText, "Task<CommandResult<WorkspaceExportReceipt>> ExportAsync(CharacterWorkspaceId id, CancellationToken ct);");
         StringAssert.Contains(clientContractText, "Task<CommandResult<WorkspacePrintReceipt>> PrintAsync(CharacterWorkspaceId id, CancellationToken ct);");
     }
@@ -971,6 +971,8 @@ public class MigrationComplianceTests
         string shellContractsText = File.ReadAllText(shellContractsPath);
         string ownerScopePath = FindPath("Chummer.Contracts", "Owners", "OwnerScope.cs");
         string ownerScopeText = File.ReadAllText(ownerScopePath);
+        string ownerContextAccessorPath = FindPath("Chummer.Application", "Owners", "IOwnerContextAccessor.cs");
+        string ownerContextAccessorText = File.ReadAllText(ownerContextAccessorPath);
         string clientContractPath = FindPath("Chummer.Presentation", "IChummerClient.cs");
         string clientContractText = File.ReadAllText(clientContractPath);
         string shellEndpointsPath = FindPath("Chummer.Api", "Endpoints", "ShellEndpoints.cs");
@@ -979,6 +981,8 @@ public class MigrationComplianceTests
         string shellPresenterText = File.ReadAllText(shellPresenterPath);
         string infrastructureDiPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
         string infrastructureDiText = File.ReadAllText(infrastructureDiPath);
+        string localOwnerContextAccessorPath = FindPath("Chummer.Infrastructure", "Owners", "LocalOwnerContextAccessor.cs");
+        string localOwnerContextAccessorText = File.ReadAllText(localOwnerContextAccessorPath);
         string shellPreferencesServicePath = FindPath("Chummer.Application", "Tools", "ShellPreferencesService.cs");
         string shellPreferencesServiceText = File.ReadAllText(shellPreferencesServicePath);
         string shellSessionServicePath = FindPath("Chummer.Application", "Tools", "ShellSessionService.cs");
@@ -994,6 +998,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(shellContractsText, "public sealed record ShellSessionState");
         StringAssert.Contains(ownerScopeText, "public readonly record struct OwnerScope");
         StringAssert.Contains(ownerScopeText, "LocalSingleUser");
+        StringAssert.Contains(ownerContextAccessorText, "public interface IOwnerContextAccessor");
+        StringAssert.Contains(ownerContextAccessorText, "OwnerScope Current");
         StringAssert.Contains(shellContractsText, "string? ActiveTabId");
         StringAssert.Contains(shellContractsText, "IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace");
         Assert.IsFalse(shellContractsText.Contains("ShellUserPreferences", StringComparison.Ordinal));
@@ -1012,8 +1018,13 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(shellEndpointsText, "/api/shell/preferences");
         StringAssert.Contains(shellEndpointsText, "/api/shell/session");
+        StringAssert.Contains(shellEndpointsText, "IOwnerContextAccessor ownerContextAccessor");
         StringAssert.Contains(shellEndpointsText, "IShellSessionService shellSessionService");
-        StringAssert.Contains(shellEndpointsText, "shellSessionService.Load()");
+        StringAssert.Contains(shellEndpointsText, "OwnerScope owner = ownerContextAccessor.Current;");
+        StringAssert.Contains(shellEndpointsText, "shellPreferencesService.Load(owner)");
+        StringAssert.Contains(shellEndpointsText, "shellPreferencesService.Save(owner, preferences ?? ShellPreferences.Default)");
+        StringAssert.Contains(shellEndpointsText, "shellSessionService.Load(owner)");
+        StringAssert.Contains(shellEndpointsText, "shellSessionService.Save(owner, session ?? ShellSessionState.Default)");
         StringAssert.Contains(shellEndpointsText, "ActiveTabId: session.ActiveTabId");
         StringAssert.Contains(shellEndpointsText, "ActiveTabsByWorkspace: session.ActiveTabsByWorkspace");
 
@@ -1033,11 +1044,59 @@ public class MigrationComplianceTests
         StringAssert.Contains(shellSessionStoreText, "SettingsOwnerScope.Resolve(owner)");
         StringAssert.Contains(settingsOwnerScopeText, "owner.IsLocalSingleUser");
         StringAssert.Contains(settingsOwnerScopeText, "GlobalSettingsScope");
+        StringAssert.Contains(localOwnerContextAccessorText, "OwnerScope.LocalSingleUser");
 
+        StringAssert.Contains(infrastructureDiText, "AddSingleton<IOwnerContextAccessor, LocalOwnerContextAccessor>();");
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellPreferencesStore, SettingsShellPreferencesStore>();");
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellSessionStore, SettingsShellSessionStore>();");
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellPreferencesService, ShellPreferencesService>();");
         StringAssert.Contains(infrastructureDiText, "AddSingleton<IShellSessionService, ShellSessionService>();");
+    }
+
+    [TestMethod]
+    public void Owner_context_accessor_routes_api_and_runtime_calls_through_owner_scoped_services()
+    {
+        string workspaceEndpointsPath = FindPath("Chummer.Api", "Endpoints", "WorkspaceEndpoints.cs");
+        string workspaceEndpointsText = File.ReadAllText(workspaceEndpointsPath);
+        string rosterEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RosterEndpoints.cs");
+        string rosterEndpointsText = File.ReadAllText(rosterEndpointsPath);
+        string inProcessClientPath = FindPath("Chummer.Desktop.Runtime", "InProcessChummerClient.cs");
+        string inProcessClientText = File.ReadAllText(inProcessClientPath);
+
+        StringAssert.Contains(workspaceEndpointsText, "IOwnerContextAccessor ownerContextAccessor");
+        StringAssert.Contains(workspaceEndpointsText, "WorkspaceImportResult result = workspaceService.Import(owner, ToImportDocument(request));");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.List(owner, effectiveMaxCount)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Close(owner, workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSection(owner, workspaceId, sectionId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.GetSummary(owner, workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Validate(owner, workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.UpdateMetadata(owner, workspaceId, command)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Save(owner, workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Download(owner, workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Export(owner, workspaceId)");
+        StringAssert.Contains(workspaceEndpointsText, "workspaceService.Print(owner, workspaceId)");
+
+        StringAssert.Contains(rosterEndpointsText, "IOwnerContextAccessor ownerContextAccessor");
+        StringAssert.Contains(rosterEndpointsText, "rosterStore.Load(owner)");
+        StringAssert.Contains(rosterEndpointsText, "rosterStore.Upsert(owner, entry)");
+
+        StringAssert.Contains(inProcessClientText, "private readonly IOwnerContextAccessor _ownerContextAccessor;");
+        StringAssert.Contains(inProcessClientText, "_ownerContextAccessor = ownerContextAccessor ?? new LocalOwnerContextAccessor();");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.Import(owner, document)");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.List(owner)");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.Close(owner, id)");
+        StringAssert.Contains(inProcessClientText, "_shellPreferencesService.Load(owner)");
+        StringAssert.Contains(inProcessClientText, "_shellPreferencesService.Save(owner, preferences)");
+        StringAssert.Contains(inProcessClientText, "_shellSessionService.Load(owner)");
+        StringAssert.Contains(inProcessClientText, "_shellSessionService.Save(owner, new ShellSessionState(");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.List(owner, ShellBootstrapDefaults.MaxWorkspaces)");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.GetSummary(owner, id)");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.Validate(owner, id)");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.UpdateMetadata(owner, id, command)");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.Save(owner, id)");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.Download(owner, id)");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.Export(owner, id)");
+        StringAssert.Contains(inProcessClientText, "_workspaceService.Print(owner, id)");
     }
 
     [TestMethod]

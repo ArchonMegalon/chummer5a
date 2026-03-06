@@ -1,9 +1,11 @@
 using System.Text;
 using System.Xml;
 using System.Linq;
+using Chummer.Application.Owners;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
@@ -16,11 +18,12 @@ public static class WorkspaceEndpoints
 
     public static IEndpointRouteBuilder MapWorkspaceEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/workspaces/import", (IWorkspaceService workspaceService, WorkspaceImportRequest request) =>
+        app.MapPost("/api/workspaces/import", (IWorkspaceService workspaceService, WorkspaceImportRequest request, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             try
             {
-                WorkspaceImportResult result = workspaceService.Import(ToImportDocument(request));
+                WorkspaceImportResult result = workspaceService.Import(owner, ToImportDocument(request));
                 return Results.Ok(new WorkspaceImportResponse(
                     Id: result.Id.Value,
                     Summary: result.Summary,
@@ -41,10 +44,11 @@ public static class WorkspaceEndpoints
 
         });
 
-        app.MapGet("/api/workspaces", (IWorkspaceService workspaceService, int? maxCount) =>
+        app.MapGet("/api/workspaces", (IWorkspaceService workspaceService, int? maxCount, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             int effectiveMaxCount = ResolveWorkspaceListCount(maxCount);
-            IReadOnlyList<WorkspaceListItemResponse> workspaces = workspaceService.List(effectiveMaxCount)
+            IReadOnlyList<WorkspaceListItemResponse> workspaces = workspaceService.List(owner, effectiveMaxCount)
                 .Select(workspace => new WorkspaceListItemResponse(
                     Id: workspace.Id.Value,
                     Summary: workspace.Summary,
@@ -58,68 +62,77 @@ public static class WorkspaceEndpoints
                 Workspaces: workspaces));
         });
 
-        app.MapDelete("/api/workspaces/{id}", (string id, IWorkspaceService workspaceService) =>
+        app.MapDelete("/api/workspaces/{id}", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            bool deleted = workspaceService.Close(workspaceId);
+            bool deleted = workspaceService.Close(owner, workspaceId);
             return deleted ? Results.NoContent() : Results.NotFound(new { error = "Workspace not found." });
         });
 
-        app.MapGet("/api/workspaces/{id}/profile", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/profile", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            var profile = workspaceService.GetProfile(workspaceId);
+            var profile = workspaceService.GetProfile(owner, workspaceId);
             return profile is null ? Results.NotFound() : Results.Ok(profile);
         });
 
-        app.MapGet("/api/workspaces/{id}/progress", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/progress", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            var progress = workspaceService.GetProgress(workspaceId);
+            var progress = workspaceService.GetProgress(owner, workspaceId);
             return progress is null ? Results.NotFound() : Results.Ok(progress);
         });
 
-        app.MapGet("/api/workspaces/{id}/skills", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/skills", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            var skills = workspaceService.GetSkills(workspaceId);
+            var skills = workspaceService.GetSkills(owner, workspaceId);
             return skills is null ? Results.NotFound() : Results.Ok(skills);
         });
 
-        app.MapGet("/api/workspaces/{id}/rules", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/rules", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            var rules = workspaceService.GetRules(workspaceId);
+            var rules = workspaceService.GetRules(owner, workspaceId);
             return rules is null ? Results.NotFound() : Results.Ok(rules);
         });
 
-        app.MapGet("/api/workspaces/{id}/build", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/build", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            var build = workspaceService.GetBuild(workspaceId);
+            var build = workspaceService.GetBuild(owner, workspaceId);
             return build is null ? Results.NotFound() : Results.Ok(build);
         });
 
-        app.MapGet("/api/workspaces/{id}/movement", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/movement", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            var movement = workspaceService.GetMovement(workspaceId);
+            var movement = workspaceService.GetMovement(owner, workspaceId);
             return movement is null ? Results.NotFound() : Results.Ok(movement);
         });
 
-        app.MapGet("/api/workspaces/{id}/awakening", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/awakening", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            var awakening = workspaceService.GetAwakening(workspaceId);
+            var awakening = workspaceService.GetAwakening(owner, workspaceId);
             return awakening is null ? Results.NotFound() : Results.Ok(awakening);
         });
 
-        app.MapGet("/api/workspaces/{id}/sections/{sectionId}", (string id, string sectionId, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/sections/{sectionId}", (string id, string sectionId, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
             try
             {
-                object? section = workspaceService.GetSection(workspaceId, sectionId);
+                object? section = workspaceService.GetSection(owner, workspaceId, sectionId);
                 return section is null ? Results.NotFound() : Results.Ok(section);
             }
             catch (InvalidOperationException ex)
@@ -128,34 +141,38 @@ public static class WorkspaceEndpoints
             }
         });
 
-        app.MapGet("/api/workspaces/{id}/summary", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/summary", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            CharacterFileSummary? summary = workspaceService.GetSummary(workspaceId);
+            CharacterFileSummary? summary = workspaceService.GetSummary(owner, workspaceId);
             return summary is null ? Results.NotFound() : Results.Ok(summary);
         });
 
-        app.MapGet("/api/workspaces/{id}/validate", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/validate", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            CharacterValidationResult? validation = workspaceService.Validate(workspaceId);
+            CharacterValidationResult? validation = workspaceService.Validate(owner, workspaceId);
             return validation is null ? Results.NotFound() : Results.Ok(validation);
         });
 
-        app.MapMethods("/api/workspaces/{id}/metadata", ["PATCH"], (string id, UpdateWorkspaceMetadata command, IWorkspaceService workspaceService) =>
+        app.MapMethods("/api/workspaces/{id}/metadata", ["PATCH"], (string id, UpdateWorkspaceMetadata command, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            CommandResult<CharacterProfileSection> result = workspaceService.UpdateMetadata(workspaceId, command);
+            CommandResult<CharacterProfileSection> result = workspaceService.UpdateMetadata(owner, workspaceId, command);
             if (!result.Success || result.Value is null)
                 return Results.NotFound(new { error = result.Error ?? "Workspace not found." });
 
             return Results.Ok(new WorkspaceMetadataResponse(result.Value));
         });
 
-        app.MapPost("/api/workspaces/{id}/save", (string id, IWorkspaceService workspaceService) =>
+        app.MapPost("/api/workspaces/{id}/save", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            CommandResult<WorkspaceSaveReceipt> result = workspaceService.Save(workspaceId);
+            CommandResult<WorkspaceSaveReceipt> result = workspaceService.Save(owner, workspaceId);
             if (!result.Success || result.Value is null)
                 return Results.NotFound(new { error = result.Error ?? "Workspace not found." });
 
@@ -165,10 +182,11 @@ public static class WorkspaceEndpoints
                 RulesetId: result.Value.RulesetId));
         });
 
-        app.MapPost("/api/workspaces/{id}/download", (string id, IWorkspaceService workspaceService) =>
+        app.MapPost("/api/workspaces/{id}/download", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            CommandResult<WorkspaceDownloadReceipt> result = workspaceService.Download(workspaceId);
+            CommandResult<WorkspaceDownloadReceipt> result = workspaceService.Download(owner, workspaceId);
             if (!result.Success || result.Value is null)
                 return Results.NotFound(new { error = result.Error ?? "Workspace not found." });
 
@@ -181,10 +199,11 @@ public static class WorkspaceEndpoints
                 RulesetId: result.Value.RulesetId));
         });
 
-        app.MapGet("/api/workspaces/{id}/export", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/export", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            CommandResult<WorkspaceExportReceipt> result = workspaceService.Export(workspaceId);
+            CommandResult<WorkspaceExportReceipt> result = workspaceService.Export(owner, workspaceId);
             if (!result.Success || result.Value is null)
                 return Results.NotFound(new { error = result.Error ?? "Workspace not found." });
 
@@ -197,10 +216,11 @@ public static class WorkspaceEndpoints
                 RulesetId: result.Value.RulesetId));
         });
 
-        app.MapGet("/api/workspaces/{id}/print", (string id, IWorkspaceService workspaceService) =>
+        app.MapGet("/api/workspaces/{id}/print", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>
         {
+            OwnerScope owner = ownerContextAccessor.Current;
             CharacterWorkspaceId workspaceId = new(id);
-            CommandResult<WorkspacePrintReceipt> result = workspaceService.Print(workspaceId);
+            CommandResult<WorkspacePrintReceipt> result = workspaceService.Print(owner, workspaceId);
             if (!result.Success || result.Value is null)
                 return Results.NotFound(new { error = result.Error ?? "Workspace not found." });
 

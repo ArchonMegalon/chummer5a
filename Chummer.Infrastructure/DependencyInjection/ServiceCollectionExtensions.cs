@@ -1,9 +1,11 @@
 using Chummer.Application.Characters;
 using Chummer.Application.Content;
+using Chummer.Application.Owners;
 using Chummer.Application.LifeModules;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
 using Chummer.Infrastructure.Files;
+using Chummer.Infrastructure.Owners;
 using Chummer.Infrastructure.Workspaces;
 using Chummer.Infrastructure.Xml;
 using Chummer.Rulesets.Hosting;
@@ -66,6 +68,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IToolCatalogService>(provider =>
             new XmlToolCatalogService(provider.GetRequiredService<IContentOverlayCatalogService>()));
         services.AddSingleton<ISettingsStore>(_ => new FileSettingsStore(stateDirectory));
+        services.AddSingleton<IOwnerContextAccessor, LocalOwnerContextAccessor>();
         services.AddSingleton<IShellPreferencesStore, SettingsShellPreferencesStore>();
         services.AddSingleton<IShellPreferencesService, ShellPreferencesService>();
         services.AddSingleton<IShellSessionStore, SettingsShellSessionStore>();
