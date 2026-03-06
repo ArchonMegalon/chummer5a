@@ -613,6 +613,29 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Runtime_lock_install_contracts_lock_in_target_pin_and_rebind_vocabulary()
+    {
+        string runtimeLockInstallContractsPath = FindPath("Chummer.Contracts", "Content", "RuntimeLockInstallContracts.cs");
+        string runtimeLockInstallContractsText = File.ReadAllText(runtimeLockInstallContractsPath);
+
+        StringAssert.Contains(runtimeLockInstallContractsText, "public static class RuntimeLockTargetKinds");
+        StringAssert.Contains(runtimeLockInstallContractsText, "public static class RuntimeLockPinModes");
+        StringAssert.Contains(runtimeLockInstallContractsText, "public static class RuntimeLockInstallOutcomes");
+        StringAssert.Contains(runtimeLockInstallContractsText, "public static class RuntimeLockRebindReasons");
+        StringAssert.Contains(runtimeLockInstallContractsText, "public sealed record RuntimeLockReference");
+        StringAssert.Contains(runtimeLockInstallContractsText, "public sealed record RuntimeLockPin");
+        StringAssert.Contains(runtimeLockInstallContractsText, "public sealed record RuntimeLockRebindNotice");
+        StringAssert.Contains(runtimeLockInstallContractsText, "public sealed record RuntimeLockInstallReceipt");
+        StringAssert.Contains(runtimeLockInstallContractsText, "character-version");
+        StringAssert.Contains(runtimeLockInstallContractsText, "session-ledger");
+        StringAssert.Contains(runtimeLockInstallContractsText, "rulepack-selection-changed");
+        StringAssert.Contains(runtimeLockInstallContractsText, "ResolvedRuntimeLock RuntimeLock");
+        StringAssert.Contains(runtimeLockInstallContractsText, "bool RequiresSessionReplay = false");
+        Assert.IsFalse(runtimeLockInstallContractsText.Contains("HttpContext", StringComparison.Ordinal));
+        Assert.IsFalse(runtimeLockInstallContractsText.Contains("ClaimsPrincipal", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");

@@ -1247,6 +1247,61 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Runtime_lock_install_contracts_define_target_pin_and_rebind_vocabulary()
+    {
+        ResolvedRuntimeLock runtimeLock = new(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles:
+            [
+                new ContentBundleDescriptor(
+                    BundleId: "sr5-core",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Version: "2026.03.06",
+                    Title: "SR5 Core",
+                    Description: "Official base rules.",
+                    AssetPaths: ["data/", "lang/"])
+            ],
+            RulePacks: [new ArtifactVersionReference("official-errata", "1.0.0")],
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["validate.character"] = "official-errata/validate.character"
+            },
+            EngineApiVersion: "rulepack-v1",
+            RuntimeFingerprint: "runtime-lock-sha256");
+        RuntimeLockPin pin = new(
+            TargetKind: RuntimeLockTargetKinds.Workspace,
+            TargetId: "workspace-1",
+            PinMode: RuntimeLockPinModes.Required,
+            RuntimeLock: new RuntimeLockReference(
+                RuntimeFingerprint: runtimeLock.RuntimeFingerprint,
+                RulesetId: runtimeLock.RulesetId,
+                EngineApiVersion: runtimeLock.EngineApiVersion),
+            RulePacks: runtimeLock.RulePacks);
+        RuntimeLockInstallReceipt receipt = new(
+            TargetKind: RuntimeLockTargetKinds.SessionLedger,
+            TargetId: "overlay-1",
+            Outcome: RuntimeLockInstallOutcomes.Rebound,
+            RuntimeLock: runtimeLock,
+            InstalledAtUtc: DateTimeOffset.UtcNow,
+            RebindNotices:
+            [
+                new RuntimeLockRebindNotice(
+                    Reason: RuntimeLockRebindReasons.RulePackSelectionChanged,
+                    PriorRuntimeFingerprint: "runtime-lock-old",
+                    CurrentRuntimeFingerprint: runtimeLock.RuntimeFingerprint,
+                    SessionSafe: true)
+            ],
+            RequiresSessionReplay: true);
+
+        Assert.AreEqual(RuntimeLockTargetKinds.Workspace, pin.TargetKind);
+        Assert.AreEqual(RuntimeLockPinModes.Required, pin.PinMode);
+        Assert.AreEqual(RuntimeLockInstallOutcomes.Rebound, receipt.Outcome);
+        Assert.AreEqual(RuntimeLockRebindReasons.RulePackSelectionChanged, receipt.RebindNotices[0].Reason);
+        Assert.IsTrue(receipt.RebindNotices[0].SessionSafe);
+        Assert.IsTrue(receipt.RequiresSessionReplay);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);
