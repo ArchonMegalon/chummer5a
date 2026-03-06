@@ -20,6 +20,15 @@ public static class SessionEndpoints
         app.MapPost("/api/session/characters/{characterId}/sync", (string characterId, SessionSyncBatch? batch, ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(sessionService.SyncCharacterLedger(ownerContextAccessor.Current, characterId, batch)));
 
+        app.MapGet("/api/session/profiles", (ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
+            ToResult(sessionService.ListProfiles(ownerContextAccessor.Current)));
+
+        app.MapGet("/api/session/characters/{characterId}/runtime-bundle", (string characterId, ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
+            ToResult(sessionService.GetRuntimeBundle(ownerContextAccessor.Current, characterId)));
+
+        app.MapPost("/api/session/characters/{characterId}/profile", (string characterId, SessionProfileSelectionRequest? request, ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
+            ToResult(sessionService.SelectProfile(ownerContextAccessor.Current, characterId, request)));
+
         app.MapGet("/api/session/rulepacks", (ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(sessionService.ListRulePacks(ownerContextAccessor.Current)));
 

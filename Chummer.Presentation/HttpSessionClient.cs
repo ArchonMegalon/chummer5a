@@ -38,6 +38,23 @@ public sealed class HttpSessionClient : ISessionClient
             batch,
             ct);
 
+    public Task<SessionApiResult<SessionProfileCatalog>> ListProfilesAsync(CancellationToken ct)
+        => SendAsync<SessionProfileCatalog>(HttpMethod.Get, "/api/session/profiles", payload: null, ct);
+
+    public Task<SessionApiResult<SessionRuntimeBundleIssueReceipt>> GetRuntimeBundleAsync(string characterId, CancellationToken ct)
+        => SendAsync<SessionRuntimeBundleIssueReceipt>(
+            HttpMethod.Get,
+            $"/api/session/characters/{Uri.EscapeDataString(characterId)}/runtime-bundle",
+            payload: null,
+            ct);
+
+    public Task<SessionApiResult<SessionProfileSelectionReceipt>> SelectProfileAsync(string characterId, SessionProfileSelectionRequest request, CancellationToken ct)
+        => SendAsync<SessionProfileSelectionReceipt>(
+            HttpMethod.Post,
+            $"/api/session/characters/{Uri.EscapeDataString(characterId)}/profile",
+            request,
+            ct);
+
     public Task<SessionApiResult<RulePackCatalog>> ListRulePacksAsync(CancellationToken ct)
         => SendAsync<RulePackCatalog>(HttpMethod.Get, "/api/session/rulepacks", payload: null, ct);
 

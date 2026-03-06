@@ -30,6 +30,15 @@ public sealed class InProcessSessionClient : ISessionClient
     public Task<SessionApiResult<SessionSyncReceipt>> SyncCharacterLedgerAsync(string characterId, SessionSyncBatch batch, CancellationToken ct)
         => Task.FromResult(_sessionService.SyncCharacterLedger(_ownerContextAccessor.Current, characterId, batch));
 
+    public Task<SessionApiResult<SessionProfileCatalog>> ListProfilesAsync(CancellationToken ct)
+        => Task.FromResult(_sessionService.ListProfiles(_ownerContextAccessor.Current));
+
+    public Task<SessionApiResult<SessionRuntimeBundleIssueReceipt>> GetRuntimeBundleAsync(string characterId, CancellationToken ct)
+        => Task.FromResult(_sessionService.GetRuntimeBundle(_ownerContextAccessor.Current, characterId));
+
+    public Task<SessionApiResult<SessionProfileSelectionReceipt>> SelectProfileAsync(string characterId, SessionProfileSelectionRequest request, CancellationToken ct)
+        => Task.FromResult(_sessionService.SelectProfile(_ownerContextAccessor.Current, characterId, request));
+
     public Task<SessionApiResult<RulePackCatalog>> ListRulePacksAsync(CancellationToken ct)
         => Task.FromResult(_sessionService.ListRulePacks(_ownerContextAccessor.Current));
 

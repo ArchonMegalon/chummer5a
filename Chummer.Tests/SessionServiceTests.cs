@@ -41,4 +41,17 @@ public class SessionServiceTests
         Assert.AreEqual(SessionApiOperations.SyncCharacterLedger, result.NotImplemented.Operation);
         Assert.AreEqual("char-7", result.NotImplemented.CharacterId);
     }
+
+    [TestMethod]
+    public void Not_implemented_session_service_preserves_character_identity_on_runtime_bundle_receipt()
+    {
+        NotImplementedSessionService service = new();
+
+        SessionApiResult<SessionRuntimeBundleIssueReceipt> result = service.GetRuntimeBundle(OwnerScope.LocalSingleUser, "char-9");
+
+        Assert.IsFalse(result.IsImplemented);
+        Assert.IsNotNull(result.NotImplemented);
+        Assert.AreEqual(SessionApiOperations.GetRuntimeBundle, result.NotImplemented.Operation);
+        Assert.AreEqual("char-9", result.NotImplemented.CharacterId);
+    }
 }

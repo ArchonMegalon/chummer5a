@@ -18,6 +18,15 @@ public sealed class NotImplementedSessionService : ISessionService
     public SessionApiResult<SessionSyncReceipt> SyncCharacterLedger(OwnerScope owner, string characterId, SessionSyncBatch? batch)
         => NotImplemented<SessionSyncReceipt>(owner, SessionApiOperations.SyncCharacterLedger, characterId);
 
+    public SessionApiResult<SessionProfileCatalog> ListProfiles(OwnerScope owner)
+        => NotImplemented<SessionProfileCatalog>(owner, SessionApiOperations.ListProfiles);
+
+    public SessionApiResult<SessionRuntimeBundleIssueReceipt> GetRuntimeBundle(OwnerScope owner, string characterId)
+        => NotImplemented<SessionRuntimeBundleIssueReceipt>(owner, SessionApiOperations.GetRuntimeBundle, characterId);
+
+    public SessionApiResult<SessionProfileSelectionReceipt> SelectProfile(OwnerScope owner, string characterId, SessionProfileSelectionRequest? request)
+        => NotImplemented<SessionProfileSelectionReceipt>(owner, SessionApiOperations.SelectProfile, characterId);
+
     public SessionApiResult<RulePackCatalog> ListRulePacks(OwnerScope owner)
         => NotImplemented<RulePackCatalog>(owner, SessionApiOperations.ListRulePacks);
 

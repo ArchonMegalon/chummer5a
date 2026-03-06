@@ -14,6 +14,12 @@ public interface ISessionService
 
     SessionApiResult<SessionSyncReceipt> SyncCharacterLedger(OwnerScope owner, string characterId, SessionSyncBatch? batch);
 
+    SessionApiResult<SessionProfileCatalog> ListProfiles(OwnerScope owner);
+
+    SessionApiResult<SessionRuntimeBundleIssueReceipt> GetRuntimeBundle(OwnerScope owner, string characterId);
+
+    SessionApiResult<SessionProfileSelectionReceipt> SelectProfile(OwnerScope owner, string characterId, SessionProfileSelectionRequest? request);
+
     SessionApiResult<RulePackCatalog> ListRulePacks(OwnerScope owner);
 
     SessionApiResult<SessionOverlaySnapshot> UpdatePins(OwnerScope owner, SessionPinUpdateRequest? request);
