@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
@@ -19,7 +20,8 @@ public sealed record ShellState(
     string? OpenMenuId,
     string? LastCommandId,
     IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions = null,
-    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null)
+    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null,
+    ActiveRuntimeStatusProjection? ActiveRuntime = null)
 {
     public static ShellState Empty { get; } = new(
         IsBusy: false,
@@ -36,5 +38,6 @@ public sealed record ShellState(
         OpenMenuId: null,
         LastCommandId: null,
         WorkflowDefinitions: [],
-        WorkflowSurfaces: []);
+        WorkflowSurfaces: [],
+        ActiveRuntime: null);
 }

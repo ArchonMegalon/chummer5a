@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Bunit;
 using Chummer.Blazor.Components.Layout;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -73,7 +74,16 @@ public sealed class DesktopShellRulesetCatalogTests
             NavigationTabs = [infoTab],
             ActiveTabId = infoTab.Id,
             WorkflowDefinitions = [workflowDefinition],
-            WorkflowSurfaces = [workflowSurface]
+            WorkflowSurfaces = [workflowSurface],
+            ActiveRuntime = new ActiveRuntimeStatusProjection(
+                ProfileId: "official.sr6.core",
+                Title: "SR6 Core",
+                RulesetId: "sr6",
+                RuntimeFingerprint: "sr6-runtime-fp-001",
+                InstallState: ArtifactInstallStates.Available,
+                RulePackCount: 1,
+                ProviderBindingCount: 1,
+                WarningCount: 0)
         };
 
         context.Services.AddSingleton<ICharacterOverviewPresenter>(new StaticOverviewPresenter(overviewState));
@@ -97,6 +107,7 @@ public sealed class DesktopShellRulesetCatalogTests
             StringAssert.Contains(actionButtons[0].TextContent, "SR6 Matrix Action");
             Assert.AreEqual("ui-sr6-control", controlButtons[0].GetAttribute("data-ui-control"));
             StringAssert.Contains(controlButtons[0].TextContent, "SR6 Matrix Control");
+            StringAssert.Contains(cut.Find("#complianceState").TextContent, "Runtime: SR6 Core [sr6-runtime-fp-001]");
             StringAssert.Contains(cut.Find("#complianceState").TextContent, "Ruleset: sr6");
             StringAssert.Contains(cut.Find("#complianceState").TextContent, "Workflows: 1 defs / 1 surfaces");
         });

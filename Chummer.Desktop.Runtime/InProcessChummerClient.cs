@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Chummer.Application.Owners;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
+using Chummer.Application.Content;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Owners;
@@ -23,11 +24,13 @@ public sealed class InProcessChummerClient : IChummerClient
     private readonly IRulesetSelectionPolicy _rulesetSelectionPolicy;
     private readonly IShellPreferencesService _shellPreferencesService;
     private readonly IShellSessionService _shellSessionService;
+    private readonly IActiveRuntimeStatusService? _activeRuntimeStatusService;
     private readonly IOwnerContextAccessor _ownerContextAccessor;
 
     public InProcessChummerClient(
         IWorkspaceService workspaceService,
         IRulesetShellCatalogResolver shellCatalogResolver,
+        IActiveRuntimeStatusService? activeRuntimeStatusService = null,
         IRulesetSelectionPolicy? rulesetSelectionPolicy = null,
         IShellPreferencesService? shellPreferencesService = null,
         IShellSessionService? shellSessionService = null,
@@ -38,6 +41,7 @@ public sealed class InProcessChummerClient : IChummerClient
         _rulesetSelectionPolicy = rulesetSelectionPolicy ?? new DefaultRulesetSelectionPolicy(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>()));
         _shellPreferencesService = shellPreferencesService ?? new ShellPreferencesService(new InMemoryShellPreferencesStore());
         _shellSessionService = shellSessionService ?? new ShellSessionService(new InMemoryShellSessionStore());
+        _activeRuntimeStatusService = activeRuntimeStatusService;
         _ownerContextAccessor = ownerContextAccessor ?? new LocalOwnerContextAccessor();
     }
 
@@ -49,9 +53,10 @@ public sealed class InProcessChummerClient : IChummerClient
         : this(
             workspaceService,
             shellCatalogResolver,
+            activeRuntimeStatusService: null,
             rulesetSelectionPolicy: null,
-            shellPreferencesService,
-            shellSessionService)
+            shellPreferencesService: shellPreferencesService,
+            shellSessionService: shellSessionService)
     {
     }
 
@@ -151,7 +156,8 @@ public sealed class InProcessChummerClient : IChummerClient
             ActiveTabId: session.ActiveTabId,
             ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace),
             WorkflowDefinitions: _shellCatalogResolver.ResolveWorkflowDefinitions(effectiveRulesetId),
-            WorkflowSurfaces: _shellCatalogResolver.ResolveWorkflowSurfaces(effectiveRulesetId)));
+            WorkflowSurfaces: _shellCatalogResolver.ResolveWorkflowSurfaces(effectiveRulesetId),
+            ActiveRuntime: _activeRuntimeStatusService?.GetActiveProfileStatus(owner, effectiveRulesetId)));
     }
 
     public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)

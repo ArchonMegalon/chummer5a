@@ -146,9 +146,9 @@ public class RestartSafeWorkspacePersistenceTests
         InProcessChummerClient client = new(
             workspaceService,
             shellCatalogResolver,
-            rulesetSelectionPolicy,
-            preferencesService,
-            sessionService);
+            rulesetSelectionPolicy: rulesetSelectionPolicy,
+            shellPreferencesService: preferencesService,
+            shellSessionService: sessionService);
         return new RuntimeHarness(client, new ShellBootstrapDataProvider(client));
     }
 

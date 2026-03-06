@@ -996,6 +996,8 @@ public class ApiIntegrationTests
         Assert.AreEqual("sr5", (response["preferredRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.AreEqual("sr5", (response["activeRulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
         Assert.IsNull(response["activeWorkspaceId"]);
+        Assert.AreEqual("official.sr5.core", response["activeRuntime"]?["profileId"]?.GetValue<string>());
+        Assert.IsNotNull(response["activeRuntime"]?["runtimeFingerprint"]);
         Assert.IsTrue(response["commands"] is JsonArray commands && commands.Count > 0);
         Assert.IsTrue(response["navigationTabs"] is JsonArray tabs && tabs.Count > 0);
         Assert.IsTrue(response["workflowDefinitions"] is JsonArray workflowDefinitions && workflowDefinitions.Count > 0);

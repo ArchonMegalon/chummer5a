@@ -1,5 +1,6 @@
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using Chummer.Contracts.Content;
 
 namespace Chummer.Contracts.Presentation;
 
@@ -33,7 +34,8 @@ public sealed record ShellBootstrapResponse(
     string? ActiveTabId = null,
     IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace = null,
     IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions = null,
-    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null);
+    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null,
+    ActiveRuntimeStatusProjection? ActiveRuntime = null);
 
 public sealed record ShellBootstrapSnapshot(
     string RulesetId,
@@ -46,4 +48,5 @@ public sealed record ShellBootstrapSnapshot(
     string? ActiveTabId = null,
     IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace = null,
     IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions = null,
-    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null);
+    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null,
+    ActiveRuntimeStatusProjection? ActiveRuntime = null);

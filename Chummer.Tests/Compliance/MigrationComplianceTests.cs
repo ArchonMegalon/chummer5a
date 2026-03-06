@@ -2458,11 +2458,13 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(shellContractsText, "IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions");
         StringAssert.Contains(shellContractsText, "IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces");
+        StringAssert.Contains(shellContractsText, "ActiveRuntimeStatusProjection? ActiveRuntime = null");
         StringAssert.Contains(providerContractText, "public interface IShellBootstrapDataProvider");
         StringAssert.Contains(providerContractText, "GetWorkspacesAsync");
         StringAssert.Contains(providerContractText, "ShellBootstrapData");
         StringAssert.Contains(providerContractText, "WorkflowDefinitions");
         StringAssert.Contains(providerContractText, "WorkflowSurfaces");
+        StringAssert.Contains(providerContractText, "ActiveRuntimeStatusProjection? ActiveRuntime = null");
         StringAssert.Contains(providerImplementationText, "public sealed class ShellBootstrapDataProvider");
         StringAssert.Contains(providerImplementationText, "BootstrapCacheWindow");
         StringAssert.Contains(providerImplementationText, "GetWorkspacesAsync");
@@ -2470,18 +2472,23 @@ public class MigrationComplianceTests
         StringAssert.Contains(providerImplementationText, "DefaultBootstrapCacheKey");
         StringAssert.Contains(providerImplementationText, "WorkflowDefinitions: snapshot.WorkflowDefinitions ?? []");
         StringAssert.Contains(providerImplementationText, "WorkflowSurfaces: snapshot.WorkflowSurfaces ?? []");
+        StringAssert.Contains(providerImplementationText, "ActiveRuntime: snapshot.ActiveRuntime");
         Assert.IsFalse(providerImplementationText.Contains("_client.ListWorkspacesAsync", StringComparison.Ordinal));
         Assert.IsFalse(providerImplementationText.Contains("_client.GetShellPreferencesAsync", StringComparison.Ordinal));
         Assert.IsFalse(providerImplementationText.Contains("_client.GetShellSessionAsync", StringComparison.Ordinal));
 
+        StringAssert.Contains(shellEndpointsText, "IActiveRuntimeStatusService activeRuntimeStatusService");
         StringAssert.Contains(shellEndpointsText, "WorkflowDefinitions: shellCatalogResolver.ResolveWorkflowDefinitions(requestedRulesetId)");
         StringAssert.Contains(shellEndpointsText, "WorkflowSurfaces: shellCatalogResolver.ResolveWorkflowSurfaces(requestedRulesetId)");
+        StringAssert.Contains(shellEndpointsText, "ActiveRuntime: activeRuntimeStatusService.GetActiveProfileStatus(owner, requestedRulesetId)");
         StringAssert.Contains(shellPresenterText, "_bootstrapDataProvider.GetAsync");
         StringAssert.Contains(shellPresenterText, "WorkflowDefinitions = workflowDefinitions");
         StringAssert.Contains(shellPresenterText, "WorkflowSurfaces = workflowSurfaces");
+        StringAssert.Contains(shellPresenterText, "ActiveRuntime = bootstrap.ActiveRuntime");
         StringAssert.Contains(overviewPresenterText, "_bootstrapDataProvider.GetAsync");
         StringAssert.Contains(overviewPresenterText, "WorkflowDefinitions: shellState.WorkflowDefinitions ?? []");
         StringAssert.Contains(overviewPresenterText, "WorkflowSurfaces: shellState.WorkflowSurfaces ?? []");
+        StringAssert.Contains(overviewPresenterText, "ActiveRuntime: shellState.ActiveRuntime");
         Assert.IsFalse(shellPresenterText.Contains("_client.GetCommandsAsync", StringComparison.Ordinal));
         Assert.IsFalse(shellPresenterText.Contains("_runtimeClient.GetCommandsAsync", StringComparison.Ordinal));
         Assert.IsFalse(shellPresenterText.Contains("_runtimeClient.GetNavigationTabsAsync", StringComparison.Ordinal));
@@ -2624,6 +2631,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(inProcessClientText, "_shellSessionService.Load(owner)");
         StringAssert.Contains(inProcessClientText, "_shellSessionService.Save(owner, new ShellSessionState(");
         StringAssert.Contains(inProcessClientText, "_workspaceService.List(owner, ShellBootstrapDefaults.MaxWorkspaces)");
+        StringAssert.Contains(inProcessClientText, "_activeRuntimeStatusService?.GetActiveProfileStatus(owner, effectiveRulesetId)");
         StringAssert.Contains(inProcessClientText, "_workspaceService.GetSummary(owner, id)");
         StringAssert.Contains(inProcessClientText, "_workspaceService.Validate(owner, id)");
         StringAssert.Contains(inProcessClientText, "_workspaceService.UpdateMetadata(owner, id, command)");
@@ -3558,6 +3566,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(statusStripCodeText, "SetValues(");
         StringAssert.Contains(statusFormatterText, "public static class ShellStatusTextFormatter");
         StringAssert.Contains(statusFormatterText, "BuildComplianceState");
+        StringAssert.Contains(statusFormatterText, "Runtime: ");
+        StringAssert.Contains(statusFormatterText, "TrimFingerprint");
         StringAssert.Contains(statusFormatterText, "Workflows:");
         StringAssert.Contains(sectionHostCodeText, "public void SetState(SectionHostState state)");
         StringAssert.Contains(sectionHostCodeText, "SetNotice(state.Notice);");

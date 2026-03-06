@@ -208,7 +208,8 @@ public sealed class HttpChummerClient : IChummerClient
             ActiveTabId: NormalizeTabId(response.ActiveTabId),
             ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(response.ActiveTabsByWorkspace),
             WorkflowDefinitions: response.WorkflowDefinitions ?? [],
-            WorkflowSurfaces: response.WorkflowSurfaces ?? []);
+            WorkflowSurfaces: response.WorkflowSurfaces ?? [],
+            ActiveRuntime: response.ActiveRuntime);
     }
 
     public async Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)

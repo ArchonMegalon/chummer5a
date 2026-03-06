@@ -104,7 +104,8 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
             ActiveTabId: NormalizeTabId(snapshot.ActiveTabId),
             ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(snapshot.ActiveTabsByWorkspace),
             WorkflowDefinitions: snapshot.WorkflowDefinitions ?? [],
-            WorkflowSurfaces: snapshot.WorkflowSurfaces ?? []);
+            WorkflowSurfaces: snapshot.WorkflowSurfaces ?? [],
+            ActiveRuntime: snapshot.ActiveRuntime);
     }
 
     private static string? NormalizeTabId(string? tabId)

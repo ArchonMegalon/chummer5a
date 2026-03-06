@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
 
@@ -17,7 +18,8 @@ public sealed record ShellSurfaceState(
     string? ActiveTabId,
     string? LastCommandId,
     IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions = null,
-    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null)
+    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null,
+    ActiveRuntimeStatusProjection? ActiveRuntime = null)
 {
     public string? OpenMenuId { get; init; }
 
@@ -38,7 +40,8 @@ public sealed record ShellSurfaceState(
         ActiveTabId: null,
         LastCommandId: null,
         WorkflowDefinitions: [],
-        WorkflowSurfaces: []);
+        WorkflowSurfaces: [],
+        ActiveRuntime: null);
 }
 
 public interface IShellSurfaceResolver

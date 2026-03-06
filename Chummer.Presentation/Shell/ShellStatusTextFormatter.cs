@@ -14,7 +14,22 @@ public static class ShellStatusTextFormatter
             : shellSurface.ActiveRulesetId;
         int workflowDefinitionCount = shellSurface.WorkflowDefinitions?.Count ?? 0;
         int workflowSurfaceCount = shellSurface.WorkflowSurfaces?.Count ?? 0;
+        string runtimeState = shellSurface.ActiveRuntime is null
+            ? "Runtime: none"
+            : $"Runtime: {shellSurface.ActiveRuntime.Title} [{TrimFingerprint(shellSurface.ActiveRuntime.RuntimeFingerprint)}]";
 
-        return $"Ruleset: {rulesetId} | Workflows: {workflowDefinitionCount} defs / {workflowSurfaceCount} surfaces | Prefs: {preferences.UiScalePercent}%/{preferences.Theme}/{preferences.Language}";
+        return $"{runtimeState} | Ruleset: {rulesetId} | Workflows: {workflowDefinitionCount} defs / {workflowSurfaceCount} surfaces | Prefs: {preferences.UiScalePercent}%/{preferences.Theme}/{preferences.Language}";
+    }
+
+    private static string TrimFingerprint(string runtimeFingerprint)
+    {
+        if (string.IsNullOrWhiteSpace(runtimeFingerprint))
+        {
+            return "unresolved";
+        }
+
+        return runtimeFingerprint.Length <= 18
+            ? runtimeFingerprint
+            : runtimeFingerprint[..18];
     }
 }

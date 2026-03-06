@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Shell;
@@ -14,7 +15,8 @@ public sealed record ShellBootstrapData(
     string? ActiveTabId = null,
     IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace = null,
     IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions = null,
-    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null);
+    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null,
+    ActiveRuntimeStatusProjection? ActiveRuntime = null);
 
 public interface IShellBootstrapDataProvider
 {

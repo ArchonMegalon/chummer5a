@@ -1,3 +1,4 @@
+using Chummer.Application.Content;
 using System.Linq;
 using Chummer.Application.Owners;
 using Chummer.Application.Tools;
@@ -39,7 +40,7 @@ public static class ShellEndpoints
             return Results.Ok(shellSessionService.Load(owner));
         });
 
-        app.MapGet("/api/shell/bootstrap", (string? ruleset, IWorkspaceService workspaceService, IRulesetShellCatalogResolver shellCatalogResolver, IRulesetSelectionPolicy rulesetSelectionPolicy, IShellPreferencesService shellPreferencesService, IShellSessionService shellSessionService, IOwnerContextAccessor ownerContextAccessor) =>
+        app.MapGet("/api/shell/bootstrap", (string? ruleset, IWorkspaceService workspaceService, IRulesetShellCatalogResolver shellCatalogResolver, IRulesetSelectionPolicy rulesetSelectionPolicy, IShellPreferencesService shellPreferencesService, IShellSessionService shellSessionService, IActiveRuntimeStatusService activeRuntimeStatusService, IOwnerContextAccessor ownerContextAccessor) =>
         {
             OwnerScope owner = ownerContextAccessor.Current;
             IReadOnlyList<WorkspaceListItem> workspaceList = workspaceService.List(owner, ShellBootstrapDefaults.MaxWorkspaces);
@@ -79,7 +80,8 @@ public static class ShellEndpoints
                 ActiveTabId: session.ActiveTabId,
                 ActiveTabsByWorkspace: session.ActiveTabsByWorkspace,
                 WorkflowDefinitions: shellCatalogResolver.ResolveWorkflowDefinitions(requestedRulesetId),
-                WorkflowSurfaces: shellCatalogResolver.ResolveWorkflowSurfaces(requestedRulesetId)));
+                WorkflowSurfaces: shellCatalogResolver.ResolveWorkflowSurfaces(requestedRulesetId),
+                ActiveRuntime: activeRuntimeStatusService.GetActiveProfileStatus(owner, requestedRulesetId)));
         }).AllowPublicApiKeyBypass();
 
         return app;

@@ -100,7 +100,8 @@ public sealed class ShellPresenter : IShellPresenter
                 ActiveTabId = resolvedActiveTabId,
                 OpenMenuId = null,
                 WorkflowDefinitions = workflowDefinitions,
-                WorkflowSurfaces = workflowSurfaces
+                WorkflowSurfaces = workflowSurfaces,
+                ActiveRuntime = bootstrap.ActiveRuntime
             });
         }
         catch (Exception ex)
@@ -259,6 +260,7 @@ public sealed class ShellPresenter : IShellPresenter
         IReadOnlyList<NavigationTabDefinition> tabs = State.NavigationTabs;
         IReadOnlyList<WorkflowDefinition> workflowDefinitions = State.WorkflowDefinitions ?? [];
         IReadOnlyList<WorkflowSurfaceDefinition> workflowSurfaces = State.WorkflowSurfaces ?? [];
+        var activeRuntime = State.ActiveRuntime;
         if (requiresCatalogRefresh)
         {
             ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
@@ -266,6 +268,7 @@ public sealed class ShellPresenter : IShellPresenter
             tabs = bootstrap.NavigationTabs;
             workflowDefinitions = bootstrap.WorkflowDefinitions ?? [];
             workflowSurfaces = bootstrap.WorkflowSurfaces ?? [];
+            activeRuntime = bootstrap.ActiveRuntime;
         }
 
         await _runtimeClient.SaveShellPreferencesAsync(
@@ -304,7 +307,8 @@ public sealed class ShellPresenter : IShellPresenter
             OpenMenuId = null,
             Notice = $"Preferred ruleset set to '{preferredRulesetId}'.",
             WorkflowDefinitions = workflowDefinitions,
-            WorkflowSurfaces = workflowSurfaces
+            WorkflowSurfaces = workflowSurfaces,
+            ActiveRuntime = activeRuntime
         });
     }
 
@@ -326,6 +330,7 @@ public sealed class ShellPresenter : IShellPresenter
         IReadOnlyList<NavigationTabDefinition> tabs = State.NavigationTabs;
         IReadOnlyList<WorkflowDefinition> workflowDefinitions = State.WorkflowDefinitions ?? [];
         IReadOnlyList<WorkflowSurfaceDefinition> workflowSurfaces = State.WorkflowSurfaces ?? [];
+        var activeRuntime = State.ActiveRuntime;
         if (rulesetChanged
             || commands.Count == 0
             || tabs.Count == 0
@@ -337,6 +342,7 @@ public sealed class ShellPresenter : IShellPresenter
             tabs = bootstrap.NavigationTabs;
             workflowDefinitions = bootstrap.WorkflowDefinitions ?? [];
             workflowSurfaces = bootstrap.WorkflowSurfaces ?? [];
+            activeRuntime = bootstrap.ActiveRuntime;
         }
 
         Dictionary<string, string> nextWorkspaceTabs = BuildUpdatedWorkspaceTabMap(State.ActiveWorkspaceId, State.ActiveTabId);
@@ -372,7 +378,8 @@ public sealed class ShellPresenter : IShellPresenter
             NavigationTabs = tabs,
             ActiveTabId = resolvedActiveTabId,
             WorkflowDefinitions = workflowDefinitions,
-            WorkflowSurfaces = workflowSurfaces
+            WorkflowSurfaces = workflowSurfaces,
+            ActiveRuntime = activeRuntime
         });
     }
 

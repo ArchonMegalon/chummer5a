@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -320,6 +321,29 @@ public class ShellPresenterTests
     }
 
     [TestMethod]
+    public async Task InitializeAsync_projects_active_runtime_from_bootstrap_snapshot()
+    {
+        var client = new ShellClientStub();
+        client.ActiveRuntimesByRuleset[RulesetDefaults.Sr5] = new ActiveRuntimeStatusProjection(
+            ProfileId: "official.sr5.core",
+            Title: "Official SR5 Core",
+            RulesetId: RulesetDefaults.Sr5,
+            RuntimeFingerprint: "sha256:sr5-runtime",
+            InstallState: ArtifactInstallStates.Available,
+            RulePackCount: 1,
+            ProviderBindingCount: 2,
+            WarningCount: 1);
+        var presenter = new ShellPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        Assert.IsNotNull(presenter.State.ActiveRuntime);
+        Assert.AreEqual("official.sr5.core", presenter.State.ActiveRuntime.ProfileId);
+        Assert.AreEqual("sha256:sr5-runtime", presenter.State.ActiveRuntime.RuntimeFingerprint);
+        Assert.AreEqual(1, presenter.State.ActiveRuntime.WarningCount);
+    }
+
+    [TestMethod]
     public async Task SetPreferredRulesetAsync_persists_preference_via_runtime_client()
     {
         var client = new ShellClientStub
@@ -469,6 +493,8 @@ public class ShellPresenterTests
 
         public IReadOnlyList<WorkflowSurfaceDefinition> WorkflowSurfaces { get; set; } = [];
 
+        public Dictionary<string, ActiveRuntimeStatusProjection> ActiveRuntimesByRuleset { get; } = new(StringComparer.Ordinal);
+
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
 
         public ShellPreferences Preferences { get; set; } = new(RulesetDefaults.Sr5);
@@ -538,6 +564,7 @@ public class ShellPresenterTests
             RequestedBootstrapRulesets.Add(effectiveRulesetId);
             IReadOnlyList<AppCommandDefinition> commands = await GetCommandsAsync(effectiveRulesetId, ct);
             IReadOnlyList<NavigationTabDefinition> tabs = await GetNavigationTabsAsync(effectiveRulesetId, ct);
+            ActiveRuntimeStatusProjection? activeRuntime = ActiveRuntimesByRuleset.GetValueOrDefault(effectiveRulesetId);
             return new ShellBootstrapSnapshot(
                 RulesetId: effectiveRulesetId,
                 Commands: commands,
@@ -549,7 +576,8 @@ public class ShellPresenterTests
                 ActiveTabId: NormalizeTabId(Session.ActiveTabId),
                 ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(Session.ActiveTabsByWorkspace),
                 WorkflowDefinitions: WorkflowDefinitions,
-                WorkflowSurfaces: WorkflowSurfaces);
+                WorkflowSurfaces: WorkflowSurfaces,
+                ActiveRuntime: activeRuntime);
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();

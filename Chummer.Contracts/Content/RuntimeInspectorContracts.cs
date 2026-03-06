@@ -64,6 +64,18 @@ public sealed record RuntimeMigrationPreviewItem(
     string? AfterValue = null,
     bool RequiresRebind = false);
 
+public sealed record ActiveRuntimeStatusProjection(
+    string ProfileId,
+    string Title,
+    string RulesetId,
+    string RuntimeFingerprint,
+    string InstallState,
+    string? InstalledTargetKind = null,
+    string? InstalledTargetId = null,
+    int RulePackCount = 0,
+    int ProviderBindingCount = 0,
+    int WarningCount = 0);
+
 public sealed record RuntimeInspectorProjection(
     string TargetKind,
     string TargetId,

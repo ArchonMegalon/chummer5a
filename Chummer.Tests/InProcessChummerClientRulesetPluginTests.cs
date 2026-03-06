@@ -6,11 +6,13 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Chummer.Application.Content;
 using Chummer.Application.Owners;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Owners;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
@@ -237,8 +239,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
             workspaceService,
             CreateRuntimeShellCatalogResolver(),
             rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
-            new ShellPreferencesService(preferencesStore),
-            new ShellSessionService(sessionStore));
+            shellPreferencesService: new ShellPreferencesService(preferencesStore),
+            shellSessionService: new ShellSessionService(sessionStore));
 
         ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
 
@@ -264,8 +266,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
             workspaceService,
             CreateRuntimeShellCatalogResolver(),
             rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
-            new ShellPreferencesService(preferencesStore),
-            new ShellSessionService(new InMemoryShellSessionStore()));
+            shellPreferencesService: new ShellPreferencesService(preferencesStore),
+            shellSessionService: new ShellSessionService(new InMemoryShellSessionStore()));
 
         ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
 
@@ -285,8 +287,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
             new NoOpWorkspaceService(),
             CreateRuntimeShellCatalogResolver(),
             rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
-            new ShellPreferencesService(preferencesStore),
-            new ShellSessionService(sessionStore));
+            shellPreferencesService: new ShellPreferencesService(preferencesStore),
+            shellSessionService: new ShellSessionService(sessionStore));
 
         ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
 
@@ -309,14 +311,42 @@ public sealed class InProcessChummerClientRulesetPluginTests
             new NoOpWorkspaceService(),
             CreateRuntimeShellCatalogResolver(),
             rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy(),
-            new ShellPreferencesService(preferencesStore),
-            new ShellSessionService(sessionStore));
+            shellPreferencesService: new ShellPreferencesService(preferencesStore),
+            shellSessionService: new ShellSessionService(sessionStore));
 
         ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
 
         Assert.IsNotNull(snapshot.ActiveTabsByWorkspace);
         Assert.AreEqual("tab-info", snapshot.ActiveTabsByWorkspace!["ws-a"]);
         Assert.AreEqual("tab-rules", snapshot.ActiveTabsByWorkspace["ws-b"]);
+    }
+
+    [TestMethod]
+    public async Task GetShellBootstrap_includes_active_runtime_status_when_service_is_registered()
+    {
+        StubActiveRuntimeStatusService activeRuntimeStatusService = new(
+            new ActiveRuntimeStatusProjection(
+                ProfileId: "official.sr5.core",
+                Title: "Official SR5 Core",
+                RulesetId: RulesetDefaults.Sr5,
+                RuntimeFingerprint: "sha256:sr5-runtime",
+                InstallState: ArtifactInstallStates.Available,
+                RulePackCount: 1,
+                ProviderBindingCount: 2,
+                WarningCount: 1));
+        InProcessChummerClient client = new(
+            new NoOpWorkspaceService(),
+            CreateRuntimeShellCatalogResolver(),
+            activeRuntimeStatusService: activeRuntimeStatusService,
+            rulesetSelectionPolicy: CreateRuntimeRulesetSelectionPolicy());
+
+        ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: RulesetDefaults.Sr5, CancellationToken.None);
+
+        Assert.IsNotNull(snapshot.ActiveRuntime);
+        Assert.AreEqual("official.sr5.core", snapshot.ActiveRuntime.ProfileId);
+        Assert.AreEqual("sha256:sr5-runtime", snapshot.ActiveRuntime.RuntimeFingerprint);
+        Assert.AreEqual(OwnerScope.LocalSingleUser, activeRuntimeStatusService.LastOwner);
+        Assert.AreEqual(RulesetDefaults.Sr5, activeRuntimeStatusService.LastRulesetId);
     }
 
     [TestMethod]
@@ -700,6 +730,27 @@ public sealed class InProcessChummerClientRulesetPluginTests
         }
 
         public OwnerScope Current { get; }
+    }
+
+    private sealed class StubActiveRuntimeStatusService : IActiveRuntimeStatusService
+    {
+        private readonly ActiveRuntimeStatusProjection? _projection;
+
+        public StubActiveRuntimeStatusService(ActiveRuntimeStatusProjection? projection)
+        {
+            _projection = projection;
+        }
+
+        public OwnerScope LastOwner { get; private set; }
+
+        public string? LastRulesetId { get; private set; }
+
+        public ActiveRuntimeStatusProjection? GetActiveProfileStatus(OwnerScope owner, string? rulesetId = null)
+        {
+            LastOwner = owner;
+            LastRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return _projection;
+        }
     }
 
     private static WorkspaceListItem CreateWorkspace(

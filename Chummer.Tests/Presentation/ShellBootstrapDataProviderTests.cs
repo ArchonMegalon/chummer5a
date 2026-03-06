@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -185,6 +186,31 @@ public class ShellBootstrapDataProviderTests
     }
 
     [TestMethod]
+    public async Task GetAsync_includes_active_runtime_from_bootstrap_snapshot()
+    {
+        var client = new BootstrapClientStub
+        {
+            ActiveRuntime = new ActiveRuntimeStatusProjection(
+                ProfileId: "official.sr5.core",
+                Title: "Official SR5 Core",
+                RulesetId: RulesetDefaults.Sr5,
+                RuntimeFingerprint: "sha256:sr5-runtime",
+                InstallState: ArtifactInstallStates.Available,
+                RulePackCount: 1,
+                ProviderBindingCount: 2,
+                WarningCount: 1)
+        };
+        var provider = new ShellBootstrapDataProvider(client);
+
+        ShellBootstrapData bootstrap = await provider.GetAsync(CancellationToken.None);
+
+        Assert.IsNotNull(bootstrap.ActiveRuntime);
+        Assert.AreEqual("official.sr5.core", bootstrap.ActiveRuntime.ProfileId);
+        Assert.AreEqual("sha256:sr5-runtime", bootstrap.ActiveRuntime.RuntimeFingerprint);
+        Assert.AreEqual(1, bootstrap.ActiveRuntime.WarningCount);
+    }
+
+    [TestMethod]
     public async Task Shared_provider_avoids_duplicate_startup_fetches_between_shell_and_overview()
     {
         var client = new BootstrapClientStub();
@@ -232,6 +258,7 @@ public class ShellBootstrapDataProviderTests
         public IReadOnlyList<NavigationTabDefinition> NavigationTabs { get; set; } = NavigationTabCatalog.All;
         public IReadOnlyList<WorkflowDefinition> WorkflowDefinitions { get; set; } = [];
         public IReadOnlyList<WorkflowSurfaceDefinition> WorkflowSurfaces { get; set; } = [];
+        public ActiveRuntimeStatusProjection? ActiveRuntime { get; set; }
         public ShellPreferences Preferences { get; set; } = new(RulesetDefaults.Sr5);
         public ShellSessionState Session { get; set; } = ShellSessionState.Default;
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
@@ -309,7 +336,8 @@ public class ShellBootstrapDataProviderTests
                 ActiveTabId: NormalizeTabId(Session.ActiveTabId),
                 ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(Session.ActiveTabsByWorkspace),
                 WorkflowDefinitions: WorkflowDefinitions,
-                WorkflowSurfaces: WorkflowSurfaces));
+                WorkflowSurfaces: WorkflowSurfaces,
+                ActiveRuntime: ActiveRuntime));
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();

@@ -176,7 +176,8 @@ public sealed partial class CharacterOverviewPresenter : ICharacterOverviewPrese
             ActiveWorkspaceId: shellState.ActiveWorkspaceId,
             ActiveTabId: shellState.ActiveTabId,
             WorkflowDefinitions: shellState.WorkflowDefinitions ?? [],
-            WorkflowSurfaces: shellState.WorkflowSurfaces ?? []);
+            WorkflowSurfaces: shellState.WorkflowSurfaces ?? [],
+            ActiveRuntime: shellState.ActiveRuntime);
         return true;
     }
 }

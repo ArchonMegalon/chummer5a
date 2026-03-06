@@ -73,7 +73,8 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
             ActiveTabId: activeTabId,
             LastCommandId: shellState.LastCommandId,
             WorkflowDefinitions: shellState.WorkflowDefinitions ?? [],
-            WorkflowSurfaces: shellState.WorkflowSurfaces ?? []);
+            WorkflowSurfaces: shellState.WorkflowSurfaces ?? [],
+            ActiveRuntime: shellState.ActiveRuntime);
 
         return state with
         {
