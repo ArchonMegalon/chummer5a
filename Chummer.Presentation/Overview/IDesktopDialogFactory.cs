@@ -14,7 +14,8 @@ public interface IDesktopDialogFactory
         CharacterProfileSection? profile,
         DesktopPreferenceState preferences,
         string? activeSectionJson,
-        CharacterWorkspaceId? currentWorkspace);
+        CharacterWorkspaceId? currentWorkspace,
+        string? rulesetId);
 
     DesktopDialogState CreateUiControlDialog(
         string controlId,

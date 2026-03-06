@@ -1201,6 +1201,10 @@ public class MigrationComplianceTests
         string actionCatalogText = File.ReadAllText(actionCatalogPath);
         string controlCatalogPath = FindPath("Chummer.Contracts", "Presentation", "DesktopUiControlCatalog.cs");
         string controlCatalogText = File.ReadAllText(controlCatalogPath);
+        string dialogFactoryPath = FindPath("Chummer.Presentation", "Overview", "DesktopDialogFactory.cs");
+        string dialogFactoryText = File.ReadAllText(dialogFactoryPath);
+        string overviewCommandDispatcherPath = FindPath("Chummer.Presentation", "Overview", "OverviewCommandDispatcher.cs");
+        string overviewCommandDispatcherText = File.ReadAllText(overviewCommandDispatcherPath);
         string fileWorkspaceStorePath = FindPath("Chummer.Infrastructure", "Workspaces", "FileWorkspaceStore.cs");
         string fileWorkspaceStoreText = File.ReadAllText(fileWorkspaceStorePath);
 
@@ -1242,6 +1246,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(tabCatalogText, "RulesetDefaults.Sr5");
         StringAssert.Contains(actionCatalogText, "RulesetDefaults.Sr5");
         StringAssert.Contains(controlCatalogText, "RulesetDefaults.Sr5");
+        Assert.IsFalse(dialogFactoryText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
+        Assert.IsFalse(overviewCommandDispatcherText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         StringAssert.Contains(fileWorkspaceStoreText, "WorkspacePayloadEnvelope");
         StringAssert.Contains(fileWorkspaceStoreText, "PayloadKind");
         StringAssert.Contains(fileWorkspaceStoreText, "Envelope");

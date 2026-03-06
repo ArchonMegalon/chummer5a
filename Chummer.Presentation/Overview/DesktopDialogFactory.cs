@@ -32,7 +32,8 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
         CharacterProfileSection? profile,
         DesktopPreferenceState preferences,
         string? activeSectionJson,
-        CharacterWorkspaceId? currentWorkspace)
+        CharacterWorkspaceId? currentWorkspace,
+        string? rulesetId)
     {
         string name = profile?.Name ?? "(none)";
         string alias = profile?.Alias ?? string.Empty;
@@ -43,15 +44,18 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
             "open_character" => CreateOpenCharacterDialog(
                 "dialog.open_character",
                 "Open Character",
-                "Paste Chummer XML to import into a workspace."),
+                "Paste Chummer XML to import into a workspace.",
+                rulesetId),
             "open_for_printing" => CreateOpenCharacterDialog(
                 "dialog.open_for_printing",
                 "Open for Printing",
-                "Paste Chummer XML to stage print workflows."),
+                "Paste Chummer XML to stage print workflows.",
+                rulesetId),
             "open_for_export" => CreateOpenCharacterDialog(
                 "dialog.open_for_export",
                 "Open for Export",
-                "Paste Chummer XML to stage export workflows."),
+                "Paste Chummer XML to stage export workflows.",
+                rulesetId),
             "print_setup" => new DesktopDialogState(
                 "dialog.print_setup",
                 "Print Setup",
@@ -92,7 +96,7 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 "Switch Ruleset",
                 "Set the preferred ruleset used when no workspace is active.",
                 [
-                    new DesktopDialogField("preferredRulesetId", "Ruleset", RulesetDefaults.Sr5, RulesetDefaults.Sr5)
+                    CreateRulesetField("preferredRulesetId", rulesetId)
                 ],
                 [
                     new DesktopDialogAction("apply_ruleset", "Apply", true),
@@ -187,7 +191,7 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 "Paste Hero Lab XML payload to import using compatibility mode.",
                 [
                     new DesktopDialogField("heroLabSource", "Input File", ".por/.xml", ".por/.xml"),
-                    CreateRulesetField(),
+                    CreateRulesetField("importRulesetId", rulesetId),
                     new DesktopDialogField(
                         "heroLabXml",
                         "Hero Lab XML",
@@ -265,7 +269,8 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
     private static DesktopDialogState CreateOpenCharacterDialog(
         string id,
         string title,
-        string message)
+        string message,
+        string? rulesetId)
     {
         const string defaultXml = "<character><name>Imported Runner</name></character>";
 
@@ -275,7 +280,7 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
             Message: message,
             Fields:
             [
-                CreateRulesetField(),
+                CreateRulesetField("importRulesetId", rulesetId),
                 new DesktopDialogField(
                     Id: "openCharacterXml",
                     Label: "Character XML",
@@ -290,13 +295,14 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
             ]);
     }
 
-    private static DesktopDialogField CreateRulesetField()
+    private static DesktopDialogField CreateRulesetField(string fieldId, string? rulesetId)
     {
+        string value = RulesetDefaults.NormalizeOptional(rulesetId) ?? string.Empty;
         return new DesktopDialogField(
-            Id: "importRulesetId",
+            Id: fieldId,
             Label: "Ruleset",
-            Value: RulesetDefaults.Sr5,
-            Placeholder: RulesetDefaults.Sr5);
+            Value: value,
+            Placeholder: value);
     }
 
     public DesktopDialogState CreateUiControlDialog(

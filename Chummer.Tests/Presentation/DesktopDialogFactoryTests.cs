@@ -28,7 +28,8 @@ public class DesktopDialogFactoryTests
             profile: null,
             preferences,
             activeSectionJson: null,
-            currentWorkspace: new CharacterWorkspaceId("ws-42"));
+            currentWorkspace: new CharacterWorkspaceId("ws-42"),
+            rulesetId: RulesetDefaults.Sr5);
 
         Assert.AreEqual("dialog.global_settings", dialog.Id);
         Assert.AreEqual("125", DesktopDialogFieldValueParser.GetValue(dialog, "globalUiScale"));
@@ -116,11 +117,12 @@ public class DesktopDialogFactoryTests
             profile: null,
             DesktopPreferenceState.Default,
             activeSectionJson: null,
-            currentWorkspace: null);
+            currentWorkspace: null,
+            rulesetId: "sr6");
 
         Assert.AreEqual("dialog.open_character", dialog.Id);
         Assert.IsNotNull(dialog.Fields.SingleOrDefault(field => string.Equals(field.Id, "openCharacterXml", StringComparison.Ordinal)));
-        Assert.AreEqual(RulesetDefaults.Sr5, DesktopDialogFieldValueParser.GetValue(dialog, "importRulesetId"));
+        Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(dialog, "importRulesetId"));
         Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "import", StringComparison.Ordinal)));
     }
 
@@ -134,11 +136,12 @@ public class DesktopDialogFactoryTests
             profile: null,
             DesktopPreferenceState.Default,
             activeSectionJson: null,
-            currentWorkspace: null);
+            currentWorkspace: null,
+            rulesetId: "sr6");
 
         Assert.AreEqual("dialog.hero_lab_importer", dialog.Id);
         Assert.IsNotNull(dialog.Fields.SingleOrDefault(field => string.Equals(field.Id, "heroLabXml", StringComparison.Ordinal)));
-        Assert.AreEqual(RulesetDefaults.Sr5, DesktopDialogFieldValueParser.GetValue(dialog, "importRulesetId"));
+        Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(dialog, "importRulesetId"));
         Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "import", StringComparison.Ordinal)));
     }
 
@@ -152,10 +155,11 @@ public class DesktopDialogFactoryTests
             profile: null,
             DesktopPreferenceState.Default,
             activeSectionJson: null,
-            currentWorkspace: null);
+            currentWorkspace: null,
+            rulesetId: "sr6");
 
         Assert.AreEqual("dialog.switch_ruleset", dialog.Id);
-        Assert.AreEqual(RulesetDefaults.Sr5, DesktopDialogFieldValueParser.GetValue(dialog, "preferredRulesetId"));
+        Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(dialog, "preferredRulesetId"));
         Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "apply_ruleset", StringComparison.Ordinal)));
     }
 

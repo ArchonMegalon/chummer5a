@@ -259,6 +259,73 @@ public class DialogCoordinatorTests
     }
 
     [TestMethod]
+    public async Task CoordinateAsync_apply_ruleset_rejects_blank_ruleset()
+    {
+        DialogCoordinator coordinator = new();
+        CharacterOverviewState published = CharacterOverviewState.Empty with
+        {
+            ActiveDialog = new DesktopDialogState(
+                Id: "dialog.switch_ruleset",
+                Title: "Switch Ruleset",
+                Message: null,
+                Fields:
+                [
+                    new DesktopDialogField("preferredRulesetId", "Ruleset", "   ", string.Empty)
+                ],
+                Actions:
+                [
+                    new DesktopDialogAction("apply_ruleset", "Apply", true)
+                ])
+        };
+
+        DialogCoordinationContext context = new(
+            State: published,
+            Publish: state => published = state,
+            ImportAsync: static (_, _) => Task.CompletedTask,
+            UpdateMetadataAsync: static (_, _) => Task.CompletedTask,
+            GetState: () => published);
+
+        await coordinator.CoordinateAsync("apply_ruleset", context, CancellationToken.None);
+
+        Assert.AreEqual("Preferred ruleset is required.", published.Error);
+        Assert.IsNotNull(published.ActiveDialog);
+    }
+
+    [TestMethod]
+    public async Task CoordinateAsync_import_rejects_blank_ruleset()
+    {
+        DialogCoordinator coordinator = new();
+        CharacterOverviewState published = CharacterOverviewState.Empty with
+        {
+            ActiveDialog = new DesktopDialogState(
+                Id: "dialog.open_character",
+                Title: "Open Character",
+                Message: null,
+                Fields:
+                [
+                    new DesktopDialogField("importRulesetId", "Ruleset", "   ", string.Empty),
+                    new DesktopDialogField("openCharacterXml", "Character XML", "<character><name>Runner</name></character>", "<character />", true)
+                ],
+                Actions:
+                [
+                    new DesktopDialogAction("import", "Import", true)
+                ])
+        };
+
+        DialogCoordinationContext context = new(
+            State: published,
+            Publish: state => published = state,
+            ImportAsync: static (_, _) => Task.CompletedTask,
+            UpdateMetadataAsync: static (_, _) => Task.CompletedTask,
+            GetState: () => published);
+
+        await coordinator.CoordinateAsync("import", context, CancellationToken.None);
+
+        Assert.AreEqual("Ruleset is required.", published.Error);
+        Assert.IsNotNull(published.ActiveDialog);
+    }
+
+    [TestMethod]
     public async Task CoordinateAsync_hero_lab_import_imports_workspace_and_sets_compat_notice()
     {
         DialogCoordinator coordinator = new();
@@ -270,6 +337,7 @@ public class DialogCoordinatorTests
                 Message: null,
                 Fields:
                 [
+                    new DesktopDialogField("importRulesetId", "Ruleset", " sr6 ", string.Empty),
                     new DesktopDialogField("heroLabXml", "Hero Lab XML", "<character><name>Hero</name></character>", "<character />", true)
                 ],
                 Actions:
@@ -299,7 +367,7 @@ public class DialogCoordinatorTests
 
         Assert.IsNotNull(imported);
         StringAssert.Contains(imported!.Content, "<character>");
-        Assert.AreEqual(RulesetDefaults.Sr5, imported.RulesetId);
+        Assert.AreEqual("sr6", imported.RulesetId);
         Assert.IsNull(published.ActiveDialog);
         Assert.AreEqual("Hero Lab XML imported.", published.Notice);
         Assert.AreEqual("ws-hero", published.WorkspaceId?.Value);

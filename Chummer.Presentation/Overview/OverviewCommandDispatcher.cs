@@ -104,50 +104,33 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
 
     private static DesktopDialogState BuildCommandDialog(string commandId, OverviewCommandExecutionContext context)
     {
-        DesktopDialogState dialog = context.DialogFactory.CreateCommandDialog(
+        return context.DialogFactory.CreateCommandDialog(
             commandId,
             context.State.Profile,
             context.State.Preferences,
             context.State.ActiveSectionJson,
-            context.CurrentWorkspace);
-
-        string activeRulesetId = ResolveActiveRulesetId(context);
-        DesktopDialogState importSeeded = SetFieldValue(dialog, "importRulesetId", activeRulesetId);
-        return SetFieldValue(importSeeded, "preferredRulesetId", activeRulesetId);
+            context.CurrentWorkspace,
+            ResolveDialogRulesetId(context));
     }
 
-    private static string ResolveActiveRulesetId(OverviewCommandExecutionContext context)
+    private static string? ResolveDialogRulesetId(OverviewCommandExecutionContext context)
     {
         CharacterWorkspaceId? activeWorkspace = context.CurrentWorkspace;
-        if (activeWorkspace is null)
-            return RulesetDefaults.Sr5;
+        if (activeWorkspace is not null)
+        {
+            OpenWorkspaceState? workspace = context.State.OpenWorkspaces.FirstOrDefault(
+                candidate => string.Equals(candidate.Id.Value, activeWorkspace.Value.Value, StringComparison.Ordinal));
+            if (workspace is not null)
+                return RulesetDefaults.Normalize(workspace.RulesetId);
+        }
 
-        OpenWorkspaceState? workspace = context.State.OpenWorkspaces.FirstOrDefault(
-            candidate => string.Equals(candidate.Id.Value, activeWorkspace.Value.Value, StringComparison.Ordinal));
-        return workspace is null
-            ? RulesetDefaults.Sr5
-            : RulesetDefaults.Normalize(workspace.RulesetId);
-    }
+        string? commandRulesetId = context.State.Commands.FirstOrDefault()?.RulesetId;
+        if (!string.IsNullOrWhiteSpace(commandRulesetId))
+            return RulesetDefaults.NormalizeRequired(commandRulesetId);
 
-    private static DesktopDialogState SetFieldValue(DesktopDialogState dialog, string fieldId, string value)
-    {
-        if (dialog.Fields.Count == 0)
-            return dialog;
-
-        bool updated = false;
-        DesktopDialogField[] fields = dialog.Fields
-            .Select(field =>
-            {
-                if (!string.Equals(field.Id, fieldId, StringComparison.Ordinal))
-                    return field;
-
-                updated = true;
-                return field with { Value = value };
-            })
-            .ToArray();
-
-        return updated
-            ? dialog with { Fields = fields }
-            : dialog;
+        string? tabRulesetId = context.State.NavigationTabs.FirstOrDefault()?.RulesetId;
+        return string.IsNullOrWhiteSpace(tabRulesetId)
+            ? null
+            : RulesetDefaults.NormalizeRequired(tabRulesetId);
     }
 }

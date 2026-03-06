@@ -273,7 +273,10 @@ public sealed class DialogCoordinator : IDialogCoordinator
         DialogCoordinationContext context,
         CancellationToken ct)
     {
-        string rulesetId = RulesetDefaults.Normalize(DesktopDialogFieldValueParser.GetValue(dialog, "preferredRulesetId"));
+        string? rulesetId = ReadRequiredRuleset(dialog, context, "preferredRulesetId", "Preferred ruleset is required.");
+        if (rulesetId is null)
+            return;
+
         if (context.SetPreferredRulesetAsync is null)
         {
             PublishDialogNotice(context, $"Preferred ruleset set to '{rulesetId}'.");
@@ -305,7 +308,7 @@ public sealed class DialogCoordinator : IDialogCoordinator
         Func<CancellationToken, Task>? afterImportAsync = null)
     {
         string xml = DesktopDialogFieldValueParser.GetValue(dialog, fieldId) ?? string.Empty;
-        string rulesetId = RulesetDefaults.Normalize(DesktopDialogFieldValueParser.GetValue(dialog, rulesetFieldId));
+        string? rulesetId = ReadRequiredRuleset(dialog, context, rulesetFieldId, "Ruleset is required.");
         if (string.IsNullOrWhiteSpace(xml))
         {
             context.Publish(context.State with
@@ -315,6 +318,9 @@ public sealed class DialogCoordinator : IDialogCoordinator
             });
             return;
         }
+
+        if (rulesetId is null)
+            return;
 
         await context.ImportAsync(new WorkspaceImportDocument(xml, WorkspaceDocumentFormat.Chum5Xml, rulesetId), ct);
 
@@ -346,6 +352,24 @@ public sealed class DialogCoordinator : IDialogCoordinator
             Error = null,
             Notice = successNotice
         });
+    }
+
+    private static string? ReadRequiredRuleset(
+        DesktopDialogState dialog,
+        DialogCoordinationContext context,
+        string fieldId,
+        string requiredError)
+    {
+        string? rulesetId = RulesetDefaults.NormalizeOptional(DesktopDialogFieldValueParser.GetValue(dialog, fieldId));
+        if (!string.IsNullOrWhiteSpace(rulesetId))
+            return rulesetId;
+
+        context.Publish(context.State with
+        {
+            Error = requiredError,
+            Notice = null
+        });
+        return null;
     }
 
     private static void ApplyGlobalSettings(DesktopDialogState dialog, DialogCoordinationContext context)

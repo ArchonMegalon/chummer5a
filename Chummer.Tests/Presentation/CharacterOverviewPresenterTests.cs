@@ -516,6 +516,19 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_open_character_prefills_import_ruleset_from_initialized_shell_contract_when_no_workspace_is_active()
+    {
+        var client = new FakeChummerClient();
+        await client.SaveShellPreferencesAsync(new ShellPreferences("sr6"), CancellationToken.None);
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.ExecuteCommandAsync("open_character", CancellationToken.None);
+
+        Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(presenter.State.ActiveDialog!, "importRulesetId"));
+    }
+
+    [TestMethod]
     public async Task ExecuteCommandAsync_switch_ruleset_prefills_ruleset_from_active_workspace()
     {
         var client = new FakeChummerClient();
@@ -789,16 +802,8 @@ public class CharacterOverviewPresenterTests
         public int PrintCalls { get; private set; }
         public UpdateWorkspaceMetadata? LastUpdateMetadata { get; private set; }
         public WorkspaceImportDocument? LastImportedDocument { get; private set; }
-        public static IReadOnlyList<AppCommandDefinition> Commands { get; } =
-        [
-            new("new_character", "command.new_character", "file", false, true, RulesetDefaults.Sr5),
-            new("save_character", "command.save_character", "file", true, true, RulesetDefaults.Sr5)
-        ];
-        public static IReadOnlyList<NavigationTabDefinition> Tabs { get; } =
-        [
-            new("tab-info", "Info", "profile", "character", true, true, RulesetDefaults.Sr5),
-            new("tab-gear", "Gear", "gear", "character", true, true, RulesetDefaults.Sr5)
-        ];
+        public static IReadOnlyList<AppCommandDefinition> Commands { get; } = CreateCommands(RulesetDefaults.Sr5);
+        public static IReadOnlyList<NavigationTabDefinition> Tabs { get; } = CreateTabs(RulesetDefaults.Sr5);
 
         public Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct)
         {
@@ -924,13 +929,15 @@ public class CharacterOverviewPresenterTests
         public Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
         {
             GetCommandsCalls++;
-            return Task.FromResult(Commands);
+            string effectiveRulesetId = RulesetDefaults.NormalizeOrDefault(rulesetId, _preferences.PreferredRulesetId);
+            return Task.FromResult(CreateCommands(effectiveRulesetId));
         }
 
         public Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
         {
             GetNavigationTabsCalls++;
-            return Task.FromResult(Tabs);
+            string effectiveRulesetId = RulesetDefaults.NormalizeOrDefault(rulesetId, _preferences.PreferredRulesetId);
+            return Task.FromResult(CreateTabs(effectiveRulesetId));
         }
 
         public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)
@@ -1333,6 +1340,24 @@ public class CharacterOverviewPresenterTests
             return string.IsNullOrWhiteSpace(workspaceId)
                 ? null
                 : workspaceId.Trim();
+        }
+
+        private static IReadOnlyList<AppCommandDefinition> CreateCommands(string rulesetId)
+        {
+            return
+            [
+                new("new_character", "command.new_character", "file", false, true, rulesetId),
+                new("save_character", "command.save_character", "file", true, true, rulesetId)
+            ];
+        }
+
+        private static IReadOnlyList<NavigationTabDefinition> CreateTabs(string rulesetId)
+        {
+            return
+            [
+                new("tab-info", "Info", "profile", "character", true, true, rulesetId),
+                new("tab-gear", "Gear", "gear", "character", true, true, rulesetId)
+            ];
         }
 
         private static string? NormalizeTabId(string? tabId)
