@@ -53,6 +53,21 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             TotalCount: filtered.Length);
     }
 
+    public HubProjectDetailProjection? GetProjectDetail(OwnerScope owner, string kind, string itemId, string? rulesetId = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+        ArgumentException.ThrowIfNullOrWhiteSpace(itemId);
+
+        return kind.Trim() switch
+        {
+            HubCatalogItemKinds.RulePack => GetRulePackDetail(owner, itemId, rulesetId),
+            HubCatalogItemKinds.RuleProfile => GetRuleProfileDetail(owner, itemId, rulesetId),
+            HubCatalogItemKinds.BuildKit => GetBuildKitDetail(owner, itemId, rulesetId),
+            HubCatalogItemKinds.RuntimeLock => GetRuntimeLockDetail(owner, itemId, rulesetId),
+            _ => null
+        };
+    }
+
     private IEnumerable<HubCatalogItem> EnumerateAllItems(OwnerScope owner)
     {
         foreach (IRulesetPlugin plugin in _rulesetPluginRegistry.All)
@@ -61,62 +76,255 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
 
             foreach (RulePackRegistryEntry entry in _rulePackRegistryService.List(owner, rulesetId))
             {
-                yield return new HubCatalogItem(
-                    ItemId: entry.Manifest.PackId,
-                    Kind: HubCatalogItemKinds.RulePack,
-                    Title: entry.Manifest.Title,
-                    Description: entry.Manifest.Description,
-                    RulesetId: rulesetId,
-                    Visibility: entry.Publication.Visibility,
-                    TrustTier: entry.Manifest.TrustTier,
-                    LinkTarget: $"/hub/rulepacks/{entry.Manifest.PackId}",
-                    Version: entry.Manifest.Version);
+                yield return ToCatalogItem(rulesetId, entry);
             }
 
             foreach (BuildKitRegistryEntry entry in _buildKitRegistryService.List(owner, rulesetId))
             {
-                yield return new HubCatalogItem(
-                    ItemId: entry.Manifest.BuildKitId,
-                    Kind: HubCatalogItemKinds.BuildKit,
-                    Title: entry.Manifest.Title,
-                    Description: entry.Manifest.Description,
-                    RulesetId: rulesetId,
-                    Visibility: entry.Visibility,
-                    TrustTier: entry.Manifest.TrustTier,
-                    LinkTarget: $"/hub/buildkits/{entry.Manifest.BuildKitId}",
-                    Version: entry.Manifest.Version);
+                yield return ToCatalogItem(rulesetId, entry);
             }
         }
 
         foreach (RuleProfileRegistryEntry entry in _ruleProfileRegistryService.List(owner))
         {
-            yield return new HubCatalogItem(
-                ItemId: entry.Manifest.ProfileId,
-                Kind: HubCatalogItemKinds.RuleProfile,
-                Title: entry.Manifest.Title,
-                Description: entry.Manifest.Description,
-                RulesetId: entry.Manifest.RulesetId,
-                Visibility: entry.Publication.Visibility,
-                TrustTier: entry.Publication.Visibility == ArtifactVisibilityModes.Public ? ArtifactTrustTiers.Curated : ArtifactTrustTiers.LocalOnly,
-                LinkTarget: $"/hub/profiles/{entry.Manifest.ProfileId}",
-                Version: entry.Manifest.RuntimeLock.RuntimeFingerprint);
+            yield return ToCatalogItem(entry);
         }
 
         foreach (RuntimeLockRegistryEntry entry in _runtimeLockRegistryService.List(owner).Entries)
         {
-            yield return new HubCatalogItem(
-                ItemId: entry.LockId,
-                Kind: HubCatalogItemKinds.RuntimeLock,
-                Title: entry.Title,
-                Description: entry.Description ?? string.Empty,
-                RulesetId: entry.RuntimeLock.RulesetId,
-                Visibility: entry.Visibility,
-                TrustTier: entry.Visibility == ArtifactVisibilityModes.Public ? ArtifactTrustTiers.Curated : ArtifactTrustTiers.LocalOnly,
-                LinkTarget: $"/hub/runtime-locks/{entry.LockId}",
-                Version: entry.RuntimeLock.RuntimeFingerprint,
-                Installable: true);
+            yield return ToCatalogItem(entry);
         }
     }
+
+    private HubProjectDetailProjection? GetRulePackDetail(OwnerScope owner, string itemId, string? rulesetId)
+    {
+        foreach (string candidateRulesetId in EnumerateRulesetIds(rulesetId))
+        {
+            RulePackRegistryEntry? entry = _rulePackRegistryService.Get(owner, itemId, candidateRulesetId);
+            if (entry is null)
+            {
+                continue;
+            }
+
+            return new HubProjectDetailProjection(
+                Summary: ToCatalogItem(candidateRulesetId, entry),
+                OwnerId: entry.Publication.OwnerId,
+                CatalogKind: null,
+                PublicationStatus: entry.Publication.PublicationStatus,
+                ReviewState: entry.Publication.Review.State,
+                RuntimeFingerprint: null,
+                Facts:
+                [
+                    new HubProjectDetailFact("engine-api", "Engine API", entry.Manifest.EngineApiVersion),
+                    new HubProjectDetailFact("asset-count", "Assets", entry.Manifest.Assets.Count.ToString()),
+                    new HubProjectDetailFact("capability-count", "Capabilities", entry.Manifest.Capabilities.Count.ToString()),
+                    new HubProjectDetailFact("execution-policy-count", "Execution Policies", entry.Manifest.ExecutionPolicies.Count.ToString())
+                ],
+                Dependencies:
+                [
+                    .. entry.Manifest.DependsOn.Select(reference =>
+                        new HubProjectDependency(HubProjectDependencyKinds.DependsOn, HubCatalogItemKinds.RulePack, reference.Id, reference.Version)),
+                    .. entry.Manifest.ConflictsWith.Select(reference =>
+                        new HubProjectDependency(HubProjectDependencyKinds.ConflictsWith, HubCatalogItemKinds.RulePack, reference.Id, reference.Version))
+                ],
+                Actions:
+                [
+                    new HubProjectAction("install-rulepack", "Install", HubProjectActionKinds.Install, LinkTarget: $"/hub/rulepacks/{entry.Manifest.PackId}/install"),
+                    new HubProjectAction("open-rulepack", "Open Registry Entry", HubProjectActionKinds.OpenRegistry, LinkTarget: $"/hub/rulepacks/{entry.Manifest.PackId}")
+                ]);
+        }
+
+        return null;
+    }
+
+    private HubProjectDetailProjection? GetRuleProfileDetail(OwnerScope owner, string itemId, string? rulesetId)
+    {
+        RuleProfileRegistryEntry? entry = _ruleProfileRegistryService.Get(owner, itemId, rulesetId);
+        if (entry is null)
+        {
+            return null;
+        }
+
+        return new HubProjectDetailProjection(
+            Summary: ToCatalogItem(entry),
+            OwnerId: entry.Publication.OwnerId,
+            CatalogKind: entry.Manifest.CatalogKind,
+            PublicationStatus: entry.Publication.PublicationStatus,
+            ReviewState: entry.Publication.Review.State,
+            RuntimeFingerprint: entry.Manifest.RuntimeLock.RuntimeFingerprint,
+            Facts:
+            [
+                new HubProjectDetailFact("audience", "Audience", entry.Manifest.Audience),
+                new HubProjectDetailFact("update-channel", "Update Channel", entry.Manifest.UpdateChannel),
+                new HubProjectDetailFact("default-toggle-count", "Default Toggles", entry.Manifest.DefaultToggles.Count.ToString()),
+                new HubProjectDetailFact("runtime-fingerprint", "Runtime Fingerprint", entry.Manifest.RuntimeLock.RuntimeFingerprint)
+            ],
+            Dependencies:
+            [
+                .. entry.Manifest.RulePacks.Select(selection =>
+                    new HubProjectDependency(
+                        HubProjectDependencyKinds.IncludesRulePack,
+                        HubCatalogItemKinds.RulePack,
+                        selection.RulePack.Id,
+                        selection.RulePack.Version,
+                        Notes: selection.Required ? "required" : "optional"))
+            ],
+            Actions:
+            [
+                new HubProjectAction("preview-profile-runtime", "Preview Runtime", HubProjectActionKinds.PreviewRuntime, LinkTarget: $"/api/profiles/{entry.Manifest.ProfileId}/preview"),
+                new HubProjectAction("apply-profile", "Install & Apply", HubProjectActionKinds.Apply, LinkTarget: $"/hub/profiles/{entry.Manifest.ProfileId}/apply"),
+                new HubProjectAction("inspect-profile-runtime", "Inspect Runtime", HubProjectActionKinds.InspectRuntime, LinkTarget: $"/hub/runtime/profiles/{entry.Manifest.ProfileId}")
+            ]);
+    }
+
+    private HubProjectDetailProjection? GetBuildKitDetail(OwnerScope owner, string itemId, string? rulesetId)
+    {
+        foreach (string candidateRulesetId in EnumerateRulesetIds(rulesetId))
+        {
+            BuildKitRegistryEntry? entry = _buildKitRegistryService.Get(owner, itemId, candidateRulesetId);
+            if (entry is null)
+            {
+                continue;
+            }
+
+            return new HubProjectDetailProjection(
+                Summary: ToCatalogItem(candidateRulesetId, entry),
+                OwnerId: entry.Owner.NormalizedValue,
+                CatalogKind: null,
+                PublicationStatus: entry.PublicationStatus,
+                ReviewState: null,
+                RuntimeFingerprint: null,
+                Facts:
+                [
+                    new HubProjectDetailFact("prompt-count", "Prompts", entry.Manifest.Prompts.Count.ToString()),
+                    new HubProjectDetailFact("action-count", "Actions", entry.Manifest.Actions.Count.ToString()),
+                    new HubProjectDetailFact("runtime-requirement-count", "Runtime Requirements", entry.Manifest.RuntimeRequirements.Count.ToString())
+                ],
+                Dependencies:
+                [
+                    .. entry.Manifest.RuntimeRequirements.SelectMany(requirement => requirement.RequiredRulePacks.Select(reference =>
+                        new HubProjectDependency(
+                            HubProjectDependencyKinds.RequiresRulePack,
+                            HubCatalogItemKinds.RulePack,
+                            reference.Id,
+                            reference.Version,
+                            Notes: requirement.RulesetId))),
+                    .. entry.Manifest.RuntimeRequirements.SelectMany(requirement => requirement.RequiredRuntimeFingerprints.Select(fingerprint =>
+                        new HubProjectDependency(
+                            HubProjectDependencyKinds.RequiresRuntimeFingerprint,
+                            HubCatalogItemKinds.RuntimeLock,
+                            fingerprint,
+                            fingerprint,
+                            Notes: requirement.RulesetId)))
+                ],
+                Actions:
+                [
+                    new HubProjectAction("apply-buildkit", "Apply BuildKit", HubProjectActionKinds.Apply, LinkTarget: $"/hub/buildkits/{entry.Manifest.BuildKitId}/apply"),
+                    new HubProjectAction("open-buildkit", "Open Registry Entry", HubProjectActionKinds.OpenRegistry, LinkTarget: $"/hub/buildkits/{entry.Manifest.BuildKitId}")
+                ]);
+        }
+
+        return null;
+    }
+
+    private HubProjectDetailProjection? GetRuntimeLockDetail(OwnerScope owner, string itemId, string? rulesetId)
+    {
+        RuntimeLockRegistryEntry? entry = _runtimeLockRegistryService.Get(owner, itemId, rulesetId);
+        if (entry is null)
+        {
+            return null;
+        }
+
+        return new HubProjectDetailProjection(
+            Summary: ToCatalogItem(entry),
+            OwnerId: entry.Owner.NormalizedValue,
+            CatalogKind: entry.CatalogKind,
+            PublicationStatus: null,
+            ReviewState: null,
+            RuntimeFingerprint: entry.RuntimeLock.RuntimeFingerprint,
+            Facts:
+            [
+                new HubProjectDetailFact("engine-api", "Engine API", entry.RuntimeLock.EngineApiVersion),
+                new HubProjectDetailFact("content-bundle-count", "Content Bundles", entry.RuntimeLock.ContentBundles.Count.ToString()),
+                new HubProjectDetailFact("rulepack-count", "RulePacks", entry.RuntimeLock.RulePacks.Count.ToString()),
+                new HubProjectDetailFact("provider-binding-count", "Provider Bindings", entry.RuntimeLock.ProviderBindings.Count.ToString())
+            ],
+            Dependencies:
+            [
+                .. entry.RuntimeLock.RulePacks.Select(reference =>
+                    new HubProjectDependency(HubProjectDependencyKinds.IncludesRulePack, HubCatalogItemKinds.RulePack, reference.Id, reference.Version))
+            ],
+            Actions:
+            [
+                new HubProjectAction("install-runtime-lock", "Install Runtime Lock", HubProjectActionKinds.Install, LinkTarget: $"/hub/runtime-locks/{entry.LockId}/install"),
+                new HubProjectAction("inspect-runtime-lock", "Inspect Runtime", HubProjectActionKinds.InspectRuntime, LinkTarget: $"/hub/runtime-locks/{entry.LockId}")
+            ]);
+    }
+
+    private IEnumerable<string> EnumerateRulesetIds(string? rulesetId)
+    {
+        string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+        if (normalizedRulesetId is not null)
+        {
+            yield return normalizedRulesetId;
+            yield break;
+        }
+
+        foreach (IRulesetPlugin plugin in _rulesetPluginRegistry.All)
+        {
+            yield return plugin.Id.NormalizedValue;
+        }
+    }
+
+    private static HubCatalogItem ToCatalogItem(string rulesetId, RulePackRegistryEntry entry) => new(
+        ItemId: entry.Manifest.PackId,
+        Kind: HubCatalogItemKinds.RulePack,
+        Title: entry.Manifest.Title,
+        Description: entry.Manifest.Description,
+        RulesetId: rulesetId,
+        Visibility: entry.Publication.Visibility,
+        TrustTier: entry.Manifest.TrustTier,
+        LinkTarget: $"/hub/rulepacks/{entry.Manifest.PackId}",
+        Version: entry.Manifest.Version);
+
+    private static HubCatalogItem ToCatalogItem(string rulesetId, BuildKitRegistryEntry entry) => new(
+        ItemId: entry.Manifest.BuildKitId,
+        Kind: HubCatalogItemKinds.BuildKit,
+        Title: entry.Manifest.Title,
+        Description: entry.Manifest.Description,
+        RulesetId: rulesetId,
+        Visibility: entry.Visibility,
+        TrustTier: entry.Manifest.TrustTier,
+        LinkTarget: $"/hub/buildkits/{entry.Manifest.BuildKitId}",
+        Version: entry.Manifest.Version);
+
+    private static HubCatalogItem ToCatalogItem(RuleProfileRegistryEntry entry) => new(
+        ItemId: entry.Manifest.ProfileId,
+        Kind: HubCatalogItemKinds.RuleProfile,
+        Title: entry.Manifest.Title,
+        Description: entry.Manifest.Description,
+        RulesetId: entry.Manifest.RulesetId,
+        Visibility: entry.Publication.Visibility,
+        TrustTier: ResolveTrustTier(entry.Publication.Visibility),
+        LinkTarget: $"/hub/profiles/{entry.Manifest.ProfileId}",
+        Version: entry.Manifest.RuntimeLock.RuntimeFingerprint);
+
+    private static HubCatalogItem ToCatalogItem(RuntimeLockRegistryEntry entry) => new(
+        ItemId: entry.LockId,
+        Kind: HubCatalogItemKinds.RuntimeLock,
+        Title: entry.Title,
+        Description: entry.Description ?? string.Empty,
+        RulesetId: entry.RuntimeLock.RulesetId,
+        Visibility: entry.Visibility,
+        TrustTier: ResolveTrustTier(entry.Visibility),
+        LinkTarget: $"/hub/runtime-locks/{entry.LockId}",
+        Version: entry.RuntimeLock.RuntimeFingerprint,
+        Installable: true);
+
+    private static string ResolveTrustTier(string visibility) =>
+        string.Equals(visibility, ArtifactVisibilityModes.Public, StringComparison.Ordinal)
+            ? ArtifactTrustTiers.Curated
+            : ArtifactTrustTiers.LocalOnly;
 
     private static bool MatchesQueryText(HubCatalogItem item, string queryText)
     {

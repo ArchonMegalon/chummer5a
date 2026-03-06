@@ -23,102 +23,7 @@ public class HubCatalogServiceTests
     [TestMethod]
     public void Hub_catalog_service_aggregates_rulepacks_buildkits_profiles_and_runtime_locks()
     {
-        DefaultHubCatalogService service = new(
-            new RulesetPluginRegistry(
-            [
-                new HubRulesetPluginStub(RulesetDefaults.Sr5, "Shadowrun Fifth Edition"),
-                new HubRulesetPluginStub(RulesetDefaults.Sr6, "Shadowrun Sixth Edition")
-            ]),
-            new RulePackRegistryServiceStub(
-            [
-                new RulePackRegistryEntry(
-                    new RulePackManifest(
-                        PackId: "house-rules",
-                        Version: "1.0.0",
-                        Title: "House Rules",
-                        Author: "GM",
-                        Description: "Campaign overlay.",
-                        Targets: [RulesetDefaults.Sr5],
-                        EngineApiVersion: "rulepack-v1",
-                        DependsOn: [],
-                        ConflictsWith: [],
-                        Visibility: ArtifactVisibilityModes.LocalOnly,
-                        TrustTier: ArtifactTrustTiers.LocalOnly,
-                        Assets: [],
-                        Capabilities: [],
-                        ExecutionPolicies: []),
-                    new RulePackPublicationMetadata(
-                        OwnerId: "local-single-user",
-                        Visibility: ArtifactVisibilityModes.LocalOnly,
-                        PublicationStatus: RulePackPublicationStatuses.Published,
-                        Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                        Shares: []))
-            ]),
-            new RuleProfileRegistryServiceStub(
-            [
-                new RuleProfileRegistryEntry(
-                    new RuleProfileManifest(
-                        ProfileId: "official.sr5.core",
-                        Title: "Official SR5 Core",
-                        Description: "Curated runtime.",
-                        RulesetId: RulesetDefaults.Sr5,
-                        Audience: RuleProfileAudienceKinds.General,
-                        CatalogKind: RuleProfileCatalogKinds.Official,
-                        RulePacks: [],
-                        DefaultToggles: [],
-                        RuntimeLock: new ResolvedRuntimeLock(
-                            RulesetId: RulesetDefaults.Sr5,
-                            ContentBundles: [],
-                            RulePacks: [],
-                            ProviderBindings: new Dictionary<string, string>(),
-                            EngineApiVersion: "rulepack-v1",
-                            RuntimeFingerprint: "sha256:core"),
-                        UpdateChannel: RuleProfileUpdateChannels.Stable),
-                    new RuleProfilePublicationMetadata(
-                        OwnerId: "system",
-                        Visibility: ArtifactVisibilityModes.Public,
-                        PublicationStatus: RuleProfilePublicationStatuses.Published,
-                        Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                        Shares: []))
-            ]),
-            new BuildKitRegistryServiceStub(
-            [
-                new BuildKitRegistryEntry(
-                    new BuildKitManifest(
-                        BuildKitId: "street-sam-starter",
-                        Version: "1.0.0",
-                        Title: "Street Sam Starter",
-                        Description: "Starter template.",
-                        Targets: [RulesetDefaults.Sr5],
-                        RuntimeRequirements: [],
-                        Prompts: [],
-                        Actions: [],
-                        Visibility: ArtifactVisibilityModes.Public,
-                        TrustTier: ArtifactTrustTiers.Curated),
-                    Owner: new OwnerScope("system"),
-                    Visibility: ArtifactVisibilityModes.Public,
-                    PublicationStatus: BuildKitPublicationStatuses.Published,
-                    UpdatedAtUtc: DateTimeOffset.UtcNow)
-            ]),
-            new RuntimeLockRegistryServiceStub(
-                new RuntimeLockRegistryPage(
-                [
-                    new RuntimeLockRegistryEntry(
-                        LockId: "sha256:core",
-                        Owner: new OwnerScope("system"),
-                        Title: "Official SR5 Core Runtime Lock",
-                        Visibility: ArtifactVisibilityModes.Public,
-                        CatalogKind: RuntimeLockCatalogKinds.Published,
-                        RuntimeLock: new ResolvedRuntimeLock(
-                            RulesetId: RulesetDefaults.Sr5,
-                            ContentBundles: [],
-                            RulePacks: [],
-                            ProviderBindings: new Dictionary<string, string>(),
-                            EngineApiVersion: "rulepack-v1",
-                            RuntimeFingerprint: "sha256:core"),
-                        UpdatedAtUtc: DateTimeOffset.UtcNow)
-                ],
-                    TotalCount: 1)));
+        DefaultHubCatalogService service = CreateService();
 
         HubCatalogResultPage page = service.Search(
             OwnerScope.LocalSingleUser,
@@ -134,6 +39,154 @@ public class HubCatalogServiceTests
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.RuntimeLock));
         Assert.IsTrue(page.Facets.Any(facet => facet.FacetId == HubCatalogFacetIds.Kind));
     }
+
+    [TestMethod]
+    public void Hub_catalog_service_returns_project_details_for_registered_catalog_kinds()
+    {
+        DefaultHubCatalogService service = CreateService();
+
+        HubProjectDetailProjection? rulePack = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.RulePack, "house-rules", RulesetDefaults.Sr5);
+        HubProjectDetailProjection? buildKit = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.BuildKit, "street-sam-starter", RulesetDefaults.Sr5);
+        HubProjectDetailProjection? ruleProfile = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.RuleProfile, "official.sr5.core", RulesetDefaults.Sr5);
+        HubProjectDetailProjection? runtimeLock = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.RuntimeLock, "sha256:core", RulesetDefaults.Sr5);
+
+        Assert.IsNotNull(rulePack);
+        Assert.AreEqual(HubCatalogItemKinds.RulePack, rulePack.Summary.Kind);
+        Assert.AreEqual(RulePackPublicationStatuses.Published, rulePack.PublicationStatus);
+        Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "engine-api"));
+
+        Assert.IsNotNull(buildKit);
+        Assert.AreEqual(HubCatalogItemKinds.BuildKit, buildKit.Summary.Kind);
+        Assert.AreEqual(BuildKitPublicationStatuses.Published, buildKit.PublicationStatus);
+        Assert.IsTrue(buildKit.Dependencies.Any(dependency => dependency.Kind == HubProjectDependencyKinds.RequiresRulePack));
+
+        Assert.IsNotNull(ruleProfile);
+        Assert.AreEqual(HubCatalogItemKinds.RuleProfile, ruleProfile.Summary.Kind);
+        Assert.AreEqual("sha256:core", ruleProfile.RuntimeFingerprint);
+        Assert.IsTrue(ruleProfile.Actions.Any(action => action.Kind == HubProjectActionKinds.InspectRuntime));
+
+        Assert.IsNotNull(runtimeLock);
+        Assert.AreEqual(HubCatalogItemKinds.RuntimeLock, runtimeLock.Summary.Kind);
+        Assert.AreEqual(RuntimeLockCatalogKinds.Published, runtimeLock.CatalogKind);
+        Assert.AreEqual("sha256:core", runtimeLock.RuntimeFingerprint);
+    }
+
+    private static DefaultHubCatalogService CreateService() => new(
+        new RulesetPluginRegistry(
+        [
+            new HubRulesetPluginStub(RulesetDefaults.Sr5, "Shadowrun Fifth Edition"),
+            new HubRulesetPluginStub(RulesetDefaults.Sr6, "Shadowrun Sixth Edition")
+        ]),
+        new RulePackRegistryServiceStub(
+        [
+            new RulePackRegistryEntry(
+                new RulePackManifest(
+                    PackId: "house-rules",
+                    Version: "1.0.0",
+                    Title: "House Rules",
+                    Author: "GM",
+                    Description: "Campaign overlay.",
+                    Targets: [RulesetDefaults.Sr5],
+                    EngineApiVersion: "rulepack-v1",
+                    DependsOn: [],
+                    ConflictsWith: [],
+                    Visibility: ArtifactVisibilityModes.LocalOnly,
+                    TrustTier: ArtifactTrustTiers.LocalOnly,
+                    Assets: [],
+                    Capabilities: [],
+                    ExecutionPolicies: []),
+                new RulePackPublicationMetadata(
+                    OwnerId: "local-single-user",
+                    Visibility: ArtifactVisibilityModes.LocalOnly,
+                    PublicationStatus: RulePackPublicationStatuses.Published,
+                    Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                    Shares: []))
+        ]),
+        new RuleProfileRegistryServiceStub(
+        [
+            new RuleProfileRegistryEntry(
+                new RuleProfileManifest(
+                    ProfileId: "official.sr5.core",
+                    Title: "Official SR5 Core",
+                    Description: "Curated runtime.",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Audience: RuleProfileAudienceKinds.General,
+                    CatalogKind: RuleProfileCatalogKinds.Official,
+                    RulePacks: [],
+                    DefaultToggles: [],
+                    RuntimeLock: new ResolvedRuntimeLock(
+                        RulesetId: RulesetDefaults.Sr5,
+                        ContentBundles: [],
+                        RulePacks: [],
+                        ProviderBindings: new Dictionary<string, string>(),
+                        EngineApiVersion: "rulepack-v1",
+                        RuntimeFingerprint: "sha256:core"),
+                    UpdateChannel: RuleProfileUpdateChannels.Stable),
+                new RuleProfilePublicationMetadata(
+                    OwnerId: "system",
+                    Visibility: ArtifactVisibilityModes.Public,
+                    PublicationStatus: RuleProfilePublicationStatuses.Published,
+                    Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                    Shares: []))
+        ]),
+        new BuildKitRegistryServiceStub(
+        [
+            new BuildKitRegistryEntry(
+                new BuildKitManifest(
+                    BuildKitId: "street-sam-starter",
+                    Version: "1.0.0",
+                    Title: "Street Sam Starter",
+                    Description: "Starter template.",
+                    Targets: [RulesetDefaults.Sr5],
+                    RuntimeRequirements:
+                    [
+                        new BuildKitRuntimeRequirement(
+                            RulesetId: RulesetDefaults.Sr5,
+                            RequiredRuntimeFingerprints: ["sha256:core"],
+                            RequiredRulePacks: [new ArtifactVersionReference("house-rules", "1.0.0")])
+                    ],
+                    Prompts:
+                    [
+                        new BuildKitPromptDescriptor(
+                            PromptId: "focus",
+                            Kind: BuildKitPromptKinds.Choice,
+                            Label: "Combat Focus",
+                            Options: [new BuildKitPromptOption("street-sam", "Street Sam")],
+                            Required: true)
+                    ],
+                    Actions:
+                    [
+                        new BuildKitActionDescriptor(
+                            ActionId: "starter-bundle",
+                            Kind: BuildKitActionKinds.AddBundle,
+                            TargetId: "starter-bundle")
+                    ],
+                    Visibility: ArtifactVisibilityModes.Public,
+                    TrustTier: ArtifactTrustTiers.Curated),
+                Owner: new OwnerScope("system"),
+                Visibility: ArtifactVisibilityModes.Public,
+                PublicationStatus: BuildKitPublicationStatuses.Published,
+                UpdatedAtUtc: DateTimeOffset.UtcNow)
+        ]),
+        new RuntimeLockRegistryServiceStub(
+            new RuntimeLockRegistryPage(
+            [
+                new RuntimeLockRegistryEntry(
+                    LockId: "sha256:core",
+                    Owner: new OwnerScope("system"),
+                    Title: "Official SR5 Core Runtime Lock",
+                    Visibility: ArtifactVisibilityModes.Public,
+                    CatalogKind: RuntimeLockCatalogKinds.Published,
+                    RuntimeLock: new ResolvedRuntimeLock(
+                        RulesetId: RulesetDefaults.Sr5,
+                        ContentBundles: [],
+                        RulePacks: [],
+                        ProviderBindings: new Dictionary<string, string>(),
+                        EngineApiVersion: "rulepack-v1",
+                        RuntimeFingerprint: "sha256:core"),
+                    UpdatedAtUtc: DateTimeOffset.UtcNow)
+            ],
+                TotalCount: 1)));
 
     private sealed class RulePackRegistryServiceStub : IRulePackRegistryService
     {

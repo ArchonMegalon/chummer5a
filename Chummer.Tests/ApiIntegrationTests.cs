@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Chummer.Contracts.Content;
+using Chummer.Contracts.Hub;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Session;
 using Chummer.Presentation;
@@ -136,6 +137,36 @@ public class ApiIntegrationTests
         Assert.IsInstanceOfType<JsonArray>(payload["items"]);
         Assert.IsInstanceOfType<JsonArray>(payload["facets"]);
         Assert.IsInstanceOfType<JsonArray>(payload["sorts"]);
+    }
+
+    [TestMethod]
+    public async Task Hub_project_detail_endpoint_returns_registered_profile_projection()
+    {
+        using var client = CreateClient();
+
+        JsonObject payload = await GetRequiredJsonObject(client, "/api/hub/projects/ruleprofile/official.sr5.core?ruleset=sr5");
+
+        Assert.AreEqual(HubCatalogItemKinds.RuleProfile, payload["summary"]?["kind"]?.GetValue<string>());
+        Assert.AreEqual("official.sr5.core", payload["summary"]?["itemId"]?.GetValue<string>());
+        Assert.IsNotNull(payload["runtimeFingerprint"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["facts"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["actions"]);
+    }
+
+    [TestMethod]
+    public async Task Hub_project_detail_endpoint_returns_not_found_for_unknown_project()
+    {
+        using var client = CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync("/api/hub/projects/ruleprofile/missing-profile?ruleset=sr5");
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual("hub_project_not_found", payload["error"]?.GetValue<string>());
+        Assert.AreEqual(HubCatalogItemKinds.RuleProfile, payload["kind"]?.GetValue<string>());
+        Assert.AreEqual("missing-profile", payload["itemId"]?.GetValue<string>());
     }
 
     [TestMethod]

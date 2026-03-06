@@ -464,6 +464,31 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Hub_project_detail_surface_is_exposed_through_hub_api_seam()
+    {
+        string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
+        string apiProgramText = File.ReadAllText(apiProgramPath);
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string hubCatalogEndpointsPath = FindPath("Chummer.Api", "Endpoints", "HubCatalogEndpoints.cs");
+        string hubCatalogEndpointsText = File.ReadAllText(hubCatalogEndpointsPath);
+        string hubCatalogServiceContractPath = FindPath("Chummer.Application", "Hub", "IHubCatalogService.cs");
+        string hubCatalogServiceContractText = File.ReadAllText(hubCatalogServiceContractPath);
+        string hubProjectDetailContractsPath = FindPath("Chummer.Contracts", "Hub", "HubProjectDetailContracts.cs");
+        string hubProjectDetailContractsText = File.ReadAllText(hubProjectDetailContractsPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(apiProgramText, "path.StartsWithSegments(\"/api/hub/projects\"");
+        StringAssert.Contains(infoEndpointsText, "/api/hub/projects/{kind}/{itemId}");
+        StringAssert.Contains(hubCatalogEndpointsText, "/api/hub/projects/{kind}/{itemId}");
+        StringAssert.Contains(hubCatalogEndpointsText, "hub_project_not_found");
+        StringAssert.Contains(hubCatalogServiceContractText, "HubProjectDetailProjection? GetProjectDetail");
+        StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectDetailProjection");
+        StringAssert.Contains(readmeText, "/api/hub/projects/*");
+    }
+
+    [TestMethod]
     public void Solution_includes_headless_and_dual_head_projects()
     {
         string solutionPath = FindPath("Chummer.sln");
@@ -853,6 +878,23 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubCatalogContractsText, "BrowseQuery Query");
         StringAssert.Contains(hubCatalogContractsText, "IReadOnlyList<FacetDefinition> Facets");
         StringAssert.Contains(hubCatalogContractsText, "IReadOnlyList<SortDefinition> Sorts");
+    }
+
+    [TestMethod]
+    public void Hub_project_detail_contracts_lock_in_fact_dependency_and_action_vocabulary()
+    {
+        string hubProjectDetailContractsPath = FindPath("Chummer.Contracts", "Hub", "HubProjectDetailContracts.cs");
+        string hubProjectDetailContractsText = File.ReadAllText(hubProjectDetailContractsPath);
+
+        StringAssert.Contains(hubProjectDetailContractsText, "public static class HubProjectDependencyKinds");
+        StringAssert.Contains(hubProjectDetailContractsText, "public static class HubProjectActionKinds");
+        StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectDetailFact");
+        StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectDependency");
+        StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectAction");
+        StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectDetailProjection");
+        StringAssert.Contains(hubProjectDetailContractsText, "HubCatalogItem Summary");
+        StringAssert.Contains(hubProjectDetailContractsText, "string? RuntimeFingerprint");
+        StringAssert.Contains(hubProjectDetailContractsText, "IReadOnlyList<HubProjectAction> Actions");
     }
 
     [TestMethod]
