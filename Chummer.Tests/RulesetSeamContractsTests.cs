@@ -12,6 +12,7 @@ using Chummer.Contracts.Assets;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Diagnostics;
+using Chummer.Contracts.Owners;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Session;
@@ -1085,6 +1086,58 @@ public class RulesetSeamContractsTests
         Assert.AreEqual(SessionSyncBannerStates.PendingSync, projection.SyncBanner!.Status);
         Assert.AreEqual(SessionExplainEntryKinds.QuickActionAvailability, projection.ExplainEntries[1].Kind);
         Assert.AreEqual("sr5-core", projection.ExplainEntries[0].PackId);
+    }
+
+    [TestMethod]
+    public void Portal_identity_contracts_define_account_session_owner_and_binding_vocabulary()
+    {
+        PortalAccountProfile account = new(
+            OwnerId: "user-1",
+            Email: "runner@example.com",
+            DisplayName: "Cipher",
+            Status: PortalAccountStatuses.Active,
+            CreatedAtUtc: DateTimeOffset.UtcNow.AddDays(-30),
+            ConfirmedAtUtc: DateTimeOffset.UtcNow.AddDays(-29),
+            PreferredRulesetId: RulesetDefaults.Sr5,
+            TimeZone: "Europe/Vienna");
+        PortalOwnerDescriptor owner = new(
+            Scope: new OwnerScope(account.OwnerId),
+            Kind: PortalOwnerKinds.Account,
+            IsAuthenticated: true,
+            ActorId: account.OwnerId,
+            DisplayName: account.DisplayName);
+        PortalSessionDescriptor session = new(
+            SessionId: "session-1",
+            Owner: owner.Scope,
+            Mode: PortalSessionModes.InteractiveWeb,
+            IssuedAtUtc: DateTimeOffset.UtcNow.AddMinutes(-15),
+            ExpiresAtUtc: DateTimeOffset.UtcNow.AddHours(8),
+            IsPersistent: true,
+            DeviceId: "device-1");
+        PortalAuthenticationReceipt receipt = new(
+            Owner: owner,
+            Account: account,
+            Session: session,
+            Identities:
+            [
+                new PortalIdentityBinding(
+                    ProviderKind: PortalIdentityProviderKinds.Password,
+                    SubjectId: "password:user-1",
+                    Email: account.Email,
+                    EmailVerified: true,
+                    LinkedAtUtc: DateTimeOffset.UtcNow.AddDays(-29)),
+                new PortalIdentityBinding(
+                    ProviderKind: PortalIdentityProviderKinds.PortalBridge,
+                    SubjectId: "portal-bridge:user-1",
+                    Email: account.Email)
+            ]);
+
+        Assert.AreEqual(PortalAccountStatuses.Active, receipt.Account.Status);
+        Assert.AreEqual(PortalOwnerKinds.Account, receipt.Owner.Kind);
+        Assert.AreEqual(PortalSessionModes.InteractiveWeb, receipt.Session.Mode);
+        Assert.AreEqual(PortalIdentityProviderKinds.Password, receipt.Identities[0].ProviderKind);
+        Assert.IsTrue(receipt.Owner.IsAuthenticated);
+        Assert.AreEqual(RulesetDefaults.Sr5, receipt.Account.PreferredRulesetId);
     }
 
     [TestMethod]

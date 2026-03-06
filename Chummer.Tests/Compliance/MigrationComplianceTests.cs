@@ -544,6 +544,30 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Portal_identity_contracts_lock_in_account_session_owner_and_binding_vocabulary()
+    {
+        string portalIdentityContractsPath = FindPath("Chummer.Contracts", "Owners", "PortalIdentityContracts.cs");
+        string portalIdentityContractsText = File.ReadAllText(portalIdentityContractsPath);
+
+        StringAssert.Contains(portalIdentityContractsText, "public static class PortalIdentityProviderKinds");
+        StringAssert.Contains(portalIdentityContractsText, "public static class PortalAccountStatuses");
+        StringAssert.Contains(portalIdentityContractsText, "public static class PortalSessionModes");
+        StringAssert.Contains(portalIdentityContractsText, "public static class PortalOwnerKinds");
+        StringAssert.Contains(portalIdentityContractsText, "public sealed record PortalIdentityBinding");
+        StringAssert.Contains(portalIdentityContractsText, "public sealed record PortalAccountProfile");
+        StringAssert.Contains(portalIdentityContractsText, "public sealed record PortalSessionDescriptor");
+        StringAssert.Contains(portalIdentityContractsText, "public sealed record PortalOwnerDescriptor");
+        StringAssert.Contains(portalIdentityContractsText, "public sealed record PortalAuthenticationReceipt");
+        StringAssert.Contains(portalIdentityContractsText, "pending-confirmation");
+        StringAssert.Contains(portalIdentityContractsText, "interactive-web");
+        StringAssert.Contains(portalIdentityContractsText, "portal-bridge");
+        StringAssert.Contains(portalIdentityContractsText, "OwnerScope Owner");
+        StringAssert.Contains(portalIdentityContractsText, "OwnerScope Scope");
+        Assert.IsFalse(portalIdentityContractsText.Contains("HttpContext", StringComparison.Ordinal));
+        Assert.IsFalse(portalIdentityContractsText.Contains("ClaimsPrincipal", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
