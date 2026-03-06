@@ -2462,8 +2462,9 @@ public class RulesetSeamContractsTests
                 RuleId: "sr6.noop",
                 Inputs: new Dictionary<string, object?> { ["edge"] = 2 }),
             CancellationToken.None);
-        Assert.IsTrue(ruleResult.Success);
-        Assert.IsTrue(ruleResult.Outputs.ContainsKey("edge"));
+        Assert.IsFalse(ruleResult.Success);
+        Assert.IsEmpty(ruleResult.Outputs);
+        CollectionAssert.Contains(ruleResult.Messages.ToArray(), "SR6 rules engine is not implemented; this ruleset remains experimental.");
 
         RulesetScriptExecutionResult scriptResult = await plugin.Scripts.ExecuteAsync(
             new RulesetScriptExecutionRequest(
@@ -2471,8 +2472,9 @@ public class RulesetSeamContractsTests
                 ScriptSource: "// noop",
                 Inputs: new Dictionary<string, object?> { ["essence"] = 5.8m }),
             CancellationToken.None);
-        Assert.IsTrue(scriptResult.Success);
-        Assert.AreEqual(RulesetDefaults.Sr6, scriptResult.Outputs["rulesetId"]);
+        Assert.IsFalse(scriptResult.Success);
+        Assert.IsEmpty(scriptResult.Outputs);
+        StringAssert.Contains(scriptResult.Error, "SR6 script host is not implemented");
     }
 
     [TestMethod]
@@ -2512,8 +2514,9 @@ public class RulesetSeamContractsTests
                 RuleId: "sr4.noop",
                 Inputs: new Dictionary<string, object?> { ["essence"] = 5.5m }),
             CancellationToken.None);
-        Assert.IsTrue(ruleResult.Success);
-        Assert.IsTrue(ruleResult.Outputs.ContainsKey("essence"));
+        Assert.IsFalse(ruleResult.Success);
+        Assert.IsEmpty(ruleResult.Outputs);
+        CollectionAssert.Contains(ruleResult.Messages.ToArray(), "SR4 rules engine is not implemented; this ruleset remains experimental.");
 
         RulesetScriptExecutionResult scriptResult = await plugin.Scripts.ExecuteAsync(
             new RulesetScriptExecutionRequest(
@@ -2521,7 +2524,8 @@ public class RulesetSeamContractsTests
                 ScriptSource: "-- noop",
                 Inputs: new Dictionary<string, object?> { ["karma"] = 9 }),
             CancellationToken.None);
-        Assert.IsTrue(scriptResult.Success);
-        Assert.AreEqual(RulesetDefaults.Sr4, scriptResult.Outputs["rulesetId"]);
+        Assert.IsFalse(scriptResult.Success);
+        Assert.IsEmpty(scriptResult.Outputs);
+        StringAssert.Contains(scriptResult.Error, "SR4 script host is not implemented");
     }
 }

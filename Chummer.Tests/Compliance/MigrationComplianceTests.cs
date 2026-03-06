@@ -2068,6 +2068,10 @@ public class MigrationComplianceTests
         Assert.IsFalse(sr4RulesetPluginText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr4RulesetPluginText.Contains("WorkspaceSurfaceActionCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr4RulesetPluginText.Contains("DesktopUiControlCatalog.ForRuleset(", StringComparison.Ordinal));
+        StringAssert.Contains(sr4RulesetPluginText, "SR4 rules engine is not implemented; this ruleset remains experimental.");
+        StringAssert.Contains(sr4RulesetPluginText, "Success: false");
+        Assert.IsFalse(sr4RulesetPluginText.Contains("no-op evaluation applied", StringComparison.Ordinal));
+        Assert.IsFalse(sr4RulesetPluginText.Contains("Success: true", StringComparison.Ordinal));
         StringAssert.Contains(sr4ShellCatalogsText, "internal static class Sr4AppCommandCatalog");
         StringAssert.Contains(sr4ShellCatalogsText, "internal static class Sr4NavigationTabCatalog");
         StringAssert.Contains(sr4ShellCatalogsText, "internal static class Sr4WorkspaceSurfaceActionCatalog");
@@ -2080,6 +2084,10 @@ public class MigrationComplianceTests
         Assert.IsFalse(sr6RulesetPluginText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr6RulesetPluginText.Contains("WorkspaceSurfaceActionCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr6RulesetPluginText.Contains("DesktopUiControlCatalog.ForRuleset(", StringComparison.Ordinal));
+        StringAssert.Contains(sr6RulesetPluginText, "SR6 rules engine is not implemented; this ruleset remains experimental.");
+        StringAssert.Contains(sr6RulesetPluginText, "Success: false");
+        Assert.IsFalse(sr6RulesetPluginText.Contains("no-op evaluation applied", StringComparison.Ordinal));
+        Assert.IsFalse(sr6RulesetPluginText.Contains("Success: true", StringComparison.Ordinal));
         StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6AppCommandCatalog");
         StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6NavigationTabCatalog");
         StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6WorkspaceSurfaceActionCatalog");

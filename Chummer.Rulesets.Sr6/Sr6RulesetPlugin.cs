@@ -69,15 +69,19 @@ public class Sr6RulesetCatalogProvider : IRulesetCatalogProvider
 
 public class Sr6NoOpRulesetRuleHost : IRulesetRuleHost
 {
-    private static readonly IReadOnlyList<string> Messages = ["SR6 rule host not configured; no-op evaluation applied."];
+    private const string ErrorMessage = "SR6 rules engine is not implemented; this ruleset remains experimental.";
 
     public ValueTask<RulesetRuleEvaluationResult> EvaluateAsync(RulesetRuleEvaluationRequest request, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         return ValueTask.FromResult(new RulesetRuleEvaluationResult(
-            Success: true,
-            Outputs: request.Inputs,
-            Messages: Messages));
+            Success: false,
+            Outputs: new Dictionary<string, object?>(StringComparer.Ordinal),
+            Messages:
+            [
+                ErrorMessage,
+                $"Rule '{request.RuleId}' cannot be evaluated until SR6 rule providers are implemented."
+            ]));
     }
 }
 
@@ -86,17 +90,11 @@ public class Sr6NoOpRulesetScriptHost : IRulesetScriptHost
     public ValueTask<RulesetScriptExecutionResult> ExecuteAsync(RulesetScriptExecutionRequest request, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        Dictionary<string, object?> outputs = new(StringComparer.Ordinal)
-        {
-            ["scriptId"] = request.ScriptId,
-            ["mode"] = "noop",
-            ["inputCount"] = request.Inputs.Count,
-            ["rulesetId"] = RulesetDefaults.Sr6
-        };
+        string error = $"SR6 script host is not implemented; script '{request.ScriptId}' cannot be executed because the ruleset remains experimental.";
 
         return ValueTask.FromResult(new RulesetScriptExecutionResult(
-            Success: true,
-            Error: null,
-            Outputs: outputs));
+            Success: false,
+            Error: error,
+            Outputs: new Dictionary<string, object?>(StringComparer.Ordinal)));
     }
 }
