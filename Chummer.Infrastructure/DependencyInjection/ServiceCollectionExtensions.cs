@@ -67,6 +67,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuntimeInspectorService, DefaultRuntimeInspectorService>();
         services.AddSingleton<IRuntimeLockRegistryService, ProfileBackedRuntimeLockRegistryService>();
         services.AddSingleton<IHubCatalogService, DefaultHubCatalogService>();
+        services.AddSingleton<IHubInstallPreviewService, DefaultHubInstallPreviewService>();
 
         services.AddSingleton<ILifeModulesCatalogService>(provider =>
         {

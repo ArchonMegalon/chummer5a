@@ -1,0 +1,281 @@
+#nullable enable annotations
+
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Chummer.Application.Content;
+using Chummer.Application.Hub;
+using Chummer.Contracts.Content;
+using Chummer.Contracts.Hub;
+using Chummer.Contracts.Owners;
+using Chummer.Contracts.Presentation;
+using Chummer.Contracts.Rulesets;
+using Chummer.Rulesets.Hosting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace Chummer.Tests;
+
+[TestClass]
+public class HubInstallPreviewServiceTests
+{
+    [TestMethod]
+    public void Hub_install_preview_service_maps_ruleprofile_preview_receipts()
+    {
+        DefaultHubInstallPreviewService service = new(
+            CreatePluginRegistry(),
+            new RuleProfileApplicationServiceStub(
+                new RuleProfilePreviewReceipt(
+                    ProfileId: "official.sr5.core",
+                    Target: new RuleProfileApplyTarget(RuleProfileApplyTargetKinds.Workspace, "workspace-1"),
+                    RuntimeLock: new ResolvedRuntimeLock(
+                        RulesetId: RulesetDefaults.Sr5,
+                        ContentBundles: [],
+                        RulePacks: [],
+                        ProviderBindings: new Dictionary<string, string>(),
+                        EngineApiVersion: "rulepack-v1",
+                        RuntimeFingerprint: "sha256:core"),
+                    Changes:
+                    [
+                        new RuleProfilePreviewItem(
+                            Kind: RuleProfilePreviewChangeKinds.RuntimeLockPinned,
+                            Summary: "Pin runtime lock.",
+                            SubjectId: "sha256:core")
+                    ],
+                    Warnings:
+                    [
+                        new RuntimeInspectorWarning(
+                            Kind: RuntimeInspectorWarningKinds.Trust,
+                            Severity: RuntimeInspectorWarningSeverityLevels.Info,
+                            Message: "Local-only profile.",
+                            SubjectId: "official.sr5.core")
+                    ])),
+            new RuntimeLockRegistryServiceStub(null),
+            new RulePackRegistryServiceStub([]),
+            new BuildKitRegistryServiceStub([]));
+
+        HubProjectInstallPreviewReceipt? preview = service.Preview(
+            OwnerScope.LocalSingleUser,
+            HubCatalogItemKinds.RuleProfile,
+            "official.sr5.core",
+            new RuleProfileApplyTarget(RuleProfileApplyTargetKinds.Workspace, "workspace-1"),
+            RulesetDefaults.Sr5);
+
+        Assert.IsNotNull(preview);
+        Assert.AreEqual(HubProjectInstallPreviewStates.Ready, preview.State);
+        Assert.AreEqual("sha256:core", preview.RuntimeFingerprint);
+        Assert.AreEqual(HubProjectInstallPreviewChangeKinds.RuntimeLockPinned, preview.Changes[0].Kind);
+        Assert.AreEqual(RuntimeInspectorWarningKinds.Trust, preview.Diagnostics[0].Kind);
+    }
+
+    [TestMethod]
+    public void Hub_install_preview_service_builds_runtime_lock_preview_receipts()
+    {
+        DefaultHubInstallPreviewService service = new(
+            CreatePluginRegistry(),
+            new RuleProfileApplicationServiceStub(null),
+            new RuntimeLockRegistryServiceStub(
+                new RuntimeLockRegistryEntry(
+                    LockId: "sha256:core",
+                    Owner: new OwnerScope("system"),
+                    Title: "Official SR5 Core Runtime Lock",
+                    Visibility: ArtifactVisibilityModes.Public,
+                    CatalogKind: RuntimeLockCatalogKinds.Published,
+                    RuntimeLock: new ResolvedRuntimeLock(
+                        RulesetId: RulesetDefaults.Sr5,
+                        ContentBundles: [],
+                        RulePacks: [],
+                        ProviderBindings: new Dictionary<string, string>(),
+                        EngineApiVersion: "rulepack-v1",
+                        RuntimeFingerprint: "sha256:core"),
+                    UpdatedAtUtc: System.DateTimeOffset.UtcNow)),
+            new RulePackRegistryServiceStub([]),
+            new BuildKitRegistryServiceStub([]));
+
+        HubProjectInstallPreviewReceipt? preview = service.Preview(
+            OwnerScope.LocalSingleUser,
+            HubCatalogItemKinds.RuntimeLock,
+            "sha256:core",
+            new RuleProfileApplyTarget(RuleProfileApplyTargetKinds.Workspace, "workspace-1"),
+            RulesetDefaults.Sr5);
+
+        Assert.IsNotNull(preview);
+        Assert.AreEqual(HubProjectInstallPreviewStates.Ready, preview.State);
+        Assert.AreEqual("sha256:core", preview.RuntimeFingerprint);
+        Assert.IsNotEmpty(preview.Changes);
+        Assert.AreEqual(HubProjectInstallPreviewChangeKinds.RuntimeLockPinned, preview.Changes[0].Kind);
+    }
+
+    [TestMethod]
+    public void Hub_install_preview_service_returns_deferred_receipts_for_buildkits_until_apply_preview_exists()
+    {
+        DefaultHubInstallPreviewService service = new(
+            CreatePluginRegistry(),
+            new RuleProfileApplicationServiceStub(null),
+            new RuntimeLockRegistryServiceStub(null),
+            new RulePackRegistryServiceStub([]),
+            new BuildKitRegistryServiceStub(
+            [
+                new BuildKitRegistryEntry(
+                    new BuildKitManifest(
+                        BuildKitId: "street-sam-starter",
+                        Version: "1.0.0",
+                        Title: "Street Sam Starter",
+                        Description: "Starter template.",
+                        Targets: [RulesetDefaults.Sr5],
+                        RuntimeRequirements: [],
+                        Prompts: [],
+                        Actions: [],
+                        Visibility: ArtifactVisibilityModes.Public,
+                        TrustTier: ArtifactTrustTiers.Curated),
+                    Owner: new OwnerScope("system"),
+                    Visibility: ArtifactVisibilityModes.Public,
+                    PublicationStatus: BuildKitPublicationStatuses.Published,
+                    UpdatedAtUtc: System.DateTimeOffset.UtcNow)
+            ]));
+
+        HubProjectInstallPreviewReceipt? preview = service.Preview(
+            OwnerScope.LocalSingleUser,
+            HubCatalogItemKinds.BuildKit,
+            "street-sam-starter",
+            new RuleProfileApplyTarget(RuleProfileApplyTargetKinds.Workspace, "workspace-1"),
+            RulesetDefaults.Sr5);
+
+        Assert.IsNotNull(preview);
+        Assert.AreEqual(HubProjectInstallPreviewStates.Deferred, preview.State);
+        Assert.AreEqual("hub_buildkit_apply_preview_not_implemented", preview.DeferredReason);
+        Assert.AreEqual(HubProjectInstallPreviewChangeKinds.InstallDeferred, preview.Changes[0].Kind);
+    }
+
+    private static RulesetPluginRegistry CreatePluginRegistry() =>
+        new(
+        [
+            new HubRulesetPluginStub(RulesetDefaults.Sr5),
+            new HubRulesetPluginStub(RulesetDefaults.Sr6)
+        ]);
+
+    private sealed class RuleProfileApplicationServiceStub : IRuleProfileApplicationService
+    {
+        private readonly RuleProfilePreviewReceipt? _preview;
+
+        public RuleProfileApplicationServiceStub(RuleProfilePreviewReceipt? preview)
+        {
+            _preview = preview;
+        }
+
+        public RuleProfilePreviewReceipt? Preview(OwnerScope owner, string profileId, RuleProfileApplyTarget target, string? rulesetId = null) => _preview;
+
+        public RuleProfileApplyReceipt? Apply(OwnerScope owner, string profileId, RuleProfileApplyTarget target, string? rulesetId = null) => null;
+    }
+
+    private sealed class RuntimeLockRegistryServiceStub : IRuntimeLockRegistryService
+    {
+        private readonly RuntimeLockRegistryEntry? _entry;
+
+        public RuntimeLockRegistryServiceStub(RuntimeLockRegistryEntry? entry)
+        {
+            _entry = entry;
+        }
+
+        public RuntimeLockRegistryPage List(OwnerScope owner, string? rulesetId = null) =>
+            _entry is null ? new RuntimeLockRegistryPage([], 0) : new RuntimeLockRegistryPage([_entry], 1);
+
+        public RuntimeLockRegistryEntry? Get(OwnerScope owner, string lockId, string? rulesetId = null) => _entry;
+    }
+
+    private sealed class RulePackRegistryServiceStub : IRulePackRegistryService
+    {
+        private readonly IReadOnlyList<RulePackRegistryEntry> _entries;
+
+        public RulePackRegistryServiceStub(IReadOnlyList<RulePackRegistryEntry> entries)
+        {
+            _entries = entries;
+        }
+
+        public IReadOnlyList<RulePackRegistryEntry> List(OwnerScope owner, string? rulesetId = null) => _entries;
+
+        public RulePackRegistryEntry? Get(OwnerScope owner, string packId, string? rulesetId = null) => null;
+    }
+
+    private sealed class BuildKitRegistryServiceStub : IBuildKitRegistryService
+    {
+        private readonly IReadOnlyList<BuildKitRegistryEntry> _entries;
+
+        public BuildKitRegistryServiceStub(IReadOnlyList<BuildKitRegistryEntry> entries)
+        {
+            _entries = entries;
+        }
+
+        public IReadOnlyList<BuildKitRegistryEntry> List(OwnerScope owner, string? rulesetId = null) => _entries;
+
+        public BuildKitRegistryEntry? Get(OwnerScope owner, string buildKitId, string? rulesetId = null) =>
+            _entries.Count == 0 ? null : _entries[0];
+    }
+
+    private sealed class HubRulesetPluginStub : IRulesetPlugin
+    {
+        public HubRulesetPluginStub(string rulesetId)
+        {
+            Id = new RulesetId(rulesetId);
+            DisplayName = rulesetId;
+            Serializer = new RulesetSerializerStub(Id);
+            ShellDefinitions = new ShellDefinitionProviderStub();
+            Catalogs = new CatalogProviderStub();
+            Rules = new RuleHostStub();
+            Scripts = new ScriptHostStub();
+        }
+
+        public RulesetId Id { get; }
+
+        public string DisplayName { get; }
+
+        public IRulesetSerializer Serializer { get; }
+
+        public IRulesetShellDefinitionProvider ShellDefinitions { get; }
+
+        public IRulesetCatalogProvider Catalogs { get; }
+
+        public IRulesetRuleHost Rules { get; }
+
+        public IRulesetScriptHost Scripts { get; }
+    }
+
+    private sealed class RulesetSerializerStub : IRulesetSerializer
+    {
+        public RulesetSerializerStub(RulesetId rulesetId)
+        {
+            RulesetId = rulesetId;
+        }
+
+        public RulesetId RulesetId { get; }
+
+        public int SchemaVersion => 1;
+
+        public WorkspacePayloadEnvelope Wrap(string payloadKind, string payload) => new(RulesetId.NormalizedValue, SchemaVersion, payloadKind, payload);
+    }
+
+    private sealed class ShellDefinitionProviderStub : IRulesetShellDefinitionProvider
+    {
+        public IReadOnlyList<AppCommandDefinition> GetCommands() => [];
+
+        public IReadOnlyList<NavigationTabDefinition> GetNavigationTabs() => [];
+    }
+
+    private sealed class CatalogProviderStub : IRulesetCatalogProvider
+    {
+        public IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions() => [];
+
+        public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls() => [];
+    }
+
+    private sealed class RuleHostStub : IRulesetRuleHost
+    {
+        public ValueTask<RulesetRuleEvaluationResult> EvaluateAsync(RulesetRuleEvaluationRequest request, CancellationToken ct) =>
+            ValueTask.FromResult(new RulesetRuleEvaluationResult(true, new Dictionary<string, object?>(), []));
+    }
+
+    private sealed class ScriptHostStub : IRulesetScriptHost
+    {
+        public ValueTask<RulesetScriptExecutionResult> ExecuteAsync(RulesetScriptExecutionRequest request, CancellationToken ct) =>
+            ValueTask.FromResult(new RulesetScriptExecutionResult(true, null, new Dictionary<string, object?>()));
+    }
+}

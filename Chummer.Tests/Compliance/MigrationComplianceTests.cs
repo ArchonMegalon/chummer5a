@@ -489,6 +489,38 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Hub_project_install_preview_surface_is_exposed_through_hub_api_seam()
+    {
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string hubCatalogEndpointsPath = FindPath("Chummer.Api", "Endpoints", "HubCatalogEndpoints.cs");
+        string hubCatalogEndpointsText = File.ReadAllText(hubCatalogEndpointsPath);
+        string hubInstallPreviewServiceContractPath = FindPath("Chummer.Application", "Hub", "IHubInstallPreviewService.cs");
+        string hubInstallPreviewServiceContractText = File.ReadAllText(hubInstallPreviewServiceContractPath);
+        string hubInstallPreviewServicePath = FindPath("Chummer.Application", "Hub", "DefaultHubInstallPreviewService.cs");
+        string hubInstallPreviewServiceText = File.ReadAllText(hubInstallPreviewServicePath);
+        string hubInstallPreviewContractsPath = FindPath("Chummer.Contracts", "Hub", "HubProjectInstallPreviewContracts.cs");
+        string hubInstallPreviewContractsText = File.ReadAllText(hubInstallPreviewContractsPath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(infoEndpointsText, "/api/hub/projects/{kind}/{itemId}/install-preview");
+        StringAssert.Contains(hubCatalogEndpointsText, "/api/hub/projects/{kind}/{itemId}/install-preview");
+        StringAssert.Contains(hubCatalogEndpointsText, "IHubInstallPreviewService");
+        StringAssert.Contains(hubCatalogEndpointsText, "hub_project_not_found");
+        StringAssert.Contains(hubInstallPreviewServiceContractText, "public interface IHubInstallPreviewService");
+        StringAssert.Contains(hubInstallPreviewServiceContractText, "HubProjectInstallPreviewReceipt? Preview");
+        StringAssert.Contains(hubInstallPreviewServiceText, "public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService");
+        StringAssert.Contains(hubInstallPreviewServiceText, "HubProjectInstallPreviewStates.Ready");
+        StringAssert.Contains(hubInstallPreviewServiceText, "HubProjectInstallPreviewStates.Deferred");
+        StringAssert.Contains(hubInstallPreviewContractsText, "public sealed record HubProjectInstallPreviewReceipt");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubInstallPreviewService, DefaultHubInstallPreviewService>()");
+        StringAssert.Contains(readmeText, "/api/hub/projects/*/install-preview");
+    }
+
+    [TestMethod]
     public void Solution_includes_headless_and_dual_head_projects()
     {
         string solutionPath = FindPath("Chummer.sln");
@@ -895,6 +927,24 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubProjectDetailContractsText, "HubCatalogItem Summary");
         StringAssert.Contains(hubProjectDetailContractsText, "string? RuntimeFingerprint");
         StringAssert.Contains(hubProjectDetailContractsText, "IReadOnlyList<HubProjectAction> Actions");
+    }
+
+    [TestMethod]
+    public void Hub_project_install_preview_contracts_lock_in_state_change_and_diagnostic_vocabulary()
+    {
+        string hubInstallPreviewContractsPath = FindPath("Chummer.Contracts", "Hub", "HubProjectInstallPreviewContracts.cs");
+        string hubInstallPreviewContractsText = File.ReadAllText(hubInstallPreviewContractsPath);
+
+        StringAssert.Contains(hubInstallPreviewContractsText, "public static class HubProjectInstallPreviewStates");
+        StringAssert.Contains(hubInstallPreviewContractsText, "public static class HubProjectInstallPreviewChangeKinds");
+        StringAssert.Contains(hubInstallPreviewContractsText, "public static class HubProjectInstallPreviewDiagnosticKinds");
+        StringAssert.Contains(hubInstallPreviewContractsText, "public static class HubProjectInstallPreviewDiagnosticSeverityLevels");
+        StringAssert.Contains(hubInstallPreviewContractsText, "public sealed record HubProjectInstallPreviewChange");
+        StringAssert.Contains(hubInstallPreviewContractsText, "public sealed record HubProjectInstallPreviewDiagnostic");
+        StringAssert.Contains(hubInstallPreviewContractsText, "public sealed record HubProjectInstallPreviewReceipt");
+        StringAssert.Contains(hubInstallPreviewContractsText, "RuleProfileApplyTarget Target");
+        StringAssert.Contains(hubInstallPreviewContractsText, "string? RuntimeFingerprint");
+        StringAssert.Contains(hubInstallPreviewContractsText, "string? DeferredReason = null");
     }
 
     [TestMethod]

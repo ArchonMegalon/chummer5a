@@ -1,5 +1,6 @@
 using Chummer.Application.Hub;
 using Chummer.Application.Owners;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Hub;
 using Chummer.Contracts.Presentation;
 
@@ -23,6 +24,19 @@ public static class HubCatalogEndpoints
                     itemId
                 })
                 : Results.Ok(detail);
+        });
+
+        app.MapPost("/api/hub/projects/{kind}/{itemId}/install-preview", (string kind, string itemId, string? ruleset, RuleProfileApplyTarget target, IHubInstallPreviewService hubInstallPreviewService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            HubProjectInstallPreviewReceipt? preview = hubInstallPreviewService.Preview(ownerContextAccessor.Current, kind, itemId, target, ruleset);
+            return preview is null
+                ? Results.NotFound(new
+                {
+                    error = "hub_project_not_found",
+                    kind,
+                    itemId
+                })
+                : Results.Ok(preview);
         });
 
         return app;

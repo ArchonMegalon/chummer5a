@@ -170,6 +170,43 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_project_install_preview_endpoint_returns_registered_profile_preview()
+    {
+        using var client = CreateClient();
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Workspace, "workspace-1");
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync("/api/hub/projects/ruleprofile/official.sr5.core/install-preview?ruleset=sr5", target);
+        response.EnsureSuccessStatusCode();
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual(HubCatalogItemKinds.RuleProfile, payload["kind"]?.GetValue<string>());
+        Assert.AreEqual("official.sr5.core", payload["itemId"]?.GetValue<string>());
+        Assert.AreEqual("ready", payload["state"]?.GetValue<string>());
+        Assert.IsNotNull(payload["runtimeFingerprint"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["changes"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["diagnostics"]);
+    }
+
+    [TestMethod]
+    public async Task Hub_project_install_preview_endpoint_returns_not_found_for_unknown_project()
+    {
+        using var client = CreateClient();
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Workspace, "workspace-1");
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync("/api/hub/projects/ruleprofile/missing-profile/install-preview?ruleset=sr5", target);
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual("hub_project_not_found", payload["error"]?.GetValue<string>());
+        Assert.AreEqual(HubCatalogItemKinds.RuleProfile, payload["kind"]?.GetValue<string>());
+        Assert.AreEqual("missing-profile", payload["itemId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Buildkits_endpoint_reports_registry_entries_for_registered_rulesets()
     {
         using var client = CreateClient();

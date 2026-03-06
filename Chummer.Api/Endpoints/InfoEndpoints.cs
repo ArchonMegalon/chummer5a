@@ -17,6 +17,7 @@ public static class InfoEndpoints
                 "/api/health",
                 "/api/hub/search",
                 "/api/hub/projects/{kind}/{itemId}",
+                "/api/hub/projects/{kind}/{itemId}/install-preview",
                 "/api/content/overlays",
                 "/api/buildkits",
                 "/api/rulepacks",
