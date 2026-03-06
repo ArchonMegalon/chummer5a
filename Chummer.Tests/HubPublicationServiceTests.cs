@@ -109,6 +109,80 @@ public class HubPublicationServiceTests
     }
 
     [TestMethod]
+    public void Default_moderation_service_approves_case_and_removes_it_from_pending_queue()
+    {
+        InMemoryHubDraftStore draftStore = new();
+        InMemoryHubModerationCaseStore moderationCaseStore = new();
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        DefaultHubModerationService moderationService = new(moderationCaseStore);
+        OwnerScope owner = new("alice");
+
+        publicationService.CreateDraft(
+            owner,
+            new HubPublishDraftRequest(
+                ProjectKind: HubCatalogItemKinds.RuleProfile,
+                ProjectId: "campaign.sr5.runtime.approve",
+                RulesetId: RulesetDefaults.Sr5,
+                Title: "Campaign Runtime Approve"));
+
+        HubProjectSubmissionReceipt submission = publicationService.SubmitForReview(
+            owner,
+            HubCatalogItemKinds.RuleProfile,
+            "campaign.sr5.runtime.approve",
+            RulesetDefaults.Sr5,
+            new HubSubmitProjectRequest("ready")).Payload!;
+
+        HubModerationDecisionReceipt? approved = moderationService.Approve(owner, submission.CaseId, new HubModerationDecisionRequest("looks good")).Payload;
+        HubModerationQueue pendingQueue = moderationService.ListQueue(owner, HubModerationStates.PendingReview).Payload!;
+        HubDraftDetailProjection? detail = publicationService.GetDraft(owner, submission.DraftId).Payload;
+
+        Assert.IsNotNull(approved);
+        Assert.AreEqual(HubModerationStates.Approved, approved.State);
+        Assert.AreEqual("looks good", approved.Notes);
+        Assert.IsEmpty(pendingQueue.Items);
+        Assert.IsNotNull(detail);
+        Assert.IsNotNull(detail.Moderation);
+        Assert.AreEqual(HubModerationStates.Approved, detail.Moderation.State);
+        Assert.AreEqual("looks good", detail.LatestModerationNotes);
+    }
+
+    [TestMethod]
+    public void Default_moderation_service_rejects_case_and_keeps_owner_scope()
+    {
+        InMemoryHubDraftStore draftStore = new();
+        InMemoryHubModerationCaseStore moderationCaseStore = new();
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        DefaultHubModerationService moderationService = new(moderationCaseStore);
+        OwnerScope owner = new("alice");
+
+        publicationService.CreateDraft(
+            owner,
+            new HubPublishDraftRequest(
+                ProjectKind: HubCatalogItemKinds.RulePack,
+                ProjectId: "campaign.shadowops.reject",
+                RulesetId: RulesetDefaults.Sr5,
+                Title: "Campaign ShadowOps Reject"));
+
+        HubProjectSubmissionReceipt submission = publicationService.SubmitForReview(
+            owner,
+            HubCatalogItemKinds.RulePack,
+            "campaign.shadowops.reject",
+            RulesetDefaults.Sr5,
+            new HubSubmitProjectRequest("needs review")).Payload!;
+
+        HubModerationDecisionReceipt? rejected = moderationService.Reject(owner, submission.CaseId, new HubModerationDecisionRequest("missing validation")).Payload;
+        HubModerationQueue rejectedQueue = moderationService.ListQueue(owner, HubModerationStates.Rejected).Payload!;
+        HubModerationDecisionReceipt? hiddenFromBob = moderationService.Reject(new OwnerScope("bob"), submission.CaseId, new HubModerationDecisionRequest("should not see")).Payload;
+
+        Assert.IsNotNull(rejected);
+        Assert.AreEqual(HubModerationStates.Rejected, rejected.State);
+        Assert.AreEqual("missing validation", rejected.Notes);
+        Assert.HasCount(1, rejectedQueue.Items);
+        Assert.AreEqual(submission.CaseId, rejectedQueue.Items[0].CaseId);
+        Assert.IsNull(hiddenFromBob);
+    }
+
+    [TestMethod]
     public void Default_publication_service_returns_draft_detail_with_latest_moderation_state()
     {
         InMemoryHubDraftStore draftStore = new();
@@ -276,6 +350,11 @@ public class HubPublicationServiceTests
         public HubModerationCaseRecord? Get(OwnerScope owner, string kind, string projectId, string rulesetId)
         {
             return List(owner, kind, rulesetId).FirstOrDefault(record => string.Equals(record.ProjectId, projectId, StringComparison.Ordinal));
+        }
+
+        public HubModerationCaseRecord? GetByCaseId(OwnerScope owner, string caseId)
+        {
+            return List(owner).FirstOrDefault(record => string.Equals(record.CaseId, caseId, StringComparison.Ordinal));
         }
 
         public HubModerationCaseRecord? GetByDraftId(OwnerScope owner, string draftId)

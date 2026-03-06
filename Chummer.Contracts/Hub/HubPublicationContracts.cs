@@ -9,6 +9,8 @@ public static class HubPublicationOperations
     public const string DeleteDraft = "delete-draft";
     public const string SubmitProject = "submit-project";
     public const string ListModerationQueue = "list-moderation-queue";
+    public const string ApproveModerationCase = "approve-moderation-case";
+    public const string RejectModerationCase = "reject-moderation-case";
 }
 
 public static class HubPublicationStates
@@ -91,6 +93,20 @@ public sealed record HubModerationQueueItem(
 
 public sealed record HubModerationQueue(
     IReadOnlyList<HubModerationQueueItem> Items);
+
+public sealed record HubModerationDecisionRequest(
+    string? Notes = null);
+
+public sealed record HubModerationDecisionReceipt(
+    string CaseId,
+    string DraftId,
+    string ProjectKind,
+    string ProjectId,
+    string RulesetId,
+    string OwnerId,
+    string State,
+    string? Notes,
+    DateTimeOffset UpdatedAtUtc);
 
 public sealed record HubDraftRecord(
     string DraftId,

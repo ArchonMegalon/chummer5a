@@ -237,6 +237,43 @@ public sealed class OwnerScopedApiEndpointTests
         Assert.AreEqual(StatusCodes.Status404NotFound, (int)bobDeleteResponse.StatusCode);
     }
 
+    [TestMethod]
+    public async Task Hub_moderation_action_endpoints_respect_forwarded_owner_scope()
+    {
+        await using WebApplication app = await CreateAppAsync();
+        using HttpClient client = app.GetTestClient();
+
+        await PostRequiredJsonObject(client, "/api/hub/publish/drafts", new JsonObject
+        {
+            ["projectKind"] = HubCatalogItemKinds.RulePack,
+            ["projectId"] = "alice.pack.moderation",
+            ["rulesetId"] = "sr5",
+            ["title"] = "Alice Pack Moderation"
+        }, "alice@example.com");
+        JsonObject submission = await PostRequiredJsonObject(client, "/api/hub/publish/rulepack/alice.pack.moderation/submit?ruleset=sr5", new JsonObject
+        {
+            ["notes"] = "ready"
+        }, "alice@example.com");
+        string caseId = submission["caseId"]?.GetValue<string>() ?? string.Empty;
+
+        JsonObject approved = await PostRequiredJsonObject(client, $"/api/hub/moderation/queue/{caseId}/approve", new JsonObject
+        {
+            ["notes"] = "approved"
+        }, "alice@example.com");
+        Assert.AreEqual(HubModerationStates.Approved, approved["state"]?.GetValue<string>());
+
+        using HttpRequestMessage rejectRequest = new(HttpMethod.Post, $"/api/hub/moderation/queue/{caseId}/reject")
+        {
+            Content = JsonContent.Create(new JsonObject
+            {
+                ["notes"] = "bob cannot update this"
+            })
+        };
+        rejectRequest.Headers.Add(OwnerHeaderName, "bob@example.com");
+        using HttpResponseMessage rejectResponse = await client.SendAsync(rejectRequest);
+        Assert.AreEqual(StatusCodes.Status404NotFound, (int)rejectResponse.StatusCode);
+    }
+
     private static async Task<WebApplication> CreateAppAsync()
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
@@ -579,6 +616,11 @@ public sealed class OwnerScopedApiEndpointTests
         public HubModerationCaseRecord? Get(OwnerScope owner, string kind, string projectId, string rulesetId)
         {
             return List(owner, kind, rulesetId).FirstOrDefault(record => string.Equals(record.ProjectId, projectId, StringComparison.Ordinal));
+        }
+
+        public HubModerationCaseRecord? GetByCaseId(OwnerScope owner, string caseId)
+        {
+            return List(owner).FirstOrDefault(record => string.Equals(record.CaseId, caseId, StringComparison.Ordinal));
         }
 
         public HubModerationCaseRecord? GetByDraftId(OwnerScope owner, string draftId)

@@ -88,6 +88,30 @@ public static class HubPublicationEndpoints
         app.MapGet("/api/hub/moderation/queue", (string? state, IHubModerationService hubModerationService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(hubModerationService.ListQueue(ownerContextAccessor.Current, state)));
 
+        app.MapPost("/api/hub/moderation/queue/{caseId}/approve", (string caseId, HubModerationDecisionRequest? request, IHubModerationService hubModerationService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            HubModerationDecisionReceipt? approved = hubModerationService.Approve(ownerContextAccessor.Current, caseId, request).Payload;
+            return approved is null
+                ? Results.NotFound(new
+                {
+                    error = "hub_moderation_case_not_found",
+                    caseId
+                })
+                : Results.Ok(approved);
+        });
+
+        app.MapPost("/api/hub/moderation/queue/{caseId}/reject", (string caseId, HubModerationDecisionRequest? request, IHubModerationService hubModerationService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            HubModerationDecisionReceipt? rejected = hubModerationService.Reject(ownerContextAccessor.Current, caseId, request).Payload;
+            return rejected is null
+                ? Results.NotFound(new
+                {
+                    error = "hub_moderation_case_not_found",
+                    caseId
+                })
+                : Results.Ok(rejected);
+        });
+
         return app;
     }
 

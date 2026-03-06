@@ -24,6 +24,8 @@ public static class InfoEndpoints
                 "/api/hub/publish/drafts/{draftId}/archive",
                 "/api/hub/publish/{kind}/{itemId}/submit",
                 "/api/hub/moderation/queue",
+                "/api/hub/moderation/queue/{caseId}/approve",
+                "/api/hub/moderation/queue/{caseId}/reject",
                 "/api/content/overlays",
                 "/api/buildkits",
                 "/api/rulepacks",

@@ -390,6 +390,60 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_moderation_action_endpoints_update_owner_case_state()
+    {
+        using var client = CreateClient();
+        string projectId = $"campaign.shadowops.{Guid.NewGuid():N}";
+
+        using HttpResponseMessage createResponse = await client.PostAsJsonAsync("/api/hub/publish/drafts", new HubPublishDraftRequest(
+            ProjectKind: HubCatalogItemKinds.RulePack,
+            ProjectId: projectId,
+            RulesetId: RulesetDefaults.Sr5,
+            Title: "Campaign ShadowOps Moderation"));
+        createResponse.EnsureSuccessStatusCode();
+
+        JsonObject submission = await PostRequiredJsonObject(
+            client,
+            $"/api/hub/publish/rulepack/{projectId}/submit?ruleset=sr5",
+            new JsonObject
+            {
+                ["notes"] = "ready for approval"
+            });
+        string caseId = submission["caseId"]?.GetValue<string>() ?? string.Empty;
+        string draftId = submission["draftId"]?.GetValue<string>() ?? string.Empty;
+
+        JsonObject approved = await PostRequiredJsonObject(
+            client,
+            $"/api/hub/moderation/queue/{caseId}/approve",
+            new JsonObject
+            {
+                ["notes"] = "approved"
+            });
+        Assert.AreEqual(HubModerationStates.Approved, approved["state"]?.GetValue<string>());
+        Assert.AreEqual("approved", approved["notes"]?.GetValue<string>());
+
+        JsonObject detail = await GetRequiredJsonObject(client, $"/api/hub/publish/drafts/{draftId}");
+        Assert.AreEqual(HubModerationStates.Approved, detail["moderation"]?["state"]?.GetValue<string>());
+        Assert.AreEqual("approved", detail["latestModerationNotes"]?.GetValue<string>());
+
+        JsonObject rejected = await PostRequiredJsonObject(
+            client,
+            $"/api/hub/moderation/queue/{caseId}/reject",
+            new JsonObject
+            {
+                ["notes"] = "needs more work"
+            });
+        Assert.AreEqual(HubModerationStates.Rejected, rejected["state"]?.GetValue<string>());
+        Assert.AreEqual("needs more work", rejected["notes"]?.GetValue<string>());
+
+        JsonObject rejectedQueue = await GetRequiredJsonObject(client, "/api/hub/moderation/queue?state=rejected");
+        bool found = rejectedQueue["items"]?.AsArray().OfType<JsonObject>()
+            .Any(item => string.Equals(item["caseId"]?.GetValue<string>(), caseId, StringComparison.Ordinal))
+            ?? false;
+        Assert.IsTrue(found, $"Expected rejected moderation queue to include '{caseId}'.");
+    }
+
+    [TestMethod]
     public async Task Hub_project_compatibility_endpoint_returns_not_found_for_unknown_project()
     {
         using var client = CreateClient();
