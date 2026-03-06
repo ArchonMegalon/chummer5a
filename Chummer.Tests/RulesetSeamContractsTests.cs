@@ -1910,6 +1910,105 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Buildkit_workbench_contracts_define_library_inspector_prompt_and_apply_preview_vocabulary()
+    {
+        BuildKitManifest manifest = new(
+            BuildKitId: "street-sam-starter",
+            Version: "1.0.0",
+            Title: "Street Samurai Starter",
+            Description: "Starter package for a street samurai.",
+            Targets: [RulesetDefaults.Sr5],
+            RuntimeRequirements:
+            [
+                new BuildKitRuntimeRequirement(
+                    RulesetId: RulesetDefaults.Sr5,
+                    RequiredRuntimeFingerprints: ["runtime-lock-sha256"],
+                    RequiredRulePacks: [])
+            ],
+            Prompts:
+            [
+                new BuildKitPromptDescriptor(
+                    PromptId: "weapon-package",
+                    Kind: BuildKitPromptKinds.Choice,
+                    Label: "Weapon Package",
+                    Options:
+                    [
+                        new BuildKitPromptOption(
+                            OptionId: "arsenal",
+                            Label: "Arsenal")
+                    ],
+                    Required: true)
+            ],
+            Actions:
+            [
+                new BuildKitActionDescriptor(
+                    ActionId: "add-arsenal",
+                    Kind: BuildKitActionKinds.AddBundle,
+                    TargetId: "bundle/arsenal")
+            ],
+            Visibility: ArtifactVisibilityModes.Private,
+            TrustTier: ArtifactTrustTiers.Private);
+        BuildKitValidationReceipt validation = new(
+            BuildKitId: manifest.BuildKitId,
+            IsValid: true,
+            ResolvedPrompts:
+            [
+                new BuildKitPromptResolution(
+                    PromptId: "weapon-package",
+                    OptionId: "arsenal")
+            ],
+            Issues: []);
+        BuildKitLibraryProjection library = new(
+            Items:
+            [
+                new BuildKitLibraryItem(
+                    BuildKit: new ArtifactVersionReference(
+                        Id: manifest.BuildKitId,
+                        Version: manifest.Version),
+                    Title: manifest.Title,
+                    AvailabilityState: BuildKitAvailabilityStates.Available,
+                    Visibility: manifest.Visibility,
+                    TrustTier: manifest.TrustTier,
+                    Targets: manifest.Targets)
+            ],
+            SelectedBuildKitId: manifest.BuildKitId);
+        BuildKitInspectorProjection inspector = new(
+            Manifest: manifest,
+            AvailabilityState: BuildKitAvailabilityStates.Installed,
+            Issues: [],
+            CanApply: true,
+            RuntimeFingerprint: "runtime-lock-sha256");
+        BuildKitApplyPreviewProjection preview = new(
+            BuildKitId: manifest.BuildKitId,
+            WorkspaceId: "ws-1",
+            Prompts:
+            [
+                new BuildKitPromptPreview(
+                    Prompt: manifest.Prompts[0],
+                    CurrentSelections: validation.ResolvedPrompts,
+                    Issues: validation.Issues)
+            ],
+            Changes:
+            [
+                new BuildKitPreviewChange(
+                    Kind: BuildKitPreviewChangeKinds.BundleAdded,
+                    Summary: "Adds the Arsenal starter bundle.",
+                    ActionId: "add-arsenal",
+                    TargetId: "bundle/arsenal",
+                    PromptId: "weapon-package")
+            ],
+            Validation: validation,
+            RequiresConfirmation: true);
+
+        Assert.AreEqual(manifest.BuildKitId, library.SelectedBuildKitId);
+        Assert.AreEqual(BuildKitAvailabilityStates.Installed, inspector.AvailabilityState);
+        Assert.AreEqual(BuildKitPromptKinds.Choice, preview.Prompts[0].Prompt.Kind);
+        Assert.AreEqual(BuildKitPreviewChangeKinds.BundleAdded, preview.Changes[0].Kind);
+        Assert.IsTrue(preview.Validation.IsValid);
+        Assert.IsTrue(preview.RequiresConfirmation);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

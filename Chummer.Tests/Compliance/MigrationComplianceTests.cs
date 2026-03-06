@@ -800,6 +800,29 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Buildkit_workbench_contracts_lock_in_library_inspector_prompt_and_apply_preview_vocabulary()
+    {
+        string buildKitWorkbenchContractsPath = FindPath("Chummer.Contracts", "Presentation", "BuildKitWorkbenchContracts.cs");
+        string buildKitWorkbenchContractsText = File.ReadAllText(buildKitWorkbenchContractsPath);
+
+        StringAssert.Contains(buildKitWorkbenchContractsText, "public static class BuildKitWorkbenchSurfaceIds");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "public static class BuildKitAvailabilityStates");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "public static class BuildKitPreviewChangeKinds");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "public sealed record BuildKitLibraryItem");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "public sealed record BuildKitPromptPreview");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "public sealed record BuildKitPreviewChange");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "public sealed record BuildKitLibraryProjection");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "public sealed record BuildKitInspectorProjection");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "public sealed record BuildKitApplyPreviewProjection");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "buildkit-library");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "requires-runtime-change");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "career-update-queued");
+        StringAssert.Contains(buildKitWorkbenchContractsText, "BuildKitValidationReceipt Validation");
+        Assert.IsFalse(buildKitWorkbenchContractsText.Contains("Avalonia", StringComparison.Ordinal));
+        Assert.IsFalse(buildKitWorkbenchContractsText.Contains("Blazor", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
