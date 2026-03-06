@@ -69,6 +69,7 @@ public class HeadlessCoreContentBundleValidationTests
             string resolved = overlays.ResolveDataFile("lifemodules.xml");
             Assert.AreEqual(Path.Combine(dataDirectory, "lifemodules.xml"), resolved);
             Assert.AreEqual(OwnerScope.LocalSingleUser.NormalizedValue, ownerContextAccessor.Current.NormalizedValue);
+            Assert.IsFalse(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr4, StringComparison.Ordinal)));
             Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr5, StringComparison.Ordinal)));
             Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr6, StringComparison.Ordinal)));
         }

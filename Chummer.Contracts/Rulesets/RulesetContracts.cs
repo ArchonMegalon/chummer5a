@@ -4,6 +4,7 @@ namespace Chummer.Contracts.Rulesets;
 
 public static class RulesetDefaults
 {
+    public const string Sr4 = "sr4";
     public const string Sr5 = "sr5";
     public const string Sr6 = "sr6";
 

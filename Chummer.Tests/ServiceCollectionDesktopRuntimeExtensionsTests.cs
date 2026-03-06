@@ -40,6 +40,7 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
 
                     Assert.IsInstanceOfType<InProcessChummerClient>(client);
                     Assert.AreEqual(OwnerScope.LocalSingleUser.NormalizedValue, ownerContextAccessor.Current.NormalizedValue);
+                    Assert.IsFalse(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr4, StringComparison.Ordinal)));
                     Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr5, StringComparison.Ordinal)));
                     Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr6, StringComparison.Ordinal)));
                 });
@@ -106,6 +107,7 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
                     Assert.IsNotNull(httpClient.BaseAddress);
                     Assert.AreEqual("https://api.example.invalid/", httpClient.BaseAddress!.ToString());
                     Assert.IsTrue(httpClient.DefaultRequestHeaders.Contains("X-Api-Key"));
+                    Assert.IsFalse(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr4, StringComparison.Ordinal)));
                     Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr5, StringComparison.Ordinal)));
                     Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr6, StringComparison.Ordinal)));
                     string[] expectedApiKeyValues = ["test-key"];
@@ -142,6 +144,7 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
                     Assert.IsInstanceOfType<HttpChummerClient>(client);
                     Assert.IsNotNull(httpClient.BaseAddress);
                     Assert.AreEqual("https://legacy.example.invalid/", httpClient.BaseAddress!.ToString());
+                    Assert.IsFalse(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr4, StringComparison.Ordinal)));
                     Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr5, StringComparison.Ordinal)));
                     Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr6, StringComparison.Ordinal)));
                 });

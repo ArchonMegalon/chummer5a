@@ -7,6 +7,7 @@ COPY Chummer.Core/Chummer.Core.csproj Chummer.Core/
 COPY Chummer.Application/Chummer.Application.csproj Chummer.Application/
 COPY Chummer.Contracts/Chummer.Contracts.csproj Chummer.Contracts/
 COPY Chummer.Rulesets.Hosting/Chummer.Rulesets.Hosting.csproj Chummer.Rulesets.Hosting/
+COPY Chummer.Rulesets.Sr4/Chummer.Rulesets.Sr4.csproj Chummer.Rulesets.Sr4/
 COPY Chummer.Rulesets.Sr5/Chummer.Rulesets.Sr5.csproj Chummer.Rulesets.Sr5/
 COPY Chummer.Rulesets.Sr6/Chummer.Rulesets.Sr6.csproj Chummer.Rulesets.Sr6/
 COPY Chummer.Desktop.Runtime/Chummer.Desktop.Runtime.csproj Chummer.Desktop.Runtime/
@@ -25,6 +26,7 @@ COPY Chummer.Core/ Chummer.Core/
 COPY Chummer.Application/ Chummer.Application/
 COPY Chummer.Contracts/ Chummer.Contracts/
 COPY Chummer.Rulesets.Hosting/ Chummer.Rulesets.Hosting/
+COPY Chummer.Rulesets.Sr4/ Chummer.Rulesets.Sr4/
 COPY Chummer.Rulesets.Sr5/ Chummer.Rulesets.Sr5/
 COPY Chummer.Rulesets.Sr6/ Chummer.Rulesets.Sr6/
 COPY Chummer.Desktop.Runtime/ Chummer.Desktop.Runtime/

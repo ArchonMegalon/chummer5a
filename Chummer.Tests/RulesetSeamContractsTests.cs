@@ -5,12 +5,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using Chummer.Rulesets.Sr4;
 using Chummer.Rulesets.Sr5;
 using Chummer.Rulesets.Sr6;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;
@@ -75,11 +78,17 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, sr5Controls.Count);
 
         Assert.IsFalse(AppCommandCatalog.ForRuleset("sr6").Any());
+        Assert.IsFalse(AppCommandCatalog.ForRuleset("sr4").Any());
         Assert.IsFalse(NavigationTabCatalog.ForRuleset("sr6").Any());
+        Assert.IsFalse(NavigationTabCatalog.ForRuleset("sr4").Any());
         Assert.IsFalse(WorkspaceSurfaceActionCatalog.ForRuleset("sr6").Any());
+        Assert.IsFalse(WorkspaceSurfaceActionCatalog.ForRuleset("sr4").Any());
         Assert.IsFalse(DesktopUiControlCatalog.ForRuleset("sr6").Any());
+        Assert.IsFalse(DesktopUiControlCatalog.ForRuleset("sr4").Any());
         Assert.IsFalse(WorkspaceSurfaceActionCatalog.ForTab("tab-info", "sr6").Any());
+        Assert.IsFalse(WorkspaceSurfaceActionCatalog.ForTab("tab-info", "sr4").Any());
         Assert.IsFalse(DesktopUiControlCatalog.ForTab("tab-info", "sr6").Any());
+        Assert.IsFalse(DesktopUiControlCatalog.ForTab("tab-info", "sr4").Any());
     }
 
     [TestMethod]
@@ -97,11 +106,26 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
-    public void Ruleset_defaults_expose_sr5_and_sr6_ids()
+    public void Ruleset_defaults_expose_sr4_sr5_and_sr6_ids()
     {
         Assert.AreEqual(string.Empty, RulesetId.Default.NormalizedValue);
+        Assert.AreEqual("sr4", new RulesetId(RulesetDefaults.Sr4).NormalizedValue);
         Assert.AreEqual("sr5", new RulesetId(RulesetDefaults.Sr5).NormalizedValue);
         Assert.AreEqual("sr6", new RulesetId(RulesetDefaults.Sr6).NormalizedValue);
+    }
+
+    [TestMethod]
+    public void Sr4_ruleset_registration_is_opt_in()
+    {
+        ServiceCollection services = new();
+        services.AddSr4Ruleset();
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+        IRulesetPlugin[] plugins = provider.GetServices<IRulesetPlugin>().ToArray();
+        IRulesetWorkspaceCodec[] codecs = provider.GetServices<IRulesetWorkspaceCodec>().ToArray();
+
+        Assert.IsTrue(plugins.Any(plugin => string.Equals(plugin.Id.NormalizedValue, RulesetDefaults.Sr4, StringComparison.Ordinal)));
+        Assert.IsTrue(codecs.Any(codec => string.Equals(codec.RulesetId, RulesetDefaults.Sr4, StringComparison.Ordinal)));
     }
 
     [TestMethod]
@@ -190,5 +214,55 @@ public class RulesetSeamContractsTests
             CancellationToken.None);
         Assert.IsTrue(scriptResult.Success);
         Assert.AreEqual(RulesetDefaults.Sr6, scriptResult.Outputs["rulesetId"]);
+    }
+
+    [TestMethod]
+    public async Task Sr4_plugin_scaffold_exposes_independent_catalogs_and_codec_contracts()
+    {
+        Sr4RulesetPlugin plugin = new();
+        Sr4WorkspaceCodec codec = new();
+
+        Assert.AreEqual(RulesetDefaults.Sr4, plugin.Id.NormalizedValue);
+        Assert.AreEqual("Shadowrun 4", plugin.DisplayName);
+        Assert.AreEqual(RulesetDefaults.Sr4, plugin.Serializer.RulesetId.NormalizedValue);
+        Assert.AreEqual(Sr4WorkspaceCodec.SchemaVersion, plugin.Serializer.SchemaVersion);
+        Assert.AreEqual(RulesetDefaults.Sr4, codec.RulesetId);
+        Assert.AreEqual(Sr4WorkspaceCodec.Sr4PayloadKind, codec.PayloadKind);
+
+        WorkspacePayloadEnvelope wrapped = codec.WrapImport(
+            RulesetDefaults.Sr4,
+            new WorkspaceImportDocument("<character><name>Ghost</name><alias>Switchback</alias></character>", RulesetDefaults.Sr4));
+        CharacterFileSummary summary = codec.ParseSummary(wrapped);
+
+        Assert.AreEqual(RulesetDefaults.Sr4, wrapped.RulesetId);
+        Assert.AreEqual("Ghost", summary.Name);
+        Assert.AreEqual("Switchback", summary.Alias);
+        Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetCommands().Count);
+        Assert.IsGreaterThan(0, plugin.ShellDefinitions.GetNavigationTabs().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
+        Assert.IsGreaterThan(0, plugin.Catalogs.GetDesktopUiControls().Count);
+
+        WorkspaceDownloadReceipt download = codec.BuildDownload(
+            new CharacterWorkspaceId("ws-sr4"),
+            wrapped,
+            WorkspaceDocumentFormat.NativeXml);
+        Assert.AreEqual("ws-sr4.chum4", download.FileName);
+
+        RulesetRuleEvaluationResult ruleResult = await plugin.Rules.EvaluateAsync(
+            new RulesetRuleEvaluationRequest(
+                RuleId: "sr4.noop",
+                Inputs: new Dictionary<string, object?> { ["essence"] = 5.5m }),
+            CancellationToken.None);
+        Assert.IsTrue(ruleResult.Success);
+        Assert.IsTrue(ruleResult.Outputs.ContainsKey("essence"));
+
+        RulesetScriptExecutionResult scriptResult = await plugin.Scripts.ExecuteAsync(
+            new RulesetScriptExecutionRequest(
+                ScriptId: "sr4.noop",
+                ScriptSource: "-- noop",
+                Inputs: new Dictionary<string, object?> { ["karma"] = 9 }),
+            CancellationToken.None);
+        Assert.IsTrue(scriptResult.Success);
+        Assert.AreEqual(RulesetDefaults.Sr4, scriptResult.Outputs["rulesetId"]);
     }
 }

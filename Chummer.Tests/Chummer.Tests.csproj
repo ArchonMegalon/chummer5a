@@ -173,6 +173,7 @@
     <ProjectReference Include="..\Chummer.Infrastructure\Chummer.Infrastructure.csproj" />
     <ProjectReference Include="..\Chummer.Portal\Chummer.Portal.csproj" />
     <ProjectReference Include="..\Chummer.Presentation\Chummer.Presentation.csproj" />
+    <ProjectReference Include="..\Chummer.Rulesets.Sr4\Chummer.Rulesets.Sr4.csproj" />
     <ProjectReference Include="..\Chummer.Rulesets.Sr5\Chummer.Rulesets.Sr5.csproj" />
     <ProjectReference Include="..\Chummer.Rulesets.Sr6\Chummer.Rulesets.Sr6.csproj" />
   </ItemGroup>
