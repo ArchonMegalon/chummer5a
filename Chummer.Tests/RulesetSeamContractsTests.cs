@@ -816,6 +816,73 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Rulepack_registry_contracts_define_publication_review_share_and_fork_vocabulary()
+    {
+        RulePackManifest manifest = new(
+            PackId: "house-rules",
+            Version: "1.2.0",
+            Title: "House Rules",
+            Author: "GM",
+            Description: "Campaign runtime changes.",
+            Targets: [RulesetDefaults.Sr5],
+            EngineApiVersion: "rulepack-v1",
+            DependsOn: [],
+            ConflictsWith: [],
+            Visibility: ArtifactVisibilityModes.CampaignShared,
+            TrustTier: ArtifactTrustTiers.Private,
+            Assets:
+            [
+                new RulePackAssetDescriptor(
+                    Kind: RulePackAssetKinds.DeclarativeRules,
+                    Mode: RulePackAssetModes.ModifyCap,
+                    RelativePath: "rules/house.json",
+                    Checksum: "sha256:abc")
+            ],
+            Capabilities: [],
+            ExecutionPolicies: []);
+        RulePackPublicationMetadata publication = new(
+            OwnerId: "user-1",
+            Visibility: ArtifactVisibilityModes.CampaignShared,
+            PublicationStatus: RulePackPublicationStatuses.Published,
+            Review: new RulePackReviewDecision(
+                State: RulePackReviewStates.PendingReview),
+            Shares:
+            [
+                new RulePackShareGrant(
+                    SubjectKind: RulePackShareSubjectKinds.Campaign,
+                    SubjectId: "campaign-7",
+                    AccessLevel: RulePackShareAccessLevels.Install),
+                new RulePackShareGrant(
+                    SubjectKind: RulePackShareSubjectKinds.User,
+                    SubjectId: "user-2",
+                    AccessLevel: RulePackShareAccessLevels.Fork)
+            ],
+            ForkLineage: new RulePackForkLineage(
+                RootPackId: "official-errata",
+                ParentPackId: "official-errata",
+                ParentVersion: "1.0.0",
+                IsFork: true),
+            PublishedAtUtc: DateTimeOffset.UtcNow);
+        RulePackRegistryEntry entry = new(manifest, publication);
+        RulePackPublicationReceipt receipt = new(
+            PackId: manifest.PackId,
+            Version: manifest.Version,
+            PublicationStatus: publication.PublicationStatus,
+            Visibility: publication.Visibility,
+            ReviewState: publication.Review.State,
+            Shares: publication.Shares,
+            ForkLineage: publication.ForkLineage);
+
+        Assert.AreEqual(RulePackPublicationStatuses.Published, entry.Publication.PublicationStatus);
+        Assert.AreEqual(RulePackReviewStates.PendingReview, entry.Publication.Review.State);
+        Assert.AreEqual(RulePackShareSubjectKinds.Campaign, entry.Publication.Shares[0].SubjectKind);
+        Assert.AreEqual(RulePackShareAccessLevels.Fork, entry.Publication.Shares[1].AccessLevel);
+        Assert.IsTrue(entry.Publication.ForkLineage!.IsFork);
+        Assert.AreEqual("official-errata", receipt.ForkLineage!.RootPackId);
+        Assert.AreEqual(ArtifactVisibilityModes.CampaignShared, receipt.Visibility);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

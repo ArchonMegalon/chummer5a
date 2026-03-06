@@ -474,6 +474,29 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Rulepack_registry_contracts_lock_in_publication_review_share_and_fork_vocabulary()
+    {
+        string rulePackRegistryContractsPath = FindPath("Chummer.Contracts", "Content", "RulePackRegistryContracts.cs");
+        string rulePackRegistryContractsText = File.ReadAllText(rulePackRegistryContractsPath);
+
+        StringAssert.Contains(rulePackRegistryContractsText, "public static class RulePackPublicationStatuses");
+        StringAssert.Contains(rulePackRegistryContractsText, "public static class RulePackReviewStates");
+        StringAssert.Contains(rulePackRegistryContractsText, "public static class RulePackShareSubjectKinds");
+        StringAssert.Contains(rulePackRegistryContractsText, "public static class RulePackShareAccessLevels");
+        StringAssert.Contains(rulePackRegistryContractsText, "public sealed record RulePackForkLineage");
+        StringAssert.Contains(rulePackRegistryContractsText, "public sealed record RulePackShareGrant");
+        StringAssert.Contains(rulePackRegistryContractsText, "public sealed record RulePackReviewDecision");
+        StringAssert.Contains(rulePackRegistryContractsText, "public sealed record RulePackPublicationMetadata");
+        StringAssert.Contains(rulePackRegistryContractsText, "public sealed record RulePackRegistryEntry");
+        StringAssert.Contains(rulePackRegistryContractsText, "public sealed record RulePackPublicationReceipt");
+        StringAssert.Contains(rulePackRegistryContractsText, "PendingReview");
+        StringAssert.Contains(rulePackRegistryContractsText, "PublicCatalog");
+        StringAssert.Contains(rulePackRegistryContractsText, "Campaign");
+        StringAssert.Contains(rulePackRegistryContractsText, "Fork");
+        StringAssert.Contains(rulePackRegistryContractsText, "DateTimeOffset? PublishedAtUtc = null");
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
