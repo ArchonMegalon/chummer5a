@@ -112,6 +112,45 @@ public class HubProjectCompatibilityServiceTests
         Assert.IsTrue(matrix.Rows.Any(row => row.Kind == HubProjectCompatibilityRowKinds.SessionRuntime && row.State == HubProjectCompatibilityStates.Blocked));
     }
 
+    [TestMethod]
+    public void Hub_project_compatibility_service_includes_runtime_lock_install_state()
+    {
+        DefaultHubProjectCompatibilityService service = new(
+            CreatePluginRegistry(),
+            new RulePackRegistryServiceStub([]),
+            new RuleProfileRegistryServiceStub([]),
+            new BuildKitRegistryServiceStub([]),
+            new RuntimeLockRegistryServiceStub(
+                new RuntimeLockRegistryEntry(
+                    LockId: "sha256:core",
+                    Owner: new OwnerScope("alice"),
+                    Title: "Alice Campaign Runtime",
+                    Visibility: ArtifactVisibilityModes.Private,
+                    CatalogKind: RuntimeLockCatalogKinds.Saved,
+                    RuntimeLock: new ResolvedRuntimeLock(
+                        RulesetId: RulesetDefaults.Sr5,
+                        ContentBundles: [],
+                        RulePacks: [],
+                        ProviderBindings: new Dictionary<string, string>(),
+                        EngineApiVersion: "rulepack-v1",
+                        RuntimeFingerprint: "sha256:core"),
+                    UpdatedAtUtc: System.DateTimeOffset.UtcNow,
+                    Install: new ArtifactInstallState(
+                        ArtifactInstallStates.Pinned,
+                        InstalledTargetKind: RuntimeLockTargetKinds.Workspace,
+                        InstalledTargetId: "workspace-1",
+                        RuntimeFingerprint: "sha256:core"))));
+
+        HubProjectCompatibilityMatrix? matrix = service.GetMatrix(new OwnerScope("alice"), HubCatalogItemKinds.RuntimeLock, "sha256:core", RulesetDefaults.Sr5);
+
+        Assert.IsNotNull(matrix);
+        Assert.AreEqual(HubCatalogItemKinds.RuntimeLock, matrix.Kind);
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.InstallState
+            && row.CurrentValue == ArtifactInstallStates.Pinned
+            && row.Notes == "workspace-1"));
+    }
+
     private static RulesetPluginRegistry CreatePluginRegistry() =>
         new(
         [

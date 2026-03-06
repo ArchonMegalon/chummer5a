@@ -64,6 +64,8 @@ public class RuntimeInspectorServiceTests
         Assert.IsNotNull(projection);
         Assert.AreEqual(RuntimeInspectorTargetKinds.RuntimeLock, projection.TargetKind);
         Assert.AreEqual("official.sr5.core", projection.TargetId);
+        Assert.AreEqual(ArtifactInstallStates.Available, projection.Install.State);
+        Assert.AreEqual("runtime-lock-sha256", projection.Install.RuntimeFingerprint);
         Assert.HasCount(1, projection.ResolvedRulePacks);
         Assert.AreEqual("house-rules", projection.ResolvedRulePacks[0].RulePack.Id);
         Assert.IsTrue(projection.Warnings.Any(warning => string.Equals(warning.Kind, RuntimeInspectorWarningKinds.Trust, StringComparison.Ordinal)));

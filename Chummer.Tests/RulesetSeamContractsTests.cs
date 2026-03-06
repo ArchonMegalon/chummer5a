@@ -1753,6 +1753,11 @@ public class RulesetSeamContractsTests
             TargetKind: RuntimeInspectorTargetKinds.CharacterVersion,
             TargetId: "charv-1",
             RuntimeLock: runtimeLock,
+            Install: new ArtifactInstallState(
+                ArtifactInstallStates.Pinned,
+                InstalledTargetKind: RuntimeLockTargetKinds.CharacterVersion,
+                InstalledTargetId: "charv-1",
+                RuntimeFingerprint: runtimeLock.RuntimeFingerprint),
             ResolvedRulePacks:
             [
                 new RuntimeInspectorRulePackEntry(
@@ -1800,6 +1805,7 @@ public class RulesetSeamContractsTests
 
         Assert.AreEqual(RuntimeInspectorTargetKinds.CharacterVersion, projection.TargetKind);
         Assert.AreEqual("runtime-lock-sha256", projection.RuntimeLock.RuntimeFingerprint);
+        Assert.AreEqual(ArtifactInstallStates.Pinned, projection.Install.State);
         Assert.AreEqual(ArtifactTrustTiers.Private, projection.ResolvedRulePacks[0].TrustTier);
         Assert.AreEqual("house-rules/validate.character", projection.ProviderBindings[0].ProviderId);
         Assert.AreEqual(RuntimeInspectorWarningKinds.Compatibility, projection.Warnings[0].Kind);

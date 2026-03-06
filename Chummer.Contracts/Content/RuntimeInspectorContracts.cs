@@ -68,6 +68,7 @@ public sealed record RuntimeInspectorProjection(
     string TargetKind,
     string TargetId,
     ResolvedRuntimeLock RuntimeLock,
+    ArtifactInstallState Install,
     IReadOnlyList<RuntimeInspectorRulePackEntry> ResolvedRulePacks,
     IReadOnlyList<RuntimeInspectorProviderBinding> ProviderBindings,
     IReadOnlyList<RuntimeLockCompatibilityDiagnostic> CompatibilityDiagnostics,

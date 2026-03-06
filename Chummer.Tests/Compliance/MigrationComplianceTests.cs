@@ -448,6 +448,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(defaultRuntimeInspectorServiceText, "public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService");
         StringAssert.Contains(defaultRuntimeInspectorServiceText, "IRuleProfileRegistryService");
         StringAssert.Contains(defaultRuntimeInspectorServiceText, "IRulePackRegistryService");
+        StringAssert.Contains(defaultRuntimeInspectorServiceText, "profile.Install");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeInspectorService, DefaultRuntimeInspectorService>()");
         StringAssert.Contains(readmeText, "/api/runtime/profiles/{profileId}");
     }
@@ -1097,6 +1098,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubCompatibilityContractsText, "public sealed record HubProjectCompatibilityMatrix");
         StringAssert.Contains(hubCompatibilityContractsText, "IReadOnlyList<HubProjectCompatibilityRow> Rows");
         StringAssert.Contains(hubCompatibilityContractsText, "DateTimeOffset GeneratedAtUtc");
+        StringAssert.Contains(hubCompatibilityContractsText, "InstallState");
         StringAssert.Contains(hubCompatibilityContractsText, "SessionRuntime");
         StringAssert.Contains(hubCompatibilityContractsText, "HostedPublic");
     }
@@ -1350,6 +1352,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeInspectorContractsText, "runtime-lock");
         StringAssert.Contains(runtimeInspectorContractsText, "provider-rebound");
         StringAssert.Contains(runtimeInspectorContractsText, "ResolvedRuntimeLock RuntimeLock");
+        StringAssert.Contains(runtimeInspectorContractsText, "ArtifactInstallState Install");
         StringAssert.Contains(runtimeInspectorContractsText, "IReadOnlyList<RuntimeLockCompatibilityDiagnostic> CompatibilityDiagnostics");
         Assert.IsFalse(runtimeInspectorContractsText.Contains("Avalonia", StringComparison.Ordinal));
         Assert.IsFalse(runtimeInspectorContractsText.Contains("Blazor", StringComparison.Ordinal));

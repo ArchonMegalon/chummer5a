@@ -6,6 +6,7 @@ public static class HubProjectCompatibilityRowKinds
     public const string EngineApi = "engine-api";
     public const string Visibility = "visibility";
     public const string Trust = "trust";
+    public const string InstallState = "install-state";
     public const string SessionRuntime = "session-runtime";
     public const string HostedPublic = "hosted-public";
     public const string RuntimeFingerprint = "runtime-fingerprint";

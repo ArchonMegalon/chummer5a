@@ -49,6 +49,7 @@ public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService
             TargetKind: RuntimeInspectorTargetKinds.RuntimeLock,
             TargetId: profile.Manifest.ProfileId,
             RuntimeLock: profile.Manifest.RuntimeLock,
+            Install: NormalizeInstall(profile.Install, profile.Manifest.RuntimeLock.RuntimeFingerprint),
             ResolvedRulePacks: resolvedRulePacks,
             ProviderBindings: providerBindings,
             CompatibilityDiagnostics: compatibilityDiagnostics,
@@ -174,5 +175,12 @@ public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService
         }
 
         return null;
+    }
+
+    private static ArtifactInstallState NormalizeInstall(ArtifactInstallState install, string runtimeFingerprint)
+    {
+        return string.IsNullOrWhiteSpace(install.RuntimeFingerprint)
+            ? install with { RuntimeFingerprint = runtimeFingerprint }
+            : install;
     }
 }
