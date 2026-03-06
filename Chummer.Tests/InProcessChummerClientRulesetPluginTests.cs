@@ -16,6 +16,7 @@ using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Desktop.Runtime;
+using Chummer.Rulesets.Hosting;
 using Chummer.Rulesets.Sr5;
 using Chummer.Rulesets.Sr6;
 using Microsoft.VisualStudio.TestTools.UnitTesting;

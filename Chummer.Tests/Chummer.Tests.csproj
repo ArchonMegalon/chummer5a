@@ -39,7 +39,6 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <Compile Remove="ChummerTest.cs" />
     <Compile Remove="XmlNodeExtensionsTests.cs" />
-    <Compile Remove="GlobalUsings.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">
@@ -173,6 +172,7 @@
     <ProjectReference Include="..\Chummer.Infrastructure\Chummer.Infrastructure.csproj" />
     <ProjectReference Include="..\Chummer.Portal\Chummer.Portal.csproj" />
     <ProjectReference Include="..\Chummer.Presentation\Chummer.Presentation.csproj" />
+    <ProjectReference Include="..\Chummer.Rulesets.Hosting\Chummer.Rulesets.Hosting.csproj" />
     <ProjectReference Include="..\Chummer.Rulesets.Sr4\Chummer.Rulesets.Sr4.csproj" />
     <ProjectReference Include="..\Chummer.Rulesets.Sr5\Chummer.Rulesets.Sr5.csproj" />
     <ProjectReference Include="..\Chummer.Rulesets.Sr6\Chummer.Rulesets.Sr6.csproj" />

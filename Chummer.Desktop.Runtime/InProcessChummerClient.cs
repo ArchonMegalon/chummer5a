@@ -11,6 +11,7 @@ using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Infrastructure.Owners;
 using Chummer.Presentation;
+using Chummer.Rulesets.Hosting;
 
 namespace Chummer.Desktop.Runtime;
 

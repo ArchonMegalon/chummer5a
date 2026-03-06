@@ -2044,6 +2044,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetPluginRegistry");
         StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetShellCatalogResolverService");
         StringAssert.Contains(rulesetHostingServicesText, "public sealed class DefaultRulesetSelectionPolicy");
+        StringAssert.Contains(rulesetHostingServicesText, "namespace Chummer.Rulesets.Hosting;");
+        Assert.IsFalse(rulesetHostingServicesText.Contains("namespace Chummer.Contracts.Rulesets;", StringComparison.Ordinal));
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Rulesets", "Sr5RulesetPlugin.cs"));
 
         StringAssert.Contains(rulesetDiExtensionsText, "AddSr5Ruleset(this IServiceCollection services)");
@@ -2304,6 +2306,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetDetectionText, "RulesetDefaults.Sr5");
         StringAssert.Contains(rulesetDetectionText, "RulesetDefaults.Sr6");
         StringAssert.Contains(codecResolverText, "public sealed class RulesetWorkspaceCodecResolver");
+        StringAssert.Contains(codecResolverText, "namespace Chummer.Rulesets.Hosting;");
+        Assert.IsFalse(codecResolverText.Contains("namespace Chummer.Application.Workspaces;", StringComparison.Ordinal));
         StringAssert.Contains(codecResolverText, "RulesetDefaults.NormalizeOptional(rulesetId)");
         StringAssert.Contains(codecResolverText, "RulesetDefaults.NormalizeRequired(codec.RulesetId)");
         Assert.IsFalse(codecResolverText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));

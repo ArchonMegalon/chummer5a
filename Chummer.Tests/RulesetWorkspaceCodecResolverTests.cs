@@ -7,6 +7,7 @@ using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using Chummer.Rulesets.Hosting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;

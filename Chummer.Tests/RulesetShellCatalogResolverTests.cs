@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
+using Chummer.Rulesets.Hosting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;

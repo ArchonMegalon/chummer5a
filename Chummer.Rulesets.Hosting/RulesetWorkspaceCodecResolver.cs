@@ -1,7 +1,7 @@
 using Chummer.Application.Workspaces;
 using Chummer.Contracts.Rulesets;
 
-namespace Chummer.Application.Workspaces;
+namespace Chummer.Rulesets.Hosting;
 
 public sealed class RulesetWorkspaceCodecResolver : IRulesetWorkspaceCodecResolver
 {

@@ -1,7 +1,7 @@
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 
-namespace Chummer.Contracts.Rulesets;
+namespace Chummer.Rulesets.Hosting;
 
 public sealed class RulesetPluginRegistry : IRulesetPluginRegistry
 {
