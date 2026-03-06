@@ -733,6 +733,45 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Session_lifecycle_contracts_define_snapshot_compaction_and_bundle_refresh_receipts()
+    {
+        CharacterVersionReference version = new(
+            CharacterId: "char-1",
+            VersionId: "charv-2",
+            RulesetId: RulesetDefaults.Sr5,
+            RuntimeFingerprint: "runtime-lock-v2");
+        SessionSnapshotBaseline baseline = new(
+            SnapshotId: "snap-42",
+            OverlayId: "overlay-1",
+            BaseCharacterVersion: version,
+            ThroughSequence: 42,
+            CreatedAtUtc: DateTimeOffset.UtcNow,
+            CompactedEventCount: 40);
+        SessionCompactionReceipt compaction = new(
+            OverlayId: "overlay-1",
+            Mode: SessionCompactionModes.IncrementalSnapshot,
+            Baseline: baseline,
+            NextSequence: 43,
+            RetainedPendingEventCount: 2);
+        SessionRuntimeBundleRefreshReceipt refresh = new(
+            PreviousBundleId: "bundle-1",
+            CurrentBundleId: "bundle-2",
+            Outcome: SessionRuntimeBundleRefreshOutcomes.Refreshed,
+            BaseCharacterVersion: version,
+            RuntimeFingerprint: version.RuntimeFingerprint,
+            RefreshedAtUtc: DateTimeOffset.UtcNow,
+            SignatureChanged: true);
+
+        Assert.AreEqual(SessionCompactionModes.IncrementalSnapshot, compaction.Mode);
+        Assert.AreEqual("snap-42", compaction.Baseline.SnapshotId);
+        Assert.AreEqual(40, compaction.Baseline.CompactedEventCount);
+        Assert.IsTrue(compaction.PendingEventsRetained);
+        Assert.AreEqual(SessionRuntimeBundleRefreshOutcomes.Refreshed, refresh.Outcome);
+        Assert.AreEqual("bundle-2", refresh.CurrentBundleId);
+        Assert.IsTrue(refresh.SignatureChanged);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

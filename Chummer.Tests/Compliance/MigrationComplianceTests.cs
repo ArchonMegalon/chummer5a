@@ -435,6 +435,25 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Session_lifecycle_contracts_lock_in_snapshot_compaction_and_bundle_refresh_vocabulary()
+    {
+        string sessionLifecycleContractsPath = FindPath("Chummer.Contracts", "Session", "SessionLifecycleContracts.cs");
+        string sessionLifecycleContractsText = File.ReadAllText(sessionLifecycleContractsPath);
+
+        StringAssert.Contains(sessionLifecycleContractsText, "public static class SessionCompactionModes");
+        StringAssert.Contains(sessionLifecycleContractsText, "public static class SessionRuntimeBundleRefreshOutcomes");
+        StringAssert.Contains(sessionLifecycleContractsText, "public sealed record SessionSnapshotBaseline");
+        StringAssert.Contains(sessionLifecycleContractsText, "public sealed record SessionCompactionReceipt");
+        StringAssert.Contains(sessionLifecycleContractsText, "public sealed record SessionRuntimeBundleRefreshReceipt");
+        StringAssert.Contains(sessionLifecycleContractsText, "IncrementalSnapshot");
+        StringAssert.Contains(sessionLifecycleContractsText, "FullRebuild");
+        StringAssert.Contains(sessionLifecycleContractsText, "Refreshed");
+        StringAssert.Contains(sessionLifecycleContractsText, "Blocked");
+        StringAssert.Contains(sessionLifecycleContractsText, "bool PendingEventsRetained = true");
+        StringAssert.Contains(sessionLifecycleContractsText, "bool SignatureChanged = false");
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
