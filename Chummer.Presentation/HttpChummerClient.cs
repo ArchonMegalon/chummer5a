@@ -126,9 +126,15 @@ public sealed class HttpChummerClient : IChummerClient
 
     public async Task<IReadOnlyList<AppCommandDefinition>> GetCommandsAsync(string? rulesetId, CancellationToken ct)
     {
-        string normalizedRuleset = RulesetDefaults.Normalize(rulesetId);
+        string path = "/api/commands";
+        string? normalizedRuleset = RulesetDefaults.NormalizeOptional(rulesetId);
+        if (normalizedRuleset is not null)
+        {
+            path += $"?ruleset={Uri.EscapeDataString(normalizedRuleset)}";
+        }
+
         AppCommandCatalogResponse? response = await _httpClient.GetFromJsonAsync<AppCommandCatalogResponse>(
-            $"/api/commands?ruleset={Uri.EscapeDataString(normalizedRuleset)}",
+            path,
             ct);
         if (response is null)
             throw new InvalidOperationException("Command catalog response was empty.");
@@ -138,9 +144,15 @@ public sealed class HttpChummerClient : IChummerClient
 
     public async Task<IReadOnlyList<NavigationTabDefinition>> GetNavigationTabsAsync(string? rulesetId, CancellationToken ct)
     {
-        string normalizedRuleset = RulesetDefaults.Normalize(rulesetId);
+        string path = "/api/navigation-tabs";
+        string? normalizedRuleset = RulesetDefaults.NormalizeOptional(rulesetId);
+        if (normalizedRuleset is not null)
+        {
+            path += $"?ruleset={Uri.EscapeDataString(normalizedRuleset)}";
+        }
+
         NavigationTabCatalogResponse? response = await _httpClient.GetFromJsonAsync<NavigationTabCatalogResponse>(
-            $"/api/navigation-tabs?ruleset={Uri.EscapeDataString(normalizedRuleset)}",
+            path,
             ct);
         if (response is null)
             throw new InvalidOperationException("Navigation tab catalog response was empty.");
@@ -151,9 +163,9 @@ public sealed class HttpChummerClient : IChummerClient
     public async Task<ShellBootstrapSnapshot> GetShellBootstrapAsync(string? rulesetId, CancellationToken ct)
     {
         string path = "/api/shell/bootstrap";
-        if (!string.IsNullOrWhiteSpace(rulesetId))
+        string? normalizedRuleset = RulesetDefaults.NormalizeOptional(rulesetId);
+        if (normalizedRuleset is not null)
         {
-            string normalizedRuleset = RulesetDefaults.Normalize(rulesetId);
             path += $"?ruleset={Uri.EscapeDataString(normalizedRuleset)}";
         }
 

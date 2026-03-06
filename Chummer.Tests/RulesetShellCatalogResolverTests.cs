@@ -118,6 +118,16 @@ public sealed class RulesetShellCatalogResolverTests
         Assert.IsTrue(controls.Any(control => string.Equals(control.TabId, "tab-info", StringComparison.Ordinal)));
     }
 
+    [TestMethod]
+    public void RulesetPluginRegistry_does_not_treat_blank_ruleset_as_sr5_plugin_request()
+    {
+        RulesetPluginRegistry registry = new([new StubRulesetPlugin("sr5", commands: [], tabs: [])]);
+
+        Assert.IsNull(registry.Resolve(null));
+        Assert.IsNull(registry.Resolve(" "));
+        Assert.IsNotNull(registry.Resolve("sr5"));
+    }
+
     private sealed class StubRulesetPlugin : IRulesetPlugin
     {
         public StubRulesetPlugin(

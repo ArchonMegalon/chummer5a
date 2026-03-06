@@ -31,9 +31,7 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
 
     public async Task<ShellBootstrapData> GetAsync(string? rulesetId, CancellationToken ct)
     {
-        string? requestedRulesetId = string.IsNullOrWhiteSpace(rulesetId)
-            ? null
-            : RulesetDefaults.Normalize(rulesetId);
+        string? requestedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
         string cacheKey = requestedRulesetId ?? DefaultBootstrapCacheKey;
 
         if (TryGetCachedBootstrap(cacheKey, out ShellBootstrapData? cachedBootstrap))

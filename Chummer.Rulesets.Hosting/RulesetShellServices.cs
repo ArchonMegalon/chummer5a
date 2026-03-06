@@ -25,8 +25,10 @@ public sealed class RulesetPluginRegistry : IRulesetPluginRegistry
 
     public IRulesetPlugin? Resolve(string? rulesetId)
     {
-        string normalizedRulesetId = RulesetDefaults.Normalize(rulesetId);
-        return _pluginsByRuleset.GetValueOrDefault(normalizedRulesetId);
+        string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+        return normalizedRulesetId is null
+            ? null
+            : _pluginsByRuleset.GetValueOrDefault(normalizedRulesetId);
     }
 }
 

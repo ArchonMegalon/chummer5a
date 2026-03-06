@@ -38,12 +38,12 @@ public static class ShellEndpoints
             IReadOnlyList<WorkspaceListItem> workspaceList = workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
             ShellPreferences preferences = shellPreferencesService.Load();
             ShellSessionState session = shellSessionService.Load();
-            string preferredRulesetId = RulesetDefaults.Normalize(preferences.PreferredRulesetId);
+            string preferredRulesetId = RulesetDefaults.NormalizeOrDefault(
+                preferences.PreferredRulesetId,
+                ShellPreferences.Default.PreferredRulesetId);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaceList, session.ActiveWorkspaceId);
             string activeRulesetId = ResolveRulesetForWorkspace(activeWorkspaceId, workspaceList, preferredRulesetId);
-            string requestedRulesetId = string.IsNullOrWhiteSpace(ruleset)
-                ? activeRulesetId
-                : RulesetDefaults.Normalize(ruleset);
+            string requestedRulesetId = RulesetDefaults.NormalizeOptional(ruleset) ?? activeRulesetId;
 
             IReadOnlyList<WorkspaceListItemResponse> workspaces = workspaceList
                 .Select(workspace => new WorkspaceListItemResponse(
@@ -88,13 +88,13 @@ public static class ShellEndpoints
     {
         if (activeWorkspaceId is null)
         {
-            return RulesetDefaults.Normalize(preferredRulesetId);
+            return RulesetDefaults.NormalizeOrDefault(preferredRulesetId, ShellPreferences.Default.PreferredRulesetId);
         }
 
         WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
             string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal));
         return matchingWorkspace is null
-            ? RulesetDefaults.Normalize(preferredRulesetId)
-            : RulesetDefaults.Normalize(matchingWorkspace.RulesetId);
+            ? RulesetDefaults.NormalizeOrDefault(preferredRulesetId, ShellPreferences.Default.PreferredRulesetId)
+            : RulesetDefaults.NormalizeOrDefault(matchingWorkspace.RulesetId, preferredRulesetId);
     }
 }

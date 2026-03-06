@@ -6,14 +6,32 @@ public static class RulesetDefaults
 {
     public const string Sr5 = "sr5";
 
-    public static string Normalize(string? value)
+    public static string? NormalizeOptional(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim().ToLowerInvariant();
+    }
+
+    public static string NormalizeRequired(string value)
+    {
+        string? normalized = NormalizeOptional(value);
+        if (normalized is null)
         {
-            return Sr5;
+            throw new ArgumentException("Ruleset id is required.", nameof(value));
         }
 
-        return value.Trim().ToLowerInvariant();
+        return normalized;
+    }
+
+    public static string NormalizeOrDefault(string? value, string defaultRulesetId)
+    {
+        return NormalizeOptional(value) ?? NormalizeRequired(defaultRulesetId);
+    }
+
+    public static string Normalize(string? value)
+    {
+        return NormalizeOrDefault(value, Sr5);
     }
 }
 

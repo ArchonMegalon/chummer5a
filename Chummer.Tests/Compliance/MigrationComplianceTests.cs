@@ -1276,6 +1276,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(codecContractText, "DataExportBundle BuildExportBundle");
         StringAssert.Contains(codecResolverContractText, "public interface IRulesetWorkspaceCodecResolver");
         StringAssert.Contains(codecResolverText, "public sealed class RulesetWorkspaceCodecResolver");
+        StringAssert.Contains(codecResolverText, "RulesetDefaults.NormalizeOptional(rulesetId)");
+        Assert.IsFalse(codecResolverText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         StringAssert.Contains(workspaceModelsText, "public sealed record WorkspaceDocumentState");
         StringAssert.Contains(workspaceModelsText, "WorkspaceDocumentState State");
         StringAssert.Contains(workspaceModelsText, "public WorkspacePayloadEnvelope PayloadEnvelope => State.ToEnvelope();");

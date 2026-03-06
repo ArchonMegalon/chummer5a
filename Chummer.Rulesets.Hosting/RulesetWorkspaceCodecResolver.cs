@@ -25,15 +25,11 @@ public sealed class RulesetWorkspaceCodecResolver : IRulesetWorkspaceCodecResolv
 
     public IRulesetWorkspaceCodec Resolve(string? rulesetId)
     {
-        string normalizedRulesetId = RulesetDefaults.Normalize(rulesetId);
-        if (_codecsByRuleset.TryGetValue(normalizedRulesetId, out IRulesetWorkspaceCodec? codec))
+        string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+        if (normalizedRulesetId is not null
+            && _codecsByRuleset.TryGetValue(normalizedRulesetId, out IRulesetWorkspaceCodec? codec))
         {
             return codec;
-        }
-
-        if (_codecsByRuleset.TryGetValue(RulesetDefaults.Sr5, out IRulesetWorkspaceCodec? sr5Codec))
-        {
-            return sr5Codec;
         }
 
         return _fallbackCodec
