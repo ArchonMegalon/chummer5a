@@ -317,16 +317,22 @@ public class MigrationComplianceTests
     [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
+        string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
+        string characterVersionContractsText = File.ReadAllText(characterVersionContractsPath);
         string sessionContractsPath = FindPath("Chummer.Contracts", "Session", "SessionContracts.cs");
         string sessionContractsText = File.ReadAllText(sessionContractsPath);
 
+        StringAssert.Contains(characterVersionContractsText, "public sealed record CharacterVersionReference");
+        StringAssert.Contains(characterVersionContractsText, "public sealed record CharacterVersion");
+        StringAssert.Contains(characterVersionContractsText, "ResolvedRuntimeLock RuntimeLock");
+        StringAssert.Contains(characterVersionContractsText, "WorkspacePayloadEnvelope PayloadEnvelope");
         StringAssert.Contains(sessionContractsText, "public static class SessionEventTypes");
         StringAssert.Contains(sessionContractsText, "public static class SessionSyncStatuses");
         StringAssert.Contains(sessionContractsText, "public sealed record SessionEvent");
         StringAssert.Contains(sessionContractsText, "public sealed record SessionLedger");
         StringAssert.Contains(sessionContractsText, "public sealed record SessionOverlaySnapshot");
         StringAssert.Contains(sessionContractsText, "public sealed record SessionRuntimeBundle");
-        StringAssert.Contains(sessionContractsText, "RuntimeFingerprint");
+        StringAssert.Contains(sessionContractsText, "CharacterVersionReference BaseCharacterVersion");
         StringAssert.Contains(sessionContractsText, "SignedAtUtc");
         Assert.IsFalse(sessionContractsText.Contains("public sealed record SessionOverlay(", StringComparison.Ordinal));
         Assert.IsFalse(sessionContractsText.Contains("LuaSource", StringComparison.Ordinal));

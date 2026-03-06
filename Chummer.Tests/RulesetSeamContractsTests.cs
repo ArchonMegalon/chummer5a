@@ -132,12 +132,53 @@ public class RulesetSeamContractsTests
     [TestMethod]
     public void Session_taxonomy_distinguishes_ledger_snapshot_and_runtime_bundle()
     {
+        ResolvedRuntimeLock runtimeLock = new(
+            RulesetId: RulesetDefaults.Sr5,
+            ContentBundles:
+            [
+                new ContentBundleDescriptor(
+                    BundleId: "sr5-core",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Version: "2026.03.06",
+                    Title: "SR5 Core Bundle",
+                    Description: "Official base data.",
+                    AssetPaths: ["data/", "lang/"])
+            ],
+            RulePacks: [new ArtifactVersionReference("house-rules", "1.2.0")],
+            ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["session.quick-actions"] = "house-rules/session.quick-actions"
+            },
+            EngineApiVersion: "rulepack-v1",
+            RuntimeFingerprint: "runtime-lock-sha256");
+        CharacterVersionReference baseCharacterVersion = new(
+            CharacterId: "char-1",
+            VersionId: "charv-1",
+            RulesetId: RulesetDefaults.Sr5,
+            RuntimeFingerprint: runtimeLock.RuntimeFingerprint);
+        CharacterVersion characterVersion = new(
+            Reference: baseCharacterVersion,
+            RuntimeLock: runtimeLock,
+            PayloadEnvelope: new WorkspacePayloadEnvelope(
+                RulesetDefaults.Sr5,
+                SchemaVersion: 1,
+                PayloadKind: "workspace",
+                Payload: "<character />"),
+            CreatedAtUtc: DateTimeOffset.UtcNow,
+            Summary: new CharacterFileSummary(
+                Name: "Prime Runner",
+                Alias: "Cipher",
+                Metatype: "Human",
+                BuildMethod: "Priority",
+                CreatedVersion: "1.0",
+                AppVersion: "1.0",
+                Karma: 0m,
+                Nuyen: 0m,
+                Created: true));
         SessionEvent sessionEvent = new(
             EventId: "evt-1",
             OverlayId: "overlay-1",
-            CharacterId: "char-1",
-            BaseCharacterVersionId: "charv-1",
-            RuntimeFingerprint: "runtime-lock-sha256",
+            BaseCharacterVersion: baseCharacterVersion,
             DeviceId: "device-1",
             ActorId: "user-1",
             Sequence: 1,
@@ -146,17 +187,13 @@ public class RulesetSeamContractsTests
             CreatedAtUtc: DateTimeOffset.UtcNow);
         SessionLedger ledger = new(
             OverlayId: "overlay-1",
-            CharacterId: "char-1",
-            BaseCharacterVersionId: "charv-1",
-            RuntimeFingerprint: "runtime-lock-sha256",
+            BaseCharacterVersion: baseCharacterVersion,
             Events: [sessionEvent],
             BaselineSnapshotId: "snap-0",
             NextSequence: 2);
         SessionOverlaySnapshot snapshot = new(
             OverlayId: "overlay-1",
-            CharacterId: "char-1",
-            BaseCharacterVersionId: "charv-1",
-            RuntimeFingerprint: "runtime-lock-sha256",
+            BaseCharacterVersion: baseCharacterVersion,
             Trackers:
             [
                 new SessionTrackerValue(
@@ -189,8 +226,7 @@ public class RulesetSeamContractsTests
                 LastSyncedAtUtc: null));
         SessionRuntimeBundle runtimeBundle = new(
             BundleId: "session-bundle-1",
-            RulesetId: RulesetDefaults.Sr5,
-            RuntimeFingerprint: "runtime-lock-sha256",
+            BaseCharacterVersion: baseCharacterVersion,
             EngineApiVersion: "session-runtime-v1",
             SignedAtUtc: DateTimeOffset.UtcNow,
             Signature: "sig-1",
@@ -216,12 +252,15 @@ public class RulesetSeamContractsTests
                 ["tracker.increment"] = "session-runtime/stun.increment"
             });
 
+        Assert.AreEqual("charv-1", characterVersion.Reference.VersionId);
+        Assert.AreEqual("runtime-lock-sha256", characterVersion.RuntimeLock.RuntimeFingerprint);
         Assert.AreEqual("evt-1", ledger.Events[0].EventId);
         Assert.AreEqual(SessionEventTypes.TrackerIncrement, ledger.Events[0].EventType);
         Assert.AreEqual("overlay-1", snapshot.OverlayId);
+        Assert.AreEqual("char-1", snapshot.BaseCharacterVersion.CharacterId);
         Assert.AreEqual(SessionSyncStatuses.PendingSync, snapshot.SyncState.Status);
         Assert.AreEqual("session-bundle-1", runtimeBundle.BundleId);
-        Assert.AreEqual("runtime-lock-sha256", runtimeBundle.RuntimeFingerprint);
+        Assert.AreEqual("runtime-lock-sha256", runtimeBundle.BaseCharacterVersion.RuntimeFingerprint);
         Assert.AreEqual(10, runtimeBundle.Trackers[0].MaximumValue);
         Assert.AreEqual("session-runtime/stun.increment", runtimeBundle.ReducerBindings["tracker.increment"]);
     }

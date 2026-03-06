@@ -1,3 +1,5 @@
+using Chummer.Contracts.Characters;
+
 namespace Chummer.Contracts.Session;
 
 public static class SessionEventTypes
@@ -29,9 +31,7 @@ public static class SessionSyncStatuses
 public sealed record SessionEvent(
     string EventId,
     string OverlayId,
-    string CharacterId,
-    string BaseCharacterVersionId,
-    string RuntimeFingerprint,
+    CharacterVersionReference BaseCharacterVersion,
     string DeviceId,
     string ActorId,
     long Sequence,
@@ -44,9 +44,7 @@ public sealed record SessionEvent(
 
 public sealed record SessionLedger(
     string OverlayId,
-    string CharacterId,
-    string BaseCharacterVersionId,
-    string RuntimeFingerprint,
+    CharacterVersionReference BaseCharacterVersion,
     IReadOnlyList<SessionEvent> Events,
     string? BaselineSnapshotId = null,
     long NextSequence = 0);
@@ -88,9 +86,7 @@ public sealed record SessionSyncState(
 
 public sealed record SessionOverlaySnapshot(
     string OverlayId,
-    string CharacterId,
-    string BaseCharacterVersionId,
-    string RuntimeFingerprint,
+    CharacterVersionReference BaseCharacterVersion,
     IReadOnlyList<SessionTrackerValue> Trackers,
     IReadOnlyList<SessionEffectState> ActiveEffects,
     IReadOnlyList<SessionQuickActionPin> PinnedQuickActions,
@@ -99,8 +95,7 @@ public sealed record SessionOverlaySnapshot(
 
 public sealed record SessionRuntimeBundle(
     string BundleId,
-    string RulesetId,
-    string RuntimeFingerprint,
+    CharacterVersionReference BaseCharacterVersion,
     string EngineApiVersion,
     DateTimeOffset SignedAtUtc,
     string Signature,
