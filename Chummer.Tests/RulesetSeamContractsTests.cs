@@ -1462,7 +1462,12 @@ public class RulesetSeamContractsTests
             CatalogKind: RuntimeLockCatalogKinds.Published,
             RuntimeLock: runtimeLock,
             UpdatedAtUtc: DateTimeOffset.UtcNow,
-            Description: "Shared runtime for campaign seven.");
+            Description: "Shared runtime for campaign seven.",
+            Install: new ArtifactInstallState(
+                ArtifactInstallStates.Pinned,
+                InstalledTargetKind: RuntimeLockTargetKinds.Workspace,
+                InstalledTargetId: "workspace-1",
+                RuntimeFingerprint: runtimeLock.RuntimeFingerprint));
         RuntimeLockInstallCandidate candidate = new(
             TargetKind: RuntimeLockTargetKinds.CharacterVersion,
             TargetId: "charv-1",
@@ -1489,6 +1494,7 @@ public class RulesetSeamContractsTests
         Assert.AreEqual(RuntimeLockCompatibilityStates.RebindRequired, candidate.Diagnostics[1].State);
         Assert.AreEqual(RuntimeLockTargetKinds.CharacterVersion, candidate.TargetKind);
         Assert.IsTrue(candidate.CanInstall);
+        Assert.AreEqual(ArtifactInstallStates.Pinned, entry.Install.State);
         Assert.AreEqual(1, page.TotalCount);
     }
 

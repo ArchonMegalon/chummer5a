@@ -246,6 +246,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             RuntimeFingerprint: entry.RuntimeLock.RuntimeFingerprint,
             Facts:
             [
+                new HubProjectDetailFact("install-state", "Install State", entry.Install.State),
                 new HubProjectDetailFact("engine-api", "Engine API", entry.RuntimeLock.EngineApiVersion),
                 new HubProjectDetailFact("content-bundle-count", "Content Bundles", entry.RuntimeLock.ContentBundles.Count.ToString()),
                 new HubProjectDetailFact("rulepack-count", "RulePacks", entry.RuntimeLock.RulePacks.Count.ToString()),
@@ -323,7 +324,8 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         TrustTier: ResolveTrustTier(entry.Visibility),
         LinkTarget: $"/hub/runtime-locks/{entry.LockId}",
         Version: entry.RuntimeLock.RuntimeFingerprint,
-        Installable: true);
+        Installable: true,
+        InstallState: entry.Install.State);
 
     private static string ResolveTrustTier(string visibility) =>
         string.Equals(visibility, ArtifactVisibilityModes.Public, StringComparison.Ordinal)

@@ -60,7 +60,8 @@ public sealed class ProfileBackedRuntimeLockRegistryService : IRuntimeLockRegist
             CatalogKind: ResolveCatalogKind(profile),
             RuntimeLock: profile.Manifest.RuntimeLock,
             UpdatedAtUtc: profile.Publication.PublishedAtUtc ?? DateTimeOffset.UtcNow,
-            Description: profile.Manifest.Description);
+            Description: profile.Manifest.Description,
+            Install: NormalizeInstall(profile.Install, profile.Manifest.RuntimeLock.RuntimeFingerprint));
     }
 
     private static string ResolveCatalogKind(RuleProfileRegistryEntry profile)
@@ -68,5 +69,12 @@ public sealed class ProfileBackedRuntimeLockRegistryService : IRuntimeLockRegist
         return string.Equals(profile.Publication.Visibility, ArtifactVisibilityModes.Public, StringComparison.Ordinal)
             ? RuntimeLockCatalogKinds.Published
             : RuntimeLockCatalogKinds.Derived;
+    }
+
+    private static ArtifactInstallState NormalizeInstall(ArtifactInstallState install, string runtimeFingerprint)
+    {
+        return string.IsNullOrWhiteSpace(install.RuntimeFingerprint)
+            ? install with { RuntimeFingerprint = runtimeFingerprint }
+            : install;
     }
 }

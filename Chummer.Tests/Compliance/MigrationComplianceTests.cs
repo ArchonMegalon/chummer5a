@@ -489,7 +489,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeLockRegistryServiceText, "IRuntimeLockStore");
         StringAssert.Contains(runtimeLockRegistryServiceText, "RuntimeLockCatalogKinds.Published");
         StringAssert.Contains(runtimeLockRegistryServiceText, "RuntimeLockCatalogKinds.Derived");
+        StringAssert.Contains(runtimeLockRegistryServiceText, "profile.Install");
         StringAssert.Contains(fileRuntimeLockStoreText, "public sealed class FileRuntimeLockStore : IRuntimeLockStore");
+        StringAssert.Contains(fileRuntimeLockStoreText, "ArtifactInstallStates.Available");
         StringAssert.Contains(fileRuntimeLockStoreText, "OwnerScopedStatePath.ResolveOwnerDirectory");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeLockStore>(_ => new FileRuntimeLockStore(stateDirectory))");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeLockRegistryService, ProfileBackedRuntimeLockRegistryService>()");
@@ -525,6 +527,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubCatalogServiceText, "IRulePackRegistryService");
         StringAssert.Contains(hubCatalogServiceText, "IRuleProfileRegistryService");
         StringAssert.Contains(hubCatalogServiceText, "IRuntimeLockRegistryService");
+        StringAssert.Contains(hubCatalogServiceText, "InstallState: entry.Install.State");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubCatalogService, DefaultHubCatalogService>()");
         StringAssert.Contains(readmeText, "/api/hub/search");
     }
@@ -582,6 +585,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubInstallPreviewServiceText, "public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService");
         StringAssert.Contains(hubInstallPreviewServiceText, "HubProjectInstallPreviewStates.Ready");
         StringAssert.Contains(hubInstallPreviewServiceText, "HubProjectInstallPreviewStates.Deferred");
+        StringAssert.Contains(hubInstallPreviewServiceText, "entry.Install.State");
+        StringAssert.Contains(hubInstallPreviewServiceText, "HubProjectInstallPreviewDiagnosticKinds.InstallState");
         StringAssert.Contains(hubInstallPreviewContractsText, "public sealed record HubProjectInstallPreviewReceipt");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubInstallPreviewService, DefaultHubInstallPreviewService>()");
         StringAssert.Contains(readmeText, "/api/hub/projects/*/install-preview");
@@ -1252,6 +1257,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeLockRegistryContractsText, "engine-api-mismatch");
         StringAssert.Contains(runtimeLockRegistryContractsText, "ResolvedRuntimeLock RuntimeLock");
         StringAssert.Contains(runtimeLockRegistryContractsText, "OwnerScope Owner");
+        StringAssert.Contains(runtimeLockRegistryContractsText, "ArtifactInstallState Install");
         Assert.IsFalse(runtimeLockRegistryContractsText.Contains("HttpContext", StringComparison.Ordinal));
         Assert.IsFalse(runtimeLockRegistryContractsText.Contains("ClaimsPrincipal", StringComparison.Ordinal));
     }

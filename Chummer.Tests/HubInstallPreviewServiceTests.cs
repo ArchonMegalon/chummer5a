@@ -117,7 +117,12 @@ public class HubInstallPreviewServiceTests
                         ProviderBindings: new Dictionary<string, string>(),
                         EngineApiVersion: "rulepack-v1",
                         RuntimeFingerprint: "sha256:core"),
-                    UpdatedAtUtc: System.DateTimeOffset.UtcNow)),
+                    UpdatedAtUtc: System.DateTimeOffset.UtcNow,
+                    Install: new ArtifactInstallState(
+                        ArtifactInstallStates.Pinned,
+                        InstalledTargetKind: RuntimeLockTargetKinds.Workspace,
+                        InstalledTargetId: "workspace-1",
+                        RuntimeFingerprint: "sha256:core"))),
             new RulePackRegistryServiceStub([]),
             new BuildKitRegistryServiceStub([]));
 
@@ -133,6 +138,8 @@ public class HubInstallPreviewServiceTests
         Assert.AreEqual("sha256:core", preview.RuntimeFingerprint);
         Assert.IsNotEmpty(preview.Changes);
         Assert.AreEqual(HubProjectInstallPreviewChangeKinds.RuntimeLockPinned, preview.Changes[0].Kind);
+        Assert.IsTrue(preview.Diagnostics.Any(diagnostic => diagnostic.Kind == HubProjectInstallPreviewDiagnosticKinds.InstallState));
+        Assert.IsTrue(preview.RequiresConfirmation);
     }
 
     [TestMethod]

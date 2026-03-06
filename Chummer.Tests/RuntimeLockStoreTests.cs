@@ -30,7 +30,11 @@ public class RuntimeLockStoreTests
                 CatalogKind: RuntimeLockCatalogKinds.Saved,
                 RuntimeLock: CreateRuntimeLock("sha256:alice-runtime"),
                 UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
-                Description: "Saved runtime lock.");
+                Description: "Saved runtime lock.",
+                Install: new ArtifactInstallState(
+                    ArtifactInstallStates.Pinned,
+                    InstalledTargetKind: RuntimeLockTargetKinds.Workspace,
+                    InstalledTargetId: "workspace-1"));
 
             store.Upsert(new OwnerScope("alice"), entry);
 
@@ -40,6 +44,9 @@ public class RuntimeLockStoreTests
             Assert.IsNotNull(reloaded);
             Assert.AreEqual("Alice Runtime", reloaded.Title);
             Assert.AreEqual(RuntimeLockCatalogKinds.Saved, reloaded.CatalogKind);
+            Assert.AreEqual(ArtifactInstallStates.Pinned, reloaded.Install.State);
+            Assert.AreEqual("workspace-1", reloaded.Install.InstalledTargetId);
+            Assert.AreEqual("sha256:alice-runtime", reloaded.Install.RuntimeFingerprint);
             Assert.IsNull(hiddenFromBob);
         }
         finally

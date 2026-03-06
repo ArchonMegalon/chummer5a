@@ -31,8 +31,12 @@ public class RuntimeLockRegistryServiceTests
         Assert.AreEqual(2, page.TotalCount);
         RuntimeLockRegistryEntry published = page.Entries.Single(entry => string.Equals(entry.LockId, "sha256:core", StringComparison.Ordinal));
         Assert.AreEqual(RuntimeLockCatalogKinds.Published, published.CatalogKind);
+        Assert.AreEqual(ArtifactInstallStates.Available, published.Install.State);
+        Assert.AreEqual("sha256:core", published.Install.RuntimeFingerprint);
         RuntimeLockRegistryEntry derived = page.Entries.Single(entry => string.Equals(entry.LockId, "sha256:overlay", StringComparison.Ordinal));
         Assert.AreEqual(RuntimeLockCatalogKinds.Derived, derived.CatalogKind);
+        Assert.AreEqual(ArtifactInstallStates.Available, derived.Install.State);
+        Assert.AreEqual("sha256:overlay", derived.Install.RuntimeFingerprint);
     }
 
     [TestMethod]
@@ -52,7 +56,12 @@ public class RuntimeLockRegistryServiceTests
                     CatalogKind: RuntimeLockCatalogKinds.Saved,
                     RuntimeLock: CreateRuntimeLock("sha256:core"),
                     UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
-                    Description: "Pinned runtime lock."),
+                    Description: "Pinned runtime lock.",
+                    Install: new ArtifactInstallState(
+                        ArtifactInstallStates.Pinned,
+                        InstalledTargetKind: RuntimeLockTargetKinds.Workspace,
+                        InstalledTargetId: "workspace-1",
+                        RuntimeFingerprint: "sha256:core")),
                 new RuntimeLockRegistryEntry(
                     LockId: "sha256:custom",
                     Owner: new OwnerScope("alice"),
@@ -61,7 +70,12 @@ public class RuntimeLockRegistryServiceTests
                     CatalogKind: RuntimeLockCatalogKinds.Saved,
                     RuntimeLock: CreateRuntimeLock("sha256:custom"),
                     UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:05:00+00:00"),
-                    Description: "Saved custom runtime.")));
+                    Description: "Saved custom runtime.",
+                    Install: new ArtifactInstallState(
+                        ArtifactInstallStates.Installed,
+                        InstalledTargetKind: RuntimeLockTargetKinds.CharacterVersion,
+                        InstalledTargetId: "char-1",
+                        RuntimeFingerprint: "sha256:custom"))));
 
         RuntimeLockRegistryPage page = service.List(new OwnerScope("alice"), RulesetDefaults.Sr5);
 
@@ -69,8 +83,10 @@ public class RuntimeLockRegistryServiceTests
         RuntimeLockRegistryEntry overridden = page.Entries.Single(entry => string.Equals(entry.LockId, "sha256:core", StringComparison.Ordinal));
         Assert.AreEqual("Alice Saved Core Lock", overridden.Title);
         Assert.AreEqual(RuntimeLockCatalogKinds.Saved, overridden.CatalogKind);
+        Assert.AreEqual(ArtifactInstallStates.Pinned, overridden.Install.State);
         RuntimeLockRegistryEntry custom = page.Entries.Single(entry => string.Equals(entry.LockId, "sha256:custom", StringComparison.Ordinal));
         Assert.AreEqual("Alice Session Runtime", custom.Title);
+        Assert.AreEqual(ArtifactInstallStates.Installed, custom.Install.State);
     }
 
     [TestMethod]

@@ -26,7 +26,8 @@ public sealed record RuntimeLockRegistryEntry(
     string CatalogKind,
     ResolvedRuntimeLock RuntimeLock,
     DateTimeOffset UpdatedAtUtc,
-    string? Description = null);
+    string? Description = null,
+    ArtifactInstallState Install = null!);
 
 public sealed record RuntimeLockCompatibilityDiagnostic(
     string State,

@@ -47,7 +47,8 @@ public sealed class FileRuntimeLockStore : IRuntimeLockStore
             RuntimeLock = entry.RuntimeLock with
             {
                 RulesetId = RulesetDefaults.NormalizeRequired(entry.RuntimeLock.RulesetId)
-            }
+            },
+            Install = NormalizeInstall(entry.Install, entry.RuntimeLock.RuntimeFingerprint)
         };
 
         List<RuntimeLockRegistryEntry> entries = Load(owner).ToList();
@@ -74,7 +75,10 @@ public sealed class FileRuntimeLockStore : IRuntimeLockStore
         }
 
         List<RuntimeLockRegistryEntry>? entries = JsonSerializer.Deserialize<List<RuntimeLockRegistryEntry>>(File.ReadAllText(path));
-        return entries ?? [];
+        return entries?.Select(entry => entry with
+        {
+            Install = NormalizeInstall(entry.Install, entry.RuntimeLock.RuntimeFingerprint)
+        }).ToArray() ?? [];
     }
 
     private void Save(OwnerScope owner, IReadOnlyList<RuntimeLockRegistryEntry> entries)
@@ -89,5 +93,13 @@ public sealed class FileRuntimeLockStore : IRuntimeLockStore
         string ownerDirectory = OwnerScopedStatePath.ResolveOwnerDirectory(_stateDirectory, owner);
         Directory.CreateDirectory(ownerDirectory);
         return Path.Combine(ownerDirectory, "runtime-locks", "registry.json");
+    }
+
+    private static ArtifactInstallState NormalizeInstall(ArtifactInstallState? install, string runtimeFingerprint)
+    {
+        ArtifactInstallState normalized = install ?? new ArtifactInstallState(ArtifactInstallStates.Available);
+        return string.IsNullOrWhiteSpace(normalized.RuntimeFingerprint)
+            ? normalized with { RuntimeFingerprint = runtimeFingerprint }
+            : normalized;
     }
 }

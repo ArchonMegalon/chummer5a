@@ -70,6 +70,8 @@ public class HubCatalogServiceTests
         Assert.AreEqual(HubCatalogItemKinds.RuntimeLock, runtimeLock.Summary.Kind);
         Assert.AreEqual(RuntimeLockCatalogKinds.Published, runtimeLock.CatalogKind);
         Assert.AreEqual("sha256:core", runtimeLock.RuntimeFingerprint);
+        Assert.AreEqual(ArtifactInstallStates.Installed, runtimeLock.Summary.InstallState);
+        Assert.IsTrue(runtimeLock.Facts.Any(fact => fact.FactId == "install-state" && fact.Value == ArtifactInstallStates.Installed));
     }
 
     private static DefaultHubCatalogService CreateService() => new(
@@ -187,7 +189,12 @@ public class HubCatalogServiceTests
                         ProviderBindings: new Dictionary<string, string>(),
                         EngineApiVersion: "rulepack-v1",
                         RuntimeFingerprint: "sha256:core"),
-                    UpdatedAtUtc: DateTimeOffset.UtcNow)
+                    UpdatedAtUtc: DateTimeOffset.UtcNow,
+                    Install: new ArtifactInstallState(
+                        ArtifactInstallStates.Installed,
+                        InstalledTargetKind: RuntimeLockTargetKinds.Workspace,
+                        InstalledTargetId: "workspace-1",
+                        RuntimeFingerprint: "sha256:core"))
             ],
                 TotalCount: 1)));
 

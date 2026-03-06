@@ -113,6 +113,13 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
                 RequiresConfirmation: true));
         }
 
+        bool requiresConfirmation = changes.Any(change => change.RequiresConfirmation);
+        if (!string.Equals(entry.Install.State, ArtifactInstallStates.Available, StringComparison.Ordinal))
+        {
+            diagnostics.Add(CreateInstallStateDiagnostic(entry.Install, itemId));
+            requiresConfirmation = true;
+        }
+
         return new HubProjectInstallPreviewReceipt(
             Kind: HubCatalogItemKinds.RuntimeLock,
             ItemId: itemId,
@@ -121,7 +128,7 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
             Changes: changes,
             Diagnostics: diagnostics,
             RuntimeFingerprint: entry.RuntimeLock.RuntimeFingerprint,
-            RequiresConfirmation: changes.Any(change => change.RequiresConfirmation));
+            RequiresConfirmation: requiresConfirmation);
     }
 
     private HubProjectInstallPreviewReceipt? PreviewRulePack(OwnerScope owner, string itemId, RuleProfileApplyTarget target, string? rulesetId)
