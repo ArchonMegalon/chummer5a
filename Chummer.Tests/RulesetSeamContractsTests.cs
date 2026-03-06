@@ -1434,6 +1434,102 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Browse_query_contracts_define_query_facet_sort_preset_result_and_disable_reason_vocabulary()
+    {
+        BrowseQuery query = new(
+            QueryText: "smartgun",
+            FacetSelections: new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
+            {
+                ["category"] = ["weapon"],
+                ["availability"] = ["12R"]
+            },
+            SortId: "name",
+            SortDirection: BrowseSortDirections.Ascending,
+            Offset: 0,
+            Limit: 25);
+        DisableReason disableReason = new(
+            ReasonId: "requires-cyberware",
+            Summary: "Requires an implanted smartlink.",
+            ExplainEntryId: "explain-smartlink",
+            IsBlocking: true);
+        BrowseResultPage page = new(
+            Query: query,
+            Items:
+            [
+                new BrowseResultItem(
+                    ItemId: "weapon-ares-alpha",
+                    Title: "Ares Alpha",
+                    ColumnValues: new Dictionary<string, string>(StringComparer.Ordinal)
+                    {
+                        ["availability"] = "12R",
+                        ["damage"] = "11P"
+                    },
+                    FacetValues: ["weapon", "smartgun"],
+                    IsSelectable: false,
+                    DisableReasonId: disableReason.ReasonId)
+            ],
+            Columns:
+            [
+                new BrowseColumnDefinition(
+                    ColumnId: "name",
+                    Label: "Name",
+                    ValueKind: BrowseValueKinds.Text,
+                    IsPrimary: true),
+                new BrowseColumnDefinition(
+                    ColumnId: "availability",
+                    Label: "Availability",
+                    ValueKind: BrowseValueKinds.Availability)
+            ],
+            Facets:
+            [
+                new FacetDefinition(
+                    FacetId: "category",
+                    Label: "Category",
+                    Kind: BrowseFacetKinds.MultiSelect,
+                    Options:
+                    [
+                        new FacetOptionDefinition(
+                            Value: "weapon",
+                            Label: "Weapons",
+                            Count: 42,
+                            Selected: true)
+                    ])
+            ],
+            Sorts:
+            [
+                new SortDefinition(
+                    SortId: "name",
+                    Label: "Name",
+                    Direction: BrowseSortDirections.Ascending,
+                    IsDefault: true)
+            ],
+            ViewPresets:
+            [
+                new ViewPreset(
+                    PresetId: "favorite-weapons",
+                    Label: "Favorite Weapons",
+                    Query: query,
+                    Shared: false)
+            ],
+            DisableReasons: [disableReason],
+            TotalCount: 1,
+            ContinuationToken: null);
+        SelectionResult selection = new(
+            ItemId: page.Items[0].ItemId,
+            Title: page.Items[0].Title,
+            SelectedFacetValues: page.Items[0].FacetValues,
+            PresetId: page.ViewPresets[0].PresetId,
+            DisableReasonId: page.Items[0].DisableReasonId);
+
+        Assert.AreEqual(BrowseFacetKinds.MultiSelect, page.Facets[0].Kind);
+        Assert.AreEqual(BrowseSortDirections.Ascending, page.Sorts[0].Direction);
+        Assert.AreEqual(BrowseValueKinds.Availability, page.Columns[1].ValueKind);
+        Assert.AreEqual("requires-cyberware", page.DisableReasons[0].ReasonId);
+        Assert.AreEqual("favorite-weapons", selection.PresetId);
+        Assert.AreEqual("weapon-ares-alpha", selection.ItemId);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

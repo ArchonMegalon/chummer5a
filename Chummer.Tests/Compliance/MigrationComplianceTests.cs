@@ -678,6 +678,33 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Browse_query_contracts_lock_in_search_facet_sort_preset_and_disable_reason_vocabulary()
+    {
+        string browseQueryContractsPath = FindPath("Chummer.Contracts", "Presentation", "BrowseQueryContracts.cs");
+        string browseQueryContractsText = File.ReadAllText(browseQueryContractsPath);
+
+        StringAssert.Contains(browseQueryContractsText, "public static class BrowseFacetKinds");
+        StringAssert.Contains(browseQueryContractsText, "public static class BrowseSortDirections");
+        StringAssert.Contains(browseQueryContractsText, "public static class BrowseValueKinds");
+        StringAssert.Contains(browseQueryContractsText, "public sealed record BrowseQuery");
+        StringAssert.Contains(browseQueryContractsText, "public sealed record FacetOptionDefinition");
+        StringAssert.Contains(browseQueryContractsText, "public sealed record FacetDefinition");
+        StringAssert.Contains(browseQueryContractsText, "public sealed record SortDefinition");
+        StringAssert.Contains(browseQueryContractsText, "public sealed record ViewPreset");
+        StringAssert.Contains(browseQueryContractsText, "public sealed record DisableReason");
+        StringAssert.Contains(browseQueryContractsText, "public sealed record BrowseColumnDefinition");
+        StringAssert.Contains(browseQueryContractsText, "public sealed record BrowseResultItem");
+        StringAssert.Contains(browseQueryContractsText, "public sealed record BrowseResultPage");
+        StringAssert.Contains(browseQueryContractsText, "public sealed record SelectionResult");
+        StringAssert.Contains(browseQueryContractsText, "single-select");
+        StringAssert.Contains(browseQueryContractsText, "multi-select");
+        StringAssert.Contains(browseQueryContractsText, "availability");
+        StringAssert.Contains(browseQueryContractsText, "string? DisableReasonId = null");
+        Assert.IsFalse(browseQueryContractsText.Contains("Avalonia", StringComparison.Ordinal));
+        Assert.IsFalse(browseQueryContractsText.Contains("Blazor", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
