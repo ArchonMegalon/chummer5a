@@ -206,7 +206,7 @@ public class ShellBootstrapDataProviderTests
         public Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct)
         {
             Preferences = new ShellPreferences(
-                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+                PreferredRulesetId: RulesetDefaults.NormalizeOptional(preferences.PreferredRulesetId) ?? string.Empty);
             return Task.CompletedTask;
         }
 
@@ -249,14 +249,14 @@ public class ShellBootstrapDataProviderTests
 
             IReadOnlyList<WorkspaceListItem> workspaces = Workspaces;
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, Session.ActiveWorkspaceId);
-            string preferredRulesetId = RulesetDefaults.Normalize(Preferences.PreferredRulesetId);
+            string preferredRulesetId = RulesetDefaults.NormalizeOptional(Preferences.PreferredRulesetId) ?? string.Empty;
             string activeRulesetId = activeWorkspaceId is null
                 ? preferredRulesetId
-                : RulesetDefaults.Normalize(
-                    workspaces.First(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal)).RulesetId);
+                : RulesetDefaults.NormalizeOptional(
+                    workspaces.First(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal)).RulesetId) ?? string.Empty;
             string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
                 ? activeRulesetId
-                : RulesetDefaults.Normalize(rulesetId);
+                : RulesetDefaults.NormalizeRequired(rulesetId);
             RequestedBootstrapRulesets.Add(effectiveRulesetId);
 
             return Task.FromResult(new ShellBootstrapSnapshot(

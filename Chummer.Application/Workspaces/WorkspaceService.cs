@@ -298,7 +298,7 @@ public sealed class WorkspaceService : IWorkspaceService
             ContentBase64: Convert.ToBase64String(bytes),
             FileName: fileName,
             DocumentLength: bytes.Length,
-            RulesetId: RulesetDefaults.Normalize(rulesetId));
+            RulesetId: RulesetDefaults.NormalizeOptional(rulesetId) ?? string.Empty);
     }
 
     private static WorkspacePrintReceipt BuildPrintReceipt(
@@ -319,7 +319,7 @@ public sealed class WorkspaceService : IWorkspaceService
             MimeType: "text/html",
             DocumentLength: bytes.Length,
             Title: title,
-            RulesetId: RulesetDefaults.Normalize(rulesetId));
+            RulesetId: RulesetDefaults.NormalizeOptional(rulesetId) ?? string.Empty);
     }
 
     private static string BuildPrintHtml(DataExportBundle bundle, string title)

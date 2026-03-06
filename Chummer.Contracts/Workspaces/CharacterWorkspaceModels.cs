@@ -24,7 +24,7 @@ public sealed record WorkspaceDocumentState
         string payloadKind,
         string payload)
     {
-        RulesetId = RulesetDefaults.Normalize(rulesetId);
+        RulesetId = RulesetDefaults.NormalizeOptional(rulesetId) ?? string.Empty;
         SchemaVersion = schemaVersion;
         PayloadKind = payloadKind;
         Payload = payload;

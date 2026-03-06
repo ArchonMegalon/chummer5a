@@ -38,9 +38,9 @@ public static class RulesetDefaults
 
 public readonly record struct RulesetId(string Value)
 {
-    public static RulesetId Default => new(RulesetDefaults.Sr5);
+    public static RulesetId Default => new(string.Empty);
 
-    public string NormalizedValue => RulesetDefaults.Normalize(Value);
+    public string NormalizedValue => RulesetDefaults.NormalizeOptional(Value) ?? string.Empty;
 
     public override string ToString() => NormalizedValue;
 }

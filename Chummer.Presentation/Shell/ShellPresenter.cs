@@ -232,7 +232,13 @@ public sealed class ShellPresenter : IShellPresenter
 
     public async Task SetPreferredRulesetAsync(string rulesetId, CancellationToken ct)
     {
-        string preferredRulesetId = RulesetDefaults.Normalize(rulesetId);
+        string? preferredRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+        if (preferredRulesetId is null)
+        {
+            Publish(State with { Error = "Ruleset id is required." });
+            return;
+        }
+
         string activeRulesetId = State.ActiveWorkspaceId is null
             ? preferredRulesetId
             : State.ActiveRulesetId;

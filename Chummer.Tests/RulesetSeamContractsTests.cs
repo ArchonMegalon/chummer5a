@@ -98,6 +98,7 @@ public class RulesetSeamContractsTests
     [TestMethod]
     public void Ruleset_defaults_expose_sr5_and_sr6_ids()
     {
+        Assert.AreEqual(string.Empty, RulesetId.Default.NormalizedValue);
         Assert.AreEqual("sr5", new RulesetId(RulesetDefaults.Sr5).NormalizedValue);
         Assert.AreEqual("sr6", new RulesetId(RulesetDefaults.Sr6).NormalizedValue);
     }

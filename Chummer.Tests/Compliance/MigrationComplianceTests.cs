@@ -1243,6 +1243,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetContractsText, "public static class RulesetDefaults");
         StringAssert.Contains(rulesetContractsText, "public const string Sr6 = \"sr6\";");
         StringAssert.Contains(rulesetContractsText, "public readonly record struct RulesetId");
+        StringAssert.Contains(rulesetContractsText, "public static RulesetId Default => new(string.Empty);");
+        StringAssert.Contains(rulesetContractsText, "RulesetDefaults.NormalizeOptional(Value) ?? string.Empty");
         StringAssert.Contains(rulesetContractsText, "public sealed record WorkspacePayloadEnvelope");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetPlugin");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetSerializer");
@@ -1268,6 +1270,7 @@ public class MigrationComplianceTests
         Assert.IsFalse(tabDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(actionDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(controlDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
+        Assert.IsFalse(workspaceModelsText.Contains("RulesetDefaults.Normalize(rulesetId)", StringComparison.Ordinal));
         StringAssert.Contains(workspaceModelsText, "NativeXml = 0");
         StringAssert.Contains(workspaceModelsText, "WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml");
 
@@ -1287,9 +1290,20 @@ public class MigrationComplianceTests
         string workspaceSessionManagerText = File.ReadAllText(workspaceSessionManagerPath);
         string presenterCommandsPath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.Commands.cs");
         string presenterCommandsText = File.ReadAllText(presenterCommandsPath);
+        string shellPreferencesServicePath = FindPath("Chummer.Application", "Tools", "ShellPreferencesService.cs");
+        string shellPreferencesServiceText = File.ReadAllText(shellPreferencesServicePath);
+        string httpChummerClientPath = FindPath("Chummer.Presentation", "HttpChummerClient.cs");
+        string httpChummerClientText = File.ReadAllText(httpChummerClientPath);
+        string presenterDialogsPath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.Dialogs.cs");
+        string presenterDialogsText = File.ReadAllText(presenterDialogsPath);
         Assert.IsFalse(workspaceSessionManagerText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(presenterCommandsText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(presenterCommandsText.Contains("RulesetShellCatalogResolver.", StringComparison.Ordinal));
+        Assert.IsFalse(shellPreferencesServiceText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
+        Assert.IsFalse(httpChummerClientText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
+        Assert.IsFalse(workspaceSessionManagerText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
+        Assert.IsFalse(presenterDialogsText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
+        Assert.IsFalse(overviewCommandDispatcherText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
         StringAssert.Contains(presenterCommandsText, "_shellCatalogResolver.ResolveNavigationTabs(");
         StringAssert.Contains(presenterCommandsText, "_shellCatalogResolver.ResolveWorkspaceActionsForTab(");
         string shellStatePath = FindPath("Chummer.Presentation", "Shell", "ShellState.cs");
@@ -1341,6 +1355,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(codecResolverContractText, "public interface IRulesetWorkspaceCodecResolver");
         StringAssert.Contains(codecResolverText, "public sealed class RulesetWorkspaceCodecResolver");
         StringAssert.Contains(codecResolverText, "RulesetDefaults.NormalizeOptional(rulesetId)");
+        StringAssert.Contains(codecResolverText, "RulesetDefaults.NormalizeRequired(codec.RulesetId)");
         Assert.IsFalse(codecResolverText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         StringAssert.Contains(workspaceModelsText, "public sealed record WorkspaceDocumentState");
         StringAssert.Contains(workspaceModelsText, "WorkspaceDocumentState State");
@@ -1365,6 +1380,7 @@ public class MigrationComplianceTests
 
         StringAssert.Contains(sr5CodecText, "public sealed class Sr5WorkspaceCodec");
         StringAssert.Contains(sr5CodecText, "public const string Sr5PayloadKind = \"sr5/chum5-xml\"");
+        StringAssert.Contains(sr5CodecText, "RulesetDefaults.NormalizeOrDefault(rulesetId, RulesetDefaults.Sr5)");
         StringAssert.Contains(sr5CodecText, "UpdateMetadata");
         StringAssert.Contains(sr5CodecText, "WorkspaceDownloadReceipt BuildDownload");
         StringAssert.Contains(sr5CodecText, "DataExportBundle BuildExportBundle");

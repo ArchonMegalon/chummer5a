@@ -465,7 +465,7 @@ public class ShellPresenterTests
         public Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct)
         {
             Preferences = new ShellPreferences(
-                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+                PreferredRulesetId: RulesetDefaults.NormalizeOptional(preferences.PreferredRulesetId) ?? string.Empty);
             SavedPreferences.Add(Preferences);
             return Task.CompletedTask;
         }
@@ -487,14 +487,14 @@ public class ShellPresenterTests
         {
             IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, Session.ActiveWorkspaceId);
-            string preferredRulesetId = RulesetDefaults.Normalize(Preferences.PreferredRulesetId);
+            string preferredRulesetId = RulesetDefaults.NormalizeOptional(Preferences.PreferredRulesetId) ?? string.Empty;
             string activeRulesetId = activeWorkspaceId is null
                 ? preferredRulesetId
-                : RulesetDefaults.Normalize(
-                    workspaces.First(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal)).RulesetId);
+                : RulesetDefaults.NormalizeOptional(
+                    workspaces.First(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal)).RulesetId) ?? string.Empty;
             string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
                 ? activeRulesetId
-                : RulesetDefaults.Normalize(rulesetId);
+                : RulesetDefaults.NormalizeRequired(rulesetId);
             RequestedBootstrapRulesets.Add(effectiveRulesetId);
             IReadOnlyList<AppCommandDefinition> commands = await GetCommandsAsync(effectiveRulesetId, ct);
             IReadOnlyList<NavigationTabDefinition> tabs = await GetNavigationTabsAsync(effectiveRulesetId, ct);

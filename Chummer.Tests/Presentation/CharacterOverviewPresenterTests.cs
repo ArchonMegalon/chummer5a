@@ -846,7 +846,7 @@ public class CharacterOverviewPresenterTests
         public Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct)
         {
             _preferences = new ShellPreferences(
-                PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+                PreferredRulesetId: RulesetDefaults.NormalizeOptional(preferences.PreferredRulesetId) ?? string.Empty);
             return Task.CompletedTask;
         }
 
@@ -868,14 +868,14 @@ public class CharacterOverviewPresenterTests
         {
             IReadOnlyList<WorkspaceListItem> workspaces = await ListWorkspacesAsync(ct);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, _session.ActiveWorkspaceId);
-            string preferredRulesetId = RulesetDefaults.Normalize(_preferences.PreferredRulesetId);
+            string preferredRulesetId = RulesetDefaults.NormalizeOptional(_preferences.PreferredRulesetId) ?? string.Empty;
             string activeRulesetId = activeWorkspaceId is null
                 ? preferredRulesetId
-                : RulesetDefaults.Normalize(
-                    workspaces.First(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal)).RulesetId);
+                : RulesetDefaults.NormalizeOptional(
+                    workspaces.First(workspace => string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal)).RulesetId) ?? string.Empty;
             string effectiveRulesetId = string.IsNullOrWhiteSpace(rulesetId)
                 ? activeRulesetId
-                : RulesetDefaults.Normalize(rulesetId);
+                : RulesetDefaults.NormalizeRequired(rulesetId);
             IReadOnlyList<AppCommandDefinition> commands = await GetCommandsAsync(effectiveRulesetId, ct);
             IReadOnlyList<NavigationTabDefinition> tabs = await GetNavigationTabsAsync(effectiveRulesetId, ct);
             return new ShellBootstrapSnapshot(
@@ -898,8 +898,8 @@ public class CharacterOverviewPresenterTests
             string? rulesetId = null)
         {
             string resolvedRulesetId = _workspaces.TryGetValue(workspaceId, out WorkspaceListItem? existingWorkspace)
-                ? RulesetDefaults.Normalize(rulesetId ?? existingWorkspace.RulesetId)
-                : RulesetDefaults.Normalize(rulesetId);
+                ? RulesetDefaults.NormalizeOptional(rulesetId ?? existingWorkspace.RulesetId) ?? string.Empty
+                : RulesetDefaults.NormalizeOptional(rulesetId) ?? string.Empty;
             CharacterFileSummary summary = new(
                 Name: name,
                 Alias: alias,
@@ -934,7 +934,7 @@ public class CharacterOverviewPresenterTests
                     Karma: 0m,
                     Nuyen: 0m,
                     Created: true),
-                RulesetDefaults.Normalize(document.RulesetId));
+                RulesetDefaults.NormalizeOptional(document.RulesetId) ?? string.Empty);
 
             return Task.FromResult(result);
         }

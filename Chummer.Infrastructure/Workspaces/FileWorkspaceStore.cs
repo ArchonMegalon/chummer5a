@@ -170,12 +170,10 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
 
     private static string ResolveRulesetId(PersistedWorkspaceRecord record)
     {
-        if (!string.IsNullOrWhiteSpace(record.Envelope?.RulesetId))
-        {
-            return RulesetDefaults.Normalize(record.Envelope.RulesetId);
-        }
-
-        return RulesetDefaults.Normalize(record.RulesetId);
+        return RulesetDefaults.NormalizeOptional(record.Envelope?.RulesetId)
+            ?? RulesetDefaults.NormalizeOptional(record.RulesetId)
+            ?? DetectRulesetId(record.Envelope?.PayloadKind, record.Envelope?.Payload ?? record.Content ?? record.Xml)
+            ?? string.Empty;
     }
 
     private static WorkspaceDocumentState ResolveState(
@@ -184,7 +182,10 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
         string fallbackRulesetId)
     {
         WorkspacePayloadEnvelope? envelope = record.Envelope;
-        string normalizedRulesetId = RulesetDefaults.Normalize(envelope?.RulesetId ?? fallbackRulesetId);
+        string normalizedRulesetId = RulesetDefaults.NormalizeOptional(envelope?.RulesetId)
+            ?? RulesetDefaults.NormalizeOptional(fallbackRulesetId)
+            ?? DetectRulesetId(envelope?.PayloadKind, envelope?.Payload ?? content)
+            ?? string.Empty;
         int schemaVersion = envelope?.SchemaVersion is > 0
             ? envelope.SchemaVersion
             : CurrentWorkspaceSchemaVersion;
@@ -212,6 +213,42 @@ public sealed class FileWorkspaceStore : IWorkspaceStore
             SchemaVersion: schemaVersion,
             PayloadKind: payloadKind,
             Payload: state.Payload);
+    }
+
+    private static string? DetectRulesetId(string? payloadKind, string? payload)
+    {
+        string? normalizedPayloadKind = RulesetDefaults.NormalizeOptional(payloadKind);
+        if (normalizedPayloadKind is not null)
+        {
+            if (normalizedPayloadKind.StartsWith($"{RulesetDefaults.Sr5}/", StringComparison.Ordinal))
+            {
+                return RulesetDefaults.Sr5;
+            }
+
+            if (normalizedPayloadKind.StartsWith($"{RulesetDefaults.Sr6}/", StringComparison.Ordinal))
+            {
+                return RulesetDefaults.Sr6;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            return null;
+        }
+
+        if (payload.IndexOf(">SR6<", StringComparison.OrdinalIgnoreCase) >= 0
+            || payload.IndexOf(">Shadowrun 6<", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            return RulesetDefaults.Sr6;
+        }
+
+        if (payload.IndexOf(">SR5<", StringComparison.OrdinalIgnoreCase) >= 0
+            || payload.IndexOf(">Shadowrun 5<", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            return RulesetDefaults.Sr5;
+        }
+
+        return null;
     }
 
     private sealed record PersistedWorkspaceRecord(string Format)

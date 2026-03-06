@@ -329,7 +329,7 @@ public class WorkspaceServiceTests
         public WorkspacePayloadEnvelope WrapImport(string rulesetId, WorkspaceImportDocument document)
         {
             return new WorkspacePayloadEnvelope(
-                RulesetId: RulesetDefaults.Normalize(rulesetId),
+                RulesetId: RulesetDefaults.NormalizeOptional(rulesetId) ?? string.Empty,
                 SchemaVersion: SchemaVersion,
                 PayloadKind: PayloadKind,
                 Payload: document.Content);

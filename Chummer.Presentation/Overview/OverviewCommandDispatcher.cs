@@ -121,7 +121,7 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
             OpenWorkspaceState? workspace = context.State.OpenWorkspaces.FirstOrDefault(
                 candidate => string.Equals(candidate.Id.Value, activeWorkspace.Value.Value, StringComparison.Ordinal));
             if (workspace is not null)
-                return RulesetDefaults.Normalize(workspace.RulesetId);
+                return RulesetDefaults.NormalizeOptional(workspace.RulesetId);
         }
 
         string? commandRulesetId = context.State.Commands.FirstOrDefault()?.RulesetId;

@@ -78,7 +78,13 @@ public sealed partial class CharacterOverviewPresenter
         if (_shellPresenter is null)
             return;
 
-        string normalizedRulesetId = RulesetDefaults.Normalize(rulesetId);
+        string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+        if (normalizedRulesetId is null)
+        {
+            Publish(State with { Error = "Ruleset id is required." });
+            return;
+        }
+
         await _shellPresenter.SetPreferredRulesetAsync(normalizedRulesetId, ct);
         Publish(State with
         {

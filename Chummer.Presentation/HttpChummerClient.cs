@@ -95,7 +95,7 @@ public sealed class HttpChummerClient : IChummerClient
         if (payload is null || string.IsNullOrWhiteSpace(payload.Id))
             throw new InvalidOperationException("Import response did not include a workspace id.");
 
-        return new WorkspaceImportResult(new CharacterWorkspaceId(payload.Id), payload.Summary, RulesetDefaults.Normalize(payload.RulesetId));
+        return new WorkspaceImportResult(new CharacterWorkspaceId(payload.Id), payload.Summary, NormalizeRulesetId(payload.RulesetId));
     }
 
     public async Task<IReadOnlyList<WorkspaceListItem>> ListWorkspacesAsync(CancellationToken ct)
@@ -107,7 +107,7 @@ public sealed class HttpChummerClient : IChummerClient
                 Id: new CharacterWorkspaceId(workspace.Id),
                 Summary: workspace.Summary,
                 LastUpdatedUtc: workspace.LastUpdatedUtc,
-                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
+                RulesetId: NormalizeRulesetId(workspace.RulesetId),
                 HasSavedWorkspace: workspace.HasSavedWorkspace))
             .ToArray();
     }
@@ -193,7 +193,7 @@ public sealed class HttpChummerClient : IChummerClient
                 Id: new CharacterWorkspaceId(workspace.Id),
                 Summary: workspace.Summary,
                 LastUpdatedUtc: workspace.LastUpdatedUtc,
-                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
+                RulesetId: NormalizeRulesetId(workspace.RulesetId),
                 HasSavedWorkspace: workspace.HasSavedWorkspace))
             .ToArray();
 
@@ -327,7 +327,7 @@ public sealed class HttpChummerClient : IChummerClient
             Value: new WorkspaceSaveReceipt(
                 Id: new CharacterWorkspaceId(payload.Id),
                 DocumentLength: payload.DocumentLength,
-                RulesetId: RulesetDefaults.Normalize(payload.RulesetId)),
+                RulesetId: NormalizeRulesetId(payload.RulesetId)),
             Error: null);
     }
 
@@ -362,15 +362,20 @@ public sealed class HttpChummerClient : IChummerClient
             format = parsedFormat;
         }
 
+        string normalizedRulesetId = NormalizeRulesetId(payload.RulesetId);
+        string defaultFileName = string.Equals(normalizedRulesetId, RulesetDefaults.Sr6, StringComparison.Ordinal)
+            ? $"{payload.Id}.chum6"
+            : $"{payload.Id}.chum5";
+
         return new CommandResult<WorkspaceDownloadReceipt>(
             Success: true,
             Value: new WorkspaceDownloadReceipt(
                 Id: new CharacterWorkspaceId(payload.Id),
                 Format: format,
                 ContentBase64: payload.ContentBase64 ?? string.Empty,
-                FileName: payload.FileName ?? $"{payload.Id}.chum5",
+                FileName: payload.FileName ?? defaultFileName,
                 DocumentLength: payload.DocumentLength,
-                RulesetId: RulesetDefaults.Normalize(payload.RulesetId)),
+                RulesetId: normalizedRulesetId),
             Error: null);
     }
 
@@ -393,7 +398,7 @@ public sealed class HttpChummerClient : IChummerClient
                 ContentBase64: payload.ContentBase64 ?? string.Empty,
                 FileName: payload.FileName ?? $"{payload.Id}-export.json",
                 DocumentLength: payload.DocumentLength,
-                RulesetId: RulesetDefaults.Normalize(payload.RulesetId)),
+                RulesetId: NormalizeRulesetId(payload.RulesetId)),
             Error: null);
     }
 
@@ -417,7 +422,7 @@ public sealed class HttpChummerClient : IChummerClient
                 MimeType: string.IsNullOrWhiteSpace(payload.MimeType) ? "text/html" : payload.MimeType,
                 DocumentLength: payload.DocumentLength,
                 Title: payload.Title ?? "Character Print",
-                RulesetId: RulesetDefaults.Normalize(payload.RulesetId)),
+                RulesetId: NormalizeRulesetId(payload.RulesetId)),
             Error: null);
     }
 
@@ -426,6 +431,11 @@ public sealed class HttpChummerClient : IChummerClient
         return string.IsNullOrWhiteSpace(workspaceId)
             ? null
             : workspaceId.Trim();
+    }
+
+    private static string NormalizeRulesetId(string? rulesetId)
+    {
+        return RulesetDefaults.NormalizeOptional(rulesetId) ?? string.Empty;
     }
 
     private static string? NormalizeTabId(string? tabId)

@@ -16,13 +16,13 @@ public sealed class ShellPreferencesService : IShellPreferencesService
     {
         ShellPreferences stored = _store.Load();
         return new ShellPreferences(
-            PreferredRulesetId: RulesetDefaults.Normalize(stored.PreferredRulesetId));
+            PreferredRulesetId: RulesetDefaults.NormalizeOptional(stored.PreferredRulesetId) ?? string.Empty);
     }
 
     public void Save(ShellPreferences preferences)
     {
         ShellPreferences normalized = new(
-            PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+            PreferredRulesetId: RulesetDefaults.NormalizeOptional(preferences.PreferredRulesetId) ?? string.Empty);
         _store.Save(normalized);
     }
 }

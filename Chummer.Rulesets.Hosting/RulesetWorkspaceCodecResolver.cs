@@ -14,7 +14,7 @@ public sealed class RulesetWorkspaceCodecResolver : IRulesetWorkspaceCodecResolv
         IRulesetWorkspaceCodec? fallback = null;
         foreach (IRulesetWorkspaceCodec codec in codecs)
         {
-            string normalizedRulesetId = RulesetDefaults.Normalize(codec.RulesetId);
+            string normalizedRulesetId = RulesetDefaults.NormalizeRequired(codec.RulesetId);
             map[normalizedRulesetId] = codec;
             fallback ??= codec;
         }

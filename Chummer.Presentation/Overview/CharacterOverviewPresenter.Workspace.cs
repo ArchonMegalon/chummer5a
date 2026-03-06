@@ -95,7 +95,7 @@ public sealed partial class CharacterOverviewPresenter
         if (edition.Equals("SR6", StringComparison.OrdinalIgnoreCase)
             || edition.Equals("Shadowrun 6", StringComparison.OrdinalIgnoreCase))
         {
-            return "sr6";
+            return RulesetDefaults.Sr6;
         }
 
         return RulesetDefaults.NormalizeOptional(edition);
