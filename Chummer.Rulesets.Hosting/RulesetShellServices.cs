@@ -32,6 +32,24 @@ public sealed class RulesetPluginRegistry : IRulesetPluginRegistry
     }
 }
 
+public sealed class DefaultRulesetSelectionPolicy : IRulesetSelectionPolicy
+{
+    private readonly IRulesetPluginRegistry _pluginRegistry;
+
+    public DefaultRulesetSelectionPolicy(IRulesetPluginRegistry pluginRegistry)
+    {
+        _pluginRegistry = pluginRegistry;
+    }
+
+    public string GetDefaultRulesetId()
+    {
+        return _pluginRegistry.All
+            .Select(plugin => plugin.Id.NormalizedValue)
+            .FirstOrDefault(rulesetId => !string.IsNullOrWhiteSpace(rulesetId))
+            ?? string.Empty;
+    }
+}
+
 public sealed class RulesetShellCatalogResolverService : IRulesetShellCatalogResolver
 {
     private readonly IRulesetPluginRegistry _pluginRegistry;

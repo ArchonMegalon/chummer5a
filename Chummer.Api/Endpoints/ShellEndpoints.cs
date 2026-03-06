@@ -33,17 +33,18 @@ public static class ShellEndpoints
             return Results.Ok(shellSessionService.Load());
         });
 
-        app.MapGet("/api/shell/bootstrap", (string? ruleset, IWorkspaceService workspaceService, IRulesetShellCatalogResolver shellCatalogResolver, IShellPreferencesService shellPreferencesService, IShellSessionService shellSessionService) =>
+        app.MapGet("/api/shell/bootstrap", (string? ruleset, IWorkspaceService workspaceService, IRulesetShellCatalogResolver shellCatalogResolver, IRulesetSelectionPolicy rulesetSelectionPolicy, IShellPreferencesService shellPreferencesService, IShellSessionService shellSessionService) =>
         {
             IReadOnlyList<WorkspaceListItem> workspaceList = workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
             ShellPreferences preferences = shellPreferencesService.Load();
             ShellSessionState session = shellSessionService.Load();
-            string preferredRulesetId = ResolvePreferredRulesetId(preferences.PreferredRulesetId, workspaceList);
+            string fallbackRulesetId = rulesetSelectionPolicy.GetDefaultRulesetId();
+            string preferredRulesetId = ResolvePreferredRulesetId(preferences.PreferredRulesetId, workspaceList, fallbackRulesetId);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaceList, session.ActiveWorkspaceId);
-            string activeRulesetId = ResolveRulesetForWorkspace(activeWorkspaceId, workspaceList, preferredRulesetId);
+            string activeRulesetId = ResolveRulesetForWorkspace(activeWorkspaceId, workspaceList, preferredRulesetId, fallbackRulesetId);
             string requestedRulesetId = RulesetDefaults.NormalizeOptional(ruleset)
                 ?? activeRulesetId
-                ?? ResolveCatalogFallbackRulesetId();
+                ?? fallbackRulesetId;
             string effectivePreferredRulesetId = string.IsNullOrWhiteSpace(preferredRulesetId)
                 ? requestedRulesetId
                 : preferredRulesetId;
@@ -89,39 +90,34 @@ public static class ShellEndpoints
 
     private static string ResolvePreferredRulesetId(
         string? preferredRulesetId,
-        IReadOnlyList<WorkspaceListItem> workspaces)
+        IReadOnlyList<WorkspaceListItem> workspaces,
+        string fallbackRulesetId)
     {
         return RulesetDefaults.NormalizeOptional(preferredRulesetId)
             ?? workspaces
                 .Select(workspace => RulesetDefaults.NormalizeOptional(workspace.RulesetId))
                 .FirstOrDefault(rulesetId => rulesetId is not null)
-            ?? ResolveCatalogFallbackRulesetId();
+            ?? fallbackRulesetId;
     }
 
     private static string ResolveRulesetForWorkspace(
         CharacterWorkspaceId? activeWorkspaceId,
         IReadOnlyList<WorkspaceListItem> workspaces,
-        string preferredRulesetId)
+        string preferredRulesetId,
+        string fallbackRulesetId)
     {
         if (activeWorkspaceId is null)
         {
             return RulesetDefaults.NormalizeOptional(preferredRulesetId)
-                ?? ResolveCatalogFallbackRulesetId();
+                ?? fallbackRulesetId;
         }
 
         WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
             string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal));
         return matchingWorkspace is null
-            ? RulesetDefaults.NormalizeOptional(preferredRulesetId) ?? ResolveCatalogFallbackRulesetId()
+            ? RulesetDefaults.NormalizeOptional(preferredRulesetId) ?? fallbackRulesetId
             : RulesetDefaults.NormalizeOptional(matchingWorkspace.RulesetId)
                 ?? RulesetDefaults.NormalizeOptional(preferredRulesetId)
-                ?? ResolveCatalogFallbackRulesetId();
-    }
-
-    private static string ResolveCatalogFallbackRulesetId()
-    {
-        return RulesetDefaults.NormalizeOptional(AppCommandCatalog.All.FirstOrDefault()?.RulesetId)
-            ?? RulesetDefaults.NormalizeOptional(NavigationTabCatalog.All.FirstOrDefault()?.RulesetId)
-            ?? string.Empty;
+                ?? fallbackRulesetId;
     }
 }

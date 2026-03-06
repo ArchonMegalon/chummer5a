@@ -9,6 +9,11 @@ public interface IRulesetPluginRegistry
     IRulesetPlugin? Resolve(string? rulesetId);
 }
 
+public interface IRulesetSelectionPolicy
+{
+    string GetDefaultRulesetId();
+}
+
 public interface IRulesetShellCatalogResolver
 {
     IReadOnlyList<AppCommandDefinition> ResolveCommands(string? rulesetId);

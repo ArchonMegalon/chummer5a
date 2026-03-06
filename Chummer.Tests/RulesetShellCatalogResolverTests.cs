@@ -119,6 +119,18 @@ public sealed class RulesetShellCatalogResolverTests
         Assert.IsNotNull(registry.Resolve("sr5"));
     }
 
+    [TestMethod]
+    public void DefaultRulesetSelectionPolicy_returns_first_registered_plugin_id()
+    {
+        DefaultRulesetSelectionPolicy policy = new(new RulesetPluginRegistry(
+        [
+            new StubRulesetPlugin("sr6", commands: [], tabs: []),
+            new StubRulesetPlugin("sr5", commands: [], tabs: [])
+        ]));
+
+        Assert.AreEqual("sr6", policy.GetDefaultRulesetId());
+    }
+
     private static RulesetShellCatalogResolverService CreateResolver(params IRulesetPlugin[] plugins)
     {
         return new RulesetShellCatalogResolverService(new RulesetPluginRegistry(plugins));

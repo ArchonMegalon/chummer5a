@@ -12,6 +12,7 @@ public static class ServiceCollectionRulesetHostingExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
+        services.TryAddSingleton<IRulesetSelectionPolicy, DefaultRulesetSelectionPolicy>();
         services.TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
         services.TryAddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();
         return services;

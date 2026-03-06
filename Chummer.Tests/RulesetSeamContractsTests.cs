@@ -87,6 +87,7 @@ public class RulesetSeamContractsTests
     {
         Assert.IsTrue(typeof(IRulesetPlugin).IsInterface);
         Assert.IsTrue(typeof(IRulesetPluginRegistry).IsInterface);
+        Assert.IsTrue(typeof(IRulesetSelectionPolicy).IsInterface);
         Assert.IsTrue(typeof(IRulesetShellCatalogResolver).IsInterface);
         Assert.IsTrue(typeof(IRulesetSerializer).IsInterface);
         Assert.IsTrue(typeof(IRulesetShellDefinitionProvider).IsInterface);

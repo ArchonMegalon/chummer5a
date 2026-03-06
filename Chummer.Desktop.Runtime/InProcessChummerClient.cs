@@ -16,19 +16,36 @@ public sealed class InProcessChummerClient : IChummerClient
     private static readonly JsonSerializerOptions SectionJsonOptions = new(JsonSerializerDefaults.Web);
     private readonly IWorkspaceService _workspaceService;
     private readonly IRulesetShellCatalogResolver _shellCatalogResolver;
+    private readonly IRulesetSelectionPolicy _rulesetSelectionPolicy;
     private readonly IShellPreferencesService _shellPreferencesService;
     private readonly IShellSessionService _shellSessionService;
 
     public InProcessChummerClient(
         IWorkspaceService workspaceService,
         IRulesetShellCatalogResolver shellCatalogResolver,
+        IRulesetSelectionPolicy? rulesetSelectionPolicy = null,
         IShellPreferencesService? shellPreferencesService = null,
         IShellSessionService? shellSessionService = null)
     {
         _workspaceService = workspaceService;
         _shellCatalogResolver = shellCatalogResolver;
+        _rulesetSelectionPolicy = rulesetSelectionPolicy ?? new DefaultRulesetSelectionPolicy(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>()));
         _shellPreferencesService = shellPreferencesService ?? new ShellPreferencesService(new InMemoryShellPreferencesStore());
         _shellSessionService = shellSessionService ?? new ShellSessionService(new InMemoryShellSessionStore());
+    }
+
+    public InProcessChummerClient(
+        IWorkspaceService workspaceService,
+        IRulesetShellCatalogResolver shellCatalogResolver,
+        IShellPreferencesService? shellPreferencesService,
+        IShellSessionService? shellSessionService)
+        : this(
+            workspaceService,
+            shellCatalogResolver,
+            rulesetSelectionPolicy: null,
+            shellPreferencesService,
+            shellSessionService)
+    {
     }
 
     public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
@@ -97,12 +114,13 @@ public sealed class InProcessChummerClient : IChummerClient
         IReadOnlyList<WorkspaceListItem> workspaces = _workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
         ShellPreferences preferences = _shellPreferencesService.Load();
         ShellSessionState session = _shellSessionService.Load();
-        string preferredRulesetId = ResolvePreferredRulesetId(preferences.PreferredRulesetId, workspaces);
+        string fallbackRulesetId = _rulesetSelectionPolicy.GetDefaultRulesetId();
+        string preferredRulesetId = ResolvePreferredRulesetId(preferences.PreferredRulesetId, workspaces, fallbackRulesetId);
         CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaces, session.ActiveWorkspaceId);
-        string activeRulesetId = ResolveRulesetForWorkspace(activeWorkspaceId, workspaces, preferredRulesetId);
+        string activeRulesetId = ResolveRulesetForWorkspace(activeWorkspaceId, workspaces, preferredRulesetId, fallbackRulesetId);
         string effectiveRulesetId = RulesetDefaults.NormalizeOptional(rulesetId)
             ?? activeRulesetId
-            ?? ResolveCatalogFallbackRulesetId();
+            ?? fallbackRulesetId;
         string effectiveActiveRulesetId = string.IsNullOrWhiteSpace(activeRulesetId)
             ? effectiveRulesetId
             : activeRulesetId;
@@ -281,40 +299,35 @@ public sealed class InProcessChummerClient : IChummerClient
 
     private static string ResolvePreferredRulesetId(
         string? preferredRulesetId,
-        IReadOnlyList<WorkspaceListItem> workspaces)
+        IReadOnlyList<WorkspaceListItem> workspaces,
+        string fallbackRulesetId)
     {
         return RulesetDefaults.NormalizeOptional(preferredRulesetId)
             ?? workspaces
                 .Select(workspace => RulesetDefaults.NormalizeOptional(workspace.RulesetId))
                 .FirstOrDefault(rulesetId => rulesetId is not null)
-            ?? ResolveCatalogFallbackRulesetId();
+            ?? fallbackRulesetId;
     }
 
     private static string ResolveRulesetForWorkspace(
         CharacterWorkspaceId? activeWorkspaceId,
         IReadOnlyList<WorkspaceListItem> workspaces,
-        string preferredRulesetId)
+        string preferredRulesetId,
+        string fallbackRulesetId)
     {
         if (activeWorkspaceId is null)
         {
             return RulesetDefaults.NormalizeOptional(preferredRulesetId)
-                ?? ResolveCatalogFallbackRulesetId();
+                ?? fallbackRulesetId;
         }
 
         WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
             string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal));
         return matchingWorkspace is null
-            ? RulesetDefaults.NormalizeOptional(preferredRulesetId) ?? ResolveCatalogFallbackRulesetId()
+            ? RulesetDefaults.NormalizeOptional(preferredRulesetId) ?? fallbackRulesetId
             : RulesetDefaults.NormalizeOptional(matchingWorkspace.RulesetId)
                 ?? RulesetDefaults.NormalizeOptional(preferredRulesetId)
-                ?? ResolveCatalogFallbackRulesetId();
-    }
-
-    private static string ResolveCatalogFallbackRulesetId()
-    {
-        return RulesetDefaults.NormalizeOptional(AppCommandCatalog.All.FirstOrDefault()?.RulesetId)
-            ?? RulesetDefaults.NormalizeOptional(NavigationTabCatalog.All.FirstOrDefault()?.RulesetId)
-            ?? string.Empty;
+                ?? fallbackRulesetId;
     }
 
     private static string? NormalizeWorkspaceId(string? workspaceId)

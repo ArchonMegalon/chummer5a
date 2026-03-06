@@ -1152,12 +1152,14 @@ public class MigrationComplianceTests
         string shellPresenterContractText = File.ReadAllText(shellPresenterContractPath);
 
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetPluginRegistry");
+        StringAssert.Contains(rulesetServicesText, "public interface IRulesetSelectionPolicy");
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetShellCatalogResolver");
         Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetPluginRegistry", StringComparison.Ordinal));
         Assert.IsFalse(rulesetServicesText.Contains("public sealed class RulesetShellCatalogResolverService", StringComparison.Ordinal));
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Rulesets", "RulesetShellCatalogResolver.cs"));
         StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetPluginRegistry");
         StringAssert.Contains(rulesetHostingServicesText, "public sealed class RulesetShellCatalogResolverService");
+        StringAssert.Contains(rulesetHostingServicesText, "public sealed class DefaultRulesetSelectionPolicy");
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Rulesets", "Sr5RulesetPlugin.cs"));
 
         StringAssert.Contains(rulesetDiExtensionsText, "AddSr5Ruleset(this IServiceCollection services)");
@@ -1185,6 +1187,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6DesktopUiControlCatalog");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "AddRulesetInfrastructure(this IServiceCollection services)");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();");
+        StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetSelectionPolicy, DefaultRulesetSelectionPolicy>();");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "TryAddSingleton<IRulesetWorkspaceCodecResolver, RulesetWorkspaceCodecResolver>();");
         StringAssert.Contains(infrastructureDiText, "services.AddRulesetInfrastructure();");
@@ -1199,6 +1202,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(commandEndpointsText, "shellCatalogResolver.ResolveCommands(ruleset)");
         StringAssert.Contains(navigationEndpointsText, "IRulesetShellCatalogResolver shellCatalogResolver");
         StringAssert.Contains(navigationEndpointsText, "shellCatalogResolver.ResolveNavigationTabs(ruleset)");
+        string shellEndpointsPath = FindPath("Chummer.Api", "Endpoints", "ShellEndpoints.cs");
+        string shellEndpointsText = File.ReadAllText(shellEndpointsPath);
+        StringAssert.Contains(shellEndpointsText, "IRulesetSelectionPolicy rulesetSelectionPolicy");
+        StringAssert.Contains(shellEndpointsText, "rulesetSelectionPolicy.GetDefaultRulesetId()");
 
         StringAssert.Contains(blazorShellText, "public IShellSurfaceResolver ShellSurfaceResolver { get; set; } = default!;");
         Assert.IsFalse(blazorShellText.Contains("IEnumerable<IRulesetPlugin> RulesetPlugins", StringComparison.Ordinal));

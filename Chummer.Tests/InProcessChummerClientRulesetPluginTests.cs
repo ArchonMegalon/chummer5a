@@ -84,7 +84,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
             new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
-            new ShellPreferencesService(preferencesStore));
+            shellPreferencesService: new ShellPreferencesService(preferencesStore));
 
         ShellBootstrapSnapshot snapshot = await client.GetShellBootstrapAsync(rulesetId: null, CancellationToken.None);
 
@@ -98,7 +98,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
         var client = new InProcessChummerClient(
             new NoOpWorkspaceService(),
             new RulesetShellCatalogResolverService(new RulesetPluginRegistry(Array.Empty<IRulesetPlugin>())),
-            new ShellPreferencesService(preferencesStore));
+            shellPreferencesService: new ShellPreferencesService(preferencesStore));
 
         await client.SaveShellPreferencesAsync(new ShellPreferences("sr6"), CancellationToken.None);
         ShellPreferences restored = await client.GetShellPreferencesAsync(CancellationToken.None);
