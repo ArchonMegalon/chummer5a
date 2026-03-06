@@ -71,7 +71,9 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
             PreferredRulesetId: preferredRulesetId,
             ActiveWorkspaceId: activeWorkspaceId,
             ActiveTabId: activeTabId,
-            LastCommandId: shellState.LastCommandId);
+            LastCommandId: shellState.LastCommandId,
+            WorkflowDefinitions: shellState.WorkflowDefinitions ?? [],
+            WorkflowSurfaces: shellState.WorkflowSurfaces ?? []);
 
         return state with
         {

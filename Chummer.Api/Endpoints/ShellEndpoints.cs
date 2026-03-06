@@ -77,7 +77,9 @@ public static class ShellEndpoints
                 ActiveRulesetId: effectiveActiveRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId?.Value,
                 ActiveTabId: session.ActiveTabId,
-                ActiveTabsByWorkspace: session.ActiveTabsByWorkspace));
+                ActiveTabsByWorkspace: session.ActiveTabsByWorkspace,
+                WorkflowDefinitions: shellCatalogResolver.ResolveWorkflowDefinitions(requestedRulesetId),
+                WorkflowSurfaces: shellCatalogResolver.ResolveWorkflowSurfaces(requestedRulesetId)));
         }).AllowPublicApiKeyBypass();
 
         return app;

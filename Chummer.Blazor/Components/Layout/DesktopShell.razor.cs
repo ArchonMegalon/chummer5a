@@ -63,6 +63,9 @@ public partial class DesktopShell : IDisposable
     private IReadOnlyList<DesktopUiControlDefinition> ActiveUiControls =>
         _shellSurfaceState.DesktopUiControls;
 
+    private string ComplianceState =>
+        ShellStatusTextFormatter.BuildComplianceState(_shellSurfaceState, State.Preferences);
+
     protected override async Task OnInitializedAsync()
     {
         ShellPresenter.StateChanged += OnShellStateChanged;

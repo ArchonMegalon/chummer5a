@@ -4,7 +4,7 @@
     <span id="charState">Character: @(WorkspaceId is null ? "none" : "loaded")</span>
     <span id="serviceState">Service: @(string.IsNullOrWhiteSpace(Error) ? "online" : "error")</span>
     <span id="timeState">Time: @LastUiUtc</span>
-    <span id="complianceState">Compliance: shared presenter path</span>
+    <span id="complianceState">@ComplianceState</span>
 </div>
 
 @code {
@@ -16,4 +16,7 @@
 
     [Parameter]
     public string LastUiUtc { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ComplianceState { get; set; } = "Ruleset: unresolved | Workflows: 0 defs / 0 surfaces | Prefs: 100%/classic/en-us";
 }

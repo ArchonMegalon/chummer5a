@@ -37,7 +37,7 @@ internal static class MainWindowShellFrameProjector
                     CharacterState: $"Character: {(workspaceContext.ActiveWorkspaceId is null ? "none" : "loaded")}",
                     ServiceState: $"Service: {(shellSurface.Error is null ? "online" : "error")}",
                     TimeState: $"Time: {DateTimeOffset.UtcNow:u}",
-                    ComplianceState: $"Ruleset: {shellSurface.ActiveRulesetId} | Prefs: {state.Preferences.UiScalePercent}%/{state.Preferences.Theme}/{state.Preferences.Language}")),
+                    ComplianceState: ShellStatusTextFormatter.BuildComplianceState(shellSurface, state.Preferences))),
             SectionHostState: new SectionHostState(
                 Notice: $"Notice: {(shellSurface.Notice ?? "Ready.")}",
                 PreviewJson: state.ActiveSectionJson ?? string.Empty,

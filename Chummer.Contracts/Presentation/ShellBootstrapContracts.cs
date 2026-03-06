@@ -31,7 +31,9 @@ public sealed record ShellBootstrapResponse(
     string ActiveRulesetId,
     string? ActiveWorkspaceId = null,
     string? ActiveTabId = null,
-    IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace = null);
+    IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace = null,
+    IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions = null,
+    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null);
 
 public sealed record ShellBootstrapSnapshot(
     string RulesetId,
@@ -42,4 +44,6 @@ public sealed record ShellBootstrapSnapshot(
     string ActiveRulesetId,
     CharacterWorkspaceId? ActiveWorkspaceId = null,
     string? ActiveTabId = null,
-    IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace = null);
+    IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace = null,
+    IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions = null,
+    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null);

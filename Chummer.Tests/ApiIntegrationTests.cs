@@ -998,6 +998,8 @@ public class ApiIntegrationTests
         Assert.IsNull(response["activeWorkspaceId"]);
         Assert.IsTrue(response["commands"] is JsonArray commands && commands.Count > 0);
         Assert.IsTrue(response["navigationTabs"] is JsonArray tabs && tabs.Count > 0);
+        Assert.IsTrue(response["workflowDefinitions"] is JsonArray workflowDefinitions && workflowDefinitions.Count > 0);
+        Assert.IsTrue(response["workflowSurfaces"] is JsonArray workflowSurfaces && workflowSurfaces.Count > 0);
         Assert.IsTrue(response["workspaces"] is JsonArray);
     }
 

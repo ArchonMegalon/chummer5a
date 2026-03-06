@@ -17,7 +17,9 @@ public sealed record ShellState(
     IReadOnlyList<NavigationTabDefinition> NavigationTabs,
     string? ActiveTabId,
     string? OpenMenuId,
-    string? LastCommandId)
+    string? LastCommandId,
+    IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions = null,
+    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null)
 {
     public static ShellState Empty { get; } = new(
         IsBusy: false,
@@ -32,5 +34,7 @@ public sealed record ShellState(
         NavigationTabs: [],
         ActiveTabId: null,
         OpenMenuId: null,
-        LastCommandId: null);
+        LastCommandId: null,
+        WorkflowDefinitions: [],
+        WorkflowSurfaces: []);
 }

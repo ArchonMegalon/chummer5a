@@ -12,7 +12,9 @@ public sealed record ShellBootstrapData(
     string ActiveRulesetId,
     CharacterWorkspaceId? ActiveWorkspaceId = null,
     string? ActiveTabId = null,
-    IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace = null);
+    IReadOnlyDictionary<string, string>? ActiveTabsByWorkspace = null,
+    IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions = null,
+    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null);
 
 public interface IShellBootstrapDataProvider
 {

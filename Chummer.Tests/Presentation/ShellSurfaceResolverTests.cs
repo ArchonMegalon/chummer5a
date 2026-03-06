@@ -21,6 +21,18 @@ public sealed class ShellSurfaceResolverTests
         var saveCommand = new AppCommandDefinition("save_character", "command.save", "file", true, true, "sr6");
         var profileTab = new NavigationTabDefinition("tab-info", "Info", "profile", "character", true, true, "sr6");
         var shellWorkspaceId = new Chummer.Contracts.Workspaces.CharacterWorkspaceId("ws-shell");
+        var workflowDefinition = new WorkflowDefinition(
+            WorkflowId: WorkflowDefinitionIds.CareerWorkbench,
+            Title: "Career",
+            SurfaceIds: ["career.main"],
+            RequiresOpenWorkspace: true);
+        var workflowSurface = new WorkflowSurfaceDefinition(
+            SurfaceId: "career.main",
+            WorkflowId: WorkflowDefinitionIds.CareerWorkbench,
+            Kind: WorkflowSurfaceKinds.Workbench,
+            RegionId: ShellRegionIds.SectionPane,
+            LayoutToken: WorkflowLayoutTokens.CareerWorkbench,
+            ActionIds: ["career.refresh"]);
         var shellState = ShellState.Empty with
         {
             ActiveRulesetId = "sr6",
@@ -40,7 +52,9 @@ public sealed class ShellSurfaceResolverTests
             MenuRoots = [fileMenu],
             NavigationTabs = [profileTab],
             ActiveTabId = profileTab.Id,
-            LastCommandId = saveCommand.Id
+            LastCommandId = saveCommand.Id,
+            WorkflowDefinitions = [workflowDefinition],
+            WorkflowSurfaces = [workflowSurface]
         };
 
         var workspaceAction = new WorkspaceSurfaceActionDefinition(
@@ -86,6 +100,10 @@ public sealed class ShellSurfaceResolverTests
         Assert.HasCount(1, surface.OpenWorkspaces);
         Assert.AreEqual("ws-shell", surface.OpenWorkspaces[0].Id.Value);
         Assert.IsTrue(surface.OpenWorkspaces[0].HasSavedWorkspace);
+        Assert.HasCount(1, surface.WorkflowDefinitions);
+        Assert.HasCount(1, surface.WorkflowSurfaces);
+        Assert.AreEqual(WorkflowDefinitionIds.CareerWorkbench, surface.WorkflowDefinitions[0].WorkflowId);
+        Assert.AreEqual(WorkflowDefinitionIds.CareerWorkbench, surface.WorkflowSurfaces[0].WorkflowId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastWorkspaceActionTabId);
         Assert.AreEqual("sr6", catalogResolver.LastWorkspaceActionRulesetId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastUiControlTabId);

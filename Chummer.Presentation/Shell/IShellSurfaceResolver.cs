@@ -15,7 +15,9 @@ public sealed record ShellSurfaceState(
     string PreferredRulesetId,
     CharacterWorkspaceId? ActiveWorkspaceId,
     string? ActiveTabId,
-    string? LastCommandId)
+    string? LastCommandId,
+    IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions = null,
+    IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces = null)
 {
     public string? OpenMenuId { get; init; }
 
@@ -34,7 +36,9 @@ public sealed record ShellSurfaceState(
         PreferredRulesetId: string.Empty,
         ActiveWorkspaceId: null,
         ActiveTabId: null,
-        LastCommandId: null);
+        LastCommandId: null,
+        WorkflowDefinitions: [],
+        WorkflowSurfaces: []);
 }
 
 public interface IShellSurfaceResolver

@@ -149,7 +149,9 @@ public sealed class InProcessChummerClient : IChummerClient
             ActiveRulesetId: effectiveActiveRulesetId,
             ActiveWorkspaceId: activeWorkspaceId,
             ActiveTabId: session.ActiveTabId,
-            ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace)));
+            ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(session.ActiveTabsByWorkspace),
+            WorkflowDefinitions: _shellCatalogResolver.ResolveWorkflowDefinitions(effectiveRulesetId),
+            WorkflowSurfaces: _shellCatalogResolver.ResolveWorkflowSurfaces(effectiveRulesetId)));
     }
 
     public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)

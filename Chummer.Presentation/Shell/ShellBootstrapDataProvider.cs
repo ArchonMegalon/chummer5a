@@ -102,7 +102,9 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
             ActiveRulesetId: RulesetDefaults.NormalizeOptional(snapshot.ActiveRulesetId) ?? string.Empty,
             ActiveWorkspaceId: snapshot.ActiveWorkspaceId,
             ActiveTabId: NormalizeTabId(snapshot.ActiveTabId),
-            ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(snapshot.ActiveTabsByWorkspace));
+            ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(snapshot.ActiveTabsByWorkspace),
+            WorkflowDefinitions: snapshot.WorkflowDefinitions ?? [],
+            WorkflowSurfaces: snapshot.WorkflowSurfaces ?? []);
     }
 
     private static string? NormalizeTabId(string? tabId)

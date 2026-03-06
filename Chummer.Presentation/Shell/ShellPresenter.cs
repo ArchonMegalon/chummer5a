@@ -72,6 +72,8 @@ public sealed class ShellPresenter : IShellPresenter
 
             IReadOnlyList<AppCommandDefinition> commands = bootstrap.Commands;
             IReadOnlyList<NavigationTabDefinition> tabs = bootstrap.NavigationTabs;
+            IReadOnlyList<WorkflowDefinition> workflowDefinitions = bootstrap.WorkflowDefinitions ?? [];
+            IReadOnlyList<WorkflowSurfaceDefinition> workflowSurfaces = bootstrap.WorkflowSurfaces ?? [];
             Dictionary<string, string> workspaceTabMap = NormalizeWorkspaceTabMap(bootstrap.ActiveTabsByWorkspace);
             string? requestedActiveTabId = ResolveWorkspaceTab(workspaceTabMap, activeWorkspaceId) ?? bootstrap.ActiveTabId;
             string? resolvedActiveTabId = ResolveActiveTabId(
@@ -96,7 +98,9 @@ public sealed class ShellPresenter : IShellPresenter
                 MenuRoots = menuRoots,
                 NavigationTabs = tabs,
                 ActiveTabId = resolvedActiveTabId,
-                OpenMenuId = null
+                OpenMenuId = null,
+                WorkflowDefinitions = workflowDefinitions,
+                WorkflowSurfaces = workflowSurfaces
             });
         }
         catch (Exception ex)
@@ -245,15 +249,23 @@ public sealed class ShellPresenter : IShellPresenter
         bool activeRulesetChanged = !string.Equals(State.ActiveRulesetId, activeRulesetId, StringComparison.Ordinal);
         bool requiresCatalogRefresh = activeRulesetChanged
             || State.Commands.Count == 0
-            || State.NavigationTabs.Count == 0;
+            || State.NavigationTabs.Count == 0
+            || State.WorkflowDefinitions is null
+            || State.WorkflowSurfaces is null
+            || State.WorkflowDefinitions.Count == 0
+            || State.WorkflowSurfaces.Count == 0;
 
         IReadOnlyList<AppCommandDefinition> commands = State.Commands;
         IReadOnlyList<NavigationTabDefinition> tabs = State.NavigationTabs;
+        IReadOnlyList<WorkflowDefinition> workflowDefinitions = State.WorkflowDefinitions ?? [];
+        IReadOnlyList<WorkflowSurfaceDefinition> workflowSurfaces = State.WorkflowSurfaces ?? [];
         if (requiresCatalogRefresh)
         {
             ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
             commands = bootstrap.Commands;
             tabs = bootstrap.NavigationTabs;
+            workflowDefinitions = bootstrap.WorkflowDefinitions ?? [];
+            workflowSurfaces = bootstrap.WorkflowSurfaces ?? [];
         }
 
         await _runtimeClient.SaveShellPreferencesAsync(
@@ -290,7 +302,9 @@ public sealed class ShellPresenter : IShellPresenter
             NavigationTabs = tabs,
             ActiveTabId = resolvedActiveTabId,
             OpenMenuId = null,
-            Notice = $"Preferred ruleset set to '{preferredRulesetId}'."
+            Notice = $"Preferred ruleset set to '{preferredRulesetId}'.",
+            WorkflowDefinitions = workflowDefinitions,
+            WorkflowSurfaces = workflowSurfaces
         });
     }
 
@@ -310,11 +324,19 @@ public sealed class ShellPresenter : IShellPresenter
 
         IReadOnlyList<AppCommandDefinition> commands = State.Commands;
         IReadOnlyList<NavigationTabDefinition> tabs = State.NavigationTabs;
-        if (rulesetChanged || commands.Count == 0 || tabs.Count == 0)
+        IReadOnlyList<WorkflowDefinition> workflowDefinitions = State.WorkflowDefinitions ?? [];
+        IReadOnlyList<WorkflowSurfaceDefinition> workflowSurfaces = State.WorkflowSurfaces ?? [];
+        if (rulesetChanged
+            || commands.Count == 0
+            || tabs.Count == 0
+            || workflowDefinitions.Count == 0
+            || workflowSurfaces.Count == 0)
         {
             ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
             commands = bootstrap.Commands;
             tabs = bootstrap.NavigationTabs;
+            workflowDefinitions = bootstrap.WorkflowDefinitions ?? [];
+            workflowSurfaces = bootstrap.WorkflowSurfaces ?? [];
         }
 
         Dictionary<string, string> nextWorkspaceTabs = BuildUpdatedWorkspaceTabMap(State.ActiveWorkspaceId, State.ActiveTabId);
@@ -348,7 +370,9 @@ public sealed class ShellPresenter : IShellPresenter
             Commands = commands,
             MenuRoots = BuildMenuRoots(commands),
             NavigationTabs = tabs,
-            ActiveTabId = resolvedActiveTabId
+            ActiveTabId = resolvedActiveTabId,
+            WorkflowDefinitions = workflowDefinitions,
+            WorkflowSurfaces = workflowSurfaces
         });
     }
 

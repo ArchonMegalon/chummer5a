@@ -284,6 +284,42 @@ public class ShellPresenterTests
     }
 
     [TestMethod]
+    public async Task InitializeAsync_projects_workflow_metadata_from_bootstrap_snapshot()
+    {
+        var client = new ShellClientStub
+        {
+            WorkflowDefinitions =
+            [
+                new WorkflowDefinition(
+                    WorkflowId: WorkflowDefinitionIds.CareerWorkbench,
+                    Title: "Career Workbench",
+                    SurfaceIds: ["career.main"],
+                    RequiresOpenWorkspace: true)
+            ],
+            WorkflowSurfaces =
+            [
+                new WorkflowSurfaceDefinition(
+                    SurfaceId: "career.main",
+                    WorkflowId: WorkflowDefinitionIds.CareerWorkbench,
+                    Kind: WorkflowSurfaceKinds.Workbench,
+                    RegionId: ShellRegionIds.SectionPane,
+                    LayoutToken: WorkflowLayoutTokens.CareerWorkbench,
+                    ActionIds: ["career.refresh"])
+            ]
+        };
+        var presenter = new ShellPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+
+        Assert.IsNotNull(presenter.State.WorkflowDefinitions);
+        Assert.IsNotNull(presenter.State.WorkflowSurfaces);
+        Assert.HasCount(1, presenter.State.WorkflowDefinitions);
+        Assert.HasCount(1, presenter.State.WorkflowSurfaces);
+        Assert.AreEqual(WorkflowDefinitionIds.CareerWorkbench, presenter.State.WorkflowDefinitions[0].WorkflowId);
+        Assert.AreEqual(WorkflowDefinitionIds.CareerWorkbench, presenter.State.WorkflowSurfaces[0].WorkflowId);
+    }
+
+    [TestMethod]
     public async Task SetPreferredRulesetAsync_persists_preference_via_runtime_client()
     {
         var client = new ShellClientStub
@@ -429,6 +465,10 @@ public class ShellPresenterTests
 
         public IReadOnlyList<NavigationTabDefinition> NavigationTabs { get; set; } = NavigationTabCatalog.All;
 
+        public IReadOnlyList<WorkflowDefinition> WorkflowDefinitions { get; set; } = [];
+
+        public IReadOnlyList<WorkflowSurfaceDefinition> WorkflowSurfaces { get; set; } = [];
+
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
 
         public ShellPreferences Preferences { get; set; } = new(RulesetDefaults.Sr5);
@@ -507,7 +547,9 @@ public class ShellPresenterTests
                 ActiveRulesetId: activeRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId,
                 ActiveTabId: NormalizeTabId(Session.ActiveTabId),
-                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(Session.ActiveTabsByWorkspace));
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(Session.ActiveTabsByWorkspace),
+                WorkflowDefinitions: WorkflowDefinitions,
+                WorkflowSurfaces: WorkflowSurfaces);
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();

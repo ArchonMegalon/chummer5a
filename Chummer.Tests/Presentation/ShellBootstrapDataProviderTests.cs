@@ -148,6 +148,43 @@ public class ShellBootstrapDataProviderTests
     }
 
     [TestMethod]
+    public async Task GetAsync_includes_workflow_metadata_from_bootstrap_snapshot()
+    {
+        var client = new BootstrapClientStub
+        {
+            WorkflowDefinitions =
+            [
+                new WorkflowDefinition(
+                    WorkflowId: WorkflowDefinitionIds.SessionDashboard,
+                    Title: "Session Dashboard",
+                    SurfaceIds: ["session.summary"],
+                    RequiresOpenWorkspace: true,
+                    MobileOptimized: true)
+            ],
+            WorkflowSurfaces =
+            [
+                new WorkflowSurfaceDefinition(
+                    SurfaceId: "session.summary",
+                    WorkflowId: WorkflowDefinitionIds.SessionDashboard,
+                    Kind: WorkflowSurfaceKinds.Dashboard,
+                    RegionId: ShellRegionIds.SectionPane,
+                    LayoutToken: WorkflowLayoutTokens.SessionDashboard,
+                    ActionIds: ["session.refresh"])
+            ]
+        };
+        var provider = new ShellBootstrapDataProvider(client);
+
+        ShellBootstrapData bootstrap = await provider.GetAsync(CancellationToken.None);
+
+        Assert.IsNotNull(bootstrap.WorkflowDefinitions);
+        Assert.IsNotNull(bootstrap.WorkflowSurfaces);
+        Assert.HasCount(1, bootstrap.WorkflowDefinitions);
+        Assert.HasCount(1, bootstrap.WorkflowSurfaces);
+        Assert.AreEqual(WorkflowDefinitionIds.SessionDashboard, bootstrap.WorkflowDefinitions[0].WorkflowId);
+        Assert.AreEqual(WorkflowDefinitionIds.SessionDashboard, bootstrap.WorkflowSurfaces[0].WorkflowId);
+    }
+
+    [TestMethod]
     public async Task Shared_provider_avoids_duplicate_startup_fetches_between_shell_and_overview()
     {
         var client = new BootstrapClientStub();
@@ -193,6 +230,8 @@ public class ShellBootstrapDataProviderTests
         public List<string> RequestedBootstrapRulesets { get; } = new();
         public IReadOnlyList<AppCommandDefinition> Commands { get; set; } = AppCommandCatalog.All;
         public IReadOnlyList<NavigationTabDefinition> NavigationTabs { get; set; } = NavigationTabCatalog.All;
+        public IReadOnlyList<WorkflowDefinition> WorkflowDefinitions { get; set; } = [];
+        public IReadOnlyList<WorkflowSurfaceDefinition> WorkflowSurfaces { get; set; } = [];
         public ShellPreferences Preferences { get; set; } = new(RulesetDefaults.Sr5);
         public ShellSessionState Session { get; set; } = ShellSessionState.Default;
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
@@ -268,7 +307,9 @@ public class ShellBootstrapDataProviderTests
                 ActiveRulesetId: activeRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId,
                 ActiveTabId: NormalizeTabId(Session.ActiveTabId),
-                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(Session.ActiveTabsByWorkspace)));
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(Session.ActiveTabsByWorkspace),
+                WorkflowDefinitions: WorkflowDefinitions,
+                WorkflowSurfaces: WorkflowSurfaces));
         }
 
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();

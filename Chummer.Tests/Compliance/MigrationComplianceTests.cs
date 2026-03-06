@@ -2437,10 +2437,14 @@ public class MigrationComplianceTests
     [TestMethod]
     public void Shell_and_overview_share_bootstrap_provider_for_startup_contract_data()
     {
+        string shellContractsPath = FindPath("Chummer.Contracts", "Presentation", "ShellBootstrapContracts.cs");
+        string shellContractsText = File.ReadAllText(shellContractsPath);
         string providerContractPath = FindPath("Chummer.Presentation", "Shell", "IShellBootstrapDataProvider.cs");
         string providerContractText = File.ReadAllText(providerContractPath);
         string providerImplementationPath = FindPath("Chummer.Presentation", "Shell", "ShellBootstrapDataProvider.cs");
         string providerImplementationText = File.ReadAllText(providerImplementationPath);
+        string shellEndpointsPath = FindPath("Chummer.Api", "Endpoints", "ShellEndpoints.cs");
+        string shellEndpointsText = File.ReadAllText(shellEndpointsPath);
         string shellPresenterPath = FindPath("Chummer.Presentation", "Shell", "ShellPresenter.cs");
         string shellPresenterText = File.ReadAllText(shellPresenterPath);
         string overviewPresenterPath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.cs");
@@ -2452,20 +2456,32 @@ public class MigrationComplianceTests
         string avaloniaAppPath = FindPath("Chummer.Avalonia", "App.axaml.cs");
         string avaloniaAppText = File.ReadAllText(avaloniaAppPath);
 
+        StringAssert.Contains(shellContractsText, "IReadOnlyList<WorkflowDefinition>? WorkflowDefinitions");
+        StringAssert.Contains(shellContractsText, "IReadOnlyList<WorkflowSurfaceDefinition>? WorkflowSurfaces");
         StringAssert.Contains(providerContractText, "public interface IShellBootstrapDataProvider");
         StringAssert.Contains(providerContractText, "GetWorkspacesAsync");
         StringAssert.Contains(providerContractText, "ShellBootstrapData");
+        StringAssert.Contains(providerContractText, "WorkflowDefinitions");
+        StringAssert.Contains(providerContractText, "WorkflowSurfaces");
         StringAssert.Contains(providerImplementationText, "public sealed class ShellBootstrapDataProvider");
         StringAssert.Contains(providerImplementationText, "BootstrapCacheWindow");
         StringAssert.Contains(providerImplementationText, "GetWorkspacesAsync");
         StringAssert.Contains(providerImplementationText, "_client.GetShellBootstrapAsync");
         StringAssert.Contains(providerImplementationText, "DefaultBootstrapCacheKey");
+        StringAssert.Contains(providerImplementationText, "WorkflowDefinitions: snapshot.WorkflowDefinitions ?? []");
+        StringAssert.Contains(providerImplementationText, "WorkflowSurfaces: snapshot.WorkflowSurfaces ?? []");
         Assert.IsFalse(providerImplementationText.Contains("_client.ListWorkspacesAsync", StringComparison.Ordinal));
         Assert.IsFalse(providerImplementationText.Contains("_client.GetShellPreferencesAsync", StringComparison.Ordinal));
         Assert.IsFalse(providerImplementationText.Contains("_client.GetShellSessionAsync", StringComparison.Ordinal));
 
+        StringAssert.Contains(shellEndpointsText, "WorkflowDefinitions: shellCatalogResolver.ResolveWorkflowDefinitions(requestedRulesetId)");
+        StringAssert.Contains(shellEndpointsText, "WorkflowSurfaces: shellCatalogResolver.ResolveWorkflowSurfaces(requestedRulesetId)");
         StringAssert.Contains(shellPresenterText, "_bootstrapDataProvider.GetAsync");
+        StringAssert.Contains(shellPresenterText, "WorkflowDefinitions = workflowDefinitions");
+        StringAssert.Contains(shellPresenterText, "WorkflowSurfaces = workflowSurfaces");
         StringAssert.Contains(overviewPresenterText, "_bootstrapDataProvider.GetAsync");
+        StringAssert.Contains(overviewPresenterText, "WorkflowDefinitions: shellState.WorkflowDefinitions ?? []");
+        StringAssert.Contains(overviewPresenterText, "WorkflowSurfaces: shellState.WorkflowSurfaces ?? []");
         Assert.IsFalse(shellPresenterText.Contains("_client.GetCommandsAsync", StringComparison.Ordinal));
         Assert.IsFalse(shellPresenterText.Contains("_runtimeClient.GetCommandsAsync", StringComparison.Ordinal));
         Assert.IsFalse(shellPresenterText.Contains("_runtimeClient.GetNavigationTabsAsync", StringComparison.Ordinal));
@@ -3488,6 +3504,8 @@ public class MigrationComplianceTests
         string summaryHeaderCodeText = File.ReadAllText(summaryHeaderCodePath);
         string statusStripCodePath = FindPath("Chummer.Avalonia", "Controls", "StatusStripControl.axaml.cs");
         string statusStripCodeText = File.ReadAllText(statusStripCodePath);
+        string statusFormatterPath = FindPath("Chummer.Presentation", "Shell", "ShellStatusTextFormatter.cs");
+        string statusFormatterText = File.ReadAllText(statusFormatterPath);
         string sectionHostCodePath = FindPath("Chummer.Avalonia", "Controls", "SectionHostControl.axaml.cs");
         string sectionHostCodeText = File.ReadAllText(sectionHostCodePath);
         string toolStripCodePath = FindPath("Chummer.Avalonia", "Controls", "ToolStripControl.axaml.cs");
@@ -3538,6 +3556,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(summaryHeaderCodeText, "SetValues(state.Name, state.Alias, state.Karma, state.Skills);");
         StringAssert.Contains(statusStripCodeText, "public void SetState(StatusStripState state)");
         StringAssert.Contains(statusStripCodeText, "SetValues(");
+        StringAssert.Contains(statusFormatterText, "public static class ShellStatusTextFormatter");
+        StringAssert.Contains(statusFormatterText, "BuildComplianceState");
+        StringAssert.Contains(statusFormatterText, "Workflows:");
         StringAssert.Contains(sectionHostCodeText, "public void SetState(SectionHostState state)");
         StringAssert.Contains(sectionHostCodeText, "SetNotice(state.Notice);");
         StringAssert.Contains(sectionHostCodeText, "SetSectionPreview(state.PreviewJson, state.Rows);");
@@ -3560,6 +3581,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(projectorText, "WorkspaceStrip: new WorkspaceStripState(");
         StringAssert.Contains(projectorText, "SummaryHeader: new SummaryHeaderState(");
         StringAssert.Contains(projectorText, "StatusStrip: new StatusStripState(");
+        StringAssert.Contains(projectorText, "ShellStatusTextFormatter.BuildComplianceState");
         StringAssert.Contains(projectorText, "SectionHostState: new SectionHostState(");
         StringAssert.Contains(projectorText, "CommandDialogPaneState: ProjectCommandDialogState(");
         StringAssert.Contains(projectorText, "NavigatorPaneState: new NavigatorPaneState(");

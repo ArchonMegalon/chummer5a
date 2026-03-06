@@ -45,6 +45,18 @@ public sealed class DesktopShellRulesetCatalogTests
 
         AppCommandDefinition menuRoot = new("file", "menu.file", "menu", false, true, "sr6");
         NavigationTabDefinition infoTab = new("tab-info", "Info", "profile", "character", true, true, "sr6");
+        WorkflowDefinition workflowDefinition = new(
+            WorkflowId: WorkflowDefinitionIds.CareerWorkbench,
+            Title: "Career Workbench",
+            SurfaceIds: ["workflow.surface.sr6"],
+            RequiresOpenWorkspace: true);
+        WorkflowSurfaceDefinition workflowSurface = new(
+            SurfaceId: "workflow.surface.sr6",
+            WorkflowId: WorkflowDefinitionIds.CareerWorkbench,
+            Kind: WorkflowSurfaceKinds.Workbench,
+            RegionId: ShellRegionIds.SectionPane,
+            LayoutToken: WorkflowLayoutTokens.CareerWorkbench,
+            ActionIds: ["sr6.action.matrix"]);
         ShellWorkspaceState shellWorkspace = new(
             Id: workspaceId,
             Name: openWorkspace.Name,
@@ -59,7 +71,9 @@ public sealed class DesktopShellRulesetCatalogTests
             Commands = [menuRoot],
             MenuRoots = [menuRoot],
             NavigationTabs = [infoTab],
-            ActiveTabId = infoTab.Id
+            ActiveTabId = infoTab.Id,
+            WorkflowDefinitions = [workflowDefinition],
+            WorkflowSurfaces = [workflowSurface]
         };
 
         context.Services.AddSingleton<ICharacterOverviewPresenter>(new StaticOverviewPresenter(overviewState));
@@ -83,6 +97,8 @@ public sealed class DesktopShellRulesetCatalogTests
             StringAssert.Contains(actionButtons[0].TextContent, "SR6 Matrix Action");
             Assert.AreEqual("ui-sr6-control", controlButtons[0].GetAttribute("data-ui-control"));
             StringAssert.Contains(controlButtons[0].TextContent, "SR6 Matrix Control");
+            StringAssert.Contains(cut.Find("#complianceState").TextContent, "Ruleset: sr6");
+            StringAssert.Contains(cut.Find("#complianceState").TextContent, "Workflows: 1 defs / 1 surfaces");
         });
     }
 

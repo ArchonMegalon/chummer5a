@@ -178,6 +178,10 @@ public sealed class InProcessChummerClientRulesetPluginTests
         Assert.AreEqual(owner.NormalizedValue, workspaceService.LastListOwner?.NormalizedValue);
         Assert.AreEqual("sr6", snapshot.RulesetId);
         Assert.AreEqual("tab-rules", snapshot.ActiveTabId);
+        Assert.IsNotNull(snapshot.WorkflowDefinitions);
+        Assert.IsNotNull(snapshot.WorkflowSurfaces);
+        Assert.IsNotEmpty(snapshot.WorkflowDefinitions);
+        Assert.IsNotEmpty(snapshot.WorkflowSurfaces);
     }
 
     [TestMethod]
