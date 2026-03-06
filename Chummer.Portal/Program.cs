@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Chummer.Contracts.Owners;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Yarp.ReverseProxy.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,17 @@ string portalOwnerSharedKey = PortalSettingsResolver.ResolveSetting(
     "Portal:OwnerSharedKey",
     PortalOwnerPropagationContract.SharedKeyEnvironmentVariable,
     string.Empty);
+bool requireAuthenticatedPortalUser = PortalBooleanResolver.ResolveBoolean(
+    builder.Configuration["Portal:RequireAuth"],
+    Environment.GetEnvironmentVariable("CHUMMER_PORTAL_REQUIRE_AUTH"));
+bool portalDevAuthEnabled = PortalBooleanResolver.ResolveBoolean(
+    builder.Configuration["Portal:DevAuthEnabled"],
+    Environment.GetEnvironmentVariable("CHUMMER_PORTAL_DEV_AUTH_ENABLED"));
+string portalDevAuthDefaultUser = PortalSettingsResolver.ResolveSetting(
+    builder.Configuration,
+    "Portal:DevAuthDefaultUser",
+    "CHUMMER_PORTAL_DEV_AUTH_DEFAULT_USER",
+    "dev@example.com");
 string downloadsBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_URL", "/downloads/");
 string downloadsProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsProxyBaseUrl", "CHUMMER_PORTAL_DOWNLOADS_PROXY_URL", string.Empty);
 string downloadsFallbackUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsFallbackUrl", "CHUMMER_PORTAL_DOWNLOADS_FALLBACK_URL", string.Empty);
@@ -27,6 +39,11 @@ bool useAvaloniaProxy = !string.IsNullOrWhiteSpace(avaloniaProxyBaseUrl);
 bool useDownloadsProxy = !string.IsNullOrWhiteSpace(downloadsProxyBaseUrl);
 bool isApiKeyForwardingEnabled = !string.IsNullOrWhiteSpace(apiProxyKey);
 bool isPortalOwnerForwardingEnabled = !string.IsNullOrWhiteSpace(portalOwnerSharedKey);
+PortalAuthenticationSettings portalAuthenticationSettings = new(
+    portalDevAuthEnabled,
+    requireAuthenticatedPortalUser,
+    portalDevAuthDefaultUser,
+    CookieAuthenticationDefaults.AuthenticationScheme);
 IReadOnlyList<IReadOnlyDictionary<string, string>>? apiRouteTransforms = PortalProxyUtils.BuildApiRouteTransforms(apiProxyKey);
 
 var proxyRoutes = new List<RouteConfig>
@@ -155,13 +172,41 @@ if (useDownloadsProxy)
 
 builder.Services.AddReverseProxy()
     .LoadFromMemory(proxyRoutes, proxyClusters);
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "Chummer.Portal.Auth";
+        options.LoginPath = "/auth/login";
+        options.LogoutPath = "/auth/logout";
+    });
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
+app.UseAuthentication();
+app.UseAuthorization();
+app.Use(async (context, next) =>
+{
+    if (portalAuthenticationSettings.RequireAuthenticatedUser
+        && PortalProtectedRouteMatcher.RequiresAuthenticatedUser(context.Request.Path)
+        && context.User.Identity?.IsAuthenticated != true)
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        await context.Response.WriteAsJsonAsync(new
+        {
+            error = "portal_auth_required"
+        });
+        return;
+    }
+
+    await next();
+});
 app.Use((context, next) =>
 {
     PortalAuthenticatedOwnerPropagation.Apply(context, portalOwnerSharedKey);
     return next();
 });
+
+PortalAuthenticationEndpoints.MapPortalAuthenticationEndpoints(app, portalAuthenticationSettings);
 
 app.MapGet("/health", () => Results.Ok(new
 {

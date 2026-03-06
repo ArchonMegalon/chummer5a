@@ -94,6 +94,13 @@ Portal-auth owner propagation seam:
 * `Chummer.Api` prefers this signed portal-owner context ahead of the dev/test `X-Chummer-Owner` bridge when both are present.
 * Optional `CHUMMER_PORTAL_OWNER_MAX_AGE_SECONDS` tightens signature freshness validation on the API side (default: `300` seconds).
 
+Portal auth scaffold:
+
+* `Chummer.Portal` now registers cookie authentication and authorization so portal-edge identity can populate `HttpContext.User` before proxying.
+* `CHUMMER_PORTAL_DEV_AUTH_ENABLED=true` turns on the minimal dev harness endpoints: `POST /auth/dev-login`, `GET /auth/me`, and `POST /auth/logout`.
+* `CHUMMER_PORTAL_REQUIRE_AUTH=true` makes the portal require an authenticated cookie for `/api`, `/openapi`, `/docs`, `/blazor`, and `/avalonia`; the landing page and `/downloads` remain public.
+* The dev harness is only a bootstrap path for local/testing and for proving the portal-owner seam. It is not the final public identity system.
+
 Run migration/compliance test loop (branch helper script):
 
 ```bash
@@ -157,6 +164,7 @@ Portal notes (current milestone):
 * Local sync helper: `bash scripts/runbook.sh downloads-sync <bundleDir> <deployDir>` (defaults: `dist` -> `Docker/Downloads`).
 * Portal can forward `X-Api-Key` to API/docs/openapi upstream routes when `CHUMMER_PORTAL_API_KEY` is set (or when `CHUMMER_API_KEY` is present in the portal service environment).
 * Portal can also forward signed authenticated owner context to the API/docs/openapi upstream when `CHUMMER_PORTAL_OWNER_SHARED_KEY` is configured on both services; this is the forward path for future portal-backed identity, while `CHUMMER_ALLOW_OWNER_HEADER` remains a disabled-by-default dev/test bridge only.
+* Portal cookie-auth scaffolding is always registered; enable `CHUMMER_PORTAL_DEV_AUTH_ENABLED=true` only for local/test login bootstrap and enable `CHUMMER_PORTAL_REQUIRE_AUTH=true` when you want the portal itself to enforce authenticated access to protected upstream routes.
 * Non-portal default flows keep `chummer-blazor` at root and do not require path-base configuration.
 
 Cloudflare Tunnel target (portal profile):

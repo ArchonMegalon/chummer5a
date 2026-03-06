@@ -297,6 +297,10 @@ public class MigrationComplianceTests
         string portalProgramText = File.ReadAllText(portalProgramPath);
         string portalOwnerPropagationPath = FindPath("Chummer.Portal", "PortalAuthenticatedOwnerPropagation.cs");
         string portalOwnerPropagationText = File.ReadAllText(portalOwnerPropagationPath);
+        string portalAuthenticationEndpointsPath = FindPath("Chummer.Portal", "PortalAuthenticationEndpoints.cs");
+        string portalAuthenticationEndpointsText = File.ReadAllText(portalAuthenticationEndpointsPath);
+        string portalProtectedRouteMatcherPath = FindPath("Chummer.Portal", "PortalProtectedRouteMatcher.cs");
+        string portalProtectedRouteMatcherText = File.ReadAllText(portalProtectedRouteMatcherPath);
         string ownerContractPath = FindPath("Chummer.Contracts", "Owners", "PortalOwnerPropagationContract.cs");
         string ownerContractText = File.ReadAllText(ownerContractPath);
         string readmePath = FindPath("README.md");
@@ -325,10 +329,21 @@ public class MigrationComplianceTests
         StringAssert.Contains(requestOwnerAccessorText, "CryptographicOperations.FixedTimeEquals");
         StringAssert.Contains(portalProgramText, "PortalOwnerPropagationContract.SharedKeyEnvironmentVariable");
         StringAssert.Contains(portalProgramText, "PortalAuthenticatedOwnerPropagation.Apply");
+        StringAssert.Contains(portalProgramText, "CHUMMER_PORTAL_REQUIRE_AUTH");
+        StringAssert.Contains(portalProgramText, "CHUMMER_PORTAL_DEV_AUTH_ENABLED");
+        StringAssert.Contains(portalProgramText, "AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)");
+        StringAssert.Contains(portalProgramText, "PortalAuthenticationEndpoints.MapPortalAuthenticationEndpoints");
+        StringAssert.Contains(portalProgramText, "PortalProtectedRouteMatcher.RequiresAuthenticatedUser");
         StringAssert.Contains(portalOwnerPropagationText, "public static class PortalAuthenticatedOwnerPropagation");
         StringAssert.Contains(portalOwnerPropagationText, "PortalOwnerPropagationContract.OwnerHeaderName");
         StringAssert.Contains(portalOwnerPropagationText, "ClaimTypes.NameIdentifier");
         StringAssert.Contains(portalOwnerPropagationText, "path.StartsWithSegments(\"/api\"");
+        StringAssert.Contains(portalAuthenticationEndpointsText, "public static class PortalAuthenticationEndpoints");
+        StringAssert.Contains(portalAuthenticationEndpointsText, "MapPortalAuthenticationEndpoints");
+        StringAssert.Contains(portalAuthenticationEndpointsText, "context.SignInAsync");
+        StringAssert.Contains(portalAuthenticationEndpointsText, "new ClaimsIdentity(claims, \"portal-dev\")");
+        StringAssert.Contains(portalProtectedRouteMatcherText, "path.StartsWithSegments(\"/blazor\"");
+        StringAssert.Contains(portalProtectedRouteMatcherText, "path.StartsWithSegments(\"/avalonia\"");
         StringAssert.Contains(ownerContractText, "X-Chummer-Portal-Owner");
         StringAssert.Contains(ownerContractText, "X-Chummer-Portal-Owner-Signature");
         StringAssert.Contains(ownerContractText, "BuildSignaturePayload");
@@ -336,6 +351,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "It is not public authentication");
         StringAssert.Contains(readmeText, "CHUMMER_PORTAL_OWNER_SHARED_KEY");
         StringAssert.Contains(readmeText, "signed authenticated owner headers");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_DEV_AUTH_ENABLED");
+        StringAssert.Contains(readmeText, "CHUMMER_PORTAL_REQUIRE_AUTH");
         StringAssert.Contains(backlogText, "signed portal-owner propagation seam");
     }
 
