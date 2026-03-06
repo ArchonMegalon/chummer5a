@@ -30,6 +30,24 @@ public static class RuntimeLockRegistryEndpoints
                 : Results.Ok(entry);
         }).AllowPublicApiKeyBypass();
 
+        app.MapPut("/api/runtime/locks/{lockId}", (string lockId, RuntimeLockSaveRequest request, IRuntimeLockRegistryService runtimeLockRegistryService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            try
+            {
+                RuntimeLockRegistryEntry entry = runtimeLockRegistryService.Upsert(ownerContextAccessor.Current, lockId, request);
+                return Results.Ok(entry);
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "invalid_runtime_lock",
+                    lockId,
+                    message = ex.Message
+                });
+            }
+        });
+
         app.MapPost("/api/runtime/locks/{lockId}/install-preview", (string lockId, string? ruleset, RuleProfileApplyTarget target, IRuntimeLockInstallService runtimeLockInstallService, IOwnerContextAccessor ownerContextAccessor) =>
         {
             RuntimeLockInstallPreviewReceipt? preview = runtimeLockInstallService.Preview(ownerContextAccessor.Current, lockId, target, ruleset);

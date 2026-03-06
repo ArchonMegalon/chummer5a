@@ -1,5 +1,6 @@
 #nullable enable annotations
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -372,6 +373,8 @@ public class HubInstallPreviewServiceTests
             _entry is null ? new RuntimeLockRegistryPage([], 0) : new RuntimeLockRegistryPage([_entry], 1);
 
         public RuntimeLockRegistryEntry? Get(OwnerScope owner, string lockId, string? rulesetId = null) => _entry;
+
+        public RuntimeLockRegistryEntry Upsert(OwnerScope owner, string lockId, RuntimeLockSaveRequest request) => throw new NotSupportedException();
     }
 
     private sealed class RulePackRegistryServiceStub : IRulePackRegistryService

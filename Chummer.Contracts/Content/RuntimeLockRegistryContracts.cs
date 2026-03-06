@@ -29,6 +29,13 @@ public sealed record RuntimeLockRegistryEntry(
     string? Description = null,
     ArtifactInstallState Install = null!);
 
+public sealed record RuntimeLockSaveRequest(
+    string Title,
+    ResolvedRuntimeLock RuntimeLock,
+    string Visibility = ArtifactVisibilityModes.LocalOnly,
+    string? Description = null,
+    ArtifactInstallState? Install = null);
+
 public sealed record RuntimeLockCompatibilityDiagnostic(
     string State,
     string Message,

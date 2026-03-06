@@ -337,6 +337,8 @@ public class HubCatalogServiceTests
 
         public RuntimeLockRegistryEntry? Get(OwnerScope owner, string lockId, string? rulesetId = null) =>
             _page.Entries.FirstOrDefault(entry => entry.LockId == lockId);
+
+        public RuntimeLockRegistryEntry Upsert(OwnerScope owner, string lockId, RuntimeLockSaveRequest request) => throw new NotSupportedException();
     }
 
     private sealed class RuntimeLockInstallHistoryStoreStub : IRuntimeLockInstallHistoryStore

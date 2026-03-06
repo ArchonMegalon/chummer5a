@@ -626,6 +626,31 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Runtime_lock_put_endpoint_persists_owner_runtime_lock_entry()
+    {
+        using var client = CreateClient();
+        JsonObject runtimeLocks = await GetRequiredJsonObject(client, "/api/runtime/locks?ruleset=sr5");
+        JsonArray items = (JsonArray)runtimeLocks["entries"]!;
+        JsonObject first = items.OfType<JsonObject>().First();
+        string lockId = first["lockId"]!.GetValue<string>();
+        JsonObject runtimeLock = (JsonObject)first["runtimeLock"]!;
+
+        using HttpResponseMessage saveResponse = await client.PutAsJsonAsync($"/api/runtime/locks/{lockId}", new
+        {
+            title = "Saved Runtime Lock",
+            runtimeLock,
+            visibility = ArtifactVisibilityModes.Private,
+            description = "Owner-persisted runtime lock."
+        });
+        saveResponse.EnsureSuccessStatusCode();
+
+        JsonObject detailPayload = await GetRequiredJsonObject(client, $"/api/runtime/locks/{lockId}?ruleset=sr5");
+        Assert.AreEqual(RuntimeLockCatalogKinds.Saved, detailPayload["catalogKind"]?.GetValue<string>());
+        Assert.AreEqual(ArtifactVisibilityModes.Private, detailPayload["visibility"]?.GetValue<string>());
+        Assert.AreEqual("Saved Runtime Lock", detailPayload["title"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Health_endpoint_reports_ok()
     {
         using var client = CreateClient();

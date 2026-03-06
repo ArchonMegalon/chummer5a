@@ -1,15 +1,16 @@
 using System.Linq;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Owners;
+using Chummer.Contracts.Rulesets;
 
 namespace Chummer.Application.Content;
 
-public sealed class ProfileBackedRuntimeLockRegistryService : IRuntimeLockRegistryService
+public sealed class OwnerScopedRuntimeLockRegistryService : IRuntimeLockRegistryService
 {
     private readonly IRuleProfileRegistryService _ruleProfileRegistryService;
     private readonly IRuntimeLockStore _runtimeLockStore;
 
-    public ProfileBackedRuntimeLockRegistryService(
+    public OwnerScopedRuntimeLockRegistryService(
         IRuleProfileRegistryService ruleProfileRegistryService,
         IRuntimeLockStore runtimeLockStore)
     {
@@ -44,6 +45,48 @@ public sealed class ProfileBackedRuntimeLockRegistryService : IRuntimeLockRegist
 
         return List(owner, rulesetId).Entries
             .FirstOrDefault(entry => string.Equals(entry.LockId, lockId, StringComparison.Ordinal));
+    }
+
+    public RuntimeLockRegistryEntry Upsert(OwnerScope owner, string lockId, RuntimeLockSaveRequest request)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(lockId);
+        ArgumentNullException.ThrowIfNull(request);
+
+        string normalizedFingerprint = request.RuntimeLock.RuntimeFingerprint?.Trim() ?? string.Empty;
+        if (!string.Equals(lockId, normalizedFingerprint, StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                $"Runtime lock id '{lockId}' must match runtime fingerprint '{normalizedFingerprint}'.",
+                nameof(lockId));
+        }
+
+        RuntimeLockRegistryEntry? existingEntry = _runtimeLockStore.Get(owner, lockId, request.RuntimeLock.RulesetId)
+            ?? Get(owner, lockId, request.RuntimeLock.RulesetId);
+        ArtifactInstallState install = NormalizeInstall(
+            request.Install ?? existingEntry?.Install ?? new ArtifactInstallState(ArtifactInstallStates.Available),
+            normalizedFingerprint);
+        string visibility = string.IsNullOrWhiteSpace(request.Visibility)
+            ? ArtifactVisibilityModes.LocalOnly
+            : request.Visibility;
+        string title = string.IsNullOrWhiteSpace(request.Title)
+            ? existingEntry?.Title ?? $"{RulesetDefaults.NormalizeRequired(request.RuntimeLock.RulesetId).ToUpperInvariant()} Runtime Lock"
+            : request.Title.Trim();
+
+        RuntimeLockRegistryEntry entry = new(
+            LockId: lockId,
+            Owner: owner,
+            Title: title,
+            Visibility: visibility,
+            CatalogKind: RuntimeLockCatalogKinds.Saved,
+            RuntimeLock: request.RuntimeLock with
+            {
+                RulesetId = RulesetDefaults.NormalizeRequired(request.RuntimeLock.RulesetId)
+            },
+            UpdatedAtUtc: DateTimeOffset.UtcNow,
+            Description: request.Description ?? existingEntry?.Description,
+            Install: install);
+
+        return _runtimeLockStore.Upsert(owner, entry);
     }
 
     private static RuntimeLockRegistryEntry ToRegistryEntry(RuleProfileRegistryEntry profile)

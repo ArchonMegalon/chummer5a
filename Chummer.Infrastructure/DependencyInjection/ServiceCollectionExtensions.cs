@@ -78,7 +78,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IActiveRuntimeStatusService, DefaultActiveRuntimeStatusService>();
         services.AddSingleton<IRuntimeLockInstallHistoryStore>(_ => new FileRuntimeLockInstallHistoryStore(stateDirectory));
         services.AddSingleton<IRuntimeLockStore>(_ => new FileRuntimeLockStore(stateDirectory));
-        services.AddSingleton<IRuntimeLockRegistryService, ProfileBackedRuntimeLockRegistryService>();
+        services.AddSingleton<IRuntimeLockRegistryService, OwnerScopedRuntimeLockRegistryService>();
         services.AddSingleton<IRuntimeLockInstallService, DefaultRuntimeLockInstallService>();
         services.AddSingleton<IHubCatalogService, DefaultHubCatalogService>();
         services.AddSingleton<IHubInstallPreviewService, DefaultHubInstallPreviewService>();

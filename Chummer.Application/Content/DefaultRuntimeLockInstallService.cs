@@ -7,15 +7,12 @@ public sealed class DefaultRuntimeLockInstallService : IRuntimeLockInstallServic
 {
     private readonly IRuntimeLockInstallHistoryStore _installHistoryStore;
     private readonly IRuntimeLockRegistryService _runtimeLockRegistryService;
-    private readonly IRuntimeLockStore _runtimeLockStore;
 
     public DefaultRuntimeLockInstallService(
         IRuntimeLockRegistryService runtimeLockRegistryService,
-        IRuntimeLockStore runtimeLockStore,
         IRuntimeLockInstallHistoryStore installHistoryStore)
     {
         _runtimeLockRegistryService = runtimeLockRegistryService;
-        _runtimeLockStore = runtimeLockStore;
         _installHistoryStore = installHistoryStore;
     }
 
@@ -94,18 +91,17 @@ public sealed class DefaultRuntimeLockInstallService : IRuntimeLockInstallServic
             InstalledTargetKind: target.TargetKind,
             InstalledTargetId: target.TargetId,
             RuntimeFingerprint: preview.RuntimeLock.RuntimeFingerprint);
-        RuntimeLockRegistryEntry persistedEntry = _runtimeLockStore.Upsert(
+        RuntimeLockRegistryEntry persistedEntry = _runtimeLockRegistryService.Upsert(
             owner,
-            entry with
-            {
-                Owner = owner,
-                Visibility = RuntimeLockCatalogKinds.Saved == entry.CatalogKind
+            entry.LockId,
+            new RuntimeLockSaveRequest(
+                Title: entry.Title,
+                RuntimeLock: preview.RuntimeLock,
+                Visibility: RuntimeLockCatalogKinds.Saved == entry.CatalogKind
                     ? entry.Visibility
                     : ArtifactVisibilityModes.LocalOnly,
-                CatalogKind = RuntimeLockCatalogKinds.Saved,
-                UpdatedAtUtc = appliedAtUtc,
-                Install = install
-            });
+                Description: entry.Description,
+                Install: install));
         _installHistoryStore.Append(
             owner,
             new RuntimeLockInstallHistoryRecord(

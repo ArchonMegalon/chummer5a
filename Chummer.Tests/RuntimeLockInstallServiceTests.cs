@@ -19,7 +19,6 @@ public class RuntimeLockInstallServiceTests
     {
         DefaultRuntimeLockInstallService service = new(
             new RuntimeLockRegistryServiceStub(CreateEntry(ArtifactInstallStates.Available, RuntimeLockCatalogKinds.Published)),
-            new RuntimeLockStoreStub(),
             new RuntimeLockInstallHistoryStoreStub());
 
         RuntimeLockInstallPreviewReceipt? preview = service.Preview(
@@ -38,11 +37,10 @@ public class RuntimeLockInstallServiceTests
     [TestMethod]
     public void Default_install_service_persists_owner_saved_runtime_lock_and_history()
     {
-        RuntimeLockStoreStub store = new();
         RuntimeLockInstallHistoryStoreStub historyStore = new();
+        RuntimeLockRegistryServiceStub registry = new(CreateEntry(ArtifactInstallStates.Available, RuntimeLockCatalogKinds.Published));
         DefaultRuntimeLockInstallService service = new(
-            new RuntimeLockRegistryServiceStub(CreateEntry(ArtifactInstallStates.Available, RuntimeLockCatalogKinds.Published)),
-            store,
+            registry,
             historyStore);
 
         RuntimeLockInstallReceipt? receipt = service.Apply(
@@ -54,11 +52,11 @@ public class RuntimeLockInstallServiceTests
         Assert.IsNotNull(receipt);
         Assert.AreEqual(RuntimeLockInstallOutcomes.Installed, receipt.Outcome);
         Assert.AreEqual("workspace-1", receipt.TargetId);
-        Assert.HasCount(1, store.Upserts);
-        Assert.AreEqual(RuntimeLockCatalogKinds.Saved, store.Upserts[0].CatalogKind);
-        Assert.AreEqual("alice", store.Upserts[0].Owner.NormalizedValue);
-        Assert.AreEqual(ArtifactInstallStates.Pinned, store.Upserts[0].Install.State);
-        Assert.AreEqual("workspace-1", store.Upserts[0].Install.InstalledTargetId);
+        Assert.HasCount(1, registry.Upserts);
+        Assert.AreEqual(RuntimeLockCatalogKinds.Saved, registry.Upserts[0].CatalogKind);
+        Assert.AreEqual("alice", registry.Upserts[0].Owner.NormalizedValue);
+        Assert.AreEqual(ArtifactInstallStates.Pinned, registry.Upserts[0].Install.State);
+        Assert.AreEqual("workspace-1", registry.Upserts[0].Install.InstalledTargetId);
         Assert.HasCount(1, historyStore.Appends);
         Assert.AreEqual(ArtifactInstallHistoryOperations.Pin, historyStore.Appends[0].Entry.Operation);
     }
@@ -73,7 +71,6 @@ public class RuntimeLockInstallServiceTests
                     RuntimeLockCatalogKinds.Saved,
                     installedTargetKind: RuleProfileApplyTargetKinds.Workspace,
                     installedTargetId: "workspace-1")),
-            new RuntimeLockStoreStub(),
             new RuntimeLockInstallHistoryStoreStub());
 
         RuntimeLockInstallReceipt? receipt = service.Apply(
@@ -117,6 +114,7 @@ public class RuntimeLockInstallServiceTests
     private sealed class RuntimeLockRegistryServiceStub : IRuntimeLockRegistryService
     {
         private readonly RuntimeLockRegistryEntry _entry;
+        public List<RuntimeLockRegistryEntry> Upserts { get; } = [];
 
         public RuntimeLockRegistryServiceStub(RuntimeLockRegistryEntry entry)
         {
@@ -129,21 +127,19 @@ public class RuntimeLockInstallServiceTests
         {
             return string.Equals(lockId, _entry.LockId, StringComparison.Ordinal) ? _entry : null;
         }
-    }
 
-    private sealed class RuntimeLockStoreStub : IRuntimeLockStore
-    {
-        public List<RuntimeLockRegistryEntry> Upserts { get; } = [];
-
-        public RuntimeLockRegistryPage List(OwnerScope owner, string? rulesetId = null) => new(Upserts, Upserts.Count);
-
-        public RuntimeLockRegistryEntry? Get(OwnerScope owner, string lockId, string? rulesetId = null)
+        public RuntimeLockRegistryEntry Upsert(OwnerScope owner, string lockId, RuntimeLockSaveRequest request)
         {
-            return Upserts.LastOrDefault(entry => string.Equals(entry.LockId, lockId, StringComparison.Ordinal));
-        }
-
-        public RuntimeLockRegistryEntry Upsert(OwnerScope owner, RuntimeLockRegistryEntry entry)
-        {
+            RuntimeLockRegistryEntry entry = new(
+                LockId: lockId,
+                Owner: owner,
+                Title: request.Title,
+                Visibility: request.Visibility,
+                CatalogKind: RuntimeLockCatalogKinds.Saved,
+                RuntimeLock: request.RuntimeLock,
+                UpdatedAtUtc: DateTimeOffset.UtcNow,
+                Description: request.Description,
+                Install: request.Install ?? new ArtifactInstallState(ArtifactInstallStates.Available, RuntimeFingerprint: request.RuntimeLock.RuntimeFingerprint));
             Upserts.Add(entry);
             return entry;
         }

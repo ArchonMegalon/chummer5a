@@ -32,6 +32,7 @@ public static class InfoEndpoints
                 "/api/profiles",
                 "/api/runtime/profiles/{profileId}",
                 "/api/runtime/locks",
+                "/api/runtime/locks/{lockId}",
                 "/api/runtime/locks/{lockId}/install-preview",
                 "/api/runtime/locks/{lockId}/install",
                 "/api/workspaces",

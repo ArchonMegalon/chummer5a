@@ -17,7 +17,7 @@ public class RuntimeLockRegistryServiceTests
     [TestMethod]
     public void Runtime_lock_registry_service_projects_profile_runtime_locks_into_catalog_entries()
     {
-        ProfileBackedRuntimeLockRegistryService service = new(
+        OwnerScopedRuntimeLockRegistryService service = new(
             new RuleProfileRegistryServiceStub(
             [
                 CreateProfile("official.sr5.core", "Official SR5 Core", ArtifactVisibilityModes.Public, "sha256:core"),
@@ -42,7 +42,7 @@ public class RuntimeLockRegistryServiceTests
     [TestMethod]
     public void Runtime_lock_registry_service_includes_persisted_owner_locks_and_prefers_them_over_profile_derived_entries()
     {
-        ProfileBackedRuntimeLockRegistryService service = new(
+        OwnerScopedRuntimeLockRegistryService service = new(
             new RuleProfileRegistryServiceStub(
             [
                 CreateProfile("official.sr5.core", "Official SR5 Core", ArtifactVisibilityModes.Public, "sha256:core")
@@ -92,11 +92,48 @@ public class RuntimeLockRegistryServiceTests
     [TestMethod]
     public void Runtime_lock_registry_service_returns_null_for_unknown_lock()
     {
-        ProfileBackedRuntimeLockRegistryService service = new(new RuleProfileRegistryServiceStub([]), new RuntimeLockStoreStub());
+        OwnerScopedRuntimeLockRegistryService service = new(new RuleProfileRegistryServiceStub([]), new RuntimeLockStoreStub());
 
         RuntimeLockRegistryEntry? entry = service.Get(OwnerScope.LocalSingleUser, "missing-lock", RulesetDefaults.Sr5);
 
         Assert.IsNull(entry);
+    }
+
+    [TestMethod]
+    public void Runtime_lock_registry_service_persists_owner_saved_entries_with_explicit_save_request()
+    {
+        RuntimeLockStoreStub store = new();
+        OwnerScopedRuntimeLockRegistryService service = new(new RuleProfileRegistryServiceStub([]), store);
+
+        RuntimeLockRegistryEntry entry = service.Upsert(
+            new OwnerScope("alice"),
+            "sha256:custom",
+            new RuntimeLockSaveRequest(
+                Title: "Alice Custom Runtime",
+                RuntimeLock: CreateRuntimeLock("sha256:custom"),
+                Visibility: ArtifactVisibilityModes.Private,
+                Description: "Saved custom runtime."));
+
+        Assert.AreEqual("sha256:custom", entry.LockId);
+        Assert.AreEqual("alice", entry.Owner.NormalizedValue);
+        Assert.AreEqual(RuntimeLockCatalogKinds.Saved, entry.CatalogKind);
+        Assert.AreEqual(ArtifactVisibilityModes.Private, entry.Visibility);
+        Assert.AreEqual("sha256:custom", entry.Install.RuntimeFingerprint);
+        Assert.AreEqual(ArtifactInstallStates.Available, entry.Install.State);
+        Assert.HasCount(1, store.Upserts);
+    }
+
+    [TestMethod]
+    public void Runtime_lock_registry_service_rejects_lock_id_that_does_not_match_runtime_fingerprint()
+    {
+        OwnerScopedRuntimeLockRegistryService service = new(new RuleProfileRegistryServiceStub([]), new RuntimeLockStoreStub());
+
+        Assert.ThrowsExactly<ArgumentException>(() => service.Upsert(
+            new OwnerScope("alice"),
+            "sha256:wrong",
+            new RuntimeLockSaveRequest(
+                Title: "Invalid Runtime",
+                RuntimeLock: CreateRuntimeLock("sha256:custom"))));
     }
 
     private static RuleProfileRegistryEntry CreateProfile(string profileId, string title, string visibility, string runtimeFingerprint)
@@ -161,23 +198,33 @@ public class RuntimeLockRegistryServiceTests
 
     private sealed class RuntimeLockStoreStub : IRuntimeLockStore
     {
-        private readonly RuntimeLockRegistryPage _page;
+        public List<RuntimeLockRegistryEntry> Upserts { get; } = [];
 
         public RuntimeLockStoreStub(params RuntimeLockRegistryEntry[] entries)
         {
-            _page = new RuntimeLockRegistryPage(entries, entries.Length);
+            Upserts.AddRange(entries);
         }
 
-        public RuntimeLockRegistryPage List(OwnerScope owner, string? rulesetId = null) => _page;
+        public RuntimeLockRegistryPage List(OwnerScope owner, string? rulesetId = null) => new(Upserts, Upserts.Count);
 
         public RuntimeLockRegistryEntry? Get(OwnerScope owner, string lockId, string? rulesetId = null)
         {
-            return _page.Entries.FirstOrDefault(entry => string.Equals(entry.LockId, lockId, StringComparison.Ordinal));
+            return Upserts.FirstOrDefault(entry => string.Equals(entry.LockId, lockId, StringComparison.Ordinal));
         }
 
         public RuntimeLockRegistryEntry Upsert(OwnerScope owner, RuntimeLockRegistryEntry entry)
         {
-            throw new NotSupportedException();
+            int existingIndex = Upserts.FindIndex(current => string.Equals(current.LockId, entry.LockId, StringComparison.Ordinal));
+            if (existingIndex >= 0)
+            {
+                Upserts[existingIndex] = entry;
+            }
+            else
+            {
+                Upserts.Add(entry);
+            }
+
+            return entry;
         }
     }
 }
