@@ -59,6 +59,7 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<ICharacterMagicResonanceQueries>(),
                 provider.GetRequiredService<ICharacterSocialNarrativeQueries>()));
         services.AddSingleton<IContentOverlayCatalogService>(overlays);
+        services.AddSingleton<IRulePackRegistryService, OverlayRulePackRegistryService>();
 
         services.AddSingleton<ILifeModulesCatalogService>(provider =>
         {

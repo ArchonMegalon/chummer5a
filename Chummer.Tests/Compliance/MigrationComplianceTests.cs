@@ -233,6 +233,39 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Rulepack_registry_surface_is_separate_from_overlay_catalog_surface()
+    {
+        string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
+        string apiProgramText = File.ReadAllText(apiProgramPath);
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string rulePackRegistryEndpointsPath = FindPath("Chummer.Api", "Endpoints", "RulePackRegistryEndpoints.cs");
+        string rulePackRegistryEndpointsText = File.ReadAllText(rulePackRegistryEndpointsPath);
+        string rulePackRegistryServiceContractPath = FindPath("Chummer.Application", "Content", "IRulePackRegistryService.cs");
+        string rulePackRegistryServiceContractText = File.ReadAllText(rulePackRegistryServiceContractPath);
+        string overlayRulePackRegistryServicePath = FindPath("Chummer.Application", "Content", "OverlayRulePackRegistryService.cs");
+        string overlayRulePackRegistryServiceText = File.ReadAllText(overlayRulePackRegistryServicePath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string overlayExtensionsPath = FindPath("Chummer.Application", "Content", "ContentOverlayRulePackCatalogExtensions.cs");
+        string overlayExtensionsText = File.ReadAllText(overlayExtensionsPath);
+
+        StringAssert.Contains(apiProgramText, "app.MapRulePackRegistryEndpoints();");
+        StringAssert.Contains(infoEndpointsText, "/api/content/overlays");
+        StringAssert.Contains(infoEndpointsText, "/api/rulepacks");
+        StringAssert.Contains(rulePackRegistryEndpointsText, "/api/rulepacks");
+        StringAssert.Contains(rulePackRegistryEndpointsText, "IRulePackRegistryService");
+        StringAssert.Contains(rulePackRegistryEndpointsText, "rulePackRegistryService.List");
+        StringAssert.Contains(rulePackRegistryEndpointsText, "rulepack_not_found");
+        StringAssert.Contains(rulePackRegistryServiceContractText, "public interface IRulePackRegistryService");
+        StringAssert.Contains(rulePackRegistryServiceContractText, "IReadOnlyList<RulePackRegistryEntry> List");
+        StringAssert.Contains(overlayRulePackRegistryServiceText, "public sealed class OverlayRulePackRegistryService : IRulePackRegistryService");
+        StringAssert.Contains(overlayRulePackRegistryServiceText, "ToRulePackManifest");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRulePackRegistryService, OverlayRulePackRegistryService>()");
+        StringAssert.Contains(overlayExtensionsText, "public static RulePackCatalog ToRulePackCatalog");
+    }
+
+    [TestMethod]
     public void Solution_includes_headless_and_dual_head_projects()
     {
         string solutionPath = FindPath("Chummer.sln");

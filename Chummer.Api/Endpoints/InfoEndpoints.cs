@@ -16,6 +16,7 @@ public static class InfoEndpoints
                 "/api/info",
                 "/api/health",
                 "/api/content/overlays",
+                "/api/rulepacks",
                 "/api/workspaces",
                 "/api/workspaces/import"
             }

@@ -115,6 +115,39 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Rulepacks_endpoint_reports_registry_entries_and_expected_overlay_pack_when_configured()
+    {
+        using var client = CreateClient();
+
+        JsonObject rulepacks = await GetRequiredJsonObject(client, "/api/rulepacks?ruleset=sr5");
+        Assert.IsNotNull(rulepacks["count"]);
+        Assert.IsInstanceOfType<JsonArray>(rulepacks["entries"]);
+
+        if (!string.IsNullOrWhiteSpace(ExpectedAmendId))
+        {
+            JsonArray items = (JsonArray)rulepacks["entries"]!;
+            bool found = items.OfType<JsonObject>()
+                .Any(item => string.Equals(item["manifest"]?["packId"]?.GetValue<string>(), ExpectedAmendId, StringComparison.Ordinal));
+            Assert.IsTrue(found, $"Expected rulepack id '{ExpectedAmendId}' was not found.");
+        }
+    }
+
+    [TestMethod]
+    public async Task Rulepack_detail_endpoint_returns_not_found_for_unknown_pack()
+    {
+        using var client = CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync("/api/rulepacks/missing-pack?ruleset=sr5");
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual("rulepack_not_found", payload["error"]?.GetValue<string>());
+        Assert.AreEqual("missing-pack", payload["packId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Health_endpoint_reports_ok()
     {
         using var client = CreateClient();
