@@ -454,6 +454,26 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Buildkit_application_contracts_lock_in_prompt_validation_and_apply_receipt_vocabulary()
+    {
+        string buildKitApplicationContractsPath = FindPath("Chummer.Contracts", "Content", "BuildKitApplicationContracts.cs");
+        string buildKitApplicationContractsText = File.ReadAllText(buildKitApplicationContractsPath);
+
+        StringAssert.Contains(buildKitApplicationContractsText, "public static class BuildKitValidationIssueKinds");
+        StringAssert.Contains(buildKitApplicationContractsText, "public static class BuildKitAppliedActionOutcomes");
+        StringAssert.Contains(buildKitApplicationContractsText, "public static class BuildKitApplicationStatuses");
+        StringAssert.Contains(buildKitApplicationContractsText, "public sealed record BuildKitPromptResolution");
+        StringAssert.Contains(buildKitApplicationContractsText, "public sealed record BuildKitValidationIssue");
+        StringAssert.Contains(buildKitApplicationContractsText, "public sealed record BuildKitAppliedAction");
+        StringAssert.Contains(buildKitApplicationContractsText, "public sealed record BuildKitValidationReceipt");
+        StringAssert.Contains(buildKitApplicationContractsText, "public sealed record BuildKitApplicationReceipt");
+        StringAssert.Contains(buildKitApplicationContractsText, "RuntimeFingerprintMismatch");
+        StringAssert.Contains(buildKitApplicationContractsText, "PromptRequired");
+        StringAssert.Contains(buildKitApplicationContractsText, "PartiallyApplied");
+        StringAssert.Contains(buildKitApplicationContractsText, "CharacterVersionReference? ResultingCharacterVersion = null");
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");

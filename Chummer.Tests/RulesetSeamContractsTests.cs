@@ -772,6 +772,50 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Buildkit_application_contracts_define_prompt_resolution_validation_and_apply_receipts()
+    {
+        CharacterVersionReference version = new(
+            CharacterId: "char-1",
+            VersionId: "charv-3",
+            RulesetId: RulesetDefaults.Sr5,
+            RuntimeFingerprint: "runtime-lock-v3");
+        BuildKitPromptResolution promptResolution = new(
+            PromptId: "weapon-focus",
+            OptionId: "melee");
+        BuildKitValidationIssue validationIssue = new(
+            Kind: BuildKitValidationIssueKinds.MissingRulePack,
+            Message: "Required campaign pack is not installed.",
+            ActionId: "grant-starting-bundle");
+        BuildKitApplicationReceipt receipt = new(
+            Status: BuildKitApplicationStatuses.PartiallyApplied,
+            BuildKitId: "street-sam-starter",
+            WorkspaceId: "ws-1",
+            ResolvedPrompts: [promptResolution],
+            AppliedActions:
+            [
+                new BuildKitAppliedAction(
+                    ActionId: "grant-starting-bundle",
+                    Kind: BuildKitActionKinds.AddBundle,
+                    TargetId: "starter/street-sam",
+                    Outcome: BuildKitAppliedActionOutcomes.Applied),
+                new BuildKitAppliedAction(
+                    ActionId: "queue-career-upgrade",
+                    Kind: BuildKitActionKinds.QueueCareerUpdate,
+                    TargetId: "career/street-sam",
+                    Outcome: BuildKitAppliedActionOutcomes.Blocked)
+            ],
+            Issues: [validationIssue],
+            ResultingCharacterVersion: version);
+
+        Assert.AreEqual(BuildKitApplicationStatuses.PartiallyApplied, receipt.Status);
+        Assert.AreEqual("weapon-focus", receipt.ResolvedPrompts[0].PromptId);
+        Assert.AreEqual(BuildKitValidationIssueKinds.MissingRulePack, receipt.Issues[0].Kind);
+        Assert.AreEqual(BuildKitAppliedActionOutcomes.Applied, receipt.AppliedActions[0].Outcome);
+        Assert.AreEqual(BuildKitAppliedActionOutcomes.Blocked, receipt.AppliedActions[1].Outcome);
+        Assert.AreEqual("charv-3", receipt.ResultingCharacterVersion!.VersionId);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);
