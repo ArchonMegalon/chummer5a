@@ -153,6 +153,7 @@ public class CharacterOverviewViewModelAdapterTests
         await adapter.ImportAsync(Encoding.UTF8.GetBytes("<character />"), CancellationToken.None);
 
         Assert.AreEqual("<character />", presenter.ImportedContent);
+        Assert.AreEqual(string.Empty, presenter.ImportedRulesetId);
     }
 
     [TestMethod]

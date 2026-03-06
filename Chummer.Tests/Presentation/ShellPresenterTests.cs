@@ -431,7 +431,7 @@ public class ShellPresenterTests
 
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
 
-        public ShellPreferences Preferences { get; set; } = ShellPreferences.Default;
+        public ShellPreferences Preferences { get; set; } = new(RulesetDefaults.Sr5);
 
         public ShellSessionState Session { get; set; } = ShellSessionState.Default;
 

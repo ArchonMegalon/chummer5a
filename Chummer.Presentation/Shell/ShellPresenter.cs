@@ -32,7 +32,11 @@ public sealed class ShellPresenter : IShellPresenter
         try
         {
             ShellBootstrapData bootstrap = await _bootstrapDataProvider.GetAsync(ct);
-            string preferredRulesetId = RulesetDefaults.Normalize(bootstrap.PreferredRulesetId);
+            string preferredRulesetId = ResolveRulesetId(
+                bootstrap.PreferredRulesetId,
+                bootstrap.Workspaces.Select(workspace => workspace.RulesetId),
+                bootstrap.Commands.Select(command => command.RulesetId),
+                bootstrap.NavigationTabs.Select(tab => tab.RulesetId));
             ShellWorkspaceState[] openWorkspaces = MapWorkspaces(bootstrap.Workspaces);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(
                 requestedActiveWorkspaceId: bootstrap.ActiveWorkspaceId,
@@ -40,10 +44,18 @@ public sealed class ShellPresenter : IShellPresenter
             string activeRulesetId = ResolveRulesetForActiveWorkspace(activeWorkspaceId, openWorkspaces, preferredRulesetId);
             if (activeWorkspaceId is null)
             {
-                activeRulesetId = RulesetDefaults.Normalize(bootstrap.ActiveRulesetId);
+                activeRulesetId = ResolveRulesetId(
+                    bootstrap.ActiveRulesetId,
+                    openWorkspaces.Select(workspace => workspace.RulesetId),
+                    [preferredRulesetId]);
             }
 
-            if (!string.Equals(RulesetDefaults.Normalize(bootstrap.RulesetId), activeRulesetId, StringComparison.Ordinal))
+            string bootstrapRulesetId = ResolveRulesetId(
+                bootstrap.RulesetId,
+                openWorkspaces.Select(workspace => workspace.RulesetId),
+                [activeRulesetId, preferredRulesetId]);
+            if (!string.IsNullOrWhiteSpace(activeRulesetId)
+                && !string.Equals(bootstrapRulesetId, activeRulesetId, StringComparison.Ordinal))
             {
                 bootstrap = await _bootstrapDataProvider.GetAsync(activeRulesetId, ct);
                 openWorkspaces = MapWorkspaces(bootstrap.Workspaces);
@@ -51,7 +63,10 @@ public sealed class ShellPresenter : IShellPresenter
                 activeRulesetId = ResolveRulesetForActiveWorkspace(activeWorkspaceId, openWorkspaces, preferredRulesetId);
                 if (activeWorkspaceId is null)
                 {
-                    activeRulesetId = RulesetDefaults.Normalize(bootstrap.ActiveRulesetId);
+                    activeRulesetId = ResolveRulesetId(
+                        bootstrap.ActiveRulesetId,
+                        openWorkspaces.Select(workspace => workspace.RulesetId),
+                        [preferredRulesetId]);
                 }
             }
 
@@ -277,7 +292,11 @@ public sealed class ShellPresenter : IShellPresenter
     {
         IReadOnlyList<WorkspaceListItem> workspaces = await _runtimeClient.ListWorkspacesAsync(ct);
         ShellWorkspaceState[] openWorkspaces = MapWorkspaces(workspaces);
-        string preferredRulesetId = RulesetDefaults.Normalize(State.PreferredRulesetId);
+        string preferredRulesetId = ResolveRulesetId(
+            State.PreferredRulesetId,
+            State.OpenWorkspaces.Select(workspace => workspace.RulesetId),
+            State.Commands.Select(command => command.RulesetId),
+            State.NavigationTabs.Select(tab => tab.RulesetId));
         CharacterWorkspaceId? resolvedActiveWorkspace = ResolveActiveWorkspaceId(activeWorkspaceId, openWorkspaces);
         string activeRulesetId = ResolveRulesetForActiveWorkspace(resolvedActiveWorkspace, openWorkspaces, preferredRulesetId);
         bool rulesetChanged = !string.Equals(State.ActiveRulesetId, activeRulesetId, StringComparison.Ordinal);
@@ -366,7 +385,7 @@ public sealed class ShellPresenter : IShellPresenter
                 Name: string.IsNullOrWhiteSpace(workspace.Summary.Name) ? "(Unnamed Character)" : workspace.Summary.Name,
                 Alias: workspace.Summary.Alias ?? string.Empty,
                 LastOpenedUtc: workspace.LastUpdatedUtc,
-                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
+                RulesetId: RulesetDefaults.NormalizeOptional(workspace.RulesetId) ?? string.Empty,
                 HasSavedWorkspace: workspace.HasSavedWorkspace))
             .OrderByDescending(workspace => workspace.LastOpenedUtc)
             .ToArray();
@@ -400,12 +419,32 @@ public sealed class ShellPresenter : IShellPresenter
         string preferredRulesetId)
     {
         if (activeWorkspaceId is null)
-            return RulesetDefaults.Normalize(preferredRulesetId);
+            return RulesetDefaults.NormalizeOptional(preferredRulesetId)
+                ?? openWorkspaces
+                    .Select(workspace => RulesetDefaults.NormalizeOptional(workspace.RulesetId))
+                    .FirstOrDefault(rulesetId => rulesetId is not null)
+                ?? string.Empty;
 
         ShellWorkspaceState? workspace = openWorkspaces.FirstOrDefault(candidate => WorkspaceIdsEqual(candidate.Id, activeWorkspaceId.Value));
-        return workspace is null
-            ? RulesetDefaults.Normalize(preferredRulesetId)
-            : RulesetDefaults.Normalize(workspace.RulesetId);
+        return RulesetDefaults.NormalizeOptional(workspace?.RulesetId)
+            ?? RulesetDefaults.NormalizeOptional(preferredRulesetId)
+            ?? openWorkspaces
+                .Select(candidate => RulesetDefaults.NormalizeOptional(candidate.RulesetId))
+                .FirstOrDefault(rulesetId => rulesetId is not null)
+            ?? string.Empty;
+    }
+
+    private static string ResolveRulesetId(
+        string? preferredCandidate,
+        IEnumerable<string?> primaryCandidates,
+        IEnumerable<string?> secondaryCandidates,
+        IEnumerable<string?>? tertiaryCandidates = null)
+    {
+        return RulesetDefaults.NormalizeOptional(preferredCandidate)
+            ?? primaryCandidates.Select(RulesetDefaults.NormalizeOptional).FirstOrDefault(candidate => candidate is not null)
+            ?? secondaryCandidates.Select(RulesetDefaults.NormalizeOptional).FirstOrDefault(candidate => candidate is not null)
+            ?? (tertiaryCandidates?.Select(RulesetDefaults.NormalizeOptional).FirstOrDefault(candidate => candidate is not null))
+            ?? string.Empty;
     }
 
     private static string? ResolveActiveTabId(

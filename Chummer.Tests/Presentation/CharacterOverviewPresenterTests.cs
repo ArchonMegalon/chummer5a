@@ -823,7 +823,7 @@ public class CharacterOverviewPresenterTests
         private string _alias = "BLUE";
         private readonly Dictionary<string, WorkspaceListItem> _workspaces = new(StringComparer.Ordinal);
         private int _clock;
-        private ShellPreferences _preferences = ShellPreferences.Default;
+        private ShellPreferences _preferences = new(RulesetDefaults.Sr5);
         private ShellSessionState _session = ShellSessionState.Default;
         public bool ThrowOnCloseWorkspace { get; set; }
         public int DownloadCalls { get; private set; }

@@ -38,12 +38,18 @@ public static class ShellEndpoints
             IReadOnlyList<WorkspaceListItem> workspaceList = workspaceService.List(ShellBootstrapDefaults.MaxWorkspaces);
             ShellPreferences preferences = shellPreferencesService.Load();
             ShellSessionState session = shellSessionService.Load();
-            string preferredRulesetId = RulesetDefaults.NormalizeOrDefault(
-                preferences.PreferredRulesetId,
-                ShellPreferences.Default.PreferredRulesetId);
+            string preferredRulesetId = ResolvePreferredRulesetId(preferences.PreferredRulesetId, workspaceList);
             CharacterWorkspaceId? activeWorkspaceId = ResolveActiveWorkspaceId(workspaceList, session.ActiveWorkspaceId);
             string activeRulesetId = ResolveRulesetForWorkspace(activeWorkspaceId, workspaceList, preferredRulesetId);
-            string requestedRulesetId = RulesetDefaults.NormalizeOptional(ruleset) ?? activeRulesetId;
+            string requestedRulesetId = RulesetDefaults.NormalizeOptional(ruleset)
+                ?? activeRulesetId
+                ?? ResolveCatalogFallbackRulesetId();
+            string effectivePreferredRulesetId = string.IsNullOrWhiteSpace(preferredRulesetId)
+                ? requestedRulesetId
+                : preferredRulesetId;
+            string effectiveActiveRulesetId = string.IsNullOrWhiteSpace(activeRulesetId)
+                ? requestedRulesetId
+                : activeRulesetId;
 
             IReadOnlyList<WorkspaceListItemResponse> workspaces = workspaceList
                 .Select(workspace => new WorkspaceListItemResponse(
@@ -59,8 +65,8 @@ public static class ShellEndpoints
                 Commands: shellCatalogResolver.ResolveCommands(requestedRulesetId),
                 NavigationTabs: shellCatalogResolver.ResolveNavigationTabs(requestedRulesetId),
                 Workspaces: workspaces,
-                PreferredRulesetId: preferredRulesetId,
-                ActiveRulesetId: activeRulesetId,
+                PreferredRulesetId: effectivePreferredRulesetId,
+                ActiveRulesetId: effectiveActiveRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId?.Value,
                 ActiveTabId: session.ActiveTabId,
                 ActiveTabsByWorkspace: session.ActiveTabsByWorkspace));
@@ -81,6 +87,17 @@ public static class ShellEndpoints
         return matchingWorkspace?.Id;
     }
 
+    private static string ResolvePreferredRulesetId(
+        string? preferredRulesetId,
+        IReadOnlyList<WorkspaceListItem> workspaces)
+    {
+        return RulesetDefaults.NormalizeOptional(preferredRulesetId)
+            ?? workspaces
+                .Select(workspace => RulesetDefaults.NormalizeOptional(workspace.RulesetId))
+                .FirstOrDefault(rulesetId => rulesetId is not null)
+            ?? ResolveCatalogFallbackRulesetId();
+    }
+
     private static string ResolveRulesetForWorkspace(
         CharacterWorkspaceId? activeWorkspaceId,
         IReadOnlyList<WorkspaceListItem> workspaces,
@@ -88,13 +105,23 @@ public static class ShellEndpoints
     {
         if (activeWorkspaceId is null)
         {
-            return RulesetDefaults.NormalizeOrDefault(preferredRulesetId, ShellPreferences.Default.PreferredRulesetId);
+            return RulesetDefaults.NormalizeOptional(preferredRulesetId)
+                ?? ResolveCatalogFallbackRulesetId();
         }
 
         WorkspaceListItem? matchingWorkspace = workspaces.FirstOrDefault(workspace =>
             string.Equals(workspace.Id.Value, activeWorkspaceId.Value.Value, StringComparison.Ordinal));
         return matchingWorkspace is null
-            ? RulesetDefaults.NormalizeOrDefault(preferredRulesetId, ShellPreferences.Default.PreferredRulesetId)
-            : RulesetDefaults.NormalizeOrDefault(matchingWorkspace.RulesetId, preferredRulesetId);
+            ? RulesetDefaults.NormalizeOptional(preferredRulesetId) ?? ResolveCatalogFallbackRulesetId()
+            : RulesetDefaults.NormalizeOptional(matchingWorkspace.RulesetId)
+                ?? RulesetDefaults.NormalizeOptional(preferredRulesetId)
+                ?? ResolveCatalogFallbackRulesetId();
+    }
+
+    private static string ResolveCatalogFallbackRulesetId()
+    {
+        return RulesetDefaults.NormalizeOptional(AppCommandCatalog.All.FirstOrDefault()?.RulesetId)
+            ?? RulesetDefaults.NormalizeOptional(NavigationTabCatalog.All.FirstOrDefault()?.RulesetId)
+            ?? string.Empty;
     }
 }

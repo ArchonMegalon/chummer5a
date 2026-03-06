@@ -76,8 +76,9 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
         CachedBootstrapData cached = new(bootstrap, DateTimeOffset.UtcNow);
         _cachedBootstrapsByKey[cacheKey] = cached;
 
-        string resolvedRulesetId = RulesetDefaults.Normalize(bootstrap.RulesetId);
-        if (!string.Equals(cacheKey, resolvedRulesetId, StringComparison.Ordinal))
+        string? resolvedRulesetId = RulesetDefaults.NormalizeOptional(bootstrap.RulesetId);
+        if (!string.IsNullOrWhiteSpace(resolvedRulesetId)
+            && !string.Equals(cacheKey, resolvedRulesetId, StringComparison.Ordinal))
         {
             _cachedBootstrapsByKey[resolvedRulesetId] = cached;
         }
@@ -93,12 +94,12 @@ public sealed class ShellBootstrapDataProvider : IShellBootstrapDataProvider
     private static ShellBootstrapData CreateBootstrapData(ShellBootstrapSnapshot snapshot)
     {
         return new ShellBootstrapData(
-            RulesetId: RulesetDefaults.Normalize(snapshot.RulesetId),
+            RulesetId: RulesetDefaults.NormalizeOptional(snapshot.RulesetId) ?? string.Empty,
             Commands: snapshot.Commands,
             NavigationTabs: snapshot.NavigationTabs,
             Workspaces: snapshot.Workspaces,
-            PreferredRulesetId: RulesetDefaults.Normalize(snapshot.PreferredRulesetId),
-            ActiveRulesetId: RulesetDefaults.Normalize(snapshot.ActiveRulesetId),
+            PreferredRulesetId: RulesetDefaults.NormalizeOptional(snapshot.PreferredRulesetId) ?? string.Empty,
+            ActiveRulesetId: RulesetDefaults.NormalizeOptional(snapshot.ActiveRulesetId) ?? string.Empty,
             ActiveWorkspaceId: snapshot.ActiveWorkspaceId,
             ActiveTabId: NormalizeTabId(snapshot.ActiveTabId),
             ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(snapshot.ActiveTabsByWorkspace));

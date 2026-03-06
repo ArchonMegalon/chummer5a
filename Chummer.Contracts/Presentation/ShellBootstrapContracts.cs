@@ -11,7 +11,7 @@ public static class ShellBootstrapDefaults
 public sealed record ShellPreferences(
     string PreferredRulesetId)
 {
-    public static ShellPreferences Default { get; } = new(RulesetDefaults.Sr5);
+    public static ShellPreferences Default { get; } = new(string.Empty);
 }
 
 public sealed record ShellSessionState(

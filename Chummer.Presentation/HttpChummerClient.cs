@@ -29,13 +29,13 @@ public sealed class HttpChummerClient : IChummerClient
             throw new InvalidOperationException("Shell preferences response was empty.");
 
         return new ShellPreferences(
-            PreferredRulesetId: RulesetDefaults.Normalize(response.PreferredRulesetId));
+            PreferredRulesetId: RulesetDefaults.NormalizeOptional(response.PreferredRulesetId) ?? string.Empty);
     }
 
     public async Task SaveShellPreferencesAsync(ShellPreferences preferences, CancellationToken ct)
     {
         ShellPreferences payload = new(
-            PreferredRulesetId: RulesetDefaults.Normalize(preferences.PreferredRulesetId));
+            PreferredRulesetId: RulesetDefaults.NormalizeOptional(preferences.PreferredRulesetId) ?? string.Empty);
         using HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
             "/api/shell/preferences",
             payload,
@@ -198,12 +198,12 @@ public sealed class HttpChummerClient : IChummerClient
             .ToArray();
 
         return new ShellBootstrapSnapshot(
-            RulesetId: RulesetDefaults.Normalize(response.RulesetId),
+            RulesetId: RulesetDefaults.NormalizeOptional(response.RulesetId) ?? string.Empty,
             Commands: response.Commands,
             NavigationTabs: response.NavigationTabs,
             Workspaces: workspaces,
-            PreferredRulesetId: RulesetDefaults.Normalize(response.PreferredRulesetId),
-            ActiveRulesetId: RulesetDefaults.Normalize(response.ActiveRulesetId),
+            PreferredRulesetId: RulesetDefaults.NormalizeOptional(response.PreferredRulesetId) ?? string.Empty,
+            ActiveRulesetId: RulesetDefaults.NormalizeOptional(response.ActiveRulesetId) ?? string.Empty,
             ActiveWorkspaceId: ParseWorkspaceId(response.ActiveWorkspaceId),
             ActiveTabId: NormalizeTabId(response.ActiveTabId),
             ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(response.ActiveTabsByWorkspace));

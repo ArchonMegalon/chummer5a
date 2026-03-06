@@ -193,7 +193,7 @@ public class ShellBootstrapDataProviderTests
         public List<string> RequestedBootstrapRulesets { get; } = new();
         public IReadOnlyList<AppCommandDefinition> Commands { get; set; } = AppCommandCatalog.All;
         public IReadOnlyList<NavigationTabDefinition> NavigationTabs { get; set; } = NavigationTabCatalog.All;
-        public ShellPreferences Preferences { get; set; } = ShellPreferences.Default;
+        public ShellPreferences Preferences { get; set; } = new(RulesetDefaults.Sr5);
         public ShellSessionState Session { get; set; } = ShellSessionState.Default;
         public IReadOnlyList<WorkspaceListItem> Workspaces { get; set; } = Array.Empty<WorkspaceListItem>();
 

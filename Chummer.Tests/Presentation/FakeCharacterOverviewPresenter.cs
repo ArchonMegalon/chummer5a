@@ -23,6 +23,8 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
 
     public string? ImportedContent { get; private set; }
 
+    public string? ImportedRulesetId { get; private set; }
+
     public UpdateWorkspaceMetadata? UpdatedMetadata { get; private set; }
 
     public string? ExecutedCommandId { get; private set; }
@@ -54,6 +56,7 @@ internal sealed class FakeCharacterOverviewPresenter : ICharacterOverviewPresent
     public Task ImportAsync(WorkspaceImportDocument document, CancellationToken ct)
     {
         ImportedContent = document.Content;
+        ImportedRulesetId = document.RulesetId;
         return Task.CompletedTask;
     }
 

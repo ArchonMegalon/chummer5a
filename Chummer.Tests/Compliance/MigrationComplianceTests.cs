@@ -1256,6 +1256,12 @@ public class MigrationComplianceTests
         string presenterCommandsText = File.ReadAllText(presenterCommandsPath);
         Assert.IsFalse(workspaceSessionManagerText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(presenterCommandsText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
+        string shellStatePath = FindPath("Chummer.Presentation", "Shell", "ShellState.cs");
+        string shellStateText = File.ReadAllText(shellStatePath);
+        string shellContractsPath = FindPath("Chummer.Contracts", "Presentation", "ShellBootstrapContracts.cs");
+        string shellContractsText = File.ReadAllText(shellContractsPath);
+        Assert.IsFalse(shellStateText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
+        Assert.IsFalse(shellContractsText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         StringAssert.Contains(fileWorkspaceStoreText, "WorkspacePayloadEnvelope");
         StringAssert.Contains(fileWorkspaceStoreText, "PayloadKind");
         StringAssert.Contains(fileWorkspaceStoreText, "Envelope");

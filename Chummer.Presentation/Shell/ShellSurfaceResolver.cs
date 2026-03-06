@@ -1,3 +1,4 @@
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
@@ -22,10 +23,15 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
         ArgumentNullException.ThrowIfNull(overviewState);
         ArgumentNullException.ThrowIfNull(shellState);
 
-        string preferredRulesetId = RulesetDefaults.Normalize(shellState.PreferredRulesetId);
-        string activeRulesetId = string.IsNullOrWhiteSpace(shellState.ActiveRulesetId)
-            ? preferredRulesetId
-            : RulesetDefaults.Normalize(shellState.ActiveRulesetId);
+        string preferredRulesetId = ResolveRulesetId(
+            shellState.PreferredRulesetId,
+            shellState.OpenWorkspaces.Select(workspace => workspace.RulesetId),
+            shellState.Commands.Select(command => command.RulesetId),
+            shellState.NavigationTabs.Select(tab => tab.RulesetId));
+        string activeRulesetId = ResolveRulesetId(
+            shellState.ActiveRulesetId,
+            shellState.OpenWorkspaces.Select(workspace => workspace.RulesetId),
+            [preferredRulesetId]);
         string? activeTabId = shellState.ActiveTabId;
         CharacterWorkspaceId? activeWorkspaceId = shellState.ActiveWorkspaceId;
         IReadOnlyList<OpenWorkspaceState> openWorkspaces = shellState.OpenWorkspaces
@@ -34,21 +40,25 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
                 Name: workspace.Name,
                 Alias: workspace.Alias,
                 LastOpenedUtc: workspace.LastOpenedUtc,
-                RulesetId: RulesetDefaults.Normalize(workspace.RulesetId),
+                RulesetId: RulesetDefaults.NormalizeOptional(workspace.RulesetId) ?? string.Empty,
                 HasSavedWorkspace: workspace.HasSavedWorkspace))
             .ToArray();
 
-        var workspaceActions = _catalogResolver.ResolveWorkspaceActionsForTab(
-                activeTabId,
-                activeRulesetId)
-            .Where(action => _availabilityEvaluator.IsWorkspaceActionEnabled(action, overviewState))
-            .ToArray();
+        WorkspaceSurfaceActionDefinition[] workspaceActions = string.IsNullOrWhiteSpace(activeRulesetId)
+            ? []
+            : _catalogResolver.ResolveWorkspaceActionsForTab(
+                    activeTabId,
+                    activeRulesetId)
+                .Where(action => _availabilityEvaluator.IsWorkspaceActionEnabled(action, overviewState))
+                .ToArray();
 
-        var uiControls = _catalogResolver.ResolveDesktopUiControlsForTab(
-                activeTabId,
-                activeRulesetId)
-            .Where(control => _availabilityEvaluator.IsUiControlEnabled(control, overviewState))
-            .ToArray();
+        DesktopUiControlDefinition[] uiControls = string.IsNullOrWhiteSpace(activeRulesetId)
+            ? []
+            : _catalogResolver.ResolveDesktopUiControlsForTab(
+                    activeTabId,
+                    activeRulesetId)
+                .Where(control => _availabilityEvaluator.IsUiControlEnabled(control, overviewState))
+                .ToArray();
 
         ShellSurfaceState state = new(
             Commands: shellState.Commands,
@@ -69,5 +79,18 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
             Notice = shellState.Notice,
             Error = shellState.Error
         };
+    }
+
+    private static string ResolveRulesetId(
+        string? preferredCandidate,
+        IEnumerable<string?> primaryCandidates,
+        IEnumerable<string?> secondaryCandidates,
+        IEnumerable<string?>? tertiaryCandidates = null)
+    {
+        return RulesetDefaults.NormalizeOptional(preferredCandidate)
+            ?? primaryCandidates.Select(RulesetDefaults.NormalizeOptional).FirstOrDefault(candidate => candidate is not null)
+            ?? secondaryCandidates.Select(RulesetDefaults.NormalizeOptional).FirstOrDefault(candidate => candidate is not null)
+            ?? (tertiaryCandidates?.Select(RulesetDefaults.NormalizeOptional).FirstOrDefault(candidate => candidate is not null))
+            ?? string.Empty;
     }
 }

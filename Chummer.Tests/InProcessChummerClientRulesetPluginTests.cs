@@ -364,7 +364,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
     private sealed class InMemoryShellPreferencesStore : IShellPreferencesStore
     {
-        private ShellPreferences _preferences = ShellPreferences.Default;
+        private ShellPreferences _preferences = new(RulesetDefaults.Sr5);
 
         public ShellPreferences Load()
         {
