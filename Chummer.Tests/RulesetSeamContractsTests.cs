@@ -928,6 +928,166 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Session_projection_contracts_define_dashboard_cards_groups_banners_and_explain_entries()
+    {
+        CharacterVersionReference baseCharacterVersion = new(
+            CharacterId: "char-1",
+            VersionId: "charv-1",
+            RulesetId: RulesetDefaults.Sr5,
+            RuntimeFingerprint: "runtime-lock-sha256");
+        TrackerSnapshot trackerSnapshot = new(
+            Definition: new TrackerDefinition(
+                TrackerId: "stun",
+                Category: TrackerCategories.Condition,
+                Label: "Stun",
+                DefaultValue: 0,
+                MinimumValue: 0,
+                MaximumValue: 10,
+                Thresholds:
+                [
+                    new TrackerThresholdDefinition(
+                        ThresholdId: "stun-warning",
+                        Value: 8,
+                        Label: "Warning",
+                        Status: "warning")
+                ]),
+            CurrentValue: 3,
+            ThresholdState: null);
+        SessionOverlaySnapshot overlay = new(
+            OverlayId: "overlay-1",
+            BaseCharacterVersion: baseCharacterVersion,
+            Trackers: [trackerSnapshot],
+            ActiveEffects:
+            [
+                new SessionEffectState(
+                    EffectId: "effect-1",
+                    Label: "Jazz",
+                    IsActive: true)
+            ],
+            PinnedQuickActions:
+            [
+                new SessionQuickActionPin(
+                    ActionId: "fire-weapon",
+                    Label: "Fire Weapon",
+                    CapabilityId: "session.quick-actions")
+            ],
+            Notes: ["Take cover."],
+            SyncState: new SessionSyncState(
+                Status: SessionSyncStatuses.PendingSync,
+                PendingEventCount: 2,
+                LastSyncedAtUtc: DateTimeOffset.UtcNow.AddMinutes(-5),
+                WasReplayed: false,
+                RuntimeFingerprintMismatch: false));
+        SessionRuntimeBundle runtimeBundle = new(
+            BundleId: "bundle-1",
+            BaseCharacterVersion: baseCharacterVersion,
+            EngineApiVersion: "rulepack-v1",
+            SignedAtUtc: DateTimeOffset.UtcNow,
+            Signature: "sig-1",
+            QuickActions: overlay.PinnedQuickActions,
+            Trackers: [trackerSnapshot.Definition],
+            ReducerBindings: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["tracker.increment"] = "sr5-core/reducers/tracker.increment"
+            });
+        SessionTrackerGroup trackerGroup = new(
+            GroupId: "condition-trackers",
+            Label: "Condition",
+            Trackers: [trackerSnapshot],
+            ExplainEntryId: "explain-1");
+        SessionQuickActionGroup quickActionGroup = new(
+            GroupId: "combat-actions",
+            Label: "Combat",
+            Actions:
+            [
+                new SessionQuickActionDescriptor(
+                    ActionId: "fire-weapon",
+                    Label: "Fire Weapon",
+                    CapabilityId: "session.quick-actions",
+                    IsPinned: true,
+                    IsEnabled: true,
+                    ExplainEntryId: "explain-2")
+            ]);
+        SessionSyncBanner syncBanner = new(
+            BannerId: "sync-status",
+            Status: SessionSyncBannerStates.PendingSync,
+            Message: "2 events are waiting to sync.",
+            PendingEventCount: 2,
+            RequiresAttention: true,
+            ExplainEntryId: "explain-3");
+        SessionDashboardProjection projection = new(
+            OverlayId: overlay.OverlayId,
+            BaseCharacterVersion: baseCharacterVersion,
+            RuntimeFingerprint: baseCharacterVersion.RuntimeFingerprint,
+            Overlay: overlay,
+            RuntimeBundle: runtimeBundle,
+            Sections:
+            [
+                new SessionDashboardSection(
+                    SectionId: "trackers",
+                    Kind: SessionDashboardSectionKinds.Trackers,
+                    Title: "Trackers",
+                    CardIds: ["trackers-card"]),
+                new SessionDashboardSection(
+                    SectionId: "actions",
+                    Kind: SessionDashboardSectionKinds.QuickActions,
+                    Title: "Quick Actions",
+                    CardIds: ["actions-card"])
+            ],
+            Cards:
+            [
+                new SessionDashboardCard(
+                    CardId: "trackers-card",
+                    Kind: SessionDashboardCardKinds.TrackerGroup,
+                    Title: "Condition Tracks",
+                    PrimaryValue: "Stun 3/10",
+                    GroupId: trackerGroup.GroupId,
+                    ExplainEntryId: "explain-1",
+                    IsInteractive: true),
+                new SessionDashboardCard(
+                    CardId: "actions-card",
+                    Kind: SessionDashboardCardKinds.QuickActionGroup,
+                    Title: "Quick Actions",
+                    PrimaryValue: "1 pinned",
+                    GroupId: quickActionGroup.GroupId,
+                    ExplainEntryId: "explain-2",
+                    IsInteractive: true)
+            ],
+            TrackerGroups: [trackerGroup],
+            QuickActionGroups: [quickActionGroup],
+            ExplainEntries:
+            [
+                new SessionExplainEntry(
+                    EntryId: "explain-1",
+                    Kind: SessionExplainEntryKinds.TrackerThreshold,
+                    Title: "Stun Threshold",
+                    Summary: "Warning threshold at 8.",
+                    Fragments: ["stun-warning at 8"],
+                    ProviderId: "sr5-core/tracker-threshold",
+                    PackId: "sr5-core",
+                    GasUsed: 18),
+                new SessionExplainEntry(
+                    EntryId: "explain-2",
+                    Kind: SessionExplainEntryKinds.QuickActionAvailability,
+                    Title: "Fire Weapon",
+                    Summary: "Available because the action economy is open.",
+                    Fragments: ["phase=open"],
+                    ProviderId: "sr5-core/quick-action",
+                    PackId: "sr5-core",
+                    GasUsed: 22)
+            ],
+            SyncBanner: syncBanner);
+
+        Assert.AreEqual(SessionDashboardSectionKinds.Trackers, projection.Sections[0].Kind);
+        Assert.AreEqual(SessionDashboardCardKinds.TrackerGroup, projection.Cards[0].Kind);
+        Assert.AreEqual("condition-trackers", projection.Cards[0].GroupId);
+        Assert.AreEqual("combat-actions", projection.QuickActionGroups[0].GroupId);
+        Assert.AreEqual(SessionSyncBannerStates.PendingSync, projection.SyncBanner!.Status);
+        Assert.AreEqual(SessionExplainEntryKinds.QuickActionAvailability, projection.ExplainEntries[1].Kind);
+        Assert.AreEqual("sr5-core", projection.ExplainEntries[0].PackId);
+    }
+
+    [TestMethod]
     public void Presentation_catalogs_support_ruleset_filtering_without_changing_sr5_defaults()
     {
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);

@@ -517,6 +517,33 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Session_projection_contracts_lock_in_dashboard_card_banner_and_explain_vocabulary()
+    {
+        string sessionProjectionContractsPath = FindPath("Chummer.Contracts", "Session", "SessionProjectionContracts.cs");
+        string sessionProjectionContractsText = File.ReadAllText(sessionProjectionContractsPath);
+
+        StringAssert.Contains(sessionProjectionContractsText, "public static class SessionDashboardSectionKinds");
+        StringAssert.Contains(sessionProjectionContractsText, "public static class SessionDashboardCardKinds");
+        StringAssert.Contains(sessionProjectionContractsText, "public static class SessionSyncBannerStates");
+        StringAssert.Contains(sessionProjectionContractsText, "public static class SessionExplainEntryKinds");
+        StringAssert.Contains(sessionProjectionContractsText, "public sealed record SessionDashboardSection");
+        StringAssert.Contains(sessionProjectionContractsText, "public sealed record SessionDashboardCard");
+        StringAssert.Contains(sessionProjectionContractsText, "public sealed record SessionTrackerGroup");
+        StringAssert.Contains(sessionProjectionContractsText, "public sealed record SessionQuickActionDescriptor");
+        StringAssert.Contains(sessionProjectionContractsText, "public sealed record SessionQuickActionGroup");
+        StringAssert.Contains(sessionProjectionContractsText, "public sealed record SessionSyncBanner");
+        StringAssert.Contains(sessionProjectionContractsText, "public sealed record SessionExplainEntry");
+        StringAssert.Contains(sessionProjectionContractsText, "public sealed record SessionDashboardProjection");
+        StringAssert.Contains(sessionProjectionContractsText, "tracker-group");
+        StringAssert.Contains(sessionProjectionContractsText, "pending-sync");
+        StringAssert.Contains(sessionProjectionContractsText, "quick-action-availability");
+        StringAssert.Contains(sessionProjectionContractsText, "SessionRuntimeBundle RuntimeBundle");
+        Assert.IsFalse(sessionProjectionContractsText.Contains("Avalonia", StringComparison.Ordinal));
+        Assert.IsFalse(sessionProjectionContractsText.Contains("Blazor", StringComparison.Ordinal));
+        Assert.IsFalse(sessionProjectionContractsText.Contains("LuaSource", StringComparison.Ordinal));
+    }
+
+    [TestMethod]
     public void Session_contracts_lock_in_ledger_snapshot_and_runtime_bundle_vocabulary()
     {
         string characterVersionContractsPath = FindPath("Chummer.Contracts", "Characters", "CharacterVersionContracts.cs");
