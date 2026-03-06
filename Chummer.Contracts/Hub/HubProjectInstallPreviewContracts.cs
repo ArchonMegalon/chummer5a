@@ -13,6 +13,8 @@ public static class HubProjectInstallPreviewChangeKinds
     public const string RuntimeLockPinned = RuleProfilePreviewChangeKinds.RuntimeLockPinned;
     public const string RulePackSelectionChanged = RuleProfilePreviewChangeKinds.RulePackSelectionChanged;
     public const string SessionReplayRequired = RuleProfilePreviewChangeKinds.SessionReplayRequired;
+    public const string InstallStateChanged = RulePackInstallPreviewChangeKinds.InstallStateChanged;
+    public const string RuntimeReviewRequired = RulePackInstallPreviewChangeKinds.RuntimeReviewRequired;
     public const string InstallDeferred = "install-deferred";
 }
 

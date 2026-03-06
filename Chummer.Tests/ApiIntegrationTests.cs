@@ -293,6 +293,27 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Rulepack_install_endpoints_return_not_found_for_unknown_pack()
+    {
+        using var client = CreateClient();
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Workspace, "workspace-1");
+
+        using HttpResponseMessage previewResponse = await client.PostAsJsonAsync("/api/rulepacks/missing-pack/install-preview?ruleset=sr5", target);
+        Assert.AreEqual(HttpStatusCode.NotFound, previewResponse.StatusCode);
+        JsonNode previewParsed = JsonNode.Parse(await previewResponse.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(previewParsed);
+        JsonObject previewPayload = (JsonObject)previewParsed!;
+        Assert.AreEqual("rulepack_not_found", previewPayload["error"]?.GetValue<string>());
+
+        using HttpResponseMessage installResponse = await client.PostAsJsonAsync("/api/rulepacks/missing-pack/install?ruleset=sr5", target);
+        Assert.AreEqual(HttpStatusCode.NotFound, installResponse.StatusCode);
+        JsonNode installParsed = JsonNode.Parse(await installResponse.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(installParsed);
+        JsonObject installPayload = (JsonObject)installParsed!;
+        Assert.AreEqual("rulepack_not_found", installPayload["error"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Profiles_endpoint_reports_curated_install_targets_for_registered_rulesets()
     {
         using var client = CreateClient();
@@ -394,6 +415,41 @@ public class ApiIntegrationTests
 
         Assert.AreEqual("runtime_lock_not_found", payload["error"]?.GetValue<string>());
         Assert.AreEqual("missing-lock", payload["lockId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Runtime_lock_install_endpoints_preview_and_persist_owner_install_state()
+    {
+        using var client = CreateClient();
+        JsonObject runtimeLocks = await GetRequiredJsonObject(client, "/api/runtime/locks?ruleset=sr5");
+        JsonArray items = (JsonArray)runtimeLocks["entries"]!;
+        JsonObject first = items.OfType<JsonObject>().First();
+        string lockId = first["lockId"]!.GetValue<string>();
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Workspace, "workspace-1");
+
+        using HttpResponseMessage previewResponse = await client.PostAsJsonAsync($"/api/runtime/locks/{lockId}/install-preview?ruleset=sr5", target);
+        previewResponse.EnsureSuccessStatusCode();
+        JsonNode previewParsed = JsonNode.Parse(await previewResponse.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(previewParsed);
+        JsonObject previewPayload = (JsonObject)previewParsed!;
+        Assert.AreEqual(lockId, previewPayload["lockId"]?.GetValue<string>());
+        Assert.IsInstanceOfType<JsonArray>(previewPayload["changes"]);
+
+        using HttpResponseMessage installResponse = await client.PostAsJsonAsync($"/api/runtime/locks/{lockId}/install?ruleset=sr5", target);
+        installResponse.EnsureSuccessStatusCode();
+        JsonNode installParsed = JsonNode.Parse(await installResponse.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(installParsed);
+        JsonObject installPayload = (JsonObject)installParsed!;
+        string? outcome = installPayload["outcome"]?.GetValue<string>();
+        Assert.IsTrue(
+            string.Equals(outcome, RuntimeLockInstallOutcomes.Installed, StringComparison.Ordinal)
+            || string.Equals(outcome, RuntimeLockInstallOutcomes.Updated, StringComparison.Ordinal)
+            || string.Equals(outcome, RuntimeLockInstallOutcomes.Unchanged, StringComparison.Ordinal),
+            $"Unexpected runtime lock install outcome '{outcome}'.");
+
+        JsonObject detailPayload = await GetRequiredJsonObject(client, $"/api/runtime/locks/{lockId}?ruleset=sr5");
+        Assert.AreEqual(RuntimeLockCatalogKinds.Saved, detailPayload["catalogKind"]?.GetValue<string>());
+        Assert.AreEqual(ArtifactInstallStates.Pinned, detailPayload["install"]?["state"]?.GetValue<string>());
     }
 
     [TestMethod]
@@ -519,6 +575,26 @@ public class ApiIntegrationTests
         Assert.AreEqual(401, (int)response.StatusCode, content);
         JsonNode? parsed = JsonNode.Parse(content);
         Assert.AreEqual("missing_or_invalid_api_key", parsed?["error"]?.GetValue<string>());
+    }
+
+    [TestMethod]
+    public async Task Rulepack_and_runtime_lock_install_endpoints_require_valid_api_key_when_auth_is_enabled()
+    {
+        if (string.IsNullOrWhiteSpace(ApiKey))
+            return;
+
+        using var client = CreateClient(includeApiKey: false);
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Workspace, "workspace-1");
+
+        using HttpResponseMessage rulePackPreviewResponse = await client.PostAsJsonAsync("/api/rulepacks/missing-pack/install-preview?ruleset=sr5", target);
+        using HttpResponseMessage rulePackInstallResponse = await client.PostAsJsonAsync("/api/rulepacks/missing-pack/install?ruleset=sr5", target);
+        using HttpResponseMessage runtimePreviewResponse = await client.PostAsJsonAsync("/api/runtime/locks/missing-lock/install-preview?ruleset=sr5", target);
+        using HttpResponseMessage runtimeInstallResponse = await client.PostAsJsonAsync("/api/runtime/locks/missing-lock/install?ruleset=sr5", target);
+
+        Assert.AreEqual(HttpStatusCode.Unauthorized, rulePackPreviewResponse.StatusCode);
+        Assert.AreEqual(HttpStatusCode.Unauthorized, rulePackInstallResponse.StatusCode);
+        Assert.AreEqual(HttpStatusCode.Unauthorized, runtimePreviewResponse.StatusCode);
+        Assert.AreEqual(HttpStatusCode.Unauthorized, runtimeInstallResponse.StatusCode);
     }
 
     [TestMethod]

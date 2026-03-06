@@ -243,6 +243,8 @@ public class MigrationComplianceTests
         string rulePackRegistryEndpointsText = File.ReadAllText(rulePackRegistryEndpointsPath);
         string rulePackRegistryServiceContractPath = FindPath("Chummer.Application", "Content", "IRulePackRegistryService.cs");
         string rulePackRegistryServiceContractText = File.ReadAllText(rulePackRegistryServiceContractPath);
+        string rulePackInstallServiceContractPath = FindPath("Chummer.Application", "Content", "IRulePackInstallService.cs");
+        string rulePackInstallServiceContractText = File.ReadAllText(rulePackInstallServiceContractPath);
         string rulePackManifestStoreContractPath = FindPath("Chummer.Application", "Content", "IRulePackManifestStore.cs");
         string rulePackManifestStoreContractText = File.ReadAllText(rulePackManifestStoreContractPath);
         string rulePackInstallStateStoreContractPath = FindPath("Chummer.Application", "Content", "IRulePackInstallStateStore.cs");
@@ -251,6 +253,8 @@ public class MigrationComplianceTests
         string rulePackPublicationStoreContractText = File.ReadAllText(rulePackPublicationStoreContractPath);
         string overlayRulePackRegistryServicePath = FindPath("Chummer.Application", "Content", "OverlayRulePackRegistryService.cs");
         string overlayRulePackRegistryServiceText = File.ReadAllText(overlayRulePackRegistryServicePath);
+        string rulePackInstallServicePath = FindPath("Chummer.Application", "Content", "DefaultRulePackInstallService.cs");
+        string rulePackInstallServiceText = File.ReadAllText(rulePackInstallServicePath);
         string fileRulePackManifestStorePath = FindPath("Chummer.Infrastructure", "Files", "FileRulePackManifestStore.cs");
         string fileRulePackManifestStoreText = File.ReadAllText(fileRulePackManifestStorePath);
         string fileRulePackInstallStateStorePath = FindPath("Chummer.Infrastructure", "Files", "FileRulePackInstallStateStore.cs");
@@ -261,16 +265,25 @@ public class MigrationComplianceTests
         string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
         string overlayExtensionsPath = FindPath("Chummer.Application", "Content", "ContentOverlayRulePackCatalogExtensions.cs");
         string overlayExtensionsText = File.ReadAllText(overlayExtensionsPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
 
         StringAssert.Contains(apiProgramText, "app.MapRulePackRegistryEndpoints();");
         StringAssert.Contains(infoEndpointsText, "/api/content/overlays");
         StringAssert.Contains(infoEndpointsText, "/api/rulepacks");
+        StringAssert.Contains(infoEndpointsText, "/api/rulepacks/{packId}/install-preview");
+        StringAssert.Contains(infoEndpointsText, "/api/rulepacks/{packId}/install");
         StringAssert.Contains(rulePackRegistryEndpointsText, "/api/rulepacks");
+        StringAssert.Contains(rulePackRegistryEndpointsText, "/api/rulepacks/{packId}/install-preview");
+        StringAssert.Contains(rulePackRegistryEndpointsText, "/api/rulepacks/{packId}/install");
         StringAssert.Contains(rulePackRegistryEndpointsText, "IRulePackRegistryService");
+        StringAssert.Contains(rulePackRegistryEndpointsText, "IRulePackInstallService");
         StringAssert.Contains(rulePackRegistryEndpointsText, "rulePackRegistryService.List");
         StringAssert.Contains(rulePackRegistryEndpointsText, "rulepack_not_found");
         StringAssert.Contains(rulePackRegistryServiceContractText, "public interface IRulePackRegistryService");
         StringAssert.Contains(rulePackRegistryServiceContractText, "IReadOnlyList<RulePackRegistryEntry> List");
+        StringAssert.Contains(rulePackInstallServiceContractText, "public interface IRulePackInstallService");
+        StringAssert.Contains(rulePackInstallServiceContractText, "RulePackInstallReceipt? Apply");
         StringAssert.Contains(rulePackManifestStoreContractText, "public interface IRulePackManifestStore");
         StringAssert.Contains(rulePackManifestStoreContractText, "RulePackManifestRecord Upsert");
         StringAssert.Contains(rulePackInstallStateStoreContractText, "public interface IRulePackInstallStateStore");
@@ -282,6 +295,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(overlayRulePackRegistryServiceText, "IRulePackManifestStore");
         StringAssert.Contains(overlayRulePackRegistryServiceText, "IRulePackInstallStateStore");
         StringAssert.Contains(overlayRulePackRegistryServiceText, "IRulePackPublicationStore");
+        StringAssert.Contains(rulePackInstallServiceText, "public sealed class DefaultRulePackInstallService : IRulePackInstallService");
+        StringAssert.Contains(rulePackInstallServiceText, "IRulePackInstallStateStore");
+        StringAssert.Contains(rulePackInstallServiceText, "IRulePackInstallHistoryStore");
         StringAssert.Contains(fileRulePackManifestStoreText, "public sealed class FileRulePackManifestStore : IRulePackManifestStore");
         StringAssert.Contains(fileRulePackManifestStoreText, "OwnerScopedStatePath.ResolveOwnerDirectory");
         StringAssert.Contains(fileRulePackInstallStateStoreText, "public sealed class FileRulePackInstallStateStore : IRulePackInstallStateStore");
@@ -289,10 +305,13 @@ public class MigrationComplianceTests
         StringAssert.Contains(fileRulePackPublicationStoreText, "public sealed class FileRulePackPublicationStore : IRulePackPublicationStore");
         StringAssert.Contains(fileRulePackPublicationStoreText, "OwnerScopedStatePath.ResolveOwnerDirectory");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRulePackRegistryService, OverlayRulePackRegistryService>()");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRulePackInstallService, DefaultRulePackInstallService>()");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRulePackManifestStore>(_ => new FileRulePackManifestStore(stateDirectory))");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRulePackInstallStateStore>(_ => new FileRulePackInstallStateStore(stateDirectory))");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRulePackPublicationStore>(_ => new FileRulePackPublicationStore(stateDirectory))");
         StringAssert.Contains(overlayExtensionsText, "public static RulePackCatalog ToRulePackCatalog");
+        StringAssert.Contains(readmeText, "/api/rulepacks/{packId}/install-preview");
+        StringAssert.Contains(readmeText, "/api/rulepacks/{packId}/install");
     }
 
     [TestMethod]
@@ -484,8 +503,12 @@ public class MigrationComplianceTests
         string runtimeLockRegistryEndpointsText = File.ReadAllText(runtimeLockRegistryEndpointsPath);
         string runtimeLockRegistryServiceContractPath = FindPath("Chummer.Application", "Content", "IRuntimeLockRegistryService.cs");
         string runtimeLockRegistryServiceContractText = File.ReadAllText(runtimeLockRegistryServiceContractPath);
+        string runtimeLockInstallServiceContractPath = FindPath("Chummer.Application", "Content", "IRuntimeLockInstallService.cs");
+        string runtimeLockInstallServiceContractText = File.ReadAllText(runtimeLockInstallServiceContractPath);
         string runtimeLockStoreContractPath = FindPath("Chummer.Application", "Content", "IRuntimeLockStore.cs");
         string runtimeLockStoreContractText = File.ReadAllText(runtimeLockStoreContractPath);
+        string runtimeLockInstallServicePath = FindPath("Chummer.Application", "Content", "DefaultRuntimeLockInstallService.cs");
+        string runtimeLockInstallServiceText = File.ReadAllText(runtimeLockInstallServicePath);
         string runtimeLockRegistryServicePath = FindPath("Chummer.Application", "Content", "ProfileBackedRuntimeLockRegistryService.cs");
         string runtimeLockRegistryServiceText = File.ReadAllText(runtimeLockRegistryServicePath);
         string fileRuntimeLockStorePath = FindPath("Chummer.Infrastructure", "Files", "FileRuntimeLockStore.cs");
@@ -498,12 +521,19 @@ public class MigrationComplianceTests
         StringAssert.Contains(apiProgramText, "app.MapRuntimeLockRegistryEndpoints();");
         StringAssert.Contains(apiProgramText, "AllowsPublicApiKeyBypass(context)");
         StringAssert.Contains(infoEndpointsText, "/api/runtime/locks");
+        StringAssert.Contains(infoEndpointsText, "/api/runtime/locks/{lockId}/install-preview");
+        StringAssert.Contains(infoEndpointsText, "/api/runtime/locks/{lockId}/install");
         StringAssert.Contains(runtimeLockRegistryEndpointsText, "/api/runtime/locks");
+        StringAssert.Contains(runtimeLockRegistryEndpointsText, "/api/runtime/locks/{lockId}/install-preview");
+        StringAssert.Contains(runtimeLockRegistryEndpointsText, "/api/runtime/locks/{lockId}/install");
         StringAssert.Contains(runtimeLockRegistryEndpointsText, "AllowPublicApiKeyBypass()");
         StringAssert.Contains(runtimeLockRegistryEndpointsText, "IRuntimeLockRegistryService");
+        StringAssert.Contains(runtimeLockRegistryEndpointsText, "IRuntimeLockInstallService");
         StringAssert.Contains(runtimeLockRegistryEndpointsText, "runtime_lock_not_found");
         StringAssert.Contains(runtimeLockRegistryServiceContractText, "public interface IRuntimeLockRegistryService");
         StringAssert.Contains(runtimeLockRegistryServiceContractText, "RuntimeLockRegistryPage List");
+        StringAssert.Contains(runtimeLockInstallServiceContractText, "public interface IRuntimeLockInstallService");
+        StringAssert.Contains(runtimeLockInstallServiceContractText, "RuntimeLockInstallReceipt? Apply");
         StringAssert.Contains(runtimeLockStoreContractText, "public interface IRuntimeLockStore");
         StringAssert.Contains(runtimeLockStoreContractText, "RuntimeLockRegistryEntry Upsert");
         StringAssert.Contains(runtimeLockRegistryServiceText, "public sealed class ProfileBackedRuntimeLockRegistryService : IRuntimeLockRegistryService");
@@ -511,12 +541,17 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeLockRegistryServiceText, "RuntimeLockCatalogKinds.Published");
         StringAssert.Contains(runtimeLockRegistryServiceText, "RuntimeLockCatalogKinds.Derived");
         StringAssert.Contains(runtimeLockRegistryServiceText, "profile.Install");
+        StringAssert.Contains(runtimeLockInstallServiceText, "public sealed class DefaultRuntimeLockInstallService : IRuntimeLockInstallService");
+        StringAssert.Contains(runtimeLockInstallServiceText, "IRuntimeLockInstallHistoryStore");
         StringAssert.Contains(fileRuntimeLockStoreText, "public sealed class FileRuntimeLockStore : IRuntimeLockStore");
         StringAssert.Contains(fileRuntimeLockStoreText, "ArtifactInstallStates.Available");
         StringAssert.Contains(fileRuntimeLockStoreText, "OwnerScopedStatePath.ResolveOwnerDirectory");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeLockInstallService, DefaultRuntimeLockInstallService>()");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeLockStore>(_ => new FileRuntimeLockStore(stateDirectory))");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeLockRegistryService, ProfileBackedRuntimeLockRegistryService>()");
         StringAssert.Contains(readmeText, "/api/runtime/locks/*");
+        StringAssert.Contains(readmeText, "/api/runtime/locks/{lockId}/install-preview");
+        StringAssert.Contains(readmeText, "/api/runtime/locks/{lockId}/install");
     }
 
     [TestMethod]

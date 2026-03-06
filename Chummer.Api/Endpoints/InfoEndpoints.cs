@@ -22,9 +22,13 @@ public static class InfoEndpoints
                 "/api/content/overlays",
                 "/api/buildkits",
                 "/api/rulepacks",
+                "/api/rulepacks/{packId}/install-preview",
+                "/api/rulepacks/{packId}/install",
                 "/api/profiles",
                 "/api/runtime/profiles/{profileId}",
                 "/api/runtime/locks",
+                "/api/runtime/locks/{lockId}/install-preview",
+                "/api/runtime/locks/{lockId}/install",
                 "/api/workspaces",
                 "/api/workspaces/import"
             }

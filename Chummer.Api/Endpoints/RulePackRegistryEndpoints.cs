@@ -30,6 +30,30 @@ public static class RulePackRegistryEndpoints
                 : Results.Ok(entry);
         }).AllowPublicApiKeyBypass();
 
+        app.MapPost("/api/rulepacks/{packId}/install-preview", (string packId, string? ruleset, RuleProfileApplyTarget target, IRulePackInstallService rulePackInstallService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            RulePackInstallPreviewReceipt? preview = rulePackInstallService.Preview(ownerContextAccessor.Current, packId, target, ruleset);
+            return preview is null
+                ? Results.NotFound(new
+                {
+                    error = "rulepack_not_found",
+                    packId
+                })
+                : Results.Ok(preview);
+        });
+
+        app.MapPost("/api/rulepacks/{packId}/install", (string packId, string? ruleset, RuleProfileApplyTarget target, IRulePackInstallService rulePackInstallService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            RulePackInstallReceipt? receipt = rulePackInstallService.Apply(ownerContextAccessor.Current, packId, target, ruleset);
+            return receipt is null
+                ? Results.NotFound(new
+                {
+                    error = "rulepack_not_found",
+                    packId
+                })
+                : Results.Ok(receipt);
+        });
+
         return app;
     }
 }

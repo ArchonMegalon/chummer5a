@@ -1592,6 +1592,68 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Rulepack_and_runtime_lock_install_contracts_define_preview_and_apply_vocabulary()
+    {
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Workspace, "workspace-1");
+        RulePackInstallPreviewReceipt rulePackPreview = new(
+            PackId: "house-rules",
+            RulesetId: RulesetDefaults.Sr5,
+            Target: target,
+            Changes:
+            [
+                new RulePackInstallPreviewItem(
+                    Kind: RulePackInstallPreviewChangeKinds.InstallStateChanged,
+                    Summary: "Install rulepack.",
+                    SubjectId: "house-rules")
+            ],
+            Warnings:
+            [
+                new RuntimeInspectorWarning(
+                    Kind: RuntimeInspectorWarningKinds.Trust,
+                    Severity: RuntimeInspectorWarningSeverityLevels.Info,
+                    Message: "Local-only pack.",
+                    SubjectId: "house-rules")
+            ]);
+        RulePackInstallReceipt rulePackReceipt = new(
+            PackId: "house-rules",
+            RulesetId: RulesetDefaults.Sr5,
+            Target: target,
+            Outcome: RulePackInstallOutcomes.Applied,
+            Install: new ArtifactInstallState(ArtifactInstallStates.Installed),
+            Preview: rulePackPreview);
+        RuntimeLockInstallPreviewReceipt runtimeLockPreview = new(
+            LockId: "sha256:core",
+            Target: target,
+            RuntimeLock: new ResolvedRuntimeLock(
+                RulesetId: RulesetDefaults.Sr5,
+                ContentBundles: [],
+                RulePacks: [],
+                ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal),
+                EngineApiVersion: "rulepack-v1",
+                RuntimeFingerprint: "sha256:core"),
+            Changes:
+            [
+                new RuntimeLockInstallPreviewItem(
+                    Kind: RuntimeLockInstallPreviewChangeKinds.RuntimeLockPinned,
+                Summary: "Pin runtime lock.",
+                SubjectId: "sha256:core")
+            ],
+            Warnings: []);
+        RuntimeLockInstallReceipt runtimeLockReceipt = new(
+            TargetKind: target.TargetKind,
+            TargetId: target.TargetId,
+            Outcome: RuntimeLockInstallOutcomes.Installed,
+            RuntimeLock: runtimeLockPreview.RuntimeLock,
+            InstalledAtUtc: DateTimeOffset.UtcNow,
+            RebindNotices: []);
+
+        Assert.AreEqual(RulePackInstallPreviewChangeKinds.InstallStateChanged, rulePackPreview.Changes[0].Kind);
+        Assert.AreEqual(RulePackInstallOutcomes.Applied, rulePackReceipt.Outcome);
+        Assert.AreEqual(RuntimeLockInstallPreviewChangeKinds.RuntimeLockPinned, runtimeLockPreview.Changes[0].Kind);
+        Assert.AreEqual(RuntimeLockInstallOutcomes.Installed, runtimeLockReceipt.Outcome);
+    }
+
+    [TestMethod]
     public void Session_runtime_bundle_issue_contracts_define_issue_rotation_and_trust_vocabulary()
     {
         CharacterVersionReference baseCharacterVersion = new(

@@ -1,5 +1,6 @@
 using Chummer.Application.Content;
 using Chummer.Application.Owners;
+using Chummer.Contracts.Content;
 
 namespace Chummer.Api.Endpoints;
 
@@ -28,6 +29,30 @@ public static class RuntimeLockRegistryEndpoints
                 })
                 : Results.Ok(entry);
         }).AllowPublicApiKeyBypass();
+
+        app.MapPost("/api/runtime/locks/{lockId}/install-preview", (string lockId, string? ruleset, RuleProfileApplyTarget target, IRuntimeLockInstallService runtimeLockInstallService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            RuntimeLockInstallPreviewReceipt? preview = runtimeLockInstallService.Preview(ownerContextAccessor.Current, lockId, target, ruleset);
+            return preview is null
+                ? Results.NotFound(new
+                {
+                    error = "runtime_lock_not_found",
+                    lockId
+                })
+                : Results.Ok(preview);
+        });
+
+        app.MapPost("/api/runtime/locks/{lockId}/install", (string lockId, string? ruleset, RuleProfileApplyTarget target, IRuntimeLockInstallService runtimeLockInstallService, IOwnerContextAccessor ownerContextAccessor) =>
+        {
+            RuntimeLockInstallReceipt? receipt = runtimeLockInstallService.Apply(ownerContextAccessor.Current, lockId, target, ruleset);
+            return receipt is null
+                ? Results.NotFound(new
+                {
+                    error = "runtime_lock_not_found",
+                    lockId
+                })
+                : Results.Ok(receipt);
+        });
 
         return app;
     }

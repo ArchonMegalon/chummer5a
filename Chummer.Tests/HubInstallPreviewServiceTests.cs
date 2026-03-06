@@ -24,6 +24,7 @@ public class HubInstallPreviewServiceTests
     {
         DefaultHubInstallPreviewService service = new(
             CreatePluginRegistry(),
+            new RulePackInstallServiceStub(null),
             new RuleProfileRegistryServiceStub(
                 new RuleProfileRegistryEntry(
                     new RuleProfileManifest(
@@ -76,6 +77,7 @@ public class HubInstallPreviewServiceTests
                             Message: "Local-only profile.",
                             SubjectId: "official.sr5.core")
                     ])),
+            new RuntimeLockInstallServiceStub(null),
             new RuntimeLockRegistryServiceStub(null),
             new RulePackRegistryServiceStub([]),
             new BuildKitRegistryServiceStub([]));
@@ -101,8 +103,35 @@ public class HubInstallPreviewServiceTests
     {
         DefaultHubInstallPreviewService service = new(
             CreatePluginRegistry(),
+            new RulePackInstallServiceStub(null),
             new RuleProfileRegistryServiceStub(null),
             new RuleProfileApplicationServiceStub(null),
+            new RuntimeLockInstallServiceStub(
+                new RuntimeLockInstallPreviewReceipt(
+                    LockId: "sha256:core",
+                    Target: new RuleProfileApplyTarget(RuleProfileApplyTargetKinds.Workspace, "workspace-1"),
+                    RuntimeLock: new ResolvedRuntimeLock(
+                        RulesetId: RulesetDefaults.Sr5,
+                        ContentBundles: [],
+                        RulePacks: [],
+                        ProviderBindings: new Dictionary<string, string>(),
+                        EngineApiVersion: "rulepack-v1",
+                        RuntimeFingerprint: "sha256:core"),
+                    Changes:
+                    [
+                        new RuntimeLockInstallPreviewItem(
+                            Kind: RuntimeLockInstallPreviewChangeKinds.RuntimeLockPinned,
+                            Summary: "Pin runtime lock.",
+                            SubjectId: "sha256:core")
+                    ],
+                    Warnings:
+                    [
+                        new RuntimeInspectorWarning(
+                            Kind: RuntimeInspectorWarningKinds.ProviderBinding,
+                            Severity: RuntimeInspectorWarningSeverityLevels.Info,
+                            Message: "Built-in only runtime lock.",
+                            SubjectId: "sha256:core")
+                    ])),
             new RuntimeLockRegistryServiceStub(
                 new RuntimeLockRegistryEntry(
                     LockId: "sha256:core",
@@ -147,8 +176,10 @@ public class HubInstallPreviewServiceTests
     {
         DefaultHubInstallPreviewService service = new(
             CreatePluginRegistry(),
+            new RulePackInstallServiceStub(null),
             new RuleProfileRegistryServiceStub(null),
             new RuleProfileApplicationServiceStub(null),
+            new RuntimeLockInstallServiceStub(null),
             new RuntimeLockRegistryServiceStub(null),
             new RulePackRegistryServiceStub([]),
             new BuildKitRegistryServiceStub(
@@ -185,12 +216,39 @@ public class HubInstallPreviewServiceTests
     }
 
     [TestMethod]
-    public void Hub_install_preview_service_includes_install_state_for_deferred_rulepack_previews()
+    public void Hub_install_preview_service_maps_rulepack_preview_receipts_and_install_state()
     {
         DefaultHubInstallPreviewService service = new(
             CreatePluginRegistry(),
+            new RulePackInstallServiceStub(
+                new RulePackInstallPreviewReceipt(
+                    PackId: "house-rules",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Target: new RuleProfileApplyTarget(RuleProfileApplyTargetKinds.Workspace, "workspace-1"),
+                    Changes:
+                    [
+                        new RulePackInstallPreviewItem(
+                            Kind: RulePackInstallPreviewChangeKinds.InstallStateChanged,
+                            Summary: "Install rulepack.",
+                            SubjectId: "house-rules"),
+                        new RulePackInstallPreviewItem(
+                            Kind: RulePackInstallPreviewChangeKinds.RuntimeReviewRequired,
+                            Summary: "Review runtime capability bindings.",
+                            SubjectId: "house-rules",
+                            RequiresConfirmation: true)
+                    ],
+                    Warnings:
+                    [
+                        new RuntimeInspectorWarning(
+                            Kind: RuntimeInspectorWarningKinds.Trust,
+                            Severity: RuntimeInspectorWarningSeverityLevels.Info,
+                            Message: "Local-only pack.",
+                            SubjectId: "house-rules")
+                    ],
+                    RequiresConfirmation: true)),
             new RuleProfileRegistryServiceStub(null),
             new RuleProfileApplicationServiceStub(null),
+            new RuntimeLockInstallServiceStub(null),
             new RuntimeLockRegistryServiceStub(null),
             new RulePackRegistryServiceStub(
             [
@@ -231,7 +289,9 @@ public class HubInstallPreviewServiceTests
             RulesetDefaults.Sr5);
 
         Assert.IsNotNull(preview);
-        Assert.AreEqual(HubProjectInstallPreviewStates.Deferred, preview.State);
+        Assert.AreEqual(HubProjectInstallPreviewStates.Ready, preview.State);
+        Assert.AreEqual(HubProjectInstallPreviewChangeKinds.InstallStateChanged, preview.Changes[0].Kind);
+        Assert.AreEqual(RuntimeInspectorWarningKinds.Trust, preview.Diagnostics[0].Kind);
         Assert.IsTrue(preview.Diagnostics.Any(diagnostic => diagnostic.Kind == HubProjectInstallPreviewDiagnosticKinds.InstallState));
         Assert.IsTrue(preview.RequiresConfirmation);
     }
@@ -255,6 +315,34 @@ public class HubInstallPreviewServiceTests
         public RuleProfilePreviewReceipt? Preview(OwnerScope owner, string profileId, RuleProfileApplyTarget target, string? rulesetId = null) => _preview;
 
         public RuleProfileApplyReceipt? Apply(OwnerScope owner, string profileId, RuleProfileApplyTarget target, string? rulesetId = null) => null;
+    }
+
+    private sealed class RulePackInstallServiceStub : IRulePackInstallService
+    {
+        private readonly RulePackInstallPreviewReceipt? _preview;
+
+        public RulePackInstallServiceStub(RulePackInstallPreviewReceipt? preview)
+        {
+            _preview = preview;
+        }
+
+        public RulePackInstallPreviewReceipt? Preview(OwnerScope owner, string packId, RuleProfileApplyTarget target, string? rulesetId = null) => _preview;
+
+        public RulePackInstallReceipt? Apply(OwnerScope owner, string packId, RuleProfileApplyTarget target, string? rulesetId = null) => null;
+    }
+
+    private sealed class RuntimeLockInstallServiceStub : IRuntimeLockInstallService
+    {
+        private readonly RuntimeLockInstallPreviewReceipt? _preview;
+
+        public RuntimeLockInstallServiceStub(RuntimeLockInstallPreviewReceipt? preview)
+        {
+            _preview = preview;
+        }
+
+        public RuntimeLockInstallPreviewReceipt? Preview(OwnerScope owner, string lockId, RuleProfileApplyTarget target, string? rulesetId = null) => _preview;
+
+        public RuntimeLockInstallReceipt? Apply(OwnerScope owner, string lockId, RuleProfileApplyTarget target, string? rulesetId = null) => null;
     }
 
     private sealed class RuleProfileRegistryServiceStub : IRuleProfileRegistryService

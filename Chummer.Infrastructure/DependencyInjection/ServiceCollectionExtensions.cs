@@ -66,6 +66,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRulePackInstallStateStore>(_ => new FileRulePackInstallStateStore(stateDirectory));
         services.AddSingleton<IRulePackPublicationStore>(_ => new FileRulePackPublicationStore(stateDirectory));
         services.AddSingleton<IRulePackRegistryService, OverlayRulePackRegistryService>();
+        services.AddSingleton<IRulePackInstallService, DefaultRulePackInstallService>();
         services.AddSingleton<IRuntimeFingerprintService, DefaultRuntimeFingerprintService>();
         services.AddSingleton<IRuleProfileManifestStore>(_ => new FileRuleProfileManifestStore(stateDirectory));
         services.AddSingleton<IRuleProfileInstallHistoryStore>(_ => new FileRuleProfileInstallHistoryStore(stateDirectory));
@@ -77,6 +78,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuntimeLockInstallHistoryStore>(_ => new FileRuntimeLockInstallHistoryStore(stateDirectory));
         services.AddSingleton<IRuntimeLockStore>(_ => new FileRuntimeLockStore(stateDirectory));
         services.AddSingleton<IRuntimeLockRegistryService, ProfileBackedRuntimeLockRegistryService>();
+        services.AddSingleton<IRuntimeLockInstallService, DefaultRuntimeLockInstallService>();
         services.AddSingleton<IHubCatalogService, DefaultHubCatalogService>();
         services.AddSingleton<IHubInstallPreviewService, DefaultHubInstallPreviewService>();
         services.AddSingleton<IHubProjectCompatibilityService, DefaultHubProjectCompatibilityService>();

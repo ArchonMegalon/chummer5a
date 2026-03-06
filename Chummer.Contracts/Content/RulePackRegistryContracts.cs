@@ -82,6 +82,41 @@ public sealed record RulePackInstallHistoryRecord(
     string RulesetId,
     ArtifactInstallHistoryEntry Entry);
 
+public static class RulePackInstallPreviewChangeKinds
+{
+    public const string InstallStateChanged = "install-state-changed";
+    public const string SessionReplayRequired = "session-replay-required";
+    public const string RuntimeReviewRequired = "runtime-review-required";
+}
+
+public static class RulePackInstallOutcomes
+{
+    public const string Applied = "applied";
+    public const string AlreadyInstalled = "already-installed";
+}
+
+public sealed record RulePackInstallPreviewItem(
+    string Kind,
+    string Summary,
+    string SubjectId,
+    bool RequiresConfirmation = false);
+
+public sealed record RulePackInstallPreviewReceipt(
+    string PackId,
+    string RulesetId,
+    RuleProfileApplyTarget Target,
+    IReadOnlyList<RulePackInstallPreviewItem> Changes,
+    IReadOnlyList<RuntimeInspectorWarning> Warnings,
+    bool RequiresConfirmation = false);
+
+public sealed record RulePackInstallReceipt(
+    string PackId,
+    string RulesetId,
+    RuleProfileApplyTarget Target,
+    string Outcome,
+    ArtifactInstallState Install,
+    RulePackInstallPreviewReceipt Preview);
+
 public sealed record RulePackPublicationReceipt(
     string PackId,
     string Version,

@@ -9,23 +9,29 @@ namespace Chummer.Application.Hub;
 public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
 {
     private readonly IRulesetPluginRegistry _rulesetPluginRegistry;
+    private readonly IRulePackInstallService _rulePackInstallService;
     private readonly IRuleProfileRegistryService _ruleProfileRegistryService;
     private readonly IRuleProfileApplicationService _ruleProfileApplicationService;
+    private readonly IRuntimeLockInstallService _runtimeLockInstallService;
     private readonly IRuntimeLockRegistryService _runtimeLockRegistryService;
     private readonly IRulePackRegistryService _rulePackRegistryService;
     private readonly IBuildKitRegistryService _buildKitRegistryService;
 
     public DefaultHubInstallPreviewService(
         IRulesetPluginRegistry rulesetPluginRegistry,
+        IRulePackInstallService rulePackInstallService,
         IRuleProfileRegistryService ruleProfileRegistryService,
         IRuleProfileApplicationService ruleProfileApplicationService,
+        IRuntimeLockInstallService runtimeLockInstallService,
         IRuntimeLockRegistryService runtimeLockRegistryService,
         IRulePackRegistryService rulePackRegistryService,
         IBuildKitRegistryService buildKitRegistryService)
     {
         _rulesetPluginRegistry = rulesetPluginRegistry;
+        _rulePackInstallService = rulePackInstallService;
         _ruleProfileRegistryService = ruleProfileRegistryService;
         _ruleProfileApplicationService = ruleProfileApplicationService;
+        _runtimeLockInstallService = runtimeLockInstallService;
         _runtimeLockRegistryService = runtimeLockRegistryService;
         _rulePackRegistryService = rulePackRegistryService;
         _buildKitRegistryService = buildKitRegistryService;
@@ -80,40 +86,24 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
 
     private HubProjectInstallPreviewReceipt? PreviewRuntimeLock(OwnerScope owner, string itemId, RuleProfileApplyTarget target, string? rulesetId)
     {
+        RuntimeLockInstallPreviewReceipt? preview = _runtimeLockInstallService.Preview(owner, itemId, target, rulesetId);
         RuntimeLockRegistryEntry? entry = _runtimeLockRegistryService.Get(owner, itemId, rulesetId);
-        if (entry is null)
+        if (preview is null || entry is null)
         {
             return null;
         }
 
-        List<HubProjectInstallPreviewChange> changes =
-        [
-            new(
-                Kind: HubProjectInstallPreviewChangeKinds.RuntimeLockPinned,
-                Summary: $"Pin runtime '{entry.RuntimeLock.RuntimeFingerprint}' to {target.TargetKind} '{target.TargetId}'.",
-                SubjectId: entry.LockId)
-        ];
-        List<HubProjectInstallPreviewDiagnostic> diagnostics = [];
-
-        if (entry.RuntimeLock.RulePacks.Count == 0)
-        {
-            diagnostics.Add(new HubProjectInstallPreviewDiagnostic(
-                Kind: HubProjectInstallPreviewDiagnosticKinds.ProviderBinding,
-                Severity: HubProjectInstallPreviewDiagnosticSeverityLevels.Info,
-                Message: "Runtime lock resolves to built-in content without additional RulePacks.",
-                SubjectId: entry.LockId));
-        }
-
-        if (string.Equals(target.TargetKind, RuleProfileApplyTargetKinds.SessionLedger, StringComparison.Ordinal))
-        {
-            changes.Add(new HubProjectInstallPreviewChange(
-                Kind: HubProjectInstallPreviewChangeKinds.SessionReplayRequired,
-                Summary: "Session ledger targets may require replay or rebind after a runtime-lock change.",
-                SubjectId: target.TargetId,
-                RequiresConfirmation: true));
-        }
-
-        bool requiresConfirmation = changes.Any(change => change.RequiresConfirmation);
+        List<HubProjectInstallPreviewChange> changes = preview.Changes
+            .Select(change => new HubProjectInstallPreviewChange(
+                Kind: change.Kind,
+                Summary: change.Summary,
+                SubjectId: change.SubjectId,
+                RequiresConfirmation: change.RequiresConfirmation))
+            .ToList();
+        List<HubProjectInstallPreviewDiagnostic> diagnostics = preview.Warnings
+            .Select(warning => new HubProjectInstallPreviewDiagnostic(warning.Kind, warning.Severity, warning.Message, warning.SubjectId))
+            .ToList();
+        bool requiresConfirmation = preview.RequiresConfirmation;
         if (!string.Equals(entry.Install.State, ArtifactInstallStates.Available, StringComparison.Ordinal))
         {
             diagnostics.Add(CreateInstallStateDiagnostic(entry.Install, itemId));
@@ -127,53 +117,45 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
             State: HubProjectInstallPreviewStates.Ready,
             Changes: changes,
             Diagnostics: diagnostics,
-            RuntimeFingerprint: entry.RuntimeLock.RuntimeFingerprint,
+            RuntimeFingerprint: preview.RuntimeLock.RuntimeFingerprint,
             RequiresConfirmation: requiresConfirmation);
     }
 
     private HubProjectInstallPreviewReceipt? PreviewRulePack(OwnerScope owner, string itemId, RuleProfileApplyTarget target, string? rulesetId)
     {
-        foreach (string candidateRulesetId in EnumerateRulesetIds(rulesetId))
+        RulePackInstallPreviewReceipt? preview = _rulePackInstallService.Preview(owner, itemId, target, rulesetId);
+        RulePackRegistryEntry? entry = preview is null
+            ? null
+            : _rulePackRegistryService.Get(owner, itemId, preview.RulesetId);
+        if (preview is null || entry is null)
         {
-            RulePackRegistryEntry? entry = _rulePackRegistryService.Get(owner, itemId, candidateRulesetId);
-            if (entry is null)
-            {
-                continue;
-            }
-
-            List<HubProjectInstallPreviewDiagnostic> diagnostics =
-            [
-                new HubProjectInstallPreviewDiagnostic(
-                    Kind: HubProjectInstallPreviewDiagnosticKinds.Installability,
-                    Severity: HubProjectInstallPreviewDiagnosticSeverityLevels.Info,
-                    Message: $"RulePack install preview is not implemented yet for '{entry.Manifest.PackId}'.",
-                    SubjectId: itemId)
-            ];
-            bool requiresConfirmation = false;
-            if (!string.Equals(entry.Install.State, ArtifactInstallStates.Available, StringComparison.Ordinal))
-            {
-                diagnostics.Add(CreateInstallStateDiagnostic(entry.Install, itemId));
-                requiresConfirmation = true;
-            }
-
-            return new HubProjectInstallPreviewReceipt(
-                Kind: HubCatalogItemKinds.RulePack,
-                ItemId: itemId,
-                Target: target,
-                State: HubProjectInstallPreviewStates.Deferred,
-                Changes:
-                [
-                    new HubProjectInstallPreviewChange(
-                        Kind: HubProjectInstallPreviewChangeKinds.InstallDeferred,
-                        Summary: $"RulePack install preview is not implemented yet for '{entry.Manifest.PackId}'.",
-                        SubjectId: itemId)
-                ],
-                Diagnostics: diagnostics,
-                DeferredReason: "hub_rulepack_install_preview_not_implemented",
-                RequiresConfirmation: requiresConfirmation);
+            return null;
         }
 
-        return null;
+        List<HubProjectInstallPreviewDiagnostic> diagnostics = preview.Warnings
+            .Select(warning => new HubProjectInstallPreviewDiagnostic(warning.Kind, warning.Severity, warning.Message, warning.SubjectId))
+            .ToList();
+        bool requiresConfirmation = preview.RequiresConfirmation;
+        if (!string.Equals(entry.Install.State, ArtifactInstallStates.Available, StringComparison.Ordinal))
+        {
+            diagnostics.Add(CreateInstallStateDiagnostic(entry.Install, itemId));
+            requiresConfirmation = true;
+        }
+
+        return new HubProjectInstallPreviewReceipt(
+            Kind: HubCatalogItemKinds.RulePack,
+            ItemId: itemId,
+            Target: target,
+            State: HubProjectInstallPreviewStates.Ready,
+            Changes: preview.Changes
+                .Select(change => new HubProjectInstallPreviewChange(
+                    Kind: change.Kind,
+                    Summary: change.Summary,
+                    SubjectId: change.SubjectId,
+                    RequiresConfirmation: change.RequiresConfirmation))
+                .ToArray(),
+            Diagnostics: diagnostics,
+            RequiresConfirmation: requiresConfirmation);
     }
 
     private HubProjectInstallPreviewReceipt? PreviewBuildKit(OwnerScope owner, string itemId, RuleProfileApplyTarget target, string? rulesetId)

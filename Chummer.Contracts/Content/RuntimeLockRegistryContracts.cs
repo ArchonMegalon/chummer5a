@@ -51,3 +51,23 @@ public sealed record RuntimeLockInstallHistoryRecord(
     string LockId,
     string RulesetId,
     ArtifactInstallHistoryEntry Entry);
+
+public static class RuntimeLockInstallPreviewChangeKinds
+{
+    public const string RuntimeLockPinned = "runtime-lock-pinned";
+    public const string SessionReplayRequired = "session-replay-required";
+}
+
+public sealed record RuntimeLockInstallPreviewItem(
+    string Kind,
+    string Summary,
+    string SubjectId,
+    bool RequiresConfirmation = false);
+
+public sealed record RuntimeLockInstallPreviewReceipt(
+    string LockId,
+    RuleProfileApplyTarget Target,
+    ResolvedRuntimeLock RuntimeLock,
+    IReadOnlyList<RuntimeLockInstallPreviewItem> Changes,
+    IReadOnlyList<RuntimeInspectorWarning> Warnings,
+    bool RequiresConfirmation = false);
