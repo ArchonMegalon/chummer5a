@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 
@@ -33,7 +34,8 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
         DesktopPreferenceState preferences,
         string? activeSectionJson,
         CharacterWorkspaceId? currentWorkspace,
-        string? rulesetId)
+        string? rulesetId,
+        RuntimeInspectorProjection? runtimeInspector = null)
     {
         string name = profile?.Name ?? "(none)";
         string alias = profile?.Alias ?? string.Empty;
@@ -41,6 +43,7 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
 
         return commandId switch
         {
+            OverviewCommandPolicy.RuntimeInspectorCommandId when runtimeInspector is not null => CreateRuntimeInspectorDialog(runtimeInspector),
             "open_character" => CreateOpenCharacterDialog(
                 "dialog.open_character",
                 "Open Character",
@@ -264,6 +267,61 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 [],
                 [new DesktopDialogAction("close", "Close", true)])
         };
+    }
+
+    private static DesktopDialogState CreateRuntimeInspectorDialog(RuntimeInspectorProjection projection)
+    {
+        string contentBundles = projection.RuntimeLock.ContentBundles.Count == 0
+            ? "(none)"
+            : string.Join(Environment.NewLine, projection.RuntimeLock.ContentBundles.Select(bundle =>
+                $"{bundle.BundleId}@{bundle.Version} ({bundle.RulesetId})"));
+        string rulePacks = projection.ResolvedRulePacks.Count == 0
+            ? "(none)"
+            : string.Join(Environment.NewLine, projection.ResolvedRulePacks.Select(rulePack =>
+                $"{rulePack.RulePack.Id}@{rulePack.RulePack.Version} [{rulePack.TrustTier}]"));
+        string providerBindings = projection.ProviderBindings.Count == 0
+            ? "(none)"
+            : string.Join(Environment.NewLine, projection.ProviderBindings.Select(binding =>
+                $"{binding.CapabilityId} -> {binding.ProviderId}"));
+        string warnings = projection.Warnings.Count == 0
+            ? "(none)"
+            : string.Join(Environment.NewLine, projection.Warnings.Select(warning =>
+                $"{warning.Severity}: {warning.Message}"));
+        string compatibility = projection.CompatibilityDiagnostics.Count == 0
+            ? "(none)"
+            : string.Join(Environment.NewLine, projection.CompatibilityDiagnostics.Select(diagnostic =>
+                $"{diagnostic.State}: {diagnostic.Message}"));
+        string migrationPreview = projection.MigrationPreview.Count == 0
+            ? "(none)"
+            : string.Join(Environment.NewLine, projection.MigrationPreview.Select(item => item.Summary));
+        string installTarget = string.IsNullOrWhiteSpace(projection.Install.InstalledTargetKind)
+            ? "(none)"
+            : $"{projection.Install.InstalledTargetKind}:{projection.Install.InstalledTargetId ?? string.Empty}".TrimEnd(':');
+
+        return new DesktopDialogState(
+            Id: "dialog.runtime_inspector",
+            Title: "Runtime Inspector",
+            Message: $"Inspect resolved runtime for '{projection.TargetId}'.",
+            Fields:
+            [
+                new DesktopDialogField("runtimeProfileId", "Profile", projection.TargetId, projection.TargetId, IsReadOnly: true),
+                new DesktopDialogField("runtimeTargetKind", "Target Kind", projection.TargetKind, projection.TargetKind, IsReadOnly: true),
+                new DesktopDialogField("runtimeRulesetId", "Ruleset", projection.RuntimeLock.RulesetId, projection.RuntimeLock.RulesetId, IsReadOnly: true),
+                new DesktopDialogField("runtimeEngineApi", "Engine API", projection.RuntimeLock.EngineApiVersion, projection.RuntimeLock.EngineApiVersion, IsReadOnly: true),
+                new DesktopDialogField("runtimeFingerprint", "Fingerprint", projection.RuntimeLock.RuntimeFingerprint, projection.RuntimeLock.RuntimeFingerprint, IsReadOnly: true),
+                new DesktopDialogField("runtimeInstallState", "Install State", projection.Install.State, projection.Install.State, IsReadOnly: true),
+                new DesktopDialogField("runtimeInstallTarget", "Install Target", installTarget, installTarget, IsReadOnly: true),
+                new DesktopDialogField("runtimeContentBundles", "Content Bundles", contentBundles, contentBundles, IsReadOnly: true, IsMultiline: true),
+                new DesktopDialogField("runtimeRulePacks", "RulePacks", rulePacks, rulePacks, IsReadOnly: true, IsMultiline: true),
+                new DesktopDialogField("runtimeProviderBindings", "Provider Bindings", providerBindings, providerBindings, IsReadOnly: true, IsMultiline: true),
+                new DesktopDialogField("runtimeCompatibility", "Compatibility", compatibility, compatibility, IsReadOnly: true, IsMultiline: true),
+                new DesktopDialogField("runtimeWarnings", "Warnings", warnings, warnings, IsReadOnly: true, IsMultiline: true),
+                new DesktopDialogField("runtimeMigrationPreview", "Migration Preview", migrationPreview, migrationPreview, IsReadOnly: true, IsMultiline: true)
+            ],
+            Actions:
+            [
+                new DesktopDialogAction("close", "Close", true)
+            ]);
     }
 
     private static DesktopDialogState CreateOpenCharacterDialog(

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using Chummer.Presentation.Overview;
@@ -161,6 +162,69 @@ public class DesktopDialogFactoryTests
         Assert.AreEqual("dialog.switch_ruleset", dialog.Id);
         Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(dialog, "preferredRulesetId"));
         Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "apply_ruleset", StringComparison.Ordinal)));
+    }
+
+    [TestMethod]
+    public void CreateCommandDialog_runtime_inspector_uses_runtime_projection_details()
+    {
+        DesktopDialogFactory factory = new();
+        RuntimeInspectorProjection projection = new(
+            TargetKind: RuntimeInspectorTargetKinds.RuntimeLock,
+            TargetId: "official.sr5.core",
+            RuntimeLock: new ResolvedRuntimeLock(
+                RulesetId: RulesetDefaults.Sr5,
+                ContentBundles:
+                [
+                    new ContentBundleDescriptor("sr5.core.bundle", RulesetDefaults.Sr5, "1.0.0", "SR5 Core", "Core bundle", ["data/core.xml"])
+                ],
+                RulePacks:
+                [
+                    new ArtifactVersionReference("official.sr5.core", "1.0.0")
+                ],
+                ProviderBindings: new System.Collections.Generic.Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    [RulePackCapabilityIds.DeriveStat] = "official.sr5.core/derive.stat"
+                },
+                EngineApiVersion: "1.0.0",
+                RuntimeFingerprint: "sha256:sr5-runtime-fingerprint"),
+            Install: new ArtifactInstallState(ArtifactInstallStates.Available, RuntimeFingerprint: "sha256:sr5-runtime-fingerprint"),
+            ResolvedRulePacks:
+            [
+                new RuntimeInspectorRulePackEntry(
+                    new ArtifactVersionReference("official.sr5.core", "1.0.0"),
+                    "SR5 Core",
+                    ArtifactVisibilityModes.LocalOnly,
+                    ArtifactTrustTiers.Official,
+                    [RulePackCapabilityIds.DeriveStat])
+            ],
+            ProviderBindings:
+            [
+                new RuntimeInspectorProviderBinding(RulePackCapabilityIds.DeriveStat, "official.sr5.core/derive.stat", "official.sr5.core")
+            ],
+            CompatibilityDiagnostics:
+            [
+                new RuntimeLockCompatibilityDiagnostic(RuntimeLockCompatibilityStates.Compatible, "Compatible", RulesetDefaults.Sr5, "sha256:sr5-runtime-fingerprint")
+            ],
+            Warnings: [],
+            MigrationPreview:
+            [
+                new RuntimeMigrationPreviewItem(RuntimeMigrationPreviewChangeKinds.RulePackAdded, "Profile applies RulePack 'official.sr5.core@1.0.0'.")
+            ],
+            GeneratedAtUtc: DateTimeOffset.UtcNow);
+
+        DesktopDialogState dialog = factory.CreateCommandDialog(
+            OverviewCommandPolicy.RuntimeInspectorCommandId,
+            profile: null,
+            DesktopPreferenceState.Default,
+            activeSectionJson: null,
+            currentWorkspace: null,
+            rulesetId: RulesetDefaults.Sr5,
+            runtimeInspector: projection);
+
+        Assert.AreEqual("dialog.runtime_inspector", dialog.Id);
+        Assert.AreEqual("official.sr5.core", DesktopDialogFieldValueParser.GetValue(dialog, "runtimeProfileId"));
+        Assert.AreEqual("sha256:sr5-runtime-fingerprint", DesktopDialogFieldValueParser.GetValue(dialog, "runtimeFingerprint"));
+        StringAssert.Contains(DesktopDialogFieldValueParser.GetValue(dialog, "runtimeProviderBindings"), "derive.stat");
     }
 
     private static CharacterProfileSection CreateProfile(string name, string alias)

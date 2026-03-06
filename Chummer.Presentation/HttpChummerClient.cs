@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Linq;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -210,6 +211,37 @@ public sealed class HttpChummerClient : IChummerClient
             WorkflowDefinitions: response.WorkflowDefinitions ?? [],
             WorkflowSurfaces: response.WorkflowSurfaces ?? [],
             ActiveRuntime: response.ActiveRuntime);
+    }
+
+    public async Task<RuntimeInspectorProjection?> GetRuntimeInspectorProfileAsync(string profileId, string? rulesetId, CancellationToken ct)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(profileId);
+
+        string path = $"/api/runtime/profiles/{Uri.EscapeDataString(profileId)}";
+        string? normalizedRuleset = RulesetDefaults.NormalizeOptional(rulesetId);
+        if (normalizedRuleset is not null)
+        {
+            path += $"?ruleset={Uri.EscapeDataString(normalizedRuleset)}";
+        }
+
+        using HttpResponseMessage response = await _httpClient.GetAsync(path, ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"Runtime inspector request failed with HTTP {(int)response.StatusCode}.");
+        }
+
+        RuntimeInspectorProjection? projection = await response.Content.ReadFromJsonAsync<RuntimeInspectorProjection>(ct);
+        if (projection is null)
+        {
+            throw new InvalidOperationException($"Runtime inspector response for '{profileId}' was empty.");
+        }
+
+        return projection;
     }
 
     public async Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)

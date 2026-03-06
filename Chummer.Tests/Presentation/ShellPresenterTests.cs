@@ -580,6 +580,11 @@ public class ShellPresenterTests
                 ActiveRuntime: activeRuntime);
         }
 
+        public Task<RuntimeInspectorProjection?> GetRuntimeInspectorProfileAsync(string profileId, string? rulesetId, CancellationToken ct)
+        {
+            return Task.FromResult<RuntimeInspectorProjection?>(null);
+        }
+
         public Task<WorkspaceImportResult> ImportAsync(WorkspaceImportDocument document, CancellationToken ct) => throw new NotImplementedException();
 
         public Task<bool> CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct) => throw new NotImplementedException();

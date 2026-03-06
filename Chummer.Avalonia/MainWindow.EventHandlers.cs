@@ -74,6 +74,13 @@ public partial class MainWindow
             "close workspace");
     }
 
+    private async void SummaryHeader_OnRuntimeInspectorRequested(object? sender, EventArgs e)
+    {
+        await RunUiActionAsync(
+            () => _interactionCoordinator.OpenRuntimeInspectorAsync(CancellationToken.None),
+            "open runtime inspector");
+    }
+
     private async void MenuBar_OnMenuSelected(object? sender, string menuId)
     {
         await RunUiActionAsync(

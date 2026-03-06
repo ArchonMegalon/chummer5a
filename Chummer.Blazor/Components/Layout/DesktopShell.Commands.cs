@@ -1,4 +1,5 @@
 using Chummer.Contracts.Presentation;
+using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
 using Microsoft.AspNetCore.Components.Web;
 
@@ -41,6 +42,14 @@ public partial class DesktopShell
 
         await _bridge.ExecuteCommandAsync(commandId, CancellationToken.None);
         await SyncShellWorkspaceContextAsync();
+    }
+
+    private Task OpenRuntimeInspectorAsync()
+    {
+        if (_bridge is null || State.IsBusy || _shellSurfaceState.ActiveRuntime is null)
+            return Task.CompletedTask;
+
+        return _bridge.ExecuteCommandAsync(OverviewCommandPolicy.RuntimeInspectorCommandId, CancellationToken.None);
     }
 
     private async Task SelectTabAsync(string tabId)

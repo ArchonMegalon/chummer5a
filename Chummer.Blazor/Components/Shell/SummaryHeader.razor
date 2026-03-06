@@ -7,7 +7,16 @@
         <label>Build <input id="summaryBuildMethod" value="@(State.Build?.BuildMethod ?? string.Empty)" readonly /></label>
         <label>Karma <input id="summaryKarma" value="@(State.Progress?.Karma.ToString() ?? "0")" readonly /></label>
         <label>Street Cred <input id="summaryStreetCred" value="@(State.Progress?.StreetCred.ToString() ?? "0")" readonly /></label>
-        <label class="wide">Runtime <input id="summaryRuntime" value="@RuntimeSummary" readonly /></label>
+        <label class="wide">
+            Runtime
+            <input id="summaryRuntime" value="@RuntimeSummary" readonly />
+            <button id="summaryRuntimeInspect"
+                    type="button"
+                    disabled="@(!CanInspectRuntime || State.IsBusy)"
+                    @onclick="OpenRuntimeInspectorAsync">
+                Inspect Runtime
+            </button>
+        </label>
     </div>
 </section>
 
@@ -18,6 +27,16 @@
     [Parameter]
     public Chummer.Presentation.Shell.ShellSurfaceState ShellSurface { get; set; } = Chummer.Presentation.Shell.ShellSurfaceState.Empty;
 
+    [Parameter]
+    public EventCallback InspectRuntimeRequested { get; set; }
+
     private string RuntimeSummary =>
         Chummer.Presentation.Shell.ShellStatusTextFormatter.BuildActiveRuntimeSummary(ShellSurface.ActiveRuntime);
+
+    private bool CanInspectRuntime => ShellSurface.ActiveRuntime is not null;
+
+    private Task OpenRuntimeInspectorAsync()
+    {
+        return InspectRuntimeRequested.InvokeAsync();
+    }
 }

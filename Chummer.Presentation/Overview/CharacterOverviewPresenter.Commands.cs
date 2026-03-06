@@ -25,6 +25,8 @@ public sealed partial class CharacterOverviewPresenter
             CurrentWorkspace: ResolveCurrentWorkspaceId(),
             DialogFactory: _dialogFactory,
             Publish: Publish,
+            GetShellBootstrapAsync: (rulesetId, token) => _client.GetShellBootstrapAsync(rulesetId, token),
+            GetRuntimeInspectorProfileAsync: (profileId, rulesetId, token) => _client.GetRuntimeInspectorProfileAsync(profileId, rulesetId, token),
             SaveAsync: SaveAsync,
             DownloadAsync: DownloadAsync,
             PrintAsync: PrintAsync,

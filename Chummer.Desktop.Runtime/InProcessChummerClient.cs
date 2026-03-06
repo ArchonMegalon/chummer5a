@@ -6,6 +6,7 @@ using Chummer.Application.Workspaces;
 using Chummer.Application.Content;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Owners;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
@@ -25,12 +26,14 @@ public sealed class InProcessChummerClient : IChummerClient
     private readonly IShellPreferencesService _shellPreferencesService;
     private readonly IShellSessionService _shellSessionService;
     private readonly IActiveRuntimeStatusService? _activeRuntimeStatusService;
+    private readonly IRuntimeInspectorService? _runtimeInspectorService;
     private readonly IOwnerContextAccessor _ownerContextAccessor;
 
     public InProcessChummerClient(
         IWorkspaceService workspaceService,
         IRulesetShellCatalogResolver shellCatalogResolver,
         IActiveRuntimeStatusService? activeRuntimeStatusService = null,
+        IRuntimeInspectorService? runtimeInspectorService = null,
         IRulesetSelectionPolicy? rulesetSelectionPolicy = null,
         IShellPreferencesService? shellPreferencesService = null,
         IShellSessionService? shellSessionService = null,
@@ -42,6 +45,7 @@ public sealed class InProcessChummerClient : IChummerClient
         _shellPreferencesService = shellPreferencesService ?? new ShellPreferencesService(new InMemoryShellPreferencesStore());
         _shellSessionService = shellSessionService ?? new ShellSessionService(new InMemoryShellSessionStore());
         _activeRuntimeStatusService = activeRuntimeStatusService;
+        _runtimeInspectorService = runtimeInspectorService;
         _ownerContextAccessor = ownerContextAccessor ?? new LocalOwnerContextAccessor();
     }
 
@@ -54,6 +58,7 @@ public sealed class InProcessChummerClient : IChummerClient
             workspaceService,
             shellCatalogResolver,
             activeRuntimeStatusService: null,
+            runtimeInspectorService: null,
             rulesetSelectionPolicy: null,
             shellPreferencesService: shellPreferencesService,
             shellSessionService: shellSessionService)
@@ -158,6 +163,13 @@ public sealed class InProcessChummerClient : IChummerClient
             WorkflowDefinitions: _shellCatalogResolver.ResolveWorkflowDefinitions(effectiveRulesetId),
             WorkflowSurfaces: _shellCatalogResolver.ResolveWorkflowSurfaces(effectiveRulesetId),
             ActiveRuntime: _activeRuntimeStatusService?.GetActiveProfileStatus(owner, effectiveRulesetId)));
+    }
+
+    public Task<RuntimeInspectorProjection?> GetRuntimeInspectorProfileAsync(string profileId, string? rulesetId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        OwnerScope owner = _ownerContextAccessor.Current;
+        return Task.FromResult(_runtimeInspectorService?.GetProfileProjection(owner, profileId, rulesetId));
     }
 
     public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)

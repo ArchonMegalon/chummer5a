@@ -33,7 +33,8 @@ internal static class MainWindowShellFrameProjector
                     Alias: state.Profile?.Alias,
                     Karma: state.Progress?.Karma.ToString(),
                     Skills: state.Skills?.Count.ToString(),
-                    RuntimeSummary: ShellStatusTextFormatter.BuildActiveRuntimeSummary(shellSurface.ActiveRuntime)),
+                    RuntimeSummary: ShellStatusTextFormatter.BuildActiveRuntimeSummary(shellSurface.ActiveRuntime),
+                    CanInspectRuntime: shellSurface.ActiveRuntime is not null),
                 StatusStrip: new StatusStripState(
                     CharacterState: $"Character: {(workspaceContext.ActiveWorkspaceId is null ? "none" : "loaded")}",
                     ServiceState: $"Service: {(shellSurface.Error is null ? "online" : "error")}",

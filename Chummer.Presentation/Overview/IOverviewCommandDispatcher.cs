@@ -1,3 +1,5 @@
+using Chummer.Contracts.Content;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Overview;
@@ -12,6 +14,8 @@ public sealed record OverviewCommandExecutionContext(
     CharacterWorkspaceId? CurrentWorkspace,
     IDesktopDialogFactory DialogFactory,
     Action<CharacterOverviewState> Publish,
+    Func<string?, CancellationToken, Task<ShellBootstrapSnapshot>> GetShellBootstrapAsync,
+    Func<string, string?, CancellationToken, Task<RuntimeInspectorProjection?>> GetRuntimeInspectorProfileAsync,
     Func<CancellationToken, Task> SaveAsync,
     Func<CancellationToken, Task> DownloadAsync,
     Func<CancellationToken, Task> PrintAsync,

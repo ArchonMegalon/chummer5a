@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Chummer.Contracts.Api;
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -654,6 +655,7 @@ public class CharacterOverviewPresenterTests
     {
         string[] dialogCommands =
         [
+            OverviewCommandPolicy.RuntimeInspectorCommandId,
             "new_window",
             "wiki",
             "discord",
@@ -686,6 +688,38 @@ public class CharacterOverviewPresenterTests
             Assert.IsNotNull(presenter.State.ActiveDialog, $"Command '{commandId}' did not open a dialog.");
             Assert.AreNotEqual("dialog.generic", presenter.State.ActiveDialog?.Id, $"Command '{commandId}' fell back to generic dialog template.");
         }
+    }
+
+    [TestMethod]
+    public async Task ExecuteCommandAsync_runtime_inspector_uses_runtime_projection_dialog()
+    {
+        var client = new FakeChummerClient();
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.ExecuteCommandAsync(OverviewCommandPolicy.RuntimeInspectorCommandId, CancellationToken.None);
+
+        Assert.IsNotNull(presenter.State.ActiveDialog);
+        Assert.AreEqual("dialog.runtime_inspector", presenter.State.ActiveDialog?.Id);
+        Assert.AreEqual("official.sr5.core", DesktopDialogFieldValueParser.GetValue(presenter.State.ActiveDialog!, "runtimeProfileId"));
+        Assert.AreEqual("sha256:sr5-runtime-fingerprint", DesktopDialogFieldValueParser.GetValue(presenter.State.ActiveDialog!, "runtimeFingerprint"));
+        StringAssert.Contains(DesktopDialogFieldValueParser.GetValue(presenter.State.ActiveDialog!, "runtimeRulePacks"), "official.sr5.core");
+    }
+
+    [TestMethod]
+    public async Task ExecuteCommandAsync_runtime_inspector_errors_when_no_active_runtime_exists()
+    {
+        var client = new FakeChummerClient
+        {
+            DisableActiveRuntime = true
+        };
+        var presenter = new CharacterOverviewPresenter(client);
+
+        await presenter.InitializeAsync(CancellationToken.None);
+        await presenter.ExecuteCommandAsync(OverviewCommandPolicy.RuntimeInspectorCommandId, CancellationToken.None);
+
+        Assert.IsNull(presenter.State.ActiveDialog);
+        Assert.AreEqual("No active runtime profile is available for inspection.", presenter.State.Error);
     }
 
     [TestMethod]
@@ -822,9 +856,11 @@ public class CharacterOverviewPresenterTests
         private string _name = "Troy Simmons";
         private string _alias = "BLUE";
         private readonly Dictionary<string, WorkspaceListItem> _workspaces = new(StringComparer.Ordinal);
+        private readonly Dictionary<(string ProfileId, string RulesetId), RuntimeInspectorProjection> _runtimeInspectors = new();
         private int _clock;
         private ShellPreferences _preferences = new(RulesetDefaults.Sr5);
         private ShellSessionState _session = ShellSessionState.Default;
+        public bool DisableActiveRuntime { get; set; }
         public bool ThrowOnCloseWorkspace { get; set; }
         public int DownloadCalls { get; private set; }
         public int GetCommandsCalls { get; private set; }
@@ -837,6 +873,12 @@ public class CharacterOverviewPresenterTests
         public WorkspaceImportDocument? LastImportedDocument { get; private set; }
         public static IReadOnlyList<AppCommandDefinition> Commands { get; } = CreateCommands(RulesetDefaults.Sr5);
         public static IReadOnlyList<NavigationTabDefinition> Tabs { get; } = CreateTabs(RulesetDefaults.Sr5);
+
+        public FakeChummerClient()
+        {
+            SeedRuntimeInspector("official.sr5.core", RulesetDefaults.Sr5);
+            SeedRuntimeInspector("official.sr6.core", RulesetDefaults.Sr6);
+        }
 
         public Task<ShellPreferences> GetShellPreferencesAsync(CancellationToken ct)
         {
@@ -887,7 +929,16 @@ public class CharacterOverviewPresenterTests
                 ActiveRulesetId: activeRulesetId,
                 ActiveWorkspaceId: activeWorkspaceId,
                 ActiveTabId: NormalizeTabId(_session.ActiveTabId),
-                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(_session.ActiveTabsByWorkspace));
+                ActiveTabsByWorkspace: NormalizeWorkspaceTabMap(_session.ActiveTabsByWorkspace),
+                ActiveRuntime: DisableActiveRuntime ? null : CreateActiveRuntime(effectiveRulesetId));
+        }
+
+        public Task<RuntimeInspectorProjection?> GetRuntimeInspectorProfileAsync(string profileId, string? rulesetId, CancellationToken ct)
+        {
+            string normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId)
+                ?? RulesetDefaults.NormalizeRequired(_preferences.PreferredRulesetId);
+            _runtimeInspectors.TryGetValue((profileId, normalizedRulesetId), out RuntimeInspectorProjection? projection);
+            return Task.FromResult(projection);
         }
 
         public void SeedWorkspace(
@@ -973,6 +1024,92 @@ public class CharacterOverviewPresenterTests
             string effectiveRulesetId = RulesetDefaults.NormalizeOptional(rulesetId)
                 ?? RulesetDefaults.NormalizeRequired(_preferences.PreferredRulesetId);
             return Task.FromResult(CreateTabs(effectiveRulesetId));
+        }
+
+        private void SeedRuntimeInspector(string profileId, string rulesetId)
+        {
+            _runtimeInspectors[(profileId, rulesetId)] = CreateRuntimeInspectorProjection(profileId, rulesetId);
+        }
+
+        private static ActiveRuntimeStatusProjection CreateActiveRuntime(string rulesetId)
+        {
+            string normalizedRulesetId = RulesetDefaults.NormalizeRequired(rulesetId);
+            return new ActiveRuntimeStatusProjection(
+                ProfileId: $"official.{normalizedRulesetId}.core",
+                Title: normalizedRulesetId == RulesetDefaults.Sr6 ? "SR6 Core" : "SR5 Core",
+                RulesetId: normalizedRulesetId,
+                RuntimeFingerprint: $"sha256:{normalizedRulesetId}-runtime-fingerprint",
+                InstallState: ArtifactInstallStates.Available,
+                RulePackCount: 1,
+                ProviderBindingCount: 1,
+                WarningCount: 0);
+        }
+
+        private static RuntimeInspectorProjection CreateRuntimeInspectorProjection(string profileId, string rulesetId)
+        {
+            string normalizedRulesetId = RulesetDefaults.NormalizeRequired(rulesetId);
+            return new RuntimeInspectorProjection(
+                TargetKind: RuntimeInspectorTargetKinds.RuntimeLock,
+                TargetId: profileId,
+                RuntimeLock: new ResolvedRuntimeLock(
+                    RulesetId: normalizedRulesetId,
+                    ContentBundles:
+                    [
+                        new ContentBundleDescriptor(
+                            BundleId: $"{normalizedRulesetId}.core.bundle",
+                            RulesetId: normalizedRulesetId,
+                            Version: "1.0.0",
+                            Title: "Core Bundle",
+                            Description: "Default bundle",
+                            AssetPaths: ["data/core.xml"])
+                    ],
+                    RulePacks:
+                    [
+                        new ArtifactVersionReference($"official.{normalizedRulesetId}.core", "1.0.0")
+                    ],
+                    ProviderBindings: new Dictionary<string, string>(StringComparer.Ordinal)
+                    {
+                        [RulePackCapabilityIds.DeriveStat] = $"official.{normalizedRulesetId}.core/derive.stat"
+                    },
+                    EngineApiVersion: "1.0.0",
+                    RuntimeFingerprint: $"sha256:{normalizedRulesetId}-runtime-fingerprint"),
+                Install: new ArtifactInstallState(
+                    State: ArtifactInstallStates.Available,
+                    RuntimeFingerprint: $"sha256:{normalizedRulesetId}-runtime-fingerprint"),
+                ResolvedRulePacks:
+                [
+                    new RuntimeInspectorRulePackEntry(
+                        new ArtifactVersionReference($"official.{normalizedRulesetId}.core", "1.0.0"),
+                        normalizedRulesetId == RulesetDefaults.Sr6 ? "SR6 Core" : "SR5 Core",
+                        ArtifactVisibilityModes.LocalOnly,
+                        ArtifactTrustTiers.Official,
+                        [RulePackCapabilityIds.DeriveStat])
+                ],
+                ProviderBindings:
+                [
+                    new RuntimeInspectorProviderBinding(
+                        CapabilityId: RulePackCapabilityIds.DeriveStat,
+                        ProviderId: $"official.{normalizedRulesetId}.core/derive.stat",
+                        PackId: $"official.{normalizedRulesetId}.core")
+                ],
+                CompatibilityDiagnostics:
+                [
+                    new RuntimeLockCompatibilityDiagnostic(
+                        State: RuntimeLockCompatibilityStates.Compatible,
+                        Message: "Runtime lock resolves against the current RuleProfile and RulePack catalog.",
+                        RequiredRulesetId: normalizedRulesetId,
+                        RequiredRuntimeFingerprint: $"sha256:{normalizedRulesetId}-runtime-fingerprint")
+                ],
+                Warnings: [],
+                MigrationPreview:
+                [
+                    new RuntimeMigrationPreviewItem(
+                        Kind: RuntimeMigrationPreviewChangeKinds.RulePackAdded,
+                        Summary: $"Profile applies RulePack 'official.{normalizedRulesetId}.core@1.0.0'.",
+                        SubjectId: $"official.{normalizedRulesetId}.core",
+                        AfterValue: "1.0.0")
+                ],
+                GeneratedAtUtc: DateTimeOffset.UtcNow);
         }
 
         public Task<JsonNode> GetSectionAsync(CharacterWorkspaceId id, string sectionId, CancellationToken ct)

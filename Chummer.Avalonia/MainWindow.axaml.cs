@@ -61,6 +61,7 @@ public partial class MainWindow : Window
             onImportRawRequested: ToolStrip_OnImportRawRequested,
             onSaveRequested: ToolStrip_OnSaveRequested,
             onCloseWorkspaceRequested: ToolStrip_OnCloseWorkspaceRequested,
+            onRuntimeInspectorRequested: SummaryHeader_OnRuntimeInspectorRequested,
             onMenuSelected: MenuBar_OnMenuSelected,
             onWorkspaceSelected: NavigatorPane_OnWorkspaceSelected,
             onNavigationTabSelected: NavigatorPane_OnNavigationTabSelected,

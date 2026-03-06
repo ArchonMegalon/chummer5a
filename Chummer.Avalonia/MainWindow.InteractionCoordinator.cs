@@ -37,6 +37,11 @@ internal sealed class MainWindowInteractionCoordinator
         await _adapter.ExecuteCommandAsync(commandId, ct);
     }
 
+    public Task OpenRuntimeInspectorAsync(CancellationToken ct)
+    {
+        return _adapter.ExecuteCommandAsync(OverviewCommandPolicy.RuntimeInspectorCommandId, ct);
+    }
+
     public Task SwitchWorkspaceAsync(string workspaceId, CancellationToken ct)
     {
         return _adapter.SwitchWorkspaceAsync(new CharacterWorkspaceId(workspaceId), ct);

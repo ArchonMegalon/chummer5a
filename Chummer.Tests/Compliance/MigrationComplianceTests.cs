@@ -69,7 +69,14 @@ public class MigrationComplianceTests
             Assert.IsTrue(OverviewCommandPolicy.IsKnownSharedCommand(command), $"Missing shared command classification for '{command}'.");
             if (OverviewCommandPolicy.IsDialogCommand(command))
             {
-                StringAssert.Contains(dialogFactoryText, $"\"{command}\" =>", $"Missing dialog template for '{command}'.");
+                if (string.Equals(command, OverviewCommandPolicy.RuntimeInspectorCommandId, StringComparison.Ordinal))
+                {
+                    StringAssert.Contains(dialogFactoryText, "CreateRuntimeInspectorDialog", "Missing runtime inspector dialog template.");
+                }
+                else
+                {
+                    StringAssert.Contains(dialogFactoryText, $"\"{command}\" =>", $"Missing dialog template for '{command}'.");
+                }
             }
         }
 
@@ -3563,7 +3570,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(workspaceStripCodeText, "public void SetState(WorkspaceStripState state)");
         StringAssert.Contains(workspaceStripCodeText, "SetWorkspaceText(state.WorkspaceText);");
         StringAssert.Contains(summaryHeaderCodeText, "public void SetState(SummaryHeaderState state)");
-        StringAssert.Contains(summaryHeaderCodeText, "SetValues(state.Name, state.Alias, state.Karma, state.Skills, state.RuntimeSummary);");
+        StringAssert.Contains(summaryHeaderCodeText, "SetValues(state.Name, state.Alias, state.Karma, state.Skills, state.RuntimeSummary, state.CanInspectRuntime);");
+        StringAssert.Contains(summaryHeaderCodeText, "RuntimeInspectButton.IsEnabled = canInspectRuntime;");
         StringAssert.Contains(statusStripCodeText, "public void SetState(StatusStripState state)");
         StringAssert.Contains(statusStripCodeText, "SetValues(");
         StringAssert.Contains(statusFormatterText, "public static class ShellStatusTextFormatter");

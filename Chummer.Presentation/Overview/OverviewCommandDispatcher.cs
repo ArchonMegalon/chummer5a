@@ -1,5 +1,7 @@
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
+using Chummer.Contracts.Content;
 
 namespace Chummer.Presentation.Overview;
 
@@ -7,6 +9,12 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
 {
     public async Task DispatchAsync(string commandId, OverviewCommandExecutionContext context, CancellationToken ct)
     {
+        if (OverviewCommandPolicy.IsRuntimeInspectorCommand(commandId))
+        {
+            await OpenRuntimeInspectorDialogAsync(context, ct);
+            return;
+        }
+
         if (OverviewCommandPolicy.IsMenuCommand(commandId))
         {
             context.Publish(context.State with
@@ -110,7 +118,55 @@ public sealed class OverviewCommandDispatcher : IOverviewCommandDispatcher
             context.State.Preferences,
             context.State.ActiveSectionJson,
             context.CurrentWorkspace,
-            ResolveDialogRulesetId(context));
+            ResolveDialogRulesetId(context),
+            runtimeInspector: null);
+    }
+
+    private static async Task OpenRuntimeInspectorDialogAsync(OverviewCommandExecutionContext context, CancellationToken ct)
+    {
+        string? rulesetId = ResolveDialogRulesetId(context);
+        ShellBootstrapSnapshot bootstrap = await context.GetShellBootstrapAsync(rulesetId, ct);
+        ActiveRuntimeStatusProjection? activeRuntime = bootstrap.ActiveRuntime;
+        if (activeRuntime is null)
+        {
+            context.Publish(context.State with
+            {
+                ActiveDialog = null,
+                Error = "No active runtime profile is available for inspection.",
+                Notice = null
+            });
+            return;
+        }
+
+        RuntimeInspectorProjection? runtimeInspector = await context.GetRuntimeInspectorProfileAsync(
+            activeRuntime.ProfileId,
+            activeRuntime.RulesetId,
+            ct);
+        if (runtimeInspector is null)
+        {
+            context.Publish(context.State with
+            {
+                ActiveDialog = null,
+                Error = $"Runtime profile '{activeRuntime.ProfileId}' could not be resolved.",
+                Notice = null
+            });
+            return;
+        }
+
+        DesktopDialogState dialog = context.DialogFactory.CreateCommandDialog(
+            OverviewCommandPolicy.RuntimeInspectorCommandId,
+            context.State.Profile,
+            context.State.Preferences,
+            context.State.ActiveSectionJson,
+            context.CurrentWorkspace,
+            activeRuntime.RulesetId,
+            runtimeInspector);
+        context.Publish(context.State with
+        {
+            ActiveDialog = dialog,
+            Error = null,
+            Notice = $"Runtime inspector opened for '{activeRuntime.ProfileId}'."
+        });
     }
 
     private static string? ResolveDialogRulesetId(OverviewCommandExecutionContext context)

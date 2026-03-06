@@ -30,6 +30,7 @@
       <StackPanel>
         <TextBlock Text="Runtime" FontWeight="Bold" />
         <TextBlock x:Name="RuntimeValueText" Text="-" TextWrapping="Wrap" />
+        <Button x:Name="RuntimeInspectButton" Content="Inspect Runtime" HorizontalAlignment="Left" />
       </StackPanel>
     </Border>
   </Grid>

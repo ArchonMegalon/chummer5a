@@ -17,6 +17,7 @@ internal static class Sr6AppCommandCatalog
         Sr6("print_character", "command.print_character", "file", true, true),
         Sr6("export_character", "command.export_character", "file", true, true),
         Sr6("switch_ruleset", "command.switch_ruleset", "tools", false, true),
+        Sr6(AppCommandIds.RuntimeInspector, "command.runtime_inspector", "tools", false, true),
         Sr6("character_settings", "command.character_settings", "tools", true, true),
         Sr6("about", "command.about", "help", false, true)
     ];

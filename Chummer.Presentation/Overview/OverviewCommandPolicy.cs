@@ -1,7 +1,11 @@
+using Chummer.Contracts.Presentation;
+
 namespace Chummer.Presentation.Overview;
 
 public static class OverviewCommandPolicy
 {
+    public const string RuntimeInspectorCommandId = AppCommandIds.RuntimeInspector;
+
     private static readonly HashSet<string> MenuCommandIds = new(StringComparer.Ordinal)
     {
         "file", "edit", "special", "tools", "windows", "help"
@@ -14,6 +18,7 @@ public static class OverviewCommandPolicy
 
     private static readonly HashSet<string> DialogCommandIds = new(StringComparer.Ordinal)
     {
+        RuntimeInspectorCommandId,
         "new_window",
         "wiki",
         "discord",
@@ -60,6 +65,9 @@ public static class OverviewCommandPolicy
     public static bool IsImportHintCommand(string commandId) => ImportHintCommandIds.Contains(commandId);
 
     public static bool IsDialogCommand(string commandId) => DialogCommandIds.Contains(commandId);
+
+    public static bool IsRuntimeInspectorCommand(string commandId)
+        => string.Equals(commandId, RuntimeInspectorCommandId, StringComparison.Ordinal);
 
     public static bool IsEditorRelayCommand(string commandId) => EditorRelayCommandIds.Contains(commandId);
 

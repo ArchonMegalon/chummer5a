@@ -17,6 +17,7 @@ internal static class MainWindowControlBinder
         EventHandler onImportRawRequested,
         EventHandler onSaveRequested,
         EventHandler onCloseWorkspaceRequested,
+        EventHandler onRuntimeInspectorRequested,
         EventHandler<string> onMenuSelected,
         EventHandler<string> onWorkspaceSelected,
         EventHandler<string> onNavigationTabSelected,
@@ -29,6 +30,7 @@ internal static class MainWindowControlBinder
         toolStrip.ImportRawRequested += onImportRawRequested;
         toolStrip.SaveRequested += onSaveRequested;
         toolStrip.CloseWorkspaceRequested += onCloseWorkspaceRequested;
+        summaryHeader.RuntimeInspectorRequested += onRuntimeInspectorRequested;
         menuBar.MenuSelected += onMenuSelected;
         navigatorPane.WorkspaceSelected += onWorkspaceSelected;
         navigatorPane.NavigationTabSelected += onNavigationTabSelected;

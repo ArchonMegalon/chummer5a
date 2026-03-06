@@ -33,6 +33,7 @@ internal static class Sr5AppCommandCatalog
             Sr5("dice_roller", "command.dice_roller", "tools", false, true),
             Sr5("global_settings", "command.global_settings", "tools", false, true),
             Sr5("switch_ruleset", "command.switch_ruleset", "tools", false, true),
+            Sr5(AppCommandIds.RuntimeInspector, "command.runtime_inspector", "tools", false, true),
             Sr5("character_settings", "command.character_settings", "tools", true, true),
             Sr5("translator", "command.translator", "tools", false, true),
             Sr5("hero_lab_importer", "command.hero_lab_importer", "tools", false, true),

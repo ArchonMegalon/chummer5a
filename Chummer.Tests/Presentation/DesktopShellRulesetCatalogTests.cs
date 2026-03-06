@@ -114,6 +114,45 @@ public sealed class DesktopShellRulesetCatalogTests
         });
     }
 
+    [TestMethod]
+    public void DesktopShell_runtime_header_button_dispatches_runtime_inspector_command()
+    {
+        using var context = new BunitContext();
+        context.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        StaticOverviewPresenter presenter = new(CharacterOverviewState.Empty);
+        ShellState shellState = ShellState.Empty with
+        {
+            ActiveRulesetId = "sr6",
+            ActiveRuntime = new ActiveRuntimeStatusProjection(
+                ProfileId: "official.sr6.core",
+                Title: "SR6 Core",
+                RulesetId: "sr6",
+                RuntimeFingerprint: "sr6-runtime-fp-001",
+                InstallState: ArtifactInstallStates.Available,
+                RulePackCount: 1,
+                ProviderBindingCount: 1,
+                WarningCount: 0)
+        };
+
+        context.Services.AddSingleton<ICharacterOverviewPresenter>(presenter);
+        context.Services.AddSingleton<IShellPresenter>(new StaticShellPresenter(shellState));
+        context.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
+        IRulesetPlugin sr5Plugin = new Sr5RulesetPlugin();
+        IRulesetPlugin sr6Plugin = new Sr6CatalogPlugin();
+        context.Services.AddSingleton<IRulesetPlugin>(sr5Plugin);
+        context.Services.AddSingleton<IRulesetPlugin>(sr6Plugin);
+        context.Services.AddSingleton<IRulesetPluginRegistry>(new RulesetPluginRegistry([sr5Plugin, sr6Plugin]));
+        context.Services.AddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
+        context.Services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
+
+        IRenderedComponent<DesktopShell> cut = context.Render<DesktopShell>();
+
+        cut.Find("#summaryRuntimeInspect").Click();
+
+        Assert.AreEqual(OverviewCommandPolicy.RuntimeInspectorCommandId, presenter.ExecutedCommandId);
+    }
+
     private sealed class StaticOverviewPresenter : ICharacterOverviewPresenter
     {
         public StaticOverviewPresenter(CharacterOverviewState state)
@@ -122,6 +161,7 @@ public sealed class DesktopShellRulesetCatalogTests
         }
 
         public CharacterOverviewState State { get; private set; }
+        public string? ExecutedCommandId { get; private set; }
 
         public event EventHandler? StateChanged
         {
@@ -134,7 +174,11 @@ public sealed class DesktopShellRulesetCatalogTests
         public Task LoadAsync(CharacterWorkspaceId id, CancellationToken ct) => Task.CompletedTask;
         public Task SwitchWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct) => Task.CompletedTask;
         public Task CloseWorkspaceAsync(CharacterWorkspaceId id, CancellationToken ct) => Task.CompletedTask;
-        public Task ExecuteCommandAsync(string commandId, CancellationToken ct) => Task.CompletedTask;
+        public Task ExecuteCommandAsync(string commandId, CancellationToken ct)
+        {
+            ExecutedCommandId = commandId;
+            return Task.CompletedTask;
+        }
         public Task HandleUiControlAsync(string controlId, CancellationToken ct) => Task.CompletedTask;
         public Task ExecuteWorkspaceActionAsync(WorkspaceSurfaceActionDefinition action, CancellationToken ct) => Task.CompletedTask;
         public Task UpdateDialogFieldAsync(string fieldId, string? value, CancellationToken ct) => Task.CompletedTask;

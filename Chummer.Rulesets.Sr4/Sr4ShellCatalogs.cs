@@ -17,6 +17,7 @@ internal static class Sr4AppCommandCatalog
         Sr4("print_character", "command.print_character", "file", true, true),
         Sr4("export_character", "command.export_character", "file", true, true),
         Sr4("switch_ruleset", "command.switch_ruleset", "tools", false, true),
+        Sr4(AppCommandIds.RuntimeInspector, "command.runtime_inspector", "tools", false, true),
         Sr4("character_settings", "command.character_settings", "tools", true, true),
         Sr4("dice_roller", "command.dice_roller", "tools", false, true),
         Sr4("about", "command.about", "help", false, true)

@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Presentation.Overview;
@@ -15,7 +16,8 @@ public interface IDesktopDialogFactory
         DesktopPreferenceState preferences,
         string? activeSectionJson,
         CharacterWorkspaceId? currentWorkspace,
-        string? rulesetId);
+        string? rulesetId,
+        RuntimeInspectorProjection? runtimeInspector = null);
 
     DesktopDialogState CreateUiControlDialog(
         string controlId,
