@@ -8,6 +8,7 @@ Principle: **one shell contract, one behavior path, two renderers**.
 ## Objective
 
 Finish migration execution without re-architecting again. Keep existing seams (`Api`, `Application`, `Contracts`, `Infrastructure`, `Presentation`) and drive parity through shared presenter behavior used by both `Chummer.Blazor` and `Chummer.Avalonia`.
+Current runtime registration remains explicit: default headless/desktop/web paths register SR5 and SR6, while `Chummer.Rulesets.Sr4` remains scaffolded/experimental and is not yet part of the default runtime path.
 
 ## Guardrails (Non-Negotiable)
 

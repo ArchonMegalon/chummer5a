@@ -2046,6 +2046,10 @@ public class MigrationComplianceTests
         string shellPresenterText = File.ReadAllText(shellPresenterPath);
         string shellPresenterContractPath = FindPath("Chummer.Presentation", "Shell", "IShellPresenter.cs");
         string shellPresenterContractText = File.ReadAllText(shellPresenterContractPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+        string backlogPath = FindPath("docs", "MIGRATION_BACKLOG.md");
+        string backlogText = File.ReadAllText(backlogPath);
 
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetPluginRegistry");
         StringAssert.Contains(rulesetServicesText, "public interface IRulesetSelectionPolicy");
@@ -2122,6 +2126,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(blazorProgramText, "builder.Services.AddSr5Ruleset();");
         StringAssert.Contains(blazorProgramText, "builder.Services.AddSr6Ruleset();");
         StringAssert.Contains(blazorProgramText, "AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();");
+        StringAssert.Contains(readmeText, "Default runtime registration currently enables SR5 and SR6 only.");
+        StringAssert.Contains(readmeText, "`Chummer.Rulesets.Sr4` remains a scaffolded/experimental module");
+        StringAssert.Contains(backlogText, "default headless/desktop/web paths register SR5 and SR6");
+        StringAssert.Contains(backlogText, "`Chummer.Rulesets.Sr4` remains scaffolded/experimental");
 
         StringAssert.Contains(commandEndpointsText, "IRulesetShellCatalogResolver shellCatalogResolver");
         StringAssert.Contains(commandEndpointsText, "shellCatalogResolver.ResolveCommands(ruleset)");
