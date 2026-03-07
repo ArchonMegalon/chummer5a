@@ -74,8 +74,14 @@ public class HubProjectCompatibilityServiceTests
 
         Assert.IsNotNull(matrix);
         Assert.AreEqual(HubCatalogItemKinds.RulePack, matrix.Kind);
+        Assert.IsTrue(matrix.Rows.Any(row => row.Kind == HubProjectCompatibilityRowKinds.Capabilities && row.CurrentValue == "1"));
         Assert.IsTrue(matrix.Rows.Any(row => row.Kind == HubProjectCompatibilityRowKinds.SessionRuntime && row.State == HubProjectCompatibilityStates.Compatible));
         Assert.IsTrue(matrix.Rows.Any(row => row.Kind == HubProjectCompatibilityRowKinds.HostedPublic && row.State == HubProjectCompatibilityStates.ReviewRequired));
+        Assert.IsNotNull(matrix.Capabilities);
+        Assert.IsTrue(matrix.Capabilities.Any(capability =>
+            capability.CapabilityId == RulePackCapabilityIds.SessionQuickActions
+            && capability.InvocationKind == RulesetCapabilityInvocationKinds.Script
+            && capability.SessionSafe));
     }
 
     [TestMethod]
@@ -111,6 +117,8 @@ public class HubProjectCompatibilityServiceTests
         Assert.IsNotNull(matrix);
         Assert.AreEqual(HubCatalogItemKinds.BuildKit, matrix.Kind);
         Assert.IsTrue(matrix.Rows.Any(row => row.Kind == HubProjectCompatibilityRowKinds.SessionRuntime && row.State == HubProjectCompatibilityStates.Blocked));
+        Assert.IsNotNull(matrix.Capabilities);
+        Assert.IsEmpty(matrix.Capabilities);
     }
 
     [TestMethod]
@@ -150,6 +158,11 @@ public class HubProjectCompatibilityServiceTests
             row.Kind == HubProjectCompatibilityRowKinds.InstallState
             && row.CurrentValue == ArtifactInstallStates.Pinned
             && row.Notes == "workspace-1"));
+        Assert.IsTrue(matrix.Rows.Any(row => row.Kind == HubProjectCompatibilityRowKinds.Capabilities && row.CurrentValue == "2"));
+        Assert.IsNotNull(matrix.Capabilities);
+        Assert.IsTrue(matrix.Capabilities.Any(capability =>
+            capability.CapabilityId == RulePackCapabilityIds.DeriveStat
+            && capability.InvocationKind == RulesetCapabilityInvocationKinds.Rule));
     }
 
     private static RulesetPluginRegistry CreatePluginRegistry() =>
@@ -298,7 +311,25 @@ public class HubProjectCompatibilityServiceTests
 
     private sealed class CapabilityDescriptorProviderStub : IRulesetCapabilityDescriptorProvider
     {
-        public IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors() => [];
+        public IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors() =>
+        [
+            new RulesetCapabilityDescriptor(
+                CapabilityId: RulePackCapabilityIds.DeriveStat,
+                InvocationKind: RulesetCapabilityInvocationKinds.Rule,
+                Title: "Derived Stat Evaluation",
+                Explainable: true,
+                SessionSafe: false,
+                DefaultGasBudget: new RulesetGasBudget(2_000, 5_000, 4_194_304),
+                MaximumGasBudget: new RulesetGasBudget(5_000, 10_000, 8_388_608)),
+            new RulesetCapabilityDescriptor(
+                CapabilityId: RulePackCapabilityIds.SessionQuickActions,
+                InvocationKind: RulesetCapabilityInvocationKinds.Script,
+                Title: "Session Quick Actions",
+                Explainable: true,
+                SessionSafe: true,
+                DefaultGasBudget: new RulesetGasBudget(2_000, 5_000, 4_194_304),
+                MaximumGasBudget: new RulesetGasBudget(5_000, 10_000, 8_388_608))
+        ];
     }
 
     private sealed class ScriptHostStub : IRulesetScriptHost

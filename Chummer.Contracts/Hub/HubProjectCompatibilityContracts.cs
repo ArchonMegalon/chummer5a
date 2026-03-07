@@ -7,6 +7,7 @@ public static class HubProjectCompatibilityRowKinds
     public const string Visibility = "visibility";
     public const string Trust = "trust";
     public const string InstallState = "install-state";
+    public const string Capabilities = "capabilities";
     public const string SessionRuntime = "session-runtime";
     public const string HostedPublic = "hosted-public";
     public const string RuntimeFingerprint = "runtime-fingerprint";
@@ -33,4 +34,5 @@ public sealed record HubProjectCompatibilityMatrix(
     string Kind,
     string ItemId,
     IReadOnlyList<HubProjectCompatibilityRow> Rows,
-    DateTimeOffset GeneratedAtUtc);
+    DateTimeOffset GeneratedAtUtc,
+    IReadOnlyList<HubProjectCapabilityDescriptorProjection>? Capabilities = null);

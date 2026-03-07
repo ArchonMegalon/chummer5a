@@ -164,7 +164,8 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
                 [
                     new HubProjectAction("install-rulepack", "Install", HubProjectActionKinds.Install, LinkTarget: $"/hub/rulepacks/{entry.Manifest.PackId}/install"),
                     new HubProjectAction("open-rulepack", "Open Registry Entry", HubProjectActionKinds.OpenRegistry, LinkTarget: $"/hub/rulepacks/{entry.Manifest.PackId}")
-                ]);
+                ],
+                Capabilities: BuildRulePackCapabilities(candidateRulesetId, entry));
         }
 
         return null;
@@ -217,7 +218,11 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
                 new HubProjectAction("preview-profile-runtime", "Preview Runtime", HubProjectActionKinds.PreviewRuntime, LinkTarget: $"/api/profiles/{entry.Manifest.ProfileId}/preview"),
                 new HubProjectAction("apply-profile", "Install & Apply", HubProjectActionKinds.Apply, LinkTarget: $"/hub/profiles/{entry.Manifest.ProfileId}/apply"),
                 new HubProjectAction("inspect-profile-runtime", "Inspect Runtime", HubProjectActionKinds.InspectRuntime, LinkTarget: $"/hub/runtime/profiles/{entry.Manifest.ProfileId}")
-            ]);
+            ],
+            Capabilities: BuildRuntimeCapabilities(
+                entry.Manifest.RulesetId,
+                entry.Manifest.RuntimeLock.ProviderBindings,
+                entry.Manifest.RuntimeLock.RulePacks.Select(reference => reference.Id)));
     }
 
     private HubProjectDetailProjection? GetBuildKitDetail(OwnerScope owner, string itemId, string? rulesetId)
@@ -268,7 +273,8 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
                 [
                     new HubProjectAction("apply-buildkit", "Apply BuildKit", HubProjectActionKinds.Apply, LinkTarget: $"/hub/buildkits/{entry.Manifest.BuildKitId}/apply"),
                     new HubProjectAction("open-buildkit", "Open Registry Entry", HubProjectActionKinds.OpenRegistry, LinkTarget: $"/hub/buildkits/{entry.Manifest.BuildKitId}")
-                ]);
+                ],
+                Capabilities: []);
         }
 
         return null;
@@ -314,7 +320,11 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             [
                 new HubProjectAction("install-runtime-lock", "Install Runtime Lock", HubProjectActionKinds.Install, LinkTarget: $"/hub/runtime-locks/{entry.LockId}/install"),
                 new HubProjectAction("inspect-runtime-lock", "Inspect Runtime", HubProjectActionKinds.InspectRuntime, LinkTarget: $"/hub/runtime-locks/{entry.LockId}")
-            ]);
+            ],
+            Capabilities: BuildRuntimeCapabilities(
+                entry.RuntimeLock.RulesetId,
+                entry.RuntimeLock.ProviderBindings,
+                entry.RuntimeLock.RulePacks.Select(reference => reference.Id)));
     }
 
     private IEnumerable<string> EnumerateRulesetIds(string? rulesetId)
@@ -406,6 +416,68 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             ? ArtifactTrustTiers.Curated
             : ArtifactTrustTiers.LocalOnly;
 
+    private HubProjectCapabilityDescriptorProjection[] BuildRulePackCapabilities(string rulesetId, RulePackRegistryEntry entry)
+    {
+        IReadOnlyDictionary<string, RulesetCapabilityDescriptor> rulesetDescriptors = GetRulesetCapabilityDescriptors(rulesetId);
+
+        return entry.Manifest.Capabilities
+            .OrderBy(capability => capability.CapabilityId, StringComparer.Ordinal)
+            .Select(capability =>
+            {
+                rulesetDescriptors.TryGetValue(capability.CapabilityId, out RulesetCapabilityDescriptor? descriptor);
+                return new HubProjectCapabilityDescriptorProjection(
+                    CapabilityId: capability.CapabilityId,
+                    InvocationKind: descriptor?.InvocationKind,
+                    Title: descriptor?.Title,
+                    Explainable: capability.Explainable || descriptor?.Explainable == true,
+                    SessionSafe: capability.SessionSafe || descriptor?.SessionSafe == true,
+                    DefaultGasBudget: descriptor?.DefaultGasBudget,
+                    MaximumGasBudget: descriptor?.MaximumGasBudget,
+                    PackId: entry.Manifest.PackId,
+                    AssetKind: capability.AssetKind,
+                    AssetMode: capability.AssetMode);
+            })
+            .ToArray();
+    }
+
+    private HubProjectCapabilityDescriptorProjection[] BuildRuntimeCapabilities(
+        string rulesetId,
+        IReadOnlyDictionary<string, string> providerBindings,
+        IEnumerable<string> packIds)
+    {
+        return GetRulesetCapabilityDescriptors(rulesetId)
+            .Values
+            .OrderBy(descriptor => descriptor.CapabilityId, StringComparer.Ordinal)
+            .Select(descriptor =>
+            {
+                string? providerId = providerBindings.GetValueOrDefault(descriptor.CapabilityId);
+                return new HubProjectCapabilityDescriptorProjection(
+                    CapabilityId: descriptor.CapabilityId,
+                    InvocationKind: descriptor.InvocationKind,
+                    Title: descriptor.Title,
+                    Explainable: descriptor.Explainable,
+                    SessionSafe: descriptor.SessionSafe,
+                    DefaultGasBudget: descriptor.DefaultGasBudget,
+                    MaximumGasBudget: descriptor.MaximumGasBudget,
+                    ProviderId: providerId,
+                    PackId: providerId is null ? null : TryResolvePackId(providerId, packIds));
+            })
+            .ToArray();
+    }
+
+    private IReadOnlyDictionary<string, RulesetCapabilityDescriptor> GetRulesetCapabilityDescriptors(string rulesetId)
+    {
+        IRulesetPlugin? plugin = _rulesetPluginRegistry.Resolve(rulesetId);
+        if (plugin is null)
+        {
+            return new Dictionary<string, RulesetCapabilityDescriptor>(StringComparer.Ordinal);
+        }
+
+        return plugin.CapabilityDescriptors
+            .GetCapabilityDescriptors()
+            .ToDictionary(descriptor => descriptor.CapabilityId, descriptor => descriptor, StringComparer.Ordinal);
+    }
+
     private static HubProjectDetailFact[] CreateInstallHistoryFacts(IEnumerable<ArtifactInstallHistoryEntry> historyEntries)
     {
         ArtifactInstallHistoryEntry[] history = historyEntries
@@ -430,6 +502,19 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         }
 
         return facts.ToArray();
+    }
+
+    private static string? TryResolvePackId(string providerId, IEnumerable<string> packIds)
+    {
+        foreach (string packId in packIds)
+        {
+            if (providerId.StartsWith($"{packId}/", StringComparison.Ordinal))
+            {
+                return packId;
+            }
+        }
+
+        return null;
     }
 
     private static bool MatchesQueryText(HubCatalogItem item, string queryText)

@@ -283,6 +283,10 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
             ? "(none)"
             : string.Join(Environment.NewLine, projection.ProviderBindings.Select(binding =>
                 $"{binding.CapabilityId} -> {binding.ProviderId}"));
+        string capabilities = projection.CapabilityDescriptors is not { Count: > 0 }
+            ? "(none)"
+            : string.Join(Environment.NewLine, projection.CapabilityDescriptors.Select(descriptor =>
+                $"{descriptor.CapabilityId} [{descriptor.InvocationKind}] provider={(descriptor.ProviderId ?? "(none)")}, session-safe={descriptor.SessionSafe}, explainable={descriptor.Explainable}, gas={descriptor.DefaultGasBudget.ProviderInstructionLimit}/{descriptor.DefaultGasBudget.RequestInstructionLimit}"));
         string warnings = projection.Warnings.Count == 0
             ? "(none)"
             : string.Join(Environment.NewLine, projection.Warnings.Select(warning =>
@@ -315,6 +319,7 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 new DesktopDialogField("runtimeContentBundles", "Content Bundles", contentBundles, contentBundles, IsReadOnly: true, IsMultiline: true),
                 new DesktopDialogField("runtimeRulePacks", "RulePacks", rulePacks, rulePacks, IsReadOnly: true, IsMultiline: true),
                 new DesktopDialogField("runtimeProviderBindings", "Provider Bindings", providerBindings, providerBindings, IsReadOnly: true, IsMultiline: true),
+                new DesktopDialogField("runtimeCapabilities", "Capabilities", capabilities, capabilities, IsReadOnly: true, IsMultiline: true),
                 new DesktopDialogField("runtimeCompatibility", "Compatibility", compatibility, compatibility, IsReadOnly: true, IsMultiline: true),
                 new DesktopDialogField("runtimeWarnings", "Warnings", warnings, warnings, IsReadOnly: true, IsMultiline: true),
                 new DesktopDialogField("runtimeMigrationPreview", "Migration Preview", migrationPreview, migrationPreview, IsReadOnly: true, IsMultiline: true)

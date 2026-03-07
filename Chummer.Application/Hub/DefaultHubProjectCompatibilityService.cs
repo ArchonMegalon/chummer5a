@@ -58,6 +58,7 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
             RulePackExecutionPolicyHint? hostedPolicy = entry.Manifest.ExecutionPolicies
                 .FirstOrDefault(policy => string.Equals(policy.Environment, RulePackExecutionEnvironments.HostedServer, StringComparison.Ordinal));
             bool hasSessionSafeCapability = entry.Manifest.Capabilities.Any(capability => capability.SessionSafe);
+            HubProjectCapabilityDescriptorProjection[] capabilities = BuildRulePackCapabilities(candidateRulesetId, entry);
 
             return new HubProjectCompatibilityMatrix(
                 Kind: HubCatalogItemKinds.RulePack,
@@ -68,6 +69,7 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                     new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.EngineApi, "Engine API", HubProjectCompatibilityStates.Informational, entry.Manifest.EngineApiVersion),
                     new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.Visibility, "Visibility", HubProjectCompatibilityStates.Informational, entry.Publication.Visibility),
                     new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.Trust, "Trust Tier", HubProjectCompatibilityStates.Informational, entry.Manifest.TrustTier),
+                    CreateCapabilitiesRow(capabilities),
                     new HubProjectCompatibilityRow(
                         HubProjectCompatibilityRowKinds.SessionRuntime,
                         "Session Runtime Bundle",
@@ -83,7 +85,8 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                         RequiredValue: RulePackExecutionEnvironments.HostedServer,
                         Notes: hostedPolicy?.MinimumTrustTier)
                 ],
-                GeneratedAtUtc: DateTimeOffset.UtcNow);
+                GeneratedAtUtc: DateTimeOffset.UtcNow,
+                Capabilities: capabilities);
         }
 
         return null;
@@ -102,6 +105,10 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
             .OfType<RulePackRegistryEntry>()
             .ToArray();
         bool sessionReady = resolvedRulePacks.Length == 0 || resolvedRulePacks.All(IsSessionReadyRulePack);
+        HubProjectCapabilityDescriptorProjection[] capabilities = BuildRuntimeCapabilities(
+            entry.Manifest.RulesetId,
+            entry.Manifest.RuntimeLock.ProviderBindings,
+            entry.Manifest.RuntimeLock.RulePacks.Select(reference => reference.Id));
 
         return new HubProjectCompatibilityMatrix(
             Kind: HubCatalogItemKinds.RuleProfile,
@@ -112,6 +119,7 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                 new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.EngineApi, "Engine API", HubProjectCompatibilityStates.Informational, entry.Manifest.RuntimeLock.EngineApiVersion),
                 new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.Visibility, "Visibility", HubProjectCompatibilityStates.Informational, entry.Publication.Visibility),
                 new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.Trust, "Trust Tier", HubProjectCompatibilityStates.Informational, ResolveTrustTier(entry.Publication.Visibility)),
+                CreateCapabilitiesRow(capabilities),
                 new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.RuntimeFingerprint, "Runtime Fingerprint", HubProjectCompatibilityStates.Informational, entry.Manifest.RuntimeLock.RuntimeFingerprint),
                 new HubProjectCompatibilityRow(
                     HubProjectCompatibilityRowKinds.SessionRuntime,
@@ -121,7 +129,8 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                     RequiredValue: RulePackExecutionEnvironments.SessionRuntimeBundle,
                     Notes: $"{entry.Manifest.RulePacks.Count} selected RulePack(s)")
             ],
-            GeneratedAtUtc: DateTimeOffset.UtcNow);
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            Capabilities: capabilities);
     }
 
     private HubProjectCompatibilityMatrix? GetBuildKitMatrix(OwnerScope owner, string itemId, string? rulesetId)
@@ -156,7 +165,8 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                         RequiredValue: RulePackExecutionEnvironments.SessionRuntimeBundle,
                         Notes: "BuildKits are create/career templates, not session-runtime inputs.")
                 ],
-                GeneratedAtUtc: DateTimeOffset.UtcNow);
+                GeneratedAtUtc: DateTimeOffset.UtcNow,
+                Capabilities: []);
         }
 
         return null;
@@ -170,6 +180,11 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
             return null;
         }
 
+        HubProjectCapabilityDescriptorProjection[] capabilities = BuildRuntimeCapabilities(
+            entry.RuntimeLock.RulesetId,
+            entry.RuntimeLock.ProviderBindings,
+            entry.RuntimeLock.RulePacks.Select(reference => reference.Id));
+
         return new HubProjectCompatibilityMatrix(
             Kind: HubCatalogItemKinds.RuntimeLock,
             ItemId: itemId,
@@ -180,6 +195,7 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                 new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.Visibility, "Visibility", HubProjectCompatibilityStates.Informational, entry.Visibility),
                 new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.Trust, "Trust Tier", HubProjectCompatibilityStates.Informational, ResolveTrustTier(entry.Visibility)),
                 new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.InstallState, "Install State", HubProjectCompatibilityStates.Informational, entry.Install.State, Notes: entry.Install.InstalledTargetId),
+                CreateCapabilitiesRow(capabilities),
                 new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.RuntimeFingerprint, "Runtime Fingerprint", HubProjectCompatibilityStates.Informational, entry.RuntimeLock.RuntimeFingerprint),
                 new HubProjectCompatibilityRow(
                     HubProjectCompatibilityRowKinds.SessionRuntime,
@@ -189,7 +205,8 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                     RequiredValue: RulePackExecutionEnvironments.SessionRuntimeBundle,
                     Notes: $"{entry.RuntimeLock.RulePacks.Count} RulePack(s) resolved")
             ],
-            GeneratedAtUtc: DateTimeOffset.UtcNow);
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            Capabilities: capabilities);
     }
 
     private IEnumerable<string> EnumerateRulesetIds(string? rulesetId)
@@ -209,6 +226,16 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
 
     private static HubProjectCompatibilityRow CreateRulesetRow(string rulesetId) =>
         new(HubProjectCompatibilityRowKinds.Ruleset, "Ruleset", HubProjectCompatibilityStates.Compatible, rulesetId);
+
+    private static HubProjectCompatibilityRow CreateCapabilitiesRow(IReadOnlyList<HubProjectCapabilityDescriptorProjection> capabilities) =>
+        new(
+            HubProjectCompatibilityRowKinds.Capabilities,
+            "Capabilities",
+            HubProjectCompatibilityStates.Informational,
+            capabilities.Count.ToString(),
+            Notes: capabilities.Count == 0
+                ? "No typed capability descriptors are published for this runtime."
+                : $"{capabilities.Count(capability => capability.SessionSafe)} session-safe; {capabilities.Count(capability => capability.Explainable)} explainable");
 
     private static string ResolveExecutionState(string? policyMode, bool sessionSafe)
     {
@@ -231,6 +258,81 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
             || entry.Manifest.ExecutionPolicies.Any(policy =>
                 string.Equals(policy.Environment, RulePackExecutionEnvironments.SessionRuntimeBundle, StringComparison.Ordinal)
                 && !string.Equals(policy.PolicyMode, RulePackExecutionPolicyModes.Deny, StringComparison.Ordinal));
+    }
+
+    private HubProjectCapabilityDescriptorProjection[] BuildRulePackCapabilities(string rulesetId, RulePackRegistryEntry entry)
+    {
+        IReadOnlyDictionary<string, RulesetCapabilityDescriptor> rulesetDescriptors = GetRulesetCapabilityDescriptors(rulesetId);
+
+        return entry.Manifest.Capabilities
+            .OrderBy(capability => capability.CapabilityId, StringComparer.Ordinal)
+            .Select(capability =>
+            {
+                rulesetDescriptors.TryGetValue(capability.CapabilityId, out RulesetCapabilityDescriptor? descriptor);
+                return new HubProjectCapabilityDescriptorProjection(
+                    CapabilityId: capability.CapabilityId,
+                    InvocationKind: descriptor?.InvocationKind,
+                    Title: descriptor?.Title,
+                    Explainable: capability.Explainable || descriptor?.Explainable == true,
+                    SessionSafe: capability.SessionSafe || descriptor?.SessionSafe == true,
+                    DefaultGasBudget: descriptor?.DefaultGasBudget,
+                    MaximumGasBudget: descriptor?.MaximumGasBudget,
+                    PackId: entry.Manifest.PackId,
+                    AssetKind: capability.AssetKind,
+                    AssetMode: capability.AssetMode);
+            })
+            .ToArray();
+    }
+
+    private HubProjectCapabilityDescriptorProjection[] BuildRuntimeCapabilities(
+        string rulesetId,
+        IReadOnlyDictionary<string, string> providerBindings,
+        IEnumerable<string> packIds)
+    {
+        return GetRulesetCapabilityDescriptors(rulesetId)
+            .Values
+            .OrderBy(descriptor => descriptor.CapabilityId, StringComparer.Ordinal)
+            .Select(descriptor =>
+            {
+                string? providerId = providerBindings.GetValueOrDefault(descriptor.CapabilityId);
+                return new HubProjectCapabilityDescriptorProjection(
+                    CapabilityId: descriptor.CapabilityId,
+                    InvocationKind: descriptor.InvocationKind,
+                    Title: descriptor.Title,
+                    Explainable: descriptor.Explainable,
+                    SessionSafe: descriptor.SessionSafe,
+                    DefaultGasBudget: descriptor.DefaultGasBudget,
+                    MaximumGasBudget: descriptor.MaximumGasBudget,
+                    ProviderId: providerId,
+                    PackId: providerId is null ? null : TryResolvePackId(providerId, packIds));
+            })
+            .ToArray();
+    }
+
+    private IReadOnlyDictionary<string, RulesetCapabilityDescriptor> GetRulesetCapabilityDescriptors(string rulesetId)
+    {
+        IRulesetPlugin? plugin = _rulesetPluginRegistry.Resolve(rulesetId);
+        if (plugin is null)
+        {
+            return new Dictionary<string, RulesetCapabilityDescriptor>(StringComparer.Ordinal);
+        }
+
+        return plugin.CapabilityDescriptors
+            .GetCapabilityDescriptors()
+            .ToDictionary(descriptor => descriptor.CapabilityId, descriptor => descriptor, StringComparer.Ordinal);
+    }
+
+    private static string? TryResolvePackId(string providerId, IEnumerable<string> packIds)
+    {
+        foreach (string packId in packIds)
+        {
+            if (providerId.StartsWith($"{packId}/", StringComparison.Ordinal))
+            {
+                return packId;
+            }
+        }
+
+        return null;
     }
 
     private static string ResolveTrustTier(string visibility) =>

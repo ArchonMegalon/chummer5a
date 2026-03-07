@@ -1,18 +1,22 @@
 using System.Linq;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Owners;
+using Chummer.Contracts.Rulesets;
 
 namespace Chummer.Application.Content;
 
 public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService
 {
+    private readonly IRulesetPluginRegistry _rulesetPluginRegistry;
     private readonly IRuleProfileRegistryService _ruleProfileRegistryService;
     private readonly IRulePackRegistryService _rulePackRegistryService;
 
     public DefaultRuntimeInspectorService(
+        IRulesetPluginRegistry rulesetPluginRegistry,
         IRuleProfileRegistryService ruleProfileRegistryService,
         IRulePackRegistryService rulePackRegistryService)
     {
+        _rulesetPluginRegistry = rulesetPluginRegistry;
         _ruleProfileRegistryService = ruleProfileRegistryService;
         _rulePackRegistryService = rulePackRegistryService;
     }
@@ -41,6 +45,10 @@ public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService
                 SourceAssetPath: null,
                 SessionSafe: false))
             .ToArray();
+        RuntimeInspectorCapabilityDescriptorProjection[] capabilityDescriptors = BuildCapabilityDescriptors(
+            profile.Manifest.RulesetId,
+            profile.Manifest.RuntimeLock.ProviderBindings,
+            registryEntries.Keys);
         RuntimeLockCompatibilityDiagnostic[] compatibilityDiagnostics = BuildCompatibilityDiagnostics(profile, registryEntries);
         RuntimeInspectorWarning[] warnings = BuildWarnings(profile, resolvedRulePacks, compatibilityDiagnostics);
         RuntimeMigrationPreviewItem[] migrationPreview = BuildMigrationPreview(profile, resolvedRulePacks);
@@ -56,7 +64,39 @@ public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService
             Warnings: warnings,
             MigrationPreview: migrationPreview,
             GeneratedAtUtc: DateTimeOffset.UtcNow,
-            ProfileSourceKind: profile.SourceKind);
+            ProfileSourceKind: profile.SourceKind,
+            CapabilityDescriptors: capabilityDescriptors);
+    }
+
+    private RuntimeInspectorCapabilityDescriptorProjection[] BuildCapabilityDescriptors(
+        string rulesetId,
+        IReadOnlyDictionary<string, string> providerBindings,
+        IEnumerable<string> packIds)
+    {
+        IRulesetPlugin? plugin = _rulesetPluginRegistry.Resolve(rulesetId);
+        if (plugin is null)
+        {
+            return [];
+        }
+
+        return plugin.CapabilityDescriptors
+            .GetCapabilityDescriptors()
+            .OrderBy(descriptor => descriptor.CapabilityId, StringComparer.Ordinal)
+            .Select(descriptor =>
+            {
+                string? providerId = providerBindings.GetValueOrDefault(descriptor.CapabilityId);
+                return new RuntimeInspectorCapabilityDescriptorProjection(
+                    CapabilityId: descriptor.CapabilityId,
+                    InvocationKind: descriptor.InvocationKind,
+                    Title: descriptor.Title,
+                    Explainable: descriptor.Explainable,
+                    SessionSafe: descriptor.SessionSafe,
+                    DefaultGasBudget: descriptor.DefaultGasBudget,
+                    MaximumGasBudget: descriptor.MaximumGasBudget,
+                    ProviderId: providerId,
+                    PackId: providerId is null ? null : TryResolvePackId(providerId, packIds));
+            })
+            .ToArray();
     }
 
     private static RuntimeInspectorRulePackEntry ToResolvedRulePackEntry(

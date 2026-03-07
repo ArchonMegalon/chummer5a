@@ -1,3 +1,5 @@
+using Chummer.Contracts.Rulesets;
+
 namespace Chummer.Contracts.Content;
 
 public static class RuntimeInspectorTargetKinds
@@ -50,6 +52,17 @@ public sealed record RuntimeInspectorProviderBinding(
     string? SourceAssetPath = null,
     bool SessionSafe = false);
 
+public sealed record RuntimeInspectorCapabilityDescriptorProjection(
+    string CapabilityId,
+    string InvocationKind,
+    string Title,
+    bool Explainable,
+    bool SessionSafe,
+    RulesetGasBudget DefaultGasBudget,
+    RulesetGasBudget? MaximumGasBudget = null,
+    string? ProviderId = null,
+    string? PackId = null);
+
 public sealed record RuntimeInspectorWarning(
     string Kind,
     string Severity,
@@ -88,4 +101,5 @@ public sealed record RuntimeInspectorProjection(
     IReadOnlyList<RuntimeInspectorWarning> Warnings,
     IReadOnlyList<RuntimeMigrationPreviewItem> MigrationPreview,
     DateTimeOffset GeneratedAtUtc,
-    string ProfileSourceKind = RegistryEntrySourceKinds.PersistedManifest);
+    string ProfileSourceKind = RegistryEntrySourceKinds.PersistedManifest,
+    IReadOnlyList<RuntimeInspectorCapabilityDescriptorProjection>? CapabilityDescriptors = null);

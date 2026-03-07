@@ -7,6 +7,9 @@ using Chummer.Application.Content;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Owners;
 using Chummer.Contracts.Rulesets;
+using Chummer.Rulesets.Hosting;
+using Chummer.Rulesets.Sr5;
+using Chummer.Rulesets.Sr6;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;
@@ -18,6 +21,7 @@ public class RuntimeInspectorServiceTests
     public void Runtime_inspector_service_projects_profile_runtime_lock_rulepacks_and_warnings()
     {
         DefaultRuntimeInspectorService service = new(
+            CreatePluginRegistry(),
             new RuleProfileRegistryServiceStub(CreateProfile()),
             new RulePackRegistryServiceStub(
             [
@@ -70,6 +74,15 @@ public class RuntimeInspectorServiceTests
         Assert.HasCount(1, projection.ResolvedRulePacks);
         Assert.AreEqual("house-rules", projection.ResolvedRulePacks[0].RulePack.Id);
         Assert.AreEqual(RegistryEntrySourceKinds.PersistedManifest, projection.ResolvedRulePacks[0].SourceKind);
+        Assert.IsNotNull(projection.CapabilityDescriptors);
+        Assert.IsTrue(projection.CapabilityDescriptors.Any(descriptor =>
+            string.Equals(descriptor.CapabilityId, RulePackCapabilityIds.DeriveStat, StringComparison.Ordinal)
+            && string.Equals(descriptor.InvocationKind, RulesetCapabilityInvocationKinds.Rule, StringComparison.Ordinal)
+            && string.IsNullOrWhiteSpace(descriptor.ProviderId)));
+        Assert.IsTrue(projection.CapabilityDescriptors.Any(descriptor =>
+            string.Equals(descriptor.CapabilityId, RulePackCapabilityIds.SessionQuickActions, StringComparison.Ordinal)
+            && descriptor.SessionSafe
+            && string.IsNullOrWhiteSpace(descriptor.ProviderId)));
         Assert.IsTrue(projection.Warnings.Any(warning => string.Equals(warning.Kind, RuntimeInspectorWarningKinds.Trust, StringComparison.Ordinal)));
         Assert.IsTrue(projection.CompatibilityDiagnostics.Any(diagnostic => string.Equals(diagnostic.State, RuntimeLockCompatibilityStates.Compatible, StringComparison.Ordinal)));
     }
@@ -78,6 +91,7 @@ public class RuntimeInspectorServiceTests
     public void Runtime_inspector_service_returns_null_for_unknown_profile()
     {
         DefaultRuntimeInspectorService service = new(
+            CreatePluginRegistry(),
             new RuleProfileRegistryServiceStub(null),
             new RulePackRegistryServiceStub([]));
 
@@ -85,6 +99,13 @@ public class RuntimeInspectorServiceTests
 
         Assert.IsNull(projection);
     }
+
+    private static RulesetPluginRegistry CreatePluginRegistry() =>
+        new(
+        [
+            new Sr5RulesetPlugin(),
+            new Sr6RulesetPlugin()
+        ]);
 
     private static RuleProfileRegistryEntry CreateProfile()
     {

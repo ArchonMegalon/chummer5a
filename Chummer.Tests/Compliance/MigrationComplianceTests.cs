@@ -1466,11 +1466,13 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectDetailFact");
         StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectDependency");
         StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectAction");
+        StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectCapabilityDescriptorProjection");
         StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectDetailProjection");
         StringAssert.Contains(hubProjectDetailContractsText, "HubCatalogItem Summary");
         StringAssert.Contains(hubProjectDetailContractsText, "HubReviewSummary? OwnerReview");
         StringAssert.Contains(hubProjectDetailContractsText, "string? RuntimeFingerprint");
         StringAssert.Contains(hubProjectDetailContractsText, "IReadOnlyList<HubProjectAction> Actions");
+        StringAssert.Contains(hubProjectDetailContractsText, "IReadOnlyList<HubProjectCapabilityDescriptorProjection>? Capabilities = null");
     }
 
     [TestMethod]
@@ -1503,6 +1505,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubCompatibilityContractsText, "public sealed record HubProjectCompatibilityMatrix");
         StringAssert.Contains(hubCompatibilityContractsText, "IReadOnlyList<HubProjectCompatibilityRow> Rows");
         StringAssert.Contains(hubCompatibilityContractsText, "DateTimeOffset GeneratedAtUtc");
+        StringAssert.Contains(hubCompatibilityContractsText, "IReadOnlyList<HubProjectCapabilityDescriptorProjection>? Capabilities = null");
+        StringAssert.Contains(hubCompatibilityContractsText, "Capabilities = \"capabilities\"");
         StringAssert.Contains(hubCompatibilityContractsText, "InstallState");
         StringAssert.Contains(hubCompatibilityContractsText, "SessionRuntime");
         StringAssert.Contains(hubCompatibilityContractsText, "HostedPublic");
@@ -1751,6 +1755,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeInspectorContractsText, "public static class RuntimeMigrationPreviewChangeKinds");
         StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorRulePackEntry");
         StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorProviderBinding");
+        StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorCapabilityDescriptorProjection");
         StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorWarning");
         StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeMigrationPreviewItem");
         StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorProjection");
@@ -1759,6 +1764,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeInspectorContractsText, "ResolvedRuntimeLock RuntimeLock");
         StringAssert.Contains(runtimeInspectorContractsText, "ArtifactInstallState Install");
         StringAssert.Contains(runtimeInspectorContractsText, "IReadOnlyList<RuntimeLockCompatibilityDiagnostic> CompatibilityDiagnostics");
+        StringAssert.Contains(runtimeInspectorContractsText, "IReadOnlyList<RuntimeInspectorCapabilityDescriptorProjection>? CapabilityDescriptors = null");
         StringAssert.Contains(runtimeInspectorContractsText, "string SourceKind = RegistryEntrySourceKinds.PersistedManifest");
         StringAssert.Contains(runtimeInspectorContractsText, "string ProfileSourceKind = RegistryEntrySourceKinds.PersistedManifest");
         Assert.IsFalse(runtimeInspectorContractsText.Contains("Avalonia", StringComparison.Ordinal));

@@ -62,6 +62,11 @@ public class HubCatalogServiceTests
         Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "engine-api"));
         Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "install-history-count" && fact.Value == "1"));
         Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "last-install-target" && fact.Value == "workspace-1"));
+        Assert.IsNotNull(rulePack.Capabilities);
+        Assert.IsTrue(rulePack.Capabilities.Any(capability =>
+            capability.CapabilityId == RulePackCapabilityIds.SessionQuickActions
+            && capability.AssetMode == RulePackAssetModes.AddProvider
+            && capability.SessionSafe));
 
         Assert.IsNotNull(buildKit);
         Assert.AreEqual(HubCatalogItemKinds.BuildKit, buildKit.Summary.Kind);
@@ -79,6 +84,11 @@ public class HubCatalogServiceTests
         Assert.AreEqual(HubRecommendationStates.Recommended, ruleProfile.OwnerReview.RecommendationState);
         Assert.AreEqual(5, ruleProfile.OwnerReview.Stars);
         Assert.IsTrue(ruleProfile.OwnerReview.UsedAtTable);
+        Assert.IsNotNull(ruleProfile.Capabilities);
+        Assert.IsTrue(ruleProfile.Capabilities.Any(capability =>
+            capability.CapabilityId == RulePackCapabilityIds.DeriveStat
+            && capability.InvocationKind == RulesetCapabilityInvocationKinds.Rule
+            && capability.Explainable));
 
         Assert.IsNotNull(runtimeLock);
         Assert.AreEqual(HubCatalogItemKinds.RuntimeLock, runtimeLock.Summary.Kind);
@@ -87,6 +97,10 @@ public class HubCatalogServiceTests
         Assert.AreEqual(ArtifactInstallStates.Installed, runtimeLock.Summary.InstallState);
         Assert.IsTrue(runtimeLock.Facts.Any(fact => fact.FactId == "install-state" && fact.Value == ArtifactInstallStates.Installed));
         Assert.IsTrue(runtimeLock.Facts.Any(fact => fact.FactId == "last-install-at"));
+        Assert.IsNotNull(runtimeLock.Capabilities);
+        Assert.IsTrue(runtimeLock.Capabilities.Any(capability =>
+            capability.CapabilityId == RulePackCapabilityIds.SessionQuickActions
+            && capability.SessionSafe));
     }
 
     private static DefaultHubCatalogService CreateService() => new(
@@ -126,7 +140,15 @@ public class HubCatalogServiceTests
                     Visibility: ArtifactVisibilityModes.LocalOnly,
                     TrustTier: ArtifactTrustTiers.LocalOnly,
                     Assets: [],
-                    Capabilities: [],
+                    Capabilities:
+                    [
+                        new RulePackCapabilityDescriptor(
+                            CapabilityId: RulePackCapabilityIds.SessionQuickActions,
+                            AssetKind: RulePackAssetKinds.Lua,
+                            AssetMode: RulePackAssetModes.AddProvider,
+                            Explainable: true,
+                            SessionSafe: true)
+                    ],
                     ExecutionPolicies: []),
                 new RulePackPublicationMetadata(
                     OwnerId: "local-single-user",
@@ -508,7 +530,25 @@ public class HubCatalogServiceTests
 
     private sealed class HubCapabilityDescriptorProviderStub : IRulesetCapabilityDescriptorProvider
     {
-        public IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors() => [];
+        public IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors() =>
+        [
+            new RulesetCapabilityDescriptor(
+                CapabilityId: RulePackCapabilityIds.DeriveStat,
+                InvocationKind: RulesetCapabilityInvocationKinds.Rule,
+                Title: "Derived Stat Evaluation",
+                Explainable: true,
+                SessionSafe: false,
+                DefaultGasBudget: new RulesetGasBudget(2_000, 5_000, 4_194_304),
+                MaximumGasBudget: new RulesetGasBudget(5_000, 10_000, 8_388_608)),
+            new RulesetCapabilityDescriptor(
+                CapabilityId: RulePackCapabilityIds.SessionQuickActions,
+                InvocationKind: RulesetCapabilityInvocationKinds.Script,
+                Title: "Session Quick Actions",
+                Explainable: true,
+                SessionSafe: true,
+                DefaultGasBudget: new RulesetGasBudget(2_000, 5_000, 4_194_304),
+                MaximumGasBudget: new RulesetGasBudget(5_000, 10_000, 8_388_608))
+        ];
     }
 
     private sealed class HubScriptHostStub : IRulesetScriptHost

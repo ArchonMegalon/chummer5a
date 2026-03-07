@@ -212,7 +212,20 @@ public class DesktopDialogFactoryTests
                 new RuntimeMigrationPreviewItem(RuntimeMigrationPreviewChangeKinds.RulePackAdded, "Profile applies RulePack 'official.sr5.core@1.0.0'.")
             ],
             GeneratedAtUtc: DateTimeOffset.UtcNow,
-            ProfileSourceKind: RegistryEntrySourceKinds.BuiltInCoreProfile);
+            ProfileSourceKind: RegistryEntrySourceKinds.BuiltInCoreProfile,
+            CapabilityDescriptors:
+            [
+                new RuntimeInspectorCapabilityDescriptorProjection(
+                    CapabilityId: RulePackCapabilityIds.DeriveStat,
+                    InvocationKind: RulesetCapabilityInvocationKinds.Rule,
+                    Title: "Derived Stat Evaluation",
+                    Explainable: true,
+                    SessionSafe: false,
+                    DefaultGasBudget: new RulesetGasBudget(2_000, 5_000, 4_194_304),
+                    MaximumGasBudget: new RulesetGasBudget(5_000, 10_000, 8_388_608),
+                    ProviderId: "official.sr5.core/derive.stat",
+                    PackId: "official.sr5.core")
+            ]);
 
         DesktopDialogState dialog = factory.CreateCommandDialog(
             OverviewCommandPolicy.RuntimeInspectorCommandId,
@@ -228,6 +241,7 @@ public class DesktopDialogFactoryTests
         Assert.AreEqual(RegistryEntrySourceKinds.BuiltInCoreProfile, DesktopDialogFieldValueParser.GetValue(dialog, "runtimeProfileSource"));
         Assert.AreEqual("sha256:sr5-runtime-fingerprint", DesktopDialogFieldValueParser.GetValue(dialog, "runtimeFingerprint"));
         StringAssert.Contains(DesktopDialogFieldValueParser.GetValue(dialog, "runtimeProviderBindings"), "derive.stat");
+        StringAssert.Contains(DesktopDialogFieldValueParser.GetValue(dialog, "runtimeCapabilities"), "derive.stat");
         StringAssert.Contains(DesktopDialogFieldValueParser.GetValue(dialog, "runtimeRulePacks"), RegistryEntrySourceKinds.BuiltInCoreProfile);
     }
 

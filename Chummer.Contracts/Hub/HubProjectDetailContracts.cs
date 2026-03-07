@@ -1,3 +1,5 @@
+using Chummer.Contracts.Rulesets;
+
 namespace Chummer.Contracts.Hub;
 
 public static class HubProjectDependencyKinds
@@ -38,6 +40,19 @@ public sealed record HubProjectAction(
     bool Enabled = true,
     string? DisabledReason = null);
 
+public sealed record HubProjectCapabilityDescriptorProjection(
+    string CapabilityId,
+    string? InvocationKind,
+    string? Title,
+    bool Explainable,
+    bool SessionSafe,
+    RulesetGasBudget? DefaultGasBudget = null,
+    RulesetGasBudget? MaximumGasBudget = null,
+    string? ProviderId = null,
+    string? PackId = null,
+    string? AssetKind = null,
+    string? AssetMode = null);
+
 public sealed record HubProjectDetailProjection(
     HubCatalogItem Summary,
     string? OwnerId,
@@ -48,4 +63,5 @@ public sealed record HubProjectDetailProjection(
     HubReviewSummary? OwnerReview,
     IReadOnlyList<HubProjectDetailFact> Facts,
     IReadOnlyList<HubProjectDependency> Dependencies,
-    IReadOnlyList<HubProjectAction> Actions);
+    IReadOnlyList<HubProjectAction> Actions,
+    IReadOnlyList<HubProjectCapabilityDescriptorProjection>? Capabilities = null);
