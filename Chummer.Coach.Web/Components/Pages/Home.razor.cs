@@ -106,6 +106,53 @@ public partial class Home : ComponentBase
                     : $"Coach gateway metadata is current and conversation '{_launchConversationId}' is loaded.";
             });
 
+    private Task OnRouteTypeChangedAsync(ChangeEventArgs args)
+    {
+        string nextRouteType = NormalizeOptionalText(args.Value?.ToString()) ?? DefaultRouteType;
+        if (string.Equals(_routeType, nextRouteType, StringComparison.Ordinal))
+        {
+            return Task.CompletedTask;
+        }
+
+        _routeType = nextRouteType;
+        _launchConversationId = string.Empty;
+        _selectedConversation = null;
+        _preview = null;
+        _turnResponse = null;
+        _actionPreview = null;
+        _runtimeSummaryCard = null;
+        SyncLaunchUri();
+        return RefreshRouteScopedMetadataAsync();
+    }
+
+    private Task RefreshRouteScopedMetadataAsync()
+        => RunBusyAsync(
+            $"Refreshing route-bound coach metadata for '{EffectiveRouteType}'.",
+            async () =>
+            {
+                if (!await LoadPromptsCoreAsync())
+                {
+                    return;
+                }
+
+                if (!await LoadProviderHealthCoreAsync())
+                {
+                    return;
+                }
+
+                if (!await LoadBuildIdeasCoreAsync())
+                {
+                    return;
+                }
+
+                if (!await LoadConversationCatalogCoreAsync())
+                {
+                    return;
+                }
+
+                _statusMessage = $"Coach prompts, providers, build ideas, and conversations now reflect the '{EffectiveRouteType}' lane.";
+            });
+
     private Task SearchBuildIdeasAsync()
         => RunBusyAsync(
             "Refreshing coach build idea retrieval.",
@@ -819,6 +866,8 @@ public partial class Home : ComponentBase
         {
             _workspaceId = grounding.WorkspaceId;
         }
+
+        SyncLaunchUri();
     }
 
     private void ApplyConversationScope(AiConversationSnapshot conversation)
@@ -842,6 +891,9 @@ public partial class Home : ComponentBase
         {
             _workspaceId = conversation.WorkspaceId;
         }
+
+        _launchConversationId = conversation.ConversationId;
+        SyncLaunchUri();
     }
 
     private bool TryResolveActionPreviewScope(AiActionDraft draft, out string characterId, out string runtimeFingerprint, out string? workspaceId)
@@ -862,4 +914,26 @@ public partial class Home : ComponentBase
         => string.IsNullOrWhiteSpace(value)
             ? null
             : value.Trim();
+
+    private void SyncLaunchUri()
+    {
+        string basePath = new Uri(Navigation.Uri).AbsolutePath;
+        string relativeUri = AiCoachLaunchQuery.BuildRelativeUri(
+            basePath,
+            new AiCoachLaunchContext(
+                RouteType: EffectiveRouteType,
+                ConversationId: _selectedConversation?.ConversationId ?? NormalizeOptionalText(_launchConversationId),
+                RuntimeFingerprint: NormalizeRuntimeFingerprint(),
+                CharacterId: NormalizeCharacterId(),
+                WorkspaceId: NormalizeWorkspaceId(),
+                RulesetId: NormalizeRulesetId(),
+                Message: NormalizeMessageText(),
+                BuildIdeaQuery: NormalizeQueryText()));
+
+        string currentPathAndQuery = new Uri(Navigation.Uri).PathAndQuery;
+        if (!string.Equals(currentPathAndQuery, relativeUri, StringComparison.Ordinal))
+        {
+            Navigation.NavigateTo(relativeUri, replace: true);
+        }
+    }
 }

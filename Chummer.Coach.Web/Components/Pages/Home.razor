@@ -280,7 +280,7 @@
             <div class="field-grid">
                 <label class="field">
                     <span>Route</span>
-                    <select data-coach-route="route-select" @bind="_routeType">
+                    <select data-coach-route="route-select" value="@_routeType" @onchange="OnRouteTypeChangedAsync">
                         @foreach (string route in GetAvailableRoutes())
                         {
                             <option value="@route">@route</option>

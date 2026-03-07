@@ -1013,11 +1013,11 @@ public sealed class CoachWebComponentTests
                 ]));
 
         IRenderedComponent<Home> cut = context.Render<Home>();
+        NavigationManager navigation = context.Services.GetRequiredService<NavigationManager>();
 
         cut.WaitForAssertion(() => StringAssert.Contains(cut.Markup, "Coach Route System Prompt"));
 
         cut.Find("select[data-coach-route='route-select']").Change(AiRouteTypes.Build);
-        cut.Find("button[data-coach-refresh='metadata']").Click();
         cut.WaitForAssertion(() =>
         {
             StringAssert.Contains(cut.Markup, "Build Route System Prompt");
@@ -1025,6 +1025,7 @@ public sealed class CoachWebComponentTests
             StringAssert.Contains(cut.Markup, "conv.build-1");
             StringAssert.Contains(cut.Markup, "AI Magicx");
             Assert.IsFalse(cut.Markup.Contains("1minAI", StringComparison.Ordinal));
+            StringAssert.Contains(navigation.Uri, "routeType=build");
         });
 
         cut.Find("button[data-coach-preview='coach-turn']").Click();
@@ -1040,6 +1041,9 @@ public sealed class CoachWebComponentTests
             StringAssert.Contains(cut.Markup, "Clean route, chummer. Here's the build lane with the least noise.");
             StringAssert.Contains(cut.Markup, "Raise Automatics first, then preview Improved Reflexes.");
             StringAssert.Contains(cut.Markup, "turn-build-1");
+            StringAssert.Contains(navigation.Uri, "conversationId=conv.build-1");
+            StringAssert.Contains(navigation.Uri, "runtimeFingerprint=sha256%3Aruntime-profile");
+            StringAssert.Contains(navigation.Uri, "characterId=char-1");
         });
 
         cut.WaitForAssertion(() =>
@@ -1416,11 +1420,11 @@ public sealed class CoachWebComponentTests
                 ]));
 
         IRenderedComponent<Home> cut = context.Render<Home>();
+        NavigationManager navigation = context.Services.GetRequiredService<NavigationManager>();
 
         cut.WaitForAssertion(() => StringAssert.Contains(cut.Markup, "Chummer Coach"));
 
         cut.Find("select[data-coach-route='route-select']").Change(AiRouteTypes.Docs);
-        cut.Find("button[data-coach-refresh='metadata']").Click();
         cut.WaitForAssertion(() =>
         {
             StringAssert.Contains(cut.Markup, "Docs Route System Prompt");
@@ -1429,6 +1433,7 @@ public sealed class CoachWebComponentTests
             StringAssert.Contains(cut.Markup, "1minAI");
             Assert.IsFalse(cut.Markup.Contains("AI Magicx", StringComparison.Ordinal));
             StringAssert.Contains(cut.Markup, "recent timeout");
+            StringAssert.Contains(navigation.Uri, "routeType=docs");
         });
 
         cut.Find("button[data-coach-preview='coach-turn']").Click();
@@ -1444,6 +1449,9 @@ public sealed class CoachWebComponentTests
             StringAssert.Contains(cut.Markup, "Signal's clean. Here's the grounded readout from your runtime.");
             StringAssert.Contains(cut.Markup, "fallback / slot 0");
             StringAssert.Contains(cut.Markup, "turn-docs-1");
+            StringAssert.Contains(navigation.Uri, "conversationId=conv.docs-1");
+            StringAssert.Contains(navigation.Uri, "runtimeFingerprint=sha256%3Aruntime-profile");
+            StringAssert.Contains(navigation.Uri, "characterId=char-1");
         });
 
         cut.Find("button[data-suggested-action-runtime='latest:open-runtime']").Click();
