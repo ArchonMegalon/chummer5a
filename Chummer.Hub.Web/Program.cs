@@ -1,4 +1,5 @@
 using Chummer.Hub.Web.Components;
+using Chummer.Hub.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 string? configuredPathBase = builder.Configuration["Chummer:PathBase"];
@@ -7,6 +8,8 @@ PathString pathBase = NormalizePathBase(configuredPathBase ?? environmentPathBas
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddScoped<BrowserHubApiClient>();
+builder.Services.AddScoped<BrowserHubCoachApiClient>();
 
 var app = builder.Build();
 

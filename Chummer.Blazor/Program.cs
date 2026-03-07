@@ -1,3 +1,4 @@
+using Chummer.Blazor;
 using Chummer.Blazor.Components;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
@@ -34,6 +35,25 @@ builder.Services.AddHttpClient<IChummerClient, HttpChummerClient>((_, client) =>
     }
 });
 builder.Services.AddHttpClient<ISessionClient, HttpSessionClient>((_, client) =>
+{
+    string? configuredBaseUrl = builder.Configuration["Chummer:ApiBaseUrl"];
+    string? environmentBaseUrl = Environment.GetEnvironmentVariable("CHUMMER_API_BASE_URL");
+    string? configuredApiKey = builder.Configuration["Chummer:ApiKey"];
+    string? environmentApiKey = Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
+    string baseUrl = configuredBaseUrl
+        ?? environmentBaseUrl
+        ?? "http://chummer-api:8080";
+    string? apiKey = configuredApiKey ?? environmentApiKey;
+
+    client.BaseAddress = new Uri(baseUrl, UriKind.Absolute);
+    client.Timeout = TimeSpan.FromSeconds(20);
+    if (!string.IsNullOrWhiteSpace(apiKey))
+    {
+        client.DefaultRequestHeaders.Remove("X-Api-Key");
+        client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+    }
+});
+builder.Services.AddHttpClient<IWorkbenchCoachApiClient, WorkbenchCoachApiClient>((_, client) =>
 {
     string? configuredBaseUrl = builder.Configuration["Chummer:ApiBaseUrl"];
     string? environmentBaseUrl = Environment.GetEnvironmentVariable("CHUMMER_API_BASE_URL");

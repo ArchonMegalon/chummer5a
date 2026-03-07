@@ -206,6 +206,52 @@ PY
   exit "$status"
 fi
 
+if [[ "$RUNBOOK_MODE" == "refresh-local-api" ]]; then
+  API_REFRESH_LOG_FILE="${API_REFRESH_LOG_FILE:-$(resolve_runbook_log_file chummer-refresh-local-api)}"
+  set +e
+  docker compose up -d --build chummer-api 2>&1 | tee "$API_REFRESH_LOG_FILE"
+  status=${PIPESTATUS[0]}
+  set -e
+  if [[ "$status" -ne 0 ]]; then
+    echo
+    echo "== refresh-local-api failure extract =="
+    rg -n "error|failed|denied|exception" "$API_REFRESH_LOG_FILE" | tail -n 200 || true
+    exit "$status"
+  fi
+
+  detected_api_binding="$(docker compose port chummer-api 8080 2>/dev/null | tail -n 1)"
+  detected_api_port="${detected_api_binding##*:}"
+  if [[ -z "$detected_api_port" || ! "$detected_api_port" =~ ^[0-9]+$ ]]; then
+    echo "Unable to resolve chummer-api published port after rebuild." >&2
+    exit 1
+  fi
+
+  api_probe_url="http://127.0.0.1:${detected_api_port}/api/info"
+  python3 - "$api_probe_url" <<'PY'
+import sys
+import time
+import urllib.error
+import urllib.request
+
+url = sys.argv[1]
+deadline = time.time() + 60
+last_error = None
+while time.time() < deadline:
+    try:
+        with urllib.request.urlopen(url, timeout=3) as response:
+            if 200 <= response.status < 500:
+                print(url)
+                sys.exit(0)
+    except Exception as exc:  # pragma: no cover - runbook probe path
+        last_error = exc
+    time.sleep(1)
+
+print(f"API probe failed for {url}: {last_error}", file=sys.stderr)
+sys.exit(1)
+PY
+  exit 0
+fi
+
 if [[ "$RUNBOOK_MODE" == "host-prereqs" ]]; then
   PREREQ_LOG_FILE="${PREREQ_LOG_FILE:-$(resolve_runbook_log_file chummer-host-prereqs)}"
   PREREQ_LOG_DIR="$(dirname "$PREREQ_LOG_FILE")"

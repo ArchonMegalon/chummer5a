@@ -32,7 +32,7 @@ compose_args=(-f docker-compose.yml)
 compose_up_log="$(mktemp)"
 set +e
 docker compose "${compose_args[@]}" --profile portal up -d --build chummer-api chummer-blazor-portal chummer-hub-web-portal chummer-avalonia-browser chummer-portal \
-  chummer-session-web-portal \
+  chummer-session-web-portal chummer-coach-web-portal \
   2>&1 | tee "$compose_up_log"
 compose_up_status=${PIPESTATUS[0]}
 set -e

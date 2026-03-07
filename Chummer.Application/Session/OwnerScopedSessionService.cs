@@ -1,12 +1,14 @@
 using System.Security.Cryptography;
 using System.Text;
 using Chummer.Application.Content;
+using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Owners;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Session;
 using Chummer.Contracts.Trackers;
+using Chummer.Contracts.Workspaces;
 
 namespace Chummer.Application.Session;
 
@@ -22,6 +24,8 @@ public sealed class OwnerScopedSessionService : ISessionService
     private readonly IRulesetSelectionPolicy _rulesetSelectionPolicy;
     private readonly ISessionProfileSelectionStore _profileSelectionStore;
     private readonly ISessionRuntimeBundleStore _runtimeBundleStore;
+    private readonly IWorkspaceService _workspaceService;
+    private readonly IActiveRuntimeStatusService _activeRuntimeStatusService;
 
     public OwnerScopedSessionService(
         IRuleProfileRegistryService ruleProfileRegistryService,
@@ -29,7 +33,9 @@ public sealed class OwnerScopedSessionService : ISessionService
         IRulePackRegistryService rulePackRegistryService,
         IRulesetSelectionPolicy rulesetSelectionPolicy,
         ISessionProfileSelectionStore profileSelectionStore,
-        ISessionRuntimeBundleStore runtimeBundleStore)
+        ISessionRuntimeBundleStore runtimeBundleStore,
+        IWorkspaceService workspaceService,
+        IActiveRuntimeStatusService activeRuntimeStatusService)
     {
         _ruleProfileRegistryService = ruleProfileRegistryService;
         _ruleProfileApplicationService = ruleProfileApplicationService;
@@ -37,10 +43,27 @@ public sealed class OwnerScopedSessionService : ISessionService
         _rulesetSelectionPolicy = rulesetSelectionPolicy;
         _profileSelectionStore = profileSelectionStore;
         _runtimeBundleStore = runtimeBundleStore;
+        _workspaceService = workspaceService;
+        _activeRuntimeStatusService = activeRuntimeStatusService;
     }
 
     public SessionApiResult<SessionCharacterCatalog> ListCharacters(OwnerScope owner)
-        => NotImplemented<SessionCharacterCatalog>(owner, SessionApiOperations.ListCharacters);
+    {
+        SessionProfileBinding[] bindings = _profileSelectionStore.List(owner)
+            .OrderByDescending(binding => binding.SelectedAtUtc)
+            .ToArray();
+        Dictionary<string, SessionProfileBinding> bindingsByCharacter = bindings
+            .GroupBy(binding => binding.CharacterId, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        Dictionary<string, string> runtimeFingerprintByRuleset = new(StringComparer.Ordinal);
+        IReadOnlyList<WorkspaceListItem> ownerWorkspaces = _workspaceService.List(owner);
+
+        SessionCharacterListItem[] characters = ownerWorkspaces
+            .Select(workspace => CreateCharacterListItem(owner, workspace, bindingsByCharacter, runtimeFingerprintByRuleset))
+            .ToArray();
+
+        return SessionApiResult<SessionCharacterCatalog>.Implemented(new SessionCharacterCatalog(characters));
+    }
 
     public SessionApiResult<SessionDashboardProjection> GetCharacterProjection(OwnerScope owner, string characterId)
         => NotImplemented<SessionDashboardProjection>(owner, SessionApiOperations.GetCharacterProjection, characterId);
@@ -276,6 +299,23 @@ public sealed class OwnerScopedSessionService : ISessionService
     public SessionApiResult<SessionOverlaySnapshot> UpdatePins(OwnerScope owner, SessionPinUpdateRequest? request)
         => NotImplemented<SessionOverlaySnapshot>(owner, SessionApiOperations.UpdatePins, request?.BaseCharacterVersion.CharacterId);
 
+    private SessionCharacterListItem CreateCharacterListItem(
+        OwnerScope owner,
+        WorkspaceListItem workspace,
+        IReadOnlyDictionary<string, SessionProfileBinding> bindingsByCharacter,
+        IDictionary<string, string> runtimeFingerprintByRuleset)
+    {
+        string characterId = workspace.Id.Value;
+        string normalizedRulesetId = RulesetDefaults.NormalizeOptional(workspace.RulesetId) ?? string.Empty;
+        string runtimeFingerprint = ResolveRuntimeFingerprint(owner, characterId, normalizedRulesetId, bindingsByCharacter, runtimeFingerprintByRuleset);
+
+        return new SessionCharacterListItem(
+            CharacterId: characterId,
+            DisplayName: BuildDisplayName(workspace),
+            RulesetId: normalizedRulesetId,
+            RuntimeFingerprint: runtimeFingerprint);
+    }
+
     private SessionProfileListItem CreateProfileListItem(OwnerScope owner, RuleProfileRegistryEntry entry)
     {
         return new SessionProfileListItem(
@@ -312,6 +352,55 @@ public sealed class OwnerScopedSessionService : ISessionService
         return entry.Manifest.ExecutionPolicies.Any(policy =>
             string.Equals(policy.Environment, RulePackExecutionEnvironments.SessionRuntimeBundle, StringComparison.Ordinal)
                 && !string.Equals(policy.PolicyMode, RulePackExecutionPolicyModes.Deny, StringComparison.Ordinal));
+    }
+
+    private string ResolveRuntimeFingerprint(
+        OwnerScope owner,
+        string characterId,
+        string rulesetId,
+        IReadOnlyDictionary<string, SessionProfileBinding> bindingsByCharacter,
+        IDictionary<string, string> runtimeFingerprintByRuleset)
+    {
+        if (bindingsByCharacter.TryGetValue(characterId, out SessionProfileBinding? binding)
+            && !string.IsNullOrWhiteSpace(binding.RuntimeFingerprint))
+        {
+            return binding.RuntimeFingerprint;
+        }
+
+        if (runtimeFingerprintByRuleset.TryGetValue(rulesetId, out string? cachedRuntimeFingerprint))
+        {
+            return cachedRuntimeFingerprint;
+        }
+
+        ActiveRuntimeStatusProjection? activeRuntime = _activeRuntimeStatusService.GetActiveProfileStatus(
+            owner,
+            string.IsNullOrWhiteSpace(rulesetId) ? null : rulesetId);
+        string runtimeFingerprint = activeRuntime?.RuntimeFingerprint ?? string.Empty;
+        runtimeFingerprintByRuleset[rulesetId] = runtimeFingerprint;
+        return runtimeFingerprint;
+    }
+
+    private static string BuildDisplayName(WorkspaceListItem workspace)
+    {
+        string name = workspace.Summary.Name.Trim();
+        string alias = workspace.Summary.Alias.Trim();
+
+        if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(alias))
+        {
+            return $"{name} ({alias})";
+        }
+
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            return name;
+        }
+
+        if (!string.IsNullOrWhiteSpace(alias))
+        {
+            return alias;
+        }
+
+        return workspace.Id.Value;
     }
 
     private RuleProfileRegistryEntry? ResolveSelectedProfile(OwnerScope owner, string characterId, out string? blockedReason)

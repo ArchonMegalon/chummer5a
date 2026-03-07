@@ -9,8 +9,8 @@ public class Sr6RulesetPlugin : IRulesetPlugin
     public Sr6RulesetPlugin()
     {
         Capabilities = new Sr6NoOpRulesetCapabilityHost();
-        Rules = new Sr6NoOpRulesetRuleHost(Capabilities);
-        Scripts = new Sr6NoOpRulesetScriptHost(Capabilities);
+        Rules = new RulesetRuleHostCapabilityAdapter(Capabilities);
+        Scripts = new RulesetScriptHostCapabilityAdapter(Capabilities);
     }
 
     public RulesetId Id { get; } = new(RulesetDefaults.Sr6);
@@ -172,45 +172,5 @@ public class Sr6NoOpRulesetCapabilityHost : IRulesetCapabilityHost
             Success: false,
             Output: null,
             Diagnostics: diagnostics));
-    }
-}
-
-public class Sr6NoOpRulesetRuleHost : IRulesetRuleHost
-{
-    private readonly RulesetRuleHostCapabilityAdapter _adapter;
-
-    public Sr6NoOpRulesetRuleHost()
-        : this(new Sr6NoOpRulesetCapabilityHost())
-    {
-    }
-
-    public Sr6NoOpRulesetRuleHost(IRulesetCapabilityHost capabilityHost)
-    {
-        _adapter = new RulesetRuleHostCapabilityAdapter(capabilityHost);
-    }
-
-    public ValueTask<RulesetRuleEvaluationResult> EvaluateAsync(RulesetRuleEvaluationRequest request, CancellationToken ct)
-    {
-        return _adapter.EvaluateAsync(request, ct);
-    }
-}
-
-public class Sr6NoOpRulesetScriptHost : IRulesetScriptHost
-{
-    private readonly RulesetScriptHostCapabilityAdapter _adapter;
-
-    public Sr6NoOpRulesetScriptHost()
-        : this(new Sr6NoOpRulesetCapabilityHost())
-    {
-    }
-
-    public Sr6NoOpRulesetScriptHost(IRulesetCapabilityHost capabilityHost)
-    {
-        _adapter = new RulesetScriptHostCapabilityAdapter(capabilityHost);
-    }
-
-    public ValueTask<RulesetScriptExecutionResult> ExecuteAsync(RulesetScriptExecutionRequest request, CancellationToken ct)
-    {
-        return _adapter.ExecuteAsync(request, ct);
     }
 }

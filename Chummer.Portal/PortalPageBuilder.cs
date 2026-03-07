@@ -191,6 +191,11 @@ internal static class PortalPageBuilder
         string sessionBaseUrl,
         string sessionProxyBaseUrl,
         bool useSessionProxy,
+        string coachBaseUrl,
+        string coachProxyBaseUrl,
+        bool useCoachProxy,
+        string aiProxyBaseUrl,
+        bool useAiProxy,
         string avaloniaBrowserBaseUrl,
         string avaloniaProxyBaseUrl,
         bool useAvaloniaProxy,
@@ -291,10 +296,16 @@ internal static class PortalPageBuilder
         string sessionModeText = useSessionProxy
             ? "<code>/session</code> in-process proxy is active."
             : "<code>/session</code> currently uses redirect mode.";
+        string coachModeText = useCoachProxy
+            ? "<code>/coach</code> in-process proxy is active."
+            : "<code>/coach</code> currently uses redirect mode.";
+        string aiModeText = useAiProxy
+            ? "<code>/api/ai</code> dedicated AI proxy is active."
+            : "<code>/api/ai</code> currently shares the main <code>/api</code> upstream.";
         string avaloniaModeText = useAvaloniaProxy
             ? "<code>/avalonia</code> in-process proxy is active."
             : "<code>/avalonia</code> currently serves a setup placeholder.";
-        html.AppendLine("      <p class=\"lead\">Single landing surface for migration heads. Current milestone proxies <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> in-process; " + blazorModeText + " " + hubModeText + " " + sessionModeText + " " + avaloniaModeText + "</p>");
+        html.AppendLine("      <p class=\"lead\">Single landing surface for migration heads. Current milestone proxies <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> in-process; " + blazorModeText + " " + hubModeText + " " + sessionModeText + " " + coachModeText + " " + aiModeText + " " + avaloniaModeText + "</p>");
         html.AppendLine("    </header>");
         html.AppendLine("    <section class=\"grid\">");
         html.AppendLine("      <article class=\"card\">");
@@ -311,6 +322,11 @@ internal static class PortalPageBuilder
         html.AppendLine("        <h2>Session Web</h2>");
         html.AppendLine("        <p>Mobile/session head over dedicated runtime-state, bundle, and ledger seams.</p>");
         html.AppendLine("        <a href=\"/session/\">Open Session</a>");
+        html.AppendLine("      </article>");
+        html.AppendLine("      <article class=\"card\">");
+        html.AppendLine("        <h2>Chummer Coach</h2>");
+        html.AppendLine("        <p>AI sidecar head over protected status, prompt, tool, and build-idea gateway seams.</p>");
+        html.AppendLine("        <a href=\"/coach/\">Open Coach</a>");
         html.AppendLine("      </article>");
         html.AppendLine("      <article class=\"card\">");
         html.AppendLine("        <h2>API Surface</h2>");
@@ -335,11 +351,13 @@ internal static class PortalPageBuilder
         html.AppendLine("    </section>");
         html.AppendLine("    <footer>");
         html.AppendLine("      <div><code>/api</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
+        html.AppendLine("      <div><code>/api/ai</code> " + (useAiProxy ? "proxy upstream → " + HtmlEncode(aiProxyBaseUrl) : "shares /api upstream → " + HtmlEncode(apiBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/openapi</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
         html.AppendLine("      <div><code>/docs</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
         html.AppendLine("      <div><code>/blazor</code> " + (useBlazorProxy ? "proxy upstream → " + HtmlEncode(blazorProxyBaseUrl) : "redirect → " + HtmlEncode(blazorBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/hub</code> " + (useHubProxy ? "proxy upstream → " + HtmlEncode(hubProxyBaseUrl) : "redirect → " + HtmlEncode(hubBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/session</code> " + (useSessionProxy ? "proxy upstream → " + HtmlEncode(sessionProxyBaseUrl) : "redirect → " + HtmlEncode(sessionBaseUrl)) + "</div>");
+        html.AppendLine("      <div><code>/coach</code> " + (useCoachProxy ? "proxy upstream → " + HtmlEncode(coachProxyBaseUrl) : "redirect → " + HtmlEncode(coachBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/avalonia</code> " + (useAvaloniaProxy ? "proxy upstream → " + HtmlEncode(avaloniaProxyBaseUrl) : "placeholder route at " + HtmlEncode(avaloniaBrowserBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/downloads</code> " + (useDownloadsProxy ? "proxy upstream → " + HtmlEncode(downloadsProxyBaseUrl) : "local files + manifest with fallback feed → " + HtmlEncode(downloadsBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>X-Api-Key</code> forwarding → " + (isApiKeyForwardingEnabled ? "enabled for internal <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> upstream compatibility only" : "disabled") + "</div>");

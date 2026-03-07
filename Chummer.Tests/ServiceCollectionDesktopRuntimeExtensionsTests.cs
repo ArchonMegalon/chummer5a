@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using Chummer.Application.Owners;
 using Chummer.Contracts.Owners;
+using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 using Chummer.Desktop.Runtime;
 using Chummer.Presentation;
@@ -19,6 +20,7 @@ namespace Chummer.Tests;
 public class ServiceCollectionDesktopRuntimeExtensionsTests
 {
     private static readonly object EnvironmentLock = new();
+    private const string DefaultRulesetEnvironmentVariable = "CHUMMER_DEFAULT_RULESET";
 
     [TestMethod]
     public void Default_mode_registers_inprocess_client()
@@ -162,15 +164,92 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
         }
     }
 
-    private static void ApplyEnvironment(string? mode, string? baseUrl, string? apiKey, Action action)
-        => ApplyEnvironment(mode, legacyMode: mode, baseUrl, apiKey, action);
+    [TestMethod]
+    public void Default_ruleset_environment_variable_controls_shell_catalog_resolution()
+    {
+        lock (EnvironmentLock)
+        {
+            string root = CreateTempDirectory();
+            try
+            {
+                ApplyEnvironment(mode: null, baseUrl: null, apiKey: null, action: () =>
+                {
+                    var services = new ServiceCollection();
+                    services.AddChummerLocalRuntimeClient(root, root);
 
-    private static void ApplyEnvironment(string? mode, string? legacyMode, string? baseUrl, string? apiKey, Action action)
+                    using ServiceProvider provider = services.BuildServiceProvider();
+                    IRulesetSelectionPolicy selectionPolicy = provider.GetRequiredService<IRulesetSelectionPolicy>();
+                    IRulesetShellCatalogResolver shellCatalogResolver = provider.GetRequiredService<IRulesetShellCatalogResolver>();
+
+                    Assert.AreEqual(RulesetDefaults.Sr6, selectionPolicy.GetDefaultRulesetId());
+
+                    IReadOnlyList<AppCommandDefinition> commands = shellCatalogResolver.ResolveCommands(null);
+                    IReadOnlyList<NavigationTabDefinition> tabs = shellCatalogResolver.ResolveNavigationTabs(null);
+
+                    Assert.IsNotEmpty(commands, "Expected SR6 to expose shell commands.");
+                    Assert.IsNotEmpty(tabs, "Expected SR6 to expose navigation tabs.");
+                    Assert.IsTrue(commands.All(command => string.Equals(command.RulesetId, RulesetDefaults.Sr6, StringComparison.Ordinal)));
+                    Assert.IsTrue(tabs.All(tab => string.Equals(tab.RulesetId, RulesetDefaults.Sr6, StringComparison.Ordinal)));
+                }, defaultRulesetId: RulesetDefaults.Sr6);
+            }
+            finally
+            {
+                DeleteTempDirectory(root);
+            }
+        }
+    }
+
+    [TestMethod]
+    public void Default_ruleset_environment_variable_fails_when_ruleset_is_not_registered()
+    {
+        lock (EnvironmentLock)
+        {
+            string root = CreateTempDirectory();
+            try
+            {
+                ApplyEnvironment(mode: null, baseUrl: null, apiKey: null, action: () =>
+                {
+                    var services = new ServiceCollection();
+                    services.AddChummerLocalRuntimeClient(root, root);
+
+                    using ServiceProvider provider = services.BuildServiceProvider();
+                    IRulesetSelectionPolicy selectionPolicy = provider.GetRequiredService<IRulesetSelectionPolicy>();
+                    IRulesetShellCatalogResolver shellCatalogResolver = provider.GetRequiredService<IRulesetShellCatalogResolver>();
+
+                    InvalidOperationException selectionPolicyEx = Assert.ThrowsExactly<InvalidOperationException>(() =>
+                        selectionPolicy.GetDefaultRulesetId());
+                    InvalidOperationException shellCatalogEx = Assert.ThrowsExactly<InvalidOperationException>(() =>
+                        shellCatalogResolver.ResolveCommands(null));
+
+                    StringAssert.Contains(selectionPolicyEx.Message, "Configured default ruleset 'sr4'");
+                    StringAssert.Contains(selectionPolicyEx.Message, $"environment:{DefaultRulesetEnvironmentVariable}");
+                    StringAssert.Contains(shellCatalogEx.Message, "Configured default ruleset 'sr4'");
+                    StringAssert.Contains(shellCatalogEx.Message, $"environment:{DefaultRulesetEnvironmentVariable}");
+                }, defaultRulesetId: RulesetDefaults.Sr4);
+            }
+            finally
+            {
+                DeleteTempDirectory(root);
+            }
+        }
+    }
+
+    private static void ApplyEnvironment(string? mode, string? baseUrl, string? apiKey, Action action, string? defaultRulesetId = null)
+        => ApplyEnvironment(mode, legacyMode: mode, baseUrl, apiKey, action, defaultRulesetId);
+
+    private static void ApplyEnvironment(
+        string? mode,
+        string? legacyMode,
+        string? baseUrl,
+        string? apiKey,
+        Action action,
+        string? defaultRulesetId = null)
     {
         string? previousMode = Environment.GetEnvironmentVariable("CHUMMER_CLIENT_MODE");
         string? previousLegacyMode = Environment.GetEnvironmentVariable("CHUMMER_DESKTOP_CLIENT_MODE");
         string? previousBaseUrl = Environment.GetEnvironmentVariable("CHUMMER_API_BASE_URL");
         string? previousApiKey = Environment.GetEnvironmentVariable("CHUMMER_API_KEY");
+        string? previousDefaultRulesetId = Environment.GetEnvironmentVariable(DefaultRulesetEnvironmentVariable);
 
         try
         {
@@ -178,6 +257,7 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
             Environment.SetEnvironmentVariable("CHUMMER_DESKTOP_CLIENT_MODE", legacyMode);
             Environment.SetEnvironmentVariable("CHUMMER_API_BASE_URL", baseUrl);
             Environment.SetEnvironmentVariable("CHUMMER_API_KEY", apiKey);
+            Environment.SetEnvironmentVariable(DefaultRulesetEnvironmentVariable, defaultRulesetId);
             action();
         }
         finally
@@ -186,6 +266,7 @@ public class ServiceCollectionDesktopRuntimeExtensionsTests
             Environment.SetEnvironmentVariable("CHUMMER_DESKTOP_CLIENT_MODE", previousLegacyMode);
             Environment.SetEnvironmentVariable("CHUMMER_API_BASE_URL", previousBaseUrl);
             Environment.SetEnvironmentVariable("CHUMMER_API_KEY", previousApiKey);
+            Environment.SetEnvironmentVariable(DefaultRulesetEnvironmentVariable, previousDefaultRulesetId);
         }
     }
 

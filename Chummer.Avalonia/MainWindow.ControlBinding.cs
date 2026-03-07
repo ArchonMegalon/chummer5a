@@ -12,6 +12,7 @@ internal static class MainWindowControlBinder
         NavigatorPaneControl navigatorPane,
         SectionHostControl sectionHost,
         CommandDialogPaneControl commandDialogPane,
+        CoachSidecarControl coachSidecar,
         StatusStripControl statusStrip,
         EventHandler onImportFileRequested,
         EventHandler onImportRawRequested,
@@ -23,6 +24,7 @@ internal static class MainWindowControlBinder
         EventHandler<string> onNavigationTabSelected,
         EventHandler<string> onSectionActionSelected,
         EventHandler<string> onWorkflowSurfaceSelected,
+        EventHandler onCoachLaunchCopyRequested,
         EventHandler<string> onCommandSelected,
         EventHandler<string> onDialogActionSelected)
     {
@@ -36,6 +38,7 @@ internal static class MainWindowControlBinder
         navigatorPane.NavigationTabSelected += onNavigationTabSelected;
         navigatorPane.SectionActionSelected += onSectionActionSelected;
         navigatorPane.WorkflowSurfaceSelected += onWorkflowSurfaceSelected;
+        coachSidecar.CopyLaunchRequested += onCoachLaunchCopyRequested;
         commandDialogPane.CommandSelected += onCommandSelected;
         commandDialogPane.DialogActionSelected += onDialogActionSelected;
 
@@ -47,6 +50,7 @@ internal static class MainWindowControlBinder
             navigatorPane,
             sectionHost,
             commandDialogPane,
+            coachSidecar,
             statusStrip);
     }
 }
@@ -59,6 +63,7 @@ internal sealed record MainWindowControls(
     NavigatorPaneControl NavigatorPane,
     SectionHostControl SectionHost,
     CommandDialogPaneControl CommandDialogPane,
+    CoachSidecarControl CoachSidecar,
     StatusStripControl StatusStrip)
 {
     public string SectionHostInputText => SectionHost.XmlInputText;
@@ -73,5 +78,10 @@ internal sealed record MainWindowControls(
         CommandDialogPane.SetState(shellFrame.CommandDialogPaneState);
         NavigatorPane.SetState(shellFrame.NavigatorPaneState);
         SectionHost.SetState(shellFrame.SectionHostState);
+    }
+
+    public void ApplyCoachSidecar(CoachSidecarPaneState state)
+    {
+        CoachSidecar.SetState(state);
     }
 }

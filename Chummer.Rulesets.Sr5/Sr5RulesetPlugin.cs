@@ -9,8 +9,8 @@ public class Sr5RulesetPlugin : IRulesetPlugin
     public Sr5RulesetPlugin()
     {
         Capabilities = new Sr5NoOpRulesetCapabilityHost();
-        Rules = new NoOpRulesetRuleHost(Capabilities);
-        Scripts = new NoOpRulesetScriptHost(Capabilities);
+        Rules = new RulesetRuleHostCapabilityAdapter(Capabilities);
+        Scripts = new RulesetScriptHostCapabilityAdapter(Capabilities);
     }
 
     public RulesetId Id { get; } = new(RulesetDefaults.Sr5);
@@ -174,45 +174,5 @@ public class Sr5NoOpRulesetCapabilityHost : IRulesetCapabilityHost
             Success: true,
             Output: new RulesetCapabilityValue(RulesetCapabilityValueKinds.Object, Properties: outputProperties),
             Diagnostics: diagnostics));
-    }
-}
-
-public class NoOpRulesetRuleHost : IRulesetRuleHost
-{
-    private readonly RulesetRuleHostCapabilityAdapter _adapter;
-
-    public NoOpRulesetRuleHost()
-        : this(new Sr5NoOpRulesetCapabilityHost())
-    {
-    }
-
-    public NoOpRulesetRuleHost(IRulesetCapabilityHost capabilityHost)
-    {
-        _adapter = new RulesetRuleHostCapabilityAdapter(capabilityHost);
-    }
-
-    public ValueTask<RulesetRuleEvaluationResult> EvaluateAsync(RulesetRuleEvaluationRequest request, CancellationToken ct)
-    {
-        return _adapter.EvaluateAsync(request, ct);
-    }
-}
-
-public class NoOpRulesetScriptHost : IRulesetScriptHost
-{
-    private readonly RulesetScriptHostCapabilityAdapter _adapter;
-
-    public NoOpRulesetScriptHost()
-        : this(new Sr5NoOpRulesetCapabilityHost())
-    {
-    }
-
-    public NoOpRulesetScriptHost(IRulesetCapabilityHost capabilityHost)
-    {
-        _adapter = new RulesetScriptHostCapabilityAdapter(capabilityHost);
-    }
-
-    public ValueTask<RulesetScriptExecutionResult> ExecuteAsync(RulesetScriptExecutionRequest request, CancellationToken ct)
-    {
-        return _adapter.ExecuteAsync(request, ct);
     }
 }

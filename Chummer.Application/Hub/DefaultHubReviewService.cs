@@ -15,7 +15,7 @@ public sealed class DefaultHubReviewService : IHubReviewService
 
     public HubPublicationResult<HubReviewCatalog> ListReviews(OwnerScope owner, string? kind = null, string? itemId = null, string? rulesetId = null)
     {
-        HubReviewReceipt[] items = _reviewStore.List(owner, NormalizeOptional(kind), NormalizeOptional(itemId), RulesetDefaults.NormalizeOptional(rulesetId))
+        HubReviewReceipt[] items = _reviewStore.List(owner, HubCatalogItemKinds.NormalizeOptional(kind), NormalizeOptional(itemId), RulesetDefaults.NormalizeOptional(rulesetId))
             .OrderByDescending(record => record.UpdatedAtUtc)
             .Select(ToReceipt)
             .ToArray();
@@ -24,7 +24,7 @@ public sealed class DefaultHubReviewService : IHubReviewService
 
     public HubPublicationResult<HubReviewAggregateSummary> GetAggregateSummary(string kind, string itemId, string? rulesetId = null)
     {
-        string normalizedKind = NormalizeRequired(kind);
+        string normalizedKind = HubCatalogItemKinds.NormalizeRequired(kind, nameof(kind));
         string normalizedItemId = NormalizeItemId(itemId);
         string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
         HubReviewRecord[] reviews = _reviewStore.ListAll(normalizedKind, normalizedItemId, normalizedRulesetId)
@@ -56,7 +56,7 @@ public sealed class DefaultHubReviewService : IHubReviewService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        string normalizedKind = NormalizeRequired(kind);
+        string normalizedKind = HubCatalogItemKinds.NormalizeRequired(kind, nameof(kind));
         string normalizedItemId = NormalizeItemId(itemId);
         string normalizedRulesetId = RulesetDefaults.NormalizeRequired(request.RulesetId);
         string normalizedRecommendation = NormalizeRecommendationState(request.RecommendationState);
@@ -93,12 +93,6 @@ public sealed class DefaultHubReviewService : IHubReviewService
             ReviewText: record.ReviewText,
             UsedAtTable: record.UsedAtTable);
 
-    private static string NormalizeRequired(string value)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(value);
-        return value.Trim().ToLowerInvariant();
-    }
-
     private static string NormalizeItemId(string value)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(value);
@@ -112,7 +106,8 @@ public sealed class DefaultHubReviewService : IHubReviewService
 
     private static string NormalizeRecommendationState(string value)
     {
-        string normalized = NormalizeRequired(value);
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+        string normalized = value.Trim().ToLowerInvariant();
         return normalized switch
         {
             HubRecommendationStates.Recommended => HubRecommendationStates.Recommended,

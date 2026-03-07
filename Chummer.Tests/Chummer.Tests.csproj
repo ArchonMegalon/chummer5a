@@ -167,8 +167,11 @@
     <ProjectReference Include="..\Chummer.Api\Chummer.Api.csproj" />
     <ProjectReference Include="..\Chummer.Application\Chummer.Application.csproj" />
     <ProjectReference Include="..\Chummer.Blazor\Chummer.Blazor.csproj" />
+    <ProjectReference Include="..\Chummer.Coach.Web\Chummer.Coach.Web.csproj" />
     <ProjectReference Include="..\Chummer.Contracts\Chummer.Contracts.csproj" />
     <ProjectReference Include="..\Chummer.Core\Chummer.Core.csproj" />
+    <ProjectReference Include="..\Chummer.Hub.Web\Chummer.Hub.Web.csproj" />
+    <ProjectReference Include="..\Chummer.Infrastructure.Browser\Chummer.Infrastructure.Browser.csproj" />
     <ProjectReference Include="..\Chummer.Infrastructure\Chummer.Infrastructure.csproj" />
     <ProjectReference Include="..\Chummer.Portal\Chummer.Portal.csproj" />
     <ProjectReference Include="..\Chummer.Presentation\Chummer.Presentation.csproj" />
@@ -176,6 +179,7 @@
     <ProjectReference Include="..\Chummer.Rulesets.Sr4\Chummer.Rulesets.Sr4.csproj" />
     <ProjectReference Include="..\Chummer.Rulesets.Sr5\Chummer.Rulesets.Sr5.csproj" />
     <ProjectReference Include="..\Chummer.Rulesets.Sr6\Chummer.Rulesets.Sr6.csproj" />
+    <ProjectReference Include="..\Chummer.Session.Web\Chummer.Session.Web.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Headless" Version="11.3.7" />

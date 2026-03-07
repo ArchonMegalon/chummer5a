@@ -11,6 +11,10 @@ string hubBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration,
 string hubProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:HubProxyBaseUrl", "CHUMMER_PORTAL_HUB_PROXY_URL", string.Empty);
 string sessionBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:SessionBaseUrl", "CHUMMER_PORTAL_SESSION_URL", "http://127.0.0.1:8093/");
 string sessionProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:SessionProxyBaseUrl", "CHUMMER_PORTAL_SESSION_PROXY_URL", string.Empty);
+string coachBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:CoachBaseUrl", "CHUMMER_PORTAL_COACH_URL", "http://127.0.0.1:8094/");
+string chummerRunUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ChummerRunUrl", "CHUMMER_RUN_URL", string.Empty);
+string coachProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:CoachProxyBaseUrl", "CHUMMER_PORTAL_COACH_PROXY_URL", chummerRunUrl);
+string aiProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:AiProxyBaseUrl", "CHUMMER_PORTAL_AI_PROXY_URL", chummerRunUrl);
 string avaloniaBrowserBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:AvaloniaBrowserBaseUrl", "CHUMMER_PORTAL_AVALONIA_URL", "/avalonia/");
 string avaloniaProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:AvaloniaProxyBaseUrl", "CHUMMER_PORTAL_AVALONIA_PROXY_URL", string.Empty);
 string apiBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ApiBaseUrl", "CHUMMER_PORTAL_API_URL", "http://chummer-api:8080/");
@@ -41,6 +45,8 @@ string resolvedReleaseFilesPath = PortalDownloadsService.ResolveReleaseFilesPath
 bool useBlazorProxy = !string.IsNullOrWhiteSpace(blazorProxyBaseUrl);
 bool useHubProxy = !string.IsNullOrWhiteSpace(hubProxyBaseUrl);
 bool useSessionProxy = !string.IsNullOrWhiteSpace(sessionProxyBaseUrl);
+bool useCoachProxy = !string.IsNullOrWhiteSpace(coachProxyBaseUrl);
+bool useAiProxy = !string.IsNullOrWhiteSpace(aiProxyBaseUrl);
 bool useAvaloniaProxy = !string.IsNullOrWhiteSpace(avaloniaProxyBaseUrl);
 bool useDownloadsProxy = !string.IsNullOrWhiteSpace(downloadsProxyBaseUrl);
 bool isApiKeyForwardingEnabled = !string.IsNullOrWhiteSpace(apiProxyKey);
@@ -51,9 +57,25 @@ PortalAuthenticationSettings portalAuthenticationSettings = new(
     portalDevAuthDefaultUser,
     CookieAuthenticationDefaults.AuthenticationScheme);
 IReadOnlyList<IReadOnlyDictionary<string, string>>? apiRouteTransforms = PortalProxyUtils.BuildApiRouteTransforms(apiProxyKey);
+IReadOnlyList<IReadOnlyDictionary<string, string>>? aiRouteTransforms = useAiProxy
+    ? null
+    : PortalProxyUtils.BuildRouteTransforms(apiRouteTransforms);
 
 var proxyRoutes = new List<RouteConfig>
 {
+    new RouteConfig
+    {
+        RouteId = "portal-ai",
+        ClusterId = "ai-cluster",
+        Match = new RouteMatch
+        {
+            Path = "/api/ai/{**catch-all}"
+        },
+        // Keep protected AI routes working through the main API cluster until a dedicated
+        // chummer.run-style upstream is configured. Do not forward the internal API key
+        // once /api/ai peels onto its own control plane.
+        Transforms = aiRouteTransforms
+    },
     new RouteConfig
     {
         RouteId = "portal-api",
@@ -88,6 +110,17 @@ var proxyRoutes = new List<RouteConfig>
 
 var proxyClusters = new List<ClusterConfig>
 {
+    new ClusterConfig
+    {
+        ClusterId = "ai-cluster",
+        Destinations = new Dictionary<string, DestinationConfig>(StringComparer.Ordinal)
+        {
+            ["primary"] = new DestinationConfig
+            {
+                Address = PortalProxyUtils.NormalizeProxyAddress(useAiProxy ? aiProxyBaseUrl : apiBaseUrl)
+            }
+        }
+    },
     new ClusterConfig
     {
         ClusterId = "api-cluster",
@@ -171,6 +204,31 @@ if (useSessionProxy)
             ["primary"] = new DestinationConfig
             {
                 Address = PortalProxyUtils.NormalizeProxyAddress(sessionProxyBaseUrl)
+            }
+        }
+    });
+}
+
+if (useCoachProxy)
+{
+    proxyRoutes.Add(new RouteConfig
+    {
+        RouteId = "portal-coach",
+        ClusterId = "coach-cluster",
+        Match = new RouteMatch
+        {
+            Path = "/coach/{**catch-all}"
+        }
+    });
+
+    proxyClusters.Add(new ClusterConfig
+    {
+        ClusterId = "coach-cluster",
+        Destinations = new Dictionary<string, DestinationConfig>(StringComparer.Ordinal)
+        {
+            ["primary"] = new DestinationConfig
+            {
+                Address = PortalProxyUtils.NormalizeProxyAddress(coachProxyBaseUrl)
             }
         }
     });
@@ -282,6 +340,11 @@ app.MapGet("/", () => Results.Content(
         sessionBaseUrl,
         sessionProxyBaseUrl,
         useSessionProxy,
+        coachBaseUrl,
+        coachProxyBaseUrl,
+        useCoachProxy,
+        aiProxyBaseUrl,
+        useAiProxy,
         avaloniaBrowserBaseUrl,
         avaloniaProxyBaseUrl,
         useAvaloniaProxy,
@@ -317,6 +380,12 @@ if (!useSessionProxy)
 {
     app.MapGet("/session/{**path}", (HttpContext context, string? path) =>
         Results.Redirect(PortalProxyUtils.ComposeRedirect(sessionBaseUrl, path, context.Request.QueryString)));
+}
+
+if (!useCoachProxy)
+{
+    app.MapGet("/coach/{**path}", (HttpContext context, string? path) =>
+        Results.Redirect(PortalProxyUtils.ComposeRedirect(coachBaseUrl, path, context.Request.QueryString)));
 }
 
 if (!useAvaloniaProxy)

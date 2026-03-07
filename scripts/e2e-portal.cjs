@@ -5,6 +5,7 @@ const requiredLandingLinks = [
   '/blazor/',
   '/hub/',
   '/session/',
+  '/coach/',
   '/avalonia/',
   '/downloads/',
   '/docs/',
@@ -56,6 +57,17 @@ const checks = [
     assert: text => /<base href="[^"]*\/session\/"/i.test(text) && text.includes('Chummer Session Web')
   },
   {
+    url: 'http://chummer-portal:8080/coach/health',
+    assert: text => {
+      const payload = JSON.parse(text);
+      return payload?.head === 'coach-web' && payload?.pathBase === '/coach' && payload?.ok === true;
+    }
+  },
+  {
+    url: 'http://chummer-portal:8080/coach/',
+    assert: text => /<base href="[^"]*\/coach\/"/i.test(text) && text.includes('Chummer Coach')
+  },
+  {
     url: 'http://chummer-portal:8080/avalonia/',
     assert: text => text.includes('Avalonia Browser Host')
   },
@@ -88,6 +100,17 @@ const checks = [
   {
     url: 'http://chummer-portal:8080/api/tools/master-index',
     assert: text => !text.includes('missing_or_invalid_api_key')
+  },
+  {
+    url: 'http://chummer-portal:8080/api/ai/status',
+    assert: text => {
+      const payload = JSON.parse(text);
+      return payload?.status === 'scaffolded'
+        && Array.isArray(payload?.routes)
+        && payload.routes.includes('coach')
+        && Array.isArray(payload?.providers)
+        && !text.includes('missing_or_invalid_api_key');
+    }
   },
   {
     url: 'http://chummer-portal:8080/openapi/v1.json',

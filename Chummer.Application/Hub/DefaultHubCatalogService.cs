@@ -76,7 +76,9 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
         ArgumentException.ThrowIfNullOrWhiteSpace(itemId);
 
-        return kind.Trim() switch
+        string normalizedKind = HubCatalogItemKinds.NormalizeRequired(kind);
+
+        return normalizedKind switch
         {
             HubCatalogItemKinds.RulePack => GetRulePackDetail(owner, itemId, rulesetId),
             HubCatalogItemKinds.RuleProfile => GetRuleProfileDetail(owner, itemId, rulesetId),

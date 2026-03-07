@@ -10,6 +10,7 @@ public static class PortalProtectedRouteMatcher
             || path.StartsWithSegments("/blazor", StringComparison.Ordinal)
             || path.StartsWithSegments("/hub", StringComparison.Ordinal)
             || path.StartsWithSegments("/session", StringComparison.Ordinal)
+            || path.StartsWithSegments("/coach", StringComparison.Ordinal)
             || path.StartsWithSegments("/avalonia", StringComparison.Ordinal);
     }
 }

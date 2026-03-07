@@ -77,6 +77,7 @@ public partial class DesktopShell : IDisposable
                 return;
 
             RefreshShellSurfaceState();
+            _ = InvokeAsync(() => RefreshCoachSidecarIfNeededAsync());
             _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
             _ = InvokeAsync(StateHasChanged);
         });
@@ -87,6 +88,7 @@ public partial class DesktopShell : IDisposable
         }
 
         RefreshShellSurfaceState();
+        await RefreshCoachSidecarIfNeededAsync(force: true);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -107,6 +109,7 @@ public partial class DesktopShell : IDisposable
             return;
 
         RefreshShellSurfaceState();
+        _ = InvokeAsync(() => RefreshCoachSidecarIfNeededAsync());
         _lastUiUtc = DateTimeOffset.UtcNow.ToString("u");
         _ = InvokeAsync(StateHasChanged);
     }

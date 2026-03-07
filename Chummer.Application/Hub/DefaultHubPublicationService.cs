@@ -23,7 +23,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
     public HubPublicationResult<HubPublishDraftList> ListDrafts(OwnerScope owner, string? kind = null, string? rulesetId = null, string? state = null)
     {
         IReadOnlyList<HubPublishDraftReceipt> items = _draftStore
-            .List(owner, NormalizeKindOptional(kind), RulesetDefaults.NormalizeOptional(rulesetId), NormalizeStateOptional(state))
+            .List(owner, HubCatalogItemKinds.NormalizeOptional(kind), RulesetDefaults.NormalizeOptional(rulesetId), NormalizeStateOptional(state))
             .OrderByDescending(record => record.UpdatedAtUtc)
             .Select(ToReceipt)
             .ToArray();
@@ -70,7 +70,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        string normalizedKind = NormalizeKindRequired(request.ProjectKind);
+        string normalizedKind = HubCatalogItemKinds.NormalizeRequired(request.ProjectKind, nameof(request.ProjectKind));
         string normalizedProjectId = NormalizeProjectId(request.ProjectId);
         string normalizedTitle = NormalizeTitle(request.Title);
         string? normalizedSummary = NormalizeOptionalText(request.Summary);
@@ -158,7 +158,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
 
     public HubPublicationResult<HubProjectSubmissionReceipt> SubmitForReview(OwnerScope owner, string kind, string itemId, string? rulesetId, HubSubmitProjectRequest? request)
     {
-        string normalizedKind = NormalizeKindRequired(kind);
+        string normalizedKind = HubCatalogItemKinds.NormalizeRequired(kind, nameof(kind));
         string normalizedItemId = NormalizeProjectId(itemId);
         string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
         HubDraftRecord? existing = ResolveDraft(owner, normalizedKind, normalizedItemId, normalizedRulesetId);
@@ -271,12 +271,6 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
             : null;
     }
 
-    private static string NormalizeKindRequired(string value)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(value);
-        return value.Trim().ToLowerInvariant();
-    }
-
     private static string NormalizeProjectId(string value)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(value);
@@ -293,11 +287,6 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
         => string.IsNullOrWhiteSpace(value)
             ? null
             : value.Trim();
-
-    private static string? NormalizeKindOptional(string? value)
-        => string.IsNullOrWhiteSpace(value)
-            ? null
-            : NormalizeKindRequired(value);
 
     private static string? NormalizeStateOptional(string? value)
         => string.IsNullOrWhiteSpace(value)

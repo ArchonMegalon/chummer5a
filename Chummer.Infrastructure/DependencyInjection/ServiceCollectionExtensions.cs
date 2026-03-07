@@ -1,4 +1,5 @@
 using Chummer.Application.Characters;
+using Chummer.Application.AI;
 using Chummer.Application.Content;
 using Chummer.Application.Hub;
 using Chummer.Application.Owners;
@@ -6,6 +7,7 @@ using Chummer.Application.LifeModules;
 using Chummer.Application.Session;
 using Chummer.Application.Tools;
 using Chummer.Application.Workspaces;
+using Chummer.Infrastructure.AI;
 using Chummer.Infrastructure.Files;
 using Chummer.Infrastructure.Owners;
 using Chummer.Infrastructure.Workspaces;
@@ -41,6 +43,39 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddSingleton<ICharacterFileService, CharacterFileService>();
+        services.AddSingleton<IAiProviderCredentialCatalog, EnvironmentAiProviderCredentialCatalog>();
+        services.AddSingleton<IAiProviderTransportOptionsCatalog, EnvironmentAiProviderTransportOptionsCatalog>();
+        services.AddSingleton<IAiProviderTransportClient>(provider =>
+            new HttpAiProviderTransportClient(provider.GetRequiredService<IAiProviderCredentialCatalog>()));
+        services.AddSingleton<IAiProviderCatalog>(provider =>
+            new DefaultAiProviderCatalog(CreateConfiguredAiProviders(
+                provider.GetRequiredService<IAiProviderTransportOptionsCatalog>(),
+                provider.GetRequiredService<IAiProviderTransportClient>())));
+        services.AddSingleton<IAiProviderCredentialSelector, RoundRobinAiProviderCredentialSelector>();
+        services.AddSingleton<IAiProviderRouter, DefaultAiProviderRouter>();
+        services.AddSingleton<IAiRouteBudgetPolicyCatalog, EnvironmentAiRouteBudgetPolicyCatalog>();
+        services.AddSingleton<IAiUsageLedgerStore>(_ => new FileAiUsageLedgerStore(stateDirectory));
+        services.AddSingleton<IAiResponseCacheStore>(_ => new FileAiResponseCacheStore(stateDirectory));
+        services.AddSingleton<IAiProviderHealthStore>(_ => new FileAiProviderHealthStore(stateDirectory));
+        services.AddSingleton<IAiBudgetService, DefaultAiBudgetService>();
+        services.AddSingleton<IBuildIdeaCardCatalogService, DefaultBuildIdeaCardCatalogService>();
+        services.AddSingleton<IAiDigestService, DefaultAiDigestService>();
+        services.AddSingleton<IAiExplainService, DefaultAiExplainService>();
+        services.AddSingleton<IAiPortraitPromptService, DefaultAiPortraitPromptService>();
+        services.AddSingleton<IAiHistoryDraftService, DefaultAiHistoryDraftService>();
+        services.AddSingleton<IAiMediaQueueService, DefaultAiMediaQueueService>();
+        services.AddSingleton<IAiActionPreviewService, DefaultAiActionPreviewService>();
+        services.AddSingleton<IRetrievalService, DefaultRetrievalService>();
+        services.AddSingleton<IAiPromptRegistryService, DefaultAiPromptRegistryService>();
+        services.AddSingleton<IPromptAssembler, DefaultPromptAssembler>();
+        services.AddSingleton<IConversationStore>(_ => new FileAiConversationStore(stateDirectory));
+        services.AddSingleton<IAiGatewayService, NotImplementedAiGatewayService>();
+        services.AddSingleton<IAiMediaJobService, NotImplementedAiMediaJobService>();
+        services.AddSingleton<IAiMediaAssetCatalogService, NotImplementedAiMediaAssetCatalogService>();
+        services.AddSingleton<IAiEvaluationService, NotImplementedAiEvaluationService>();
+        services.AddSingleton<IAiApprovalOrchestrator, NotImplementedAiApprovalOrchestrator>();
+        services.AddSingleton<ITranscriptProvider, NotImplementedTranscriptProvider>();
+        services.AddSingleton<IAiRecapDraftService, NotImplementedAiRecapDraftService>();
         services.AddRulesetInfrastructure();
         services.AddSr5Ruleset();
         services.AddSr6Ruleset();
@@ -82,6 +117,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRuntimeLockRegistryService, OwnerScopedRuntimeLockRegistryService>();
         services.AddSingleton<IRuntimeLockInstallService, DefaultRuntimeLockInstallService>();
         services.AddSingleton<IHubCatalogService, DefaultHubCatalogService>();
+        services.AddSingleton<IAiHubProjectSearchService, DefaultAiHubProjectSearchService>();
         services.AddSingleton<IHubInstallPreviewService, DefaultHubInstallPreviewService>();
         services.AddSingleton<IHubProjectCompatibilityService, DefaultHubProjectCompatibilityService>();
         services.AddSingleton<IHubPublisherStore>(_ => new FileHubPublisherStore(stateDirectory));
@@ -181,4 +217,14 @@ public static class ServiceCollectionExtensions
         string? raw = Environment.GetEnvironmentVariable(variableName);
         return bool.TryParse(raw, out bool parsed) && parsed;
     }
+
+    private static IReadOnlyList<IAiProvider> CreateConfiguredAiProviders(
+        IAiProviderTransportOptionsCatalog transportOptionsCatalog,
+        IAiProviderTransportClient transportClient)
+        => transportOptionsCatalog.GetConfiguredTransportOptions()
+            .Values
+            .Where(static options => options.TransportConfigured)
+            .OrderBy(static options => options.ProviderId, StringComparer.Ordinal)
+            .Select(options => (IAiProvider)new RemoteHttpAiProvider(options, transportClient))
+            .ToArray();
 }

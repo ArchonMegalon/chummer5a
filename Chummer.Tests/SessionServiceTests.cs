@@ -5,11 +5,13 @@ using System.Collections.Generic;
 using System.Linq;
 using Chummer.Application.Content;
 using Chummer.Application.Session;
+using Chummer.Application.Workspaces;
 using Chummer.Contracts.Characters;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Owners;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Session;
+using Chummer.Contracts.Workspaces;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Chummer.Tests;
@@ -48,6 +50,35 @@ public sealed class SessionServiceTests
         Assert.HasCount(2, result.Payload.Profiles);
         Assert.IsTrue(result.Payload.Profiles.Any(profile => profile.ProfileId == "official.sr5.core" && profile.SessionReady));
         Assert.IsTrue(result.Payload.Profiles.Any(profile => profile.ProfileId == "campaign.sr5.ready" && profile.SessionReady));
+    }
+
+    [TestMethod]
+    public void Owner_scoped_session_service_lists_owner_backed_session_characters_from_workspaces()
+    {
+        InMemorySessionProfileSelectionStore selectionStore = new();
+        selectionStore.Upsert(
+            OwnerScope.LocalSingleUser,
+            new SessionProfileBinding(
+                CharacterId: "char-1",
+                ProfileId: "campaign.sr5.ready",
+                RulesetId: RulesetDefaults.Sr5,
+                RuntimeFingerprint: "runtime-campaign-sr5-ready",
+                SelectedAtUtc: DateTimeOffset.UtcNow));
+
+        OwnerScopedSessionService service = CreateService(selectionStore: selectionStore);
+
+        SessionApiResult<SessionCharacterCatalog> result = service.ListCharacters(OwnerScope.LocalSingleUser);
+
+        Assert.IsTrue(result.IsImplemented);
+        Assert.IsNotNull(result.Payload);
+        Assert.HasCount(2, result.Payload.Characters);
+        Assert.AreEqual("char-1", result.Payload.Characters[0].CharacterId);
+        Assert.AreEqual("Apex Predator (APX)", result.Payload.Characters[0].DisplayName);
+        Assert.AreEqual(RulesetDefaults.Sr5, result.Payload.Characters[0].RulesetId);
+        Assert.AreEqual("runtime-campaign-sr5-ready", result.Payload.Characters[0].RuntimeFingerprint);
+        Assert.AreEqual("char-2", result.Payload.Characters[1].CharacterId);
+        Assert.AreEqual("Blue Steel", result.Payload.Characters[1].DisplayName);
+        Assert.AreEqual("runtime-official-sr5-core", result.Payload.Characters[1].RuntimeFingerprint);
     }
 
     [TestMethod]
@@ -234,7 +265,9 @@ public sealed class SessionServiceTests
 
     private static OwnerScopedSessionService CreateService(
         ISessionProfileSelectionStore? selectionStore = null,
-        ISessionRuntimeBundleStore? runtimeBundleStore = null)
+        ISessionRuntimeBundleStore? runtimeBundleStore = null,
+        IWorkspaceService? workspaceService = null,
+        IActiveRuntimeStatusService? activeRuntimeStatusService = null)
     {
         StubRulePackRegistryService rulePackRegistry = new(
         [
@@ -257,7 +290,41 @@ public sealed class SessionServiceTests
             rulePackRegistry,
             new StubRulesetSelectionPolicy(),
             selectionStore ?? new InMemorySessionProfileSelectionStore(),
-            runtimeBundleStore ?? new InMemorySessionRuntimeBundleStore());
+            runtimeBundleStore ?? new InMemorySessionRuntimeBundleStore(),
+            workspaceService ?? new StubWorkspaceService(
+            [
+                CreateWorkspaceListItem("char-1", "Apex Predator", "APX", RulesetDefaults.Sr5),
+                CreateWorkspaceListItem("char-2", "Blue Steel", string.Empty, RulesetDefaults.Sr5)
+            ]),
+            activeRuntimeStatusService ?? new StubActiveRuntimeStatusService(
+                new ActiveRuntimeStatusProjection(
+                    ProfileId: "official.sr5.core",
+                    Title: "SR5 Core",
+                    RulesetId: RulesetDefaults.Sr5,
+                    RuntimeFingerprint: "runtime-official-sr5-core",
+                    InstallState: ArtifactInstallStates.Available)));
+    }
+
+    private static WorkspaceListItem CreateWorkspaceListItem(
+        string workspaceId,
+        string name,
+        string alias,
+        string rulesetId)
+    {
+        return new WorkspaceListItem(
+            Id: new CharacterWorkspaceId(workspaceId),
+            Summary: new CharacterFileSummary(
+                Name: name,
+                Alias: alias,
+                Metatype: "Human",
+                BuildMethod: "Priority",
+                CreatedVersion: "1.0",
+                AppVersion: "1.0",
+                Karma: 0m,
+                Nuyen: 0m,
+                Created: true),
+            LastUpdatedUtc: DateTimeOffset.UtcNow,
+            RulesetId: rulesetId);
     }
 
     private static RuleProfileRegistryEntry CreateProfileEntry(
@@ -465,6 +532,112 @@ public sealed class SessionServiceTests
                 string.Equals(entry.Manifest.PackId, packId, StringComparison.Ordinal)
                 && (normalizedRulesetId is null || entry.Manifest.Targets.Contains(normalizedRulesetId, StringComparer.Ordinal)));
         }
+    }
+
+    private sealed class StubActiveRuntimeStatusService : IActiveRuntimeStatusService
+    {
+        private readonly ActiveRuntimeStatusProjection? _projection;
+
+        public StubActiveRuntimeStatusService(ActiveRuntimeStatusProjection? projection)
+        {
+            _projection = projection;
+        }
+
+        public ActiveRuntimeStatusProjection? GetActiveProfileStatus(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            if (_projection is null)
+            {
+                return null;
+            }
+
+            return normalizedRulesetId is null || string.Equals(_projection.RulesetId, normalizedRulesetId, StringComparison.Ordinal)
+                ? _projection
+                : null;
+        }
+    }
+
+    private sealed class StubWorkspaceService : IWorkspaceService
+    {
+        private readonly IReadOnlyList<WorkspaceListItem> _workspaces;
+
+        public StubWorkspaceService(IReadOnlyList<WorkspaceListItem> workspaces)
+        {
+            _workspaces = workspaces;
+        }
+
+        public WorkspaceImportResult Import(WorkspaceImportDocument document) => throw new NotSupportedException();
+
+        public WorkspaceImportResult Import(OwnerScope owner, WorkspaceImportDocument document) => throw new NotSupportedException();
+
+        public IReadOnlyList<WorkspaceListItem> List(int? maxCount = null) => List(OwnerScope.LocalSingleUser, maxCount);
+
+        public IReadOnlyList<WorkspaceListItem> List(OwnerScope owner, int? maxCount = null)
+            => maxCount is > 0 ? _workspaces.Take(maxCount.Value).ToArray() : _workspaces;
+
+        public bool Close(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public bool Close(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public object? GetSection(CharacterWorkspaceId id, string sectionId) => throw new NotSupportedException();
+
+        public object? GetSection(OwnerScope owner, CharacterWorkspaceId id, string sectionId) => throw new NotSupportedException();
+
+        public CharacterFileSummary? GetSummary(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterFileSummary? GetSummary(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterValidationResult? Validate(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterValidationResult? Validate(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterProfileSection? GetProfile(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterProfileSection? GetProfile(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterProgressSection? GetProgress(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterProgressSection? GetProgress(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterSkillsSection? GetSkills(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterSkillsSection? GetSkills(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterRulesSection? GetRules(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterRulesSection? GetRules(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterBuildSection? GetBuild(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterBuildSection? GetBuild(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterMovementSection? GetMovement(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterMovementSection? GetMovement(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterAwakeningSection? GetAwakening(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CharacterAwakeningSection? GetAwakening(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<CharacterProfileSection> UpdateMetadata(CharacterWorkspaceId id, UpdateWorkspaceMetadata command) => throw new NotSupportedException();
+
+        public CommandResult<CharacterProfileSection> UpdateMetadata(OwnerScope owner, CharacterWorkspaceId id, UpdateWorkspaceMetadata command) => throw new NotSupportedException();
+
+        public CommandResult<WorkspaceSaveReceipt> Save(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<WorkspaceSaveReceipt> Save(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<WorkspaceDownloadReceipt> Download(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<WorkspaceDownloadReceipt> Download(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<WorkspaceExportReceipt> Export(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<WorkspaceExportReceipt> Export(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<WorkspacePrintReceipt> Print(CharacterWorkspaceId id) => throw new NotSupportedException();
+
+        public CommandResult<WorkspacePrintReceipt> Print(OwnerScope owner, CharacterWorkspaceId id) => throw new NotSupportedException();
     }
 
     private sealed class InMemorySessionProfileSelectionStore : ISessionProfileSelectionStore

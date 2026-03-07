@@ -33,7 +33,9 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
         ArgumentException.ThrowIfNullOrWhiteSpace(itemId);
 
-        return kind.Trim() switch
+        string normalizedKind = HubCatalogItemKinds.NormalizeRequired(kind);
+
+        return normalizedKind switch
         {
             HubCatalogItemKinds.RulePack => GetRulePackMatrix(owner, itemId, rulesetId),
             HubCatalogItemKinds.RuleProfile => GetRuleProfileMatrix(owner, itemId, rulesetId),

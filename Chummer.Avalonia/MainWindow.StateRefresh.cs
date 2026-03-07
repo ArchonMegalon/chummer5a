@@ -1,5 +1,6 @@
 using Chummer.Avalonia.Controls;
 using Chummer.Presentation.Overview;
+using Chummer.Presentation.Shell;
 
 namespace Chummer.Avalonia;
 
@@ -8,12 +9,14 @@ public partial class MainWindow
     private void RefreshState()
     {
         CharacterOverviewState state = _adapter.State;
+        ShellSurfaceState shellSurface = _shellSurfaceResolver.Resolve(state, _shellPresenter.State);
         MainWindowShellFrame shellFrame = MainWindowShellFrameProjector.Project(
             state,
-            _shellSurfaceResolver.Resolve(state, _shellPresenter.State),
+            shellSurface,
             _commandAvailabilityEvaluator);
 
         ApplyShellFrame(shellFrame);
+        QueueCoachSidecarRefreshIfNeeded(shellSurface);
         ApplyPostRefreshEffects(state);
     }
 

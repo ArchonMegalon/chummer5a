@@ -9,7 +9,14 @@ public static class HubPublicationEndpoints
     public static IEndpointRouteBuilder MapHubPublicationEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/hub/publish/drafts", (string? kind, string? ruleset, string? state, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
-            ToResult(hubPublicationService.ListDrafts(ownerContextAccessor.Current, kind, ruleset, state)));
+        {
+            if (ValidateProjectKindOptional(kind) is { } invalidKindResult)
+            {
+                return invalidKindResult;
+            }
+
+            return ToResult(hubPublicationService.ListDrafts(ownerContextAccessor.Current, kind, ruleset, state));
+        });
 
         app.MapGet("/api/hub/publish/drafts/{draftId}", (string draftId, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
         {
@@ -97,7 +104,14 @@ public static class HubPublicationEndpoints
         });
 
         app.MapPost("/api/hub/publish/{kind}/{itemId}/submit", (string kind, string itemId, string? ruleset, HubSubmitProjectRequest? request, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
-            ToValidatedResult(() => hubPublicationService.SubmitForReview(ownerContextAccessor.Current, kind, itemId, ruleset, request)));
+        {
+            if (ValidateProjectKindRequired(kind) is { } invalidKindResult)
+            {
+                return invalidKindResult;
+            }
+
+            return ToValidatedResult(() => hubPublicationService.SubmitForReview(ownerContextAccessor.Current, kind, itemId, ruleset, request));
+        });
 
         app.MapGet("/api/hub/moderation/queue", (string? state, IHubModerationService hubModerationService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(hubModerationService.ListQueue(ownerContextAccessor.Current, state)));
@@ -156,4 +170,27 @@ public static class HubPublicationEndpoints
             });
         }
     }
+
+    private static IResult? ValidateProjectKindOptional(string? kind)
+    {
+        if (string.IsNullOrWhiteSpace(kind) || HubCatalogItemKinds.IsDefined(kind))
+        {
+            return null;
+        }
+
+        return CreateInvalidKindResult(kind);
+    }
+
+    private static IResult? ValidateProjectKindRequired(string kind)
+        => HubCatalogItemKinds.IsDefined(kind)
+            ? null
+            : CreateInvalidKindResult(kind);
+
+    private static IResult CreateInvalidKindResult(string? kind)
+        => Results.BadRequest(new
+        {
+            error = "hub_project_kind_invalid",
+            kind,
+            allowedKinds = HubCatalogItemKinds.All
+        });
 }

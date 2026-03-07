@@ -1,31 +1,535 @@
 @page "/"
-@inject NavigationManager Navigation
 
 <main class="page">
     <section class="hero">
-        <p class="eyebrow">Active Session Head</p>
-        <h1>Chummer Session Web</h1>
-        <p class="lede">
-            This mobile-first session head fronts the dedicated <code>/api/session/*</code>
-            seams behind <code>Chummer.Portal</code>. Runtime-state, runtime-bundle,
-            profile-selection, and session-ledger flows can land here without widening the
-            workbench-oriented client path.
-        </p>
+        <div class="hero-copy">
+            <p class="eyebrow">Session Runtime Console</p>
+            <h1>Chummer Session Web</h1>
+            <p class="lede">
+                This head now renders live session profile, runtime-state, runtime-bundle, and
+                session-ready RulePack data from the dedicated <code>/api/session/*</code> seams
+                through the portal edge.
+            </p>
+        </div>
+        <div class="hero-actions">
+            <button class="button ghost" type="button" @onclick="ReloadAllAsync" disabled="@_isBusy">Reload All</button>
+            <span class="@GetStatusChipClass()">@GetStatusChipText()</span>
+        </div>
     </section>
 
-    <section class="grid">
-        <article class="card">
-            <h2>Runtime State</h2>
-            <p>Bind session runtime selection and bundle freshness to <code>/api/session/characters/{id}/runtime-state</code>.</p>
+    @if (!string.IsNullOrWhiteSpace(_statusMessage))
+    {
+        <p class="banner info">@_statusMessage</p>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <p class="banner error">@_errorMessage</p>
+    }
+
+    @if (_lastNotImplemented is not null)
+    {
+        <p class="banner warn">
+            <strong>@_lastNotImplemented.Operation</strong> is still returning
+            <code>session_not_implemented</code>: @_lastNotImplemented.Message
+        </p>
+    }
+
+    <section class="panel-grid">
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Character Scope</p>
+                    <h2>Runtime Target</h2>
+                </div>
+                <button class="button ghost" type="button" @onclick="LoadCharactersAsync" disabled="@_isBusy">Reload</button>
+            </header>
+            @if (_characterCatalog is null)
+            {
+                <p class="empty">No session character catalog has been loaded yet.</p>
+            }
+            else if (_characterCatalog.Characters.Count == 0)
+            {
+                <p class="hint">
+                    No saved workspaces are currently available for this owner scope. Manual character-id
+                    entry remains available as a fallback until the broader character/session registry lands.
+                </p>
+            }
+            else
+            {
+                <label class="field">
+                    <span>Saved Characters</span>
+                    <select @bind="_characterId">
+                        @foreach (SessionCharacterListItem character in _characterCatalog.Characters)
+                        {
+                            <option value="@character.CharacterId">@character.DisplayName · @character.RulesetId</option>
+                        }
+                    </select>
+                </label>
+                @if (SelectedCharacter is not null)
+                {
+                    <dl class="facts compact">
+                        <div><dt>Selected</dt><dd>@SelectedCharacter.DisplayName</dd></div>
+                        <div><dt>Ruleset</dt><dd>@SelectedCharacter.RulesetId</dd></div>
+                        <div><dt>Runtime</dt><dd class="mono">@FormatString(SelectedCharacter.RuntimeFingerprint)</dd></div>
+                    </dl>
+                }
+            }
+            <label class="field">
+                <span>Character ID</span>
+                <input @bind="_characterId" @bind:event="oninput" placeholder="char-1" />
+            </label>
+            <div class="button-row">
+                <button class="button" type="button" @onclick="LoadRuntimeStateAsync" disabled="@(!CanQueryCharacter || _isBusy)">Load Runtime State</button>
+                <button class="button" type="button" data-testid="issue-runtime-bundle" @onclick="IssueRuntimeBundleAsync" disabled="@(!CanQueryCharacter || _isBusy)">Issue Runtime Bundle</button>
+                <button class="button ghost" type="button" @onclick="RefreshRuntimeBundleAsync" disabled="@(!CanQueryCharacter || _isBusy)">Refresh Bundle</button>
+            </div>
+            <p class="hint">
+                Manual character-id entry remains available for session routes that are not yet
+                backed by the broader character-version/session registry.
+            </p>
         </article>
-        <article class="card">
-            <h2>Bundles</h2>
-            <p>Issue and refresh signed runtime bundles through the dedicated <code>/api/session/characters/{id}/runtime-bundle*</code> seams.</p>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Profile Catalog</p>
+                    <h2>Session Profiles</h2>
+                </div>
+                <button class="button ghost" type="button" @onclick="LoadProfilesAsync" disabled="@_isBusy">Reload</button>
+            </header>
+            @if (_profileCatalog is null)
+            {
+                <p class="empty">No session profile catalog has been loaded yet.</p>
+            }
+            else
+            {
+                <p class="panel-note">
+                    Catalog active profile: <code>@(_profileCatalog.ActiveProfileId ?? "none")</code>
+                </p>
+                <div class="stack">
+                    @foreach (SessionProfileListItem profile in _profileCatalog.Profiles)
+                    {
+                        <section class="list-card">
+                            <div class="list-card-header">
+                                <div>
+                                    <h3>@profile.Title</h3>
+                                    <p class="meta">@profile.ProfileId</p>
+                                </div>
+                                <span class="badge @(profile.SessionReady ? "good" : "warn")">
+                                    @(profile.SessionReady ? "session-ready" : "blocked")
+                                </span>
+                            </div>
+                            <dl class="facts">
+                                <div><dt>Ruleset</dt><dd>@profile.RulesetId</dd></div>
+                                <div><dt>Audience</dt><dd>@(profile.Audience ?? "general")</dd></div>
+                                <div><dt>Channel</dt><dd>@profile.UpdateChannel</dd></div>
+                                <div><dt>Runtime</dt><dd class="mono">@profile.RuntimeFingerprint</dd></div>
+                            </dl>
+                            <button class="button" type="button" @onclick="() => ApplyProfileAsync(profile.ProfileId)" disabled="@(!CanQueryCharacter || _isBusy || !profile.SessionReady)">
+                                Apply To Character
+                            </button>
+                        </section>
+                    }
+                </div>
+            }
         </article>
-        <article class="card">
-            <h2>Profile Pinning</h2>
-            <p>Keep mobile/runtime profile selection on <code>ISessionClient</code> instead of tunneling through workbench bootstrap contracts.</p>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Runtime Projection</p>
+                    <h2>Current Runtime State</h2>
+                </div>
+            </header>
+            @if (_runtimeState is null)
+            {
+                <p class="empty">Load runtime state to inspect the selected session profile and bundle freshness.</p>
+            }
+            else
+            {
+                <dl class="facts">
+                    <div><dt>Character</dt><dd>@_runtimeState.CharacterId</dd></div>
+                    <div><dt>Selection</dt><dd>@_runtimeState.SelectionState</dd></div>
+                    <div><dt>Profile</dt><dd>@(_runtimeState.ProfileId ?? "none")</dd></div>
+                    <div><dt>Title</dt><dd>@(_runtimeState.ProfileTitle ?? "n/a")</dd></div>
+                    <div><dt>Ruleset</dt><dd>@(_runtimeState.RulesetId ?? "n/a")</dd></div>
+                    <div><dt>Session Ready</dt><dd>@FormatBool(_runtimeState.SessionReady)</dd></div>
+                    <div><dt>Bundle Freshness</dt><dd>@_runtimeState.BundleFreshness</dd></div>
+                    <div><dt>Requires Refresh</dt><dd>@FormatBool(_runtimeState.RequiresBundleRefresh)</dd></div>
+                    <div><dt>Bundle Id</dt><dd class="mono">@(_runtimeState.BundleId ?? "n/a")</dd></div>
+                    <div><dt>Trust State</dt><dd>@(_runtimeState.BundleTrustState ?? "n/a")</dd></div>
+                    <div><dt>Signed</dt><dd>@FormatTimestamp(_runtimeState.BundleSignedAtUtc)</dd></div>
+                    <div><dt>Expires</dt><dd>@FormatTimestamp(_runtimeState.BundleExpiresAtUtc)</dd></div>
+                    <div><dt>Runtime</dt><dd class="mono">@(_runtimeState.RuntimeFingerprint ?? "n/a")</dd></div>
+                </dl>
+                @if (!string.IsNullOrWhiteSpace(_runtimeState.DeferredReason))
+                {
+                    <p class="hint">@_runtimeState.DeferredReason</p>
+                }
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Bundle Receipts</p>
+                    <h2>Issued Runtime Bundle</h2>
+                </div>
+            </header>
+            @if (VisibleBundleReceipt is null && _bundleRefreshReceipt is null)
+            {
+                <p class="empty">Issue or refresh a runtime bundle to inspect the session-safe delivery receipt.</p>
+            }
+            else
+            {
+                @if (VisibleBundleReceipt is not null)
+                {
+                    <section class="receipt">
+                        <h3>Bundle Issue</h3>
+                        @if (ShowingCachedBundleReceipt && _cachedBundleReceipt is not null)
+                        {
+                            <p class="panel-note">
+                                Showing cached bundle receipt from <code>@FormatTimestamp(_cachedBundleReceipt.CachedAtUtc)</code>.
+                            </p>
+                        }
+                        <dl class="facts">
+                            <div><dt>Outcome</dt><dd>@VisibleBundleReceipt.Outcome</dd></div>
+                            <div><dt>Delivery</dt><dd>@VisibleBundleReceipt.DeliveryMode</dd></div>
+                            <div><dt>Bundle Id</dt><dd class="mono">@VisibleBundleReceipt.Bundle.BundleId</dd></div>
+                            <div><dt>Runtime</dt><dd class="mono">@VisibleBundleReceipt.Bundle.BaseCharacterVersion.RuntimeFingerprint</dd></div>
+                            <div><dt>Signed</dt><dd>@FormatTimestamp(VisibleBundleReceipt.SignatureEnvelope.SignedAtUtc)</dd></div>
+                            <div><dt>Expires</dt><dd>@FormatTimestamp(VisibleBundleReceipt.SignatureEnvelope.ExpiresAtUtc)</dd></div>
+                        </dl>
+                        <ul class="diagnostics">
+                            @foreach (SessionRuntimeBundleTrustDiagnostic diagnostic in VisibleBundleReceipt.Diagnostics)
+                            {
+                                <li>
+                                    <strong>@diagnostic.State</strong>
+                                    <span>@diagnostic.Message</span>
+                                </li>
+                            }
+                        </ul>
+                    </section>
+                }
+
+                @if (_bundleRefreshReceipt is not null)
+                {
+                    <section class="receipt">
+                        <h3>Bundle Refresh</h3>
+                        <dl class="facts">
+                            <div><dt>Outcome</dt><dd>@_bundleRefreshReceipt.Outcome</dd></div>
+                            <div><dt>Previous</dt><dd class="mono">@FormatString(_bundleRefreshReceipt.PreviousBundleId)</dd></div>
+                            <div><dt>Current</dt><dd class="mono">@FormatString(_bundleRefreshReceipt.CurrentBundleId)</dd></div>
+                            <div><dt>Runtime</dt><dd class="mono">@_bundleRefreshReceipt.RuntimeFingerprint</dd></div>
+                            <div><dt>Refreshed</dt><dd>@FormatTimestamp(_bundleRefreshReceipt.RefreshedAtUtc)</dd></div>
+                            <div><dt>Signature Changed</dt><dd>@FormatBool(_bundleRefreshReceipt.SignatureChanged)</dd></div>
+                        </dl>
+                        @if (!string.IsNullOrWhiteSpace(_bundleRefreshReceipt.DeferredReason))
+                        {
+                            <p class="hint">@_bundleRefreshReceipt.DeferredReason</p>
+                        }
+                    </section>
+                }
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Coach Sidecar</p>
+                    <h2>Grounded Guidance</h2>
+                </div>
+                <div class="button-row compact">
+                    <a class="button ghost" data-testid="open-session-coach" href="@BuildCoachLaunchUri()">Open Coach</a>
+                    <button class="button ghost" type="button" data-testid="refresh-coach-sidecar" @onclick="LoadCoachSidecarAsync" disabled="@_isBusy">Refresh</button>
+                </div>
+            </header>
+            @if (!string.IsNullOrWhiteSpace(_coachErrorMessage))
+            {
+                <p class="banner warn">@_coachErrorMessage</p>
+            }
+            @if (_coachStatus is null)
+            {
+                <p class="empty">Coach status has not been loaded yet.</p>
+            }
+            else
+            {
+                AiRouteBudgetStatusProjection? coachBudgetStatus = GetCoachRouteBudgetStatus();
+                <dl class="facts compact">
+                    <div><dt>Status</dt><dd>@_coachStatus.Status</dd></div>
+                    <div><dt>Prompt Policy</dt><dd>@_coachStatus.PromptPolicy</dd></div>
+                    <div><dt>Coach Budget</dt><dd>@(coachBudgetStatus is null ? "n/a" : $"{coachBudgetStatus.MonthlyRemaining} left")</dd></div>
+                    <div><dt>Providers</dt><dd>@GetCoachProviders().Count</dd></div>
+                    <div><dt>Runtime Filter</dt><dd class="mono">@FormatString(EffectiveCoachRuntimeFingerprint)</dd></div>
+                </dl>
+                @if (GetCoachProviders().Count > 0)
+                {
+                    <section class="list-card">
+                        <div class="list-card-header">
+                            <div>
+                                <h3>Provider Health</h3>
+                                <p class="meta">Coach-route providers visible from the protected AI gateway.</p>
+                            </div>
+                        </div>
+                        <div class="stack">
+                            @foreach (AiProviderHealthProjection provider in GetCoachProviders())
+                            {
+                                <section class="list-card">
+                                    <div class="list-card-header">
+                                        <div>
+                                            <h3>@provider.DisplayName</h3>
+                                            <p class="meta">@provider.ProviderId · @provider.AdapterKind</p>
+                                        </div>
+                                        <span class="@GetCoachProviderHealthBadgeClass(provider)">@provider.CircuitState</span>
+                                    </div>
+                                    <p class="hint">Last success: @FormatTimestamp(provider.LastSuccessAtUtc)</p>
+                                    <p class="hint">Last failure: @(string.IsNullOrWhiteSpace(provider.LastFailureMessage) ? "none" : provider.LastFailureMessage)</p>
+                                    <p class="hint" data-testid="session-coach-provider-transport">Transport: @DescribeCoachProviderTransport(provider) · keys @DescribeCoachProviderKeys(provider) · @DescribeCoachProviderBinding(provider)</p>
+                                </section>
+                            }
+                        </div>
+                    </section>
+                }
+                <section class="list-card">
+                    <div class="list-card-header">
+                        <div>
+                            <h3>Recent Coach Guidance</h3>
+                            <p class="meta">Lightweight audit cards from <code>/api/ai/conversation-audits</code>.</p>
+                        </div>
+                    </div>
+                    @if (_coachAudits.Count == 0)
+                    {
+                        <p class="empty">No recent coach guidance matched the current session filters.</p>
+                    }
+                    else
+                    {
+                        <div class="stack" data-testid="coach-audit-list">
+                            @foreach (AiConversationAuditSummary audit in _coachAudits)
+                            {
+                                <section class="list-card">
+                                    <div class="list-card-header">
+                                        <div>
+                                            <h3>@audit.ConversationId</h3>
+                                            <p class="meta">@audit.RouteType · @(audit.RuntimeFingerprint ?? "no runtime pin")</p>
+                                    </div>
+                                    <span class="@GetCoachCacheBadgeClass(audit.Cache)">@FormatCoachCacheStatus(audit.Cache)</span>
+                                </div>
+                                <p class="hint">@(audit.LastAssistantAnswer ?? "No stored assistant answer yet.")</p>
+                                @if (!string.IsNullOrWhiteSpace(audit.FlavorLine))
+                                {
+                                    <p class="hint" data-testid="session-coach-audit-flavor">@audit.FlavorLine</p>
+                                }
+                                @if (audit.Budget is not null)
+                                {
+                                    <p class="hint" data-testid="session-coach-audit-budget">Budget snapshot: @DescribeCoachBudgetSnapshot(audit.Budget)</p>
+                                }
+                                @if (audit.StructuredAnswer is not null)
+                                {
+                                    <div class="stack" data-testid="session-coach-audit-structured">
+                                        <p class="hint">Structured summary: @audit.StructuredAnswer.Summary</p>
+                                        <p class="hint">Recommendations: @DescribeCoachRecommendationSummary(audit.StructuredAnswer)</p>
+                                        <p class="hint">Evidence: @DescribeCoachEvidenceSummary(audit.StructuredAnswer)</p>
+                                        <p class="hint">Risks: @DescribeCoachRiskSummary(audit.StructuredAnswer)</p>
+                                        <p class="hint">Sources: @DescribeCoachSourceSummary(audit.StructuredAnswer)</p>
+                                    </div>
+                                }
+                                <a class="button ghost" data-testid="open-session-coach-thread" href="@BuildCoachLaunchUri(audit)">Continue Thread</a>
+                                <p class="hint">Route decision: @DescribeCoachRouteDecision(audit.RouteDecision, audit.LastProviderId ?? "n/a")</p>
+                                <p class="hint">Grounding coverage: @DescribeCoachCoverage(audit.GroundingCoverage)</p>
+                                <p class="hint">Updated: @FormatTimestamp(audit.LastUpdatedAtUtc)</p>
+                            </section>
+                        }
+                        </div>
+                    }
+                </section>
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Local-First Overlay</p>
+                    <h2>Local Overlay Actions</h2>
+                </div>
+            </header>
+            @if (VisibleBundleReceipt is null && _cachedBundleReceipt is null)
+            {
+                <p class="empty">
+                    Issue a runtime bundle first. Local tracker, note, and pin mutations are queued into the
+                    browser ledger/replica cache against that bundle's base character version.
+                </p>
+            }
+            else
+            {
+                <dl class="facts compact">
+                    <div><dt>Overlay</dt><dd class="mono">@FormatString(string.IsNullOrWhiteSpace(EffectiveOfflineOverlayId) ? null : EffectiveOfflineOverlayId)</dd></div>
+                    <div><dt>Pending Ops</dt><dd>@FormatPendingOperationCount(_cachedReplicaState)</dd></div>
+                    <div><dt>Ledger Events</dt><dd>@FormatEventCount(_cachedLedger)</dd></div>
+                    <div><dt>Replica Values</dt><dd>@GetRecentReplicaValues(_cachedReplicaState).Count</dd></div>
+                </dl>
+                <label class="field">
+                    <span>Tracker Key</span>
+                    <input data-testid="tracker-key" @bind="_trackerSemanticKey" @bind:event="oninput" placeholder="stun" />
+                </label>
+                <div class="button-row">
+                    <button class="button" type="button" data-testid="queue-tracker-increment" @onclick="QueueTrackerIncrementAsync" disabled="@_isBusy">Queue Tracker +1</button>
+                    <button class="button ghost" type="button" data-testid="queue-tracker-decrement" @onclick="QueueTrackerDecrementAsync" disabled="@_isBusy">Queue Tracker -1</button>
+                </div>
+                <label class="field">
+                    <span>Note</span>
+                    <textarea data-testid="note-text" @bind="_noteText" @bind:event="oninput" rows="3"></textarea>
+                </label>
+                <button class="button" type="button" data-testid="queue-note" @onclick="QueueNoteAsync" disabled="@_isBusy">Queue Note</button>
+                <div class="grid-two">
+                    <label class="field">
+                        <span>Pin Action Id</span>
+                        <input data-testid="pin-action-id" @bind="_pinActionId" @bind:event="oninput" placeholder="action.reload" />
+                    </label>
+                    <label class="field">
+                        <span>Pin Label</span>
+                        <input data-testid="pin-action-label" @bind="_pinActionLabel" @bind:event="oninput" placeholder="Reload" />
+                    </label>
+                </div>
+                <label class="field">
+                    <span>Pin Capability</span>
+                    <input data-testid="pin-action-capability" @bind="_pinActionCapabilityId" @bind:event="oninput" placeholder="session.quick-actions" />
+                </label>
+                <div class="button-row">
+                    <button class="button" type="button" data-testid="queue-pin" @onclick="QueuePinAsync" disabled="@_isBusy">Queue Pin</button>
+                    <button class="button ghost" type="button" data-testid="queue-unpin" @onclick="QueueUnpinAsync" disabled="@_isBusy">Queue Unpin</button>
+                </div>
+                <section class="list-card">
+                    <div class="list-card-header">
+                        <div>
+                            <h3>Recent Local Events</h3>
+                            <p class="meta">Most recent queued entries from the IndexedDB-backed overlay ledger.</p>
+                        </div>
+                    </div>
+                    @if (GetRecentEvents(_cachedLedger).Count == 0)
+                    {
+                        <p class="empty">No local session events have been queued yet.</p>
+                    }
+                    else
+                    {
+                        <ul class="diagnostics" data-testid="recent-local-events">
+                            @foreach (SessionEvent sessionEvent in GetRecentEvents(_cachedLedger))
+                            {
+                                <li>
+                                    <strong>@sessionEvent.EventType</strong>
+                                    <span>#@FormatEventSequence(sessionEvent.Sequence) · @FormatPayloadPreview(sessionEvent.PayloadJson)</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+                @if (GetRecentReplicaValues(_cachedReplicaState).Count > 0)
+                {
+                    <section class="list-card">
+                        <div class="list-card-header">
+                            <div>
+                                <h3>Replica Keys</h3>
+                                <p class="meta">Latest semantic keys persisted alongside the local event ledger.</p>
+                            </div>
+                        </div>
+                        <ul class="diagnostics">
+                            @foreach (SessionReplicaValue value in GetRecentReplicaValues(_cachedReplicaState))
+                            {
+                                <li>
+                                    <strong>@value.SemanticKey</strong>
+                                    <span>@value.ValueKind</span>
+                                </li>
+                            }
+                        </ul>
+                    </section>
+                }
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Session-Safe Catalog</p>
+                    <h2>RulePack Inventory</h2>
+                </div>
+                <button class="button ghost" type="button" @onclick="LoadRulePacksAsync" disabled="@_isBusy">Reload</button>
+            </header>
+            @if (_rulePackCatalog is null)
+            {
+                <p class="empty">No session-ready RulePack inventory has been loaded yet.</p>
+            }
+            else if (_rulePackCatalog.InstalledRulePacks.Count == 0)
+            {
+                <p class="empty">No session-ready RulePacks are currently installed for this owner scope.</p>
+            }
+            else
+            {
+                <div class="stack">
+                    @foreach (RulePackManifest pack in _rulePackCatalog.InstalledRulePacks)
+                    {
+                        <section class="list-card">
+                            <div class="list-card-header">
+                                <div>
+                                    <h3>@pack.Title</h3>
+                                    <p class="meta">@pack.PackId · @pack.Version</p>
+                                </div>
+                                <span class="badge">@pack.TrustTier</span>
+                            </div>
+                            <dl class="facts">
+                                <div><dt>Targets</dt><dd>@string.Join(", ", pack.Targets)</dd></div>
+                                <div><dt>Assets</dt><dd>@pack.Assets.Count</dd></div>
+                                <div><dt>Capabilities</dt><dd>@pack.Capabilities.Count</dd></div>
+                                <div><dt>Visibility</dt><dd>@pack.Visibility</dd></div>
+                            </dl>
+                        </section>
+                    }
+                </div>
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Browser Storage</p>
+                    <h2>Offline Cache</h2>
+                </div>
+                <button class="button ghost" type="button" @onclick="LoadStorageQuotaAsync" disabled="@_isBusy">Refresh</button>
+            </header>
+            @if (_storageQuota is null && string.IsNullOrWhiteSpace(_storageQuotaError))
+            {
+                <p class="empty">Browser storage quota and IndexedDB cache status have not been loaded yet.</p>
+            }
+            else
+            {
+                @if (!string.IsNullOrWhiteSpace(_storageQuotaError))
+                {
+                    <p class="banner warn">@_storageQuotaError</p>
+                }
+                <dl class="facts">
+                    <div><dt>Backends</dt><dd>@FormatStorageBackends(_storageQuota)</dd></div>
+                    <div><dt>Persistence</dt><dd>@FormatPersistence(_storageQuota)</dd></div>
+                    <div><dt>Usage</dt><dd>@FormatBytes(_storageQuota?.UsageBytes)</dd></div>
+                    <div><dt>Quota</dt><dd>@FormatBytes(_storageQuota?.QuotaBytes)</dd></div>
+                    <div><dt>Usage %</dt><dd>@FormatQuotaUsage(_storageQuota)</dd></div>
+                    <div><dt>Captured</dt><dd>@FormatTimestamp(_storageQuota?.CapturedAtUtc)</dd></div>
+                    <div><dt>Characters</dt><dd>@FormatCacheTimestamp(_cachedCharacterCatalog)</dd></div>
+                    <div><dt>Profiles</dt><dd>@FormatCacheTimestamp(_cachedProfileCatalog)</dd></div>
+                    <div><dt>RulePacks</dt><dd>@FormatCacheTimestamp(_cachedRulePackCatalog)</dd></div>
+                    <div><dt>Runtime State</dt><dd>@FormatCacheTimestamp(_cachedRuntimeState)</dd></div>
+                    <div><dt>Bundle Receipt</dt><dd>@FormatCacheTimestamp(_cachedBundleReceipt)</dd></div>
+                    <div><dt>Overlay Key</dt><dd class="mono">@FormatString(string.IsNullOrWhiteSpace(EffectiveOfflineOverlayId) ? null : EffectiveOfflineOverlayId)</dd></div>
+                    <div><dt>Ledger Cache</dt><dd>@FormatCacheTimestamp(_cachedLedger)</dd></div>
+                    <div><dt>Ledger Events</dt><dd>@FormatEventCount(_cachedLedger)</dd></div>
+                    <div><dt>Replica Cache</dt><dd>@FormatCacheTimestamp(_cachedReplicaState)</dd></div>
+                    <div><dt>Replica Pending Ops</dt><dd>@FormatPendingOperationCount(_cachedReplicaState)</dd></div>
+                </dl>
+                <p class="hint">
+                    Session Web now caches catalogs, runtime state, runtime-bundle receipts, and a provisional
+                    offline overlay ledger/replica pair in IndexedDB so the local-first path has durable session-state
+                    stores before patch/sync mutations leave their current scaffolded state. OPFS remains optional and
+                    is reported here only when the browser exposes it.
+                </p>
+            }
         </article>
     </section>
-    <p class="status">Path base: <code>@Navigation.BaseUri</code></p>
 </main>

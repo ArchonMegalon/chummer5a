@@ -38,6 +38,9 @@ public class ArchitectureGuardrailTests
         "Chummer.Blazor.Desktop",
         "Chummer.Avalonia",
         "Chummer.Avalonia.Browser",
+        "Chummer.Coach.Web",
+        "Chummer.Hub.Web",
+        "Chummer.Session.Web",
         "Chummer.Portal"
     };
 
@@ -75,7 +78,7 @@ public class ArchitectureGuardrailTests
         Assert.IsFalse(text.Contains("public sealed record", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("app.MapPost(\"/api/characters/sections", StringComparison.Ordinal));
         Assert.IsFalse(text.Contains("Chummer.Core.LifeModules", StringComparison.Ordinal));
-        Assert.IsFalse(text.Contains("AddSingleton<", StringComparison.Ordinal));
+        StringAssert.Contains(text, "AddSingleton<IOwnerContextAccessor>(");
     }
 
     [TestMethod]
@@ -121,6 +124,104 @@ public class ArchitectureGuardrailTests
                     Assert.IsFalse(
                         text.Contains(bannedUsing, StringComparison.Ordinal),
                         $"Forbidden layer import '{bannedUsing}' found in {file}.");
+                }
+            }
+        }
+    }
+
+    [TestMethod]
+    public void Production_projects_do_not_depend_on_legacy_rule_or_script_host_contracts()
+    {
+        string[] productionProjects =
+        {
+            "Chummer.Application",
+            "Chummer.Infrastructure",
+            "Chummer.Infrastructure.Browser",
+            "Chummer.Presentation",
+            "Chummer.Api",
+            "Chummer.Portal",
+            "Chummer.Desktop.Runtime",
+            "Chummer.Blazor",
+            "Chummer.Blazor.Desktop",
+            "Chummer.Avalonia",
+            "Chummer.Avalonia.Browser",
+            "Chummer.Coach.Web",
+            "Chummer.Hub.Web",
+            "Chummer.Session.Web"
+        };
+
+        string[] bannedTokens =
+        {
+            "IRulesetRuleHost",
+            "IRulesetScriptHost",
+            "RulesetRuleEvaluationRequest",
+            "RulesetRuleEvaluationResult",
+            "RulesetScriptExecutionRequest",
+            "RulesetScriptExecutionResult"
+        };
+
+        foreach (string project in productionProjects)
+        {
+            string directory = FindDirectory(project);
+            foreach (string file in Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories))
+            {
+                string text = File.ReadAllText(file);
+                foreach (string bannedToken in bannedTokens)
+                {
+                    Assert.IsFalse(
+                        text.Contains(bannedToken, StringComparison.Ordinal),
+                        $"Legacy rules/script host token '{bannedToken}' found in {file}.");
+                }
+            }
+        }
+    }
+
+    [TestMethod]
+    public void Legacy_shell_catalogs_remain_confined_to_compatibility_resolver()
+    {
+        string compatibilityResolverPath = FindPath("Chummer.Presentation", "Shell", "CatalogOnlyRulesetShellCatalogResolver.cs");
+        string[] legacyCatalogTokens =
+        {
+            "AppCommandCatalog.ForRuleset(",
+            "NavigationTabCatalog.ForRuleset(",
+            "WorkspaceSurfaceActionCatalog.ForTab(",
+            "WorkspaceSurfaceActionCatalog.ForRuleset("
+        };
+
+        string[] productionProjects =
+        {
+            "Chummer.Application",
+            "Chummer.Infrastructure",
+            "Chummer.Infrastructure.Browser",
+            "Chummer.Presentation",
+            "Chummer.Api",
+            "Chummer.Portal",
+            "Chummer.Desktop.Runtime",
+            "Chummer.Blazor",
+            "Chummer.Blazor.Desktop",
+            "Chummer.Avalonia",
+            "Chummer.Avalonia.Browser",
+            "Chummer.Hub.Web",
+            "Chummer.Session.Web",
+            "Chummer.Rulesets.Hosting"
+        };
+
+        foreach (string project in productionProjects)
+        {
+            string directory = FindDirectory(project);
+            foreach (string file in Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories))
+            {
+                if (string.Equals(file, compatibilityResolverPath, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                string text = File.ReadAllText(file);
+                foreach (string legacyCatalogToken in legacyCatalogTokens)
+                {
+                    Assert.IsFalse(
+                        text.Contains(legacyCatalogToken, StringComparison.Ordinal),
+                        $"Legacy shell catalog token '{legacyCatalogToken}' found outside compatibility resolver in {file}.");
                 }
             }
         }
@@ -209,15 +310,18 @@ public class ArchitectureGuardrailTests
             ["Chummer.Contracts"] = new HashSet<string>(StringComparer.Ordinal),
             ["Chummer.Core"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
             ["Chummer.Application"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
-            ["Chummer.Presentation"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
-            ["Chummer.Rulesets.Hosting"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
-            ["Chummer.Rulesets.Sr5"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
-            ["Chummer.Infrastructure"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Rulesets.Hosting", "Chummer.Rulesets.Sr5" },
+            ["Chummer.Presentation"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Rulesets.Hosting" },
+            ["Chummer.Rulesets.Hosting"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts" },
+            ["Chummer.Rulesets.Sr5"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts" },
+            ["Chummer.Infrastructure"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Rulesets.Hosting", "Chummer.Rulesets.Sr5", "Chummer.Rulesets.Sr6" },
+            ["Chummer.Infrastructure.Browser"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts" },
             ["Chummer.Api"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure" },
-            ["Chummer.Portal"] = new HashSet<string>(StringComparer.Ordinal),
+            ["Chummer.Portal"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts" },
             ["Chummer.Web"] = new HashSet<string>(StringComparer.Ordinal),
-            ["Chummer.Blazor"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation", "Chummer.Rulesets.Hosting", "Chummer.Rulesets.Sr5" },
-            ["Chummer.Desktop.Runtime"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure", "Chummer.Presentation", "Chummer.Rulesets.Hosting", "Chummer.Rulesets.Sr5" },
+            ["Chummer.Blazor"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation", "Chummer.Rulesets.Hosting", "Chummer.Rulesets.Sr5", "Chummer.Rulesets.Sr6" },
+            ["Chummer.Hub.Web"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Presentation" },
+            ["Chummer.Session.Web"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Infrastructure.Browser", "Chummer.Presentation" },
+            ["Chummer.Desktop.Runtime"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Application", "Chummer.Contracts", "Chummer.Infrastructure", "Chummer.Presentation", "Chummer.Rulesets.Hosting", "Chummer.Rulesets.Sr5", "Chummer.Rulesets.Sr6" },
             ["Chummer.Blazor.Desktop"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Blazor", "Chummer.Contracts", "Chummer.Desktop.Runtime", "Chummer.Presentation" },
             ["Chummer.Avalonia"] = new HashSet<string>(StringComparer.Ordinal) { "Chummer.Contracts", "Chummer.Desktop.Runtime", "Chummer.Presentation" },
             ["Chummer.Avalonia.Browser"] = new HashSet<string>(StringComparer.Ordinal)

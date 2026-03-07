@@ -1,3 +1,4 @@
+using Chummer.Session.Web;
 using Chummer.Session.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,6 +8,9 @@ PathString pathBase = NormalizePathBase(configuredPathBase ?? environmentPathBas
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddScoped<BrowserSessionApiClient>();
+builder.Services.AddScoped<BrowserSessionCoachApiClient>();
+global::Chummer.Infrastructure.Browser.DependencyInjection.BrowserServiceCollectionExtensions.AddBrowserSessionOfflineStorage(builder.Services);
 
 var app = builder.Build();
 

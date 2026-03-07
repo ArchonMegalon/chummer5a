@@ -43,7 +43,10 @@
       </Grid>
 
       <Border x:Name="RightShellRegion" Grid.Column="2" BorderThickness="1" BorderBrush="#94A3B8" Padding="8">
-        <controls:CommandDialogPaneControl x:Name="CommandDialogPaneControl" />
+        <Grid RowDefinitions="2*,*" RowSpacing="8">
+          <controls:CommandDialogPaneControl x:Name="CommandDialogPaneControl" Grid.Row="0" />
+          <controls:CoachSidecarControl x:Name="CoachSidecarControl" Grid.Row="1" />
+        </Grid>
       </Border>
     </Grid>
 

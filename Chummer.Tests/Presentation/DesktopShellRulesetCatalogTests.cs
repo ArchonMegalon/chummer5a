@@ -6,7 +6,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Bunit;
+using Chummer.Blazor;
 using Chummer.Blazor.Components.Layout;
+using Chummer.Contracts.AI;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
@@ -90,6 +92,7 @@ public sealed class DesktopShellRulesetCatalogTests
         context.Services.AddSingleton<ICharacterOverviewPresenter>(new StaticOverviewPresenter(overviewState));
         context.Services.AddSingleton<IShellPresenter>(new StaticShellPresenter(shellState));
         context.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
+        context.Services.AddSingleton<IWorkbenchCoachApiClient>(FakeWorkbenchCoachApiClient.CreateDefault("sr6-runtime-fp-001"));
         context.Services.AddSingleton<IRulesetPlugin, Sr5RulesetPlugin>();
         context.Services.AddSingleton<IRulesetPlugin, Sr6CatalogPlugin>();
         context.Services.AddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
@@ -139,6 +142,7 @@ public sealed class DesktopShellRulesetCatalogTests
         context.Services.AddSingleton<ICharacterOverviewPresenter>(presenter);
         context.Services.AddSingleton<IShellPresenter>(new StaticShellPresenter(shellState));
         context.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
+        context.Services.AddSingleton<IWorkbenchCoachApiClient>(FakeWorkbenchCoachApiClient.CreateDefault("sr6-runtime-fp-001"));
         IRulesetPlugin sr5Plugin = new Sr5RulesetPlugin();
         IRulesetPlugin sr6Plugin = new Sr6CatalogPlugin();
         context.Services.AddSingleton<IRulesetPlugin>(sr5Plugin);
@@ -152,6 +156,104 @@ public sealed class DesktopShellRulesetCatalogTests
         cut.Find("#summaryRuntimeInspect").Click();
 
         Assert.AreEqual(OverviewCommandPolicy.RuntimeInspectorCommandId, presenter.ExecutedCommandId);
+    }
+
+    [TestMethod]
+    public void DesktopShell_renders_coach_sidecar_for_active_runtime()
+    {
+        using var context = new BunitContext();
+        context.JSInterop.Mode = JSRuntimeMode.Loose;
+
+        CharacterWorkspaceId workspaceId = new("ws-sr6");
+        OpenWorkspaceState openWorkspace = new(
+            Id: workspaceId,
+            Name: "SR6 Runner",
+            Alias: "SR6",
+            LastOpenedUtc: DateTimeOffset.UtcNow,
+            RulesetId: "sr6");
+
+        CharacterOverviewState overviewState = CharacterOverviewState.Empty with
+        {
+            Session = new WorkspaceSessionState(workspaceId, [openWorkspace], [workspaceId]),
+            OpenWorkspaces = [openWorkspace],
+            WorkspaceId = workspaceId,
+            ActiveTabId = "tab-info",
+            IsBusy = false
+        };
+
+        AppCommandDefinition menuRoot = new("file", "menu.file", "menu", false, true, "sr6");
+        NavigationTabDefinition infoTab = new("tab-info", "Info", "profile", "character", true, true, "sr6");
+        ShellWorkspaceState shellWorkspace = new(
+            Id: workspaceId,
+            Name: openWorkspace.Name,
+            Alias: openWorkspace.Alias,
+            LastOpenedUtc: openWorkspace.LastOpenedUtc,
+            RulesetId: "sr6");
+        ShellState shellState = ShellState.Empty with
+        {
+            ActiveWorkspaceId = workspaceId,
+            OpenWorkspaces = [shellWorkspace],
+            ActiveRulesetId = "sr6",
+            Commands = [menuRoot],
+            MenuRoots = [menuRoot],
+            NavigationTabs = [infoTab],
+            ActiveTabId = infoTab.Id,
+            ActiveRuntime = new ActiveRuntimeStatusProjection(
+                ProfileId: "official.sr6.core",
+                Title: "SR6 Core",
+                RulesetId: "sr6",
+                RuntimeFingerprint: "sr6-runtime-fp-001",
+                InstallState: ArtifactInstallStates.Available,
+                RulePackCount: 1,
+                ProviderBindingCount: 1,
+                WarningCount: 0)
+        };
+
+        FakeWorkbenchCoachApiClient coachClient = FakeWorkbenchCoachApiClient.CreateDefault("sr6-runtime-fp-001");
+        context.Services.AddSingleton<ICharacterOverviewPresenter>(new StaticOverviewPresenter(overviewState));
+        context.Services.AddSingleton<IShellPresenter>(new StaticShellPresenter(shellState));
+        context.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
+        context.Services.AddSingleton<IWorkbenchCoachApiClient>(coachClient);
+        IRulesetPlugin sr5Plugin = new Sr5RulesetPlugin();
+        IRulesetPlugin sr6Plugin = new Sr6CatalogPlugin();
+        context.Services.AddSingleton<IRulesetPlugin>(sr5Plugin);
+        context.Services.AddSingleton<IRulesetPlugin>(sr6Plugin);
+        context.Services.AddSingleton<IRulesetPluginRegistry>(new RulesetPluginRegistry([sr5Plugin, sr6Plugin]));
+        context.Services.AddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();
+        context.Services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
+
+        IRenderedComponent<DesktopShell> cut = context.Render<DesktopShell>();
+
+        cut.WaitForAssertion(() =>
+        {
+            StringAssert.Contains(cut.Markup, "Coach Sidecar");
+            StringAssert.Contains(cut.Markup, "Grounded Guidance");
+            StringAssert.Contains(cut.Markup, "Recent Coach Guidance");
+            StringAssert.Contains(cut.Markup, "AI Magicx");
+            StringAssert.Contains(cut.Markup, "Transport: ready · base yes · model yes · keys primary 1 / fallback 0 · route coach · binding primary / slot 0");
+            StringAssert.Contains(cut.Markup, "cache hit");
+            StringAssert.Contains(cut.Markup, "Keep the active runtime pinned before previewing Karma spend.");
+            StringAssert.Contains(cut.Markup, "Signal's clean. Keep the deck on the grounded lane.");
+            StringAssert.Contains(cut.Markup, "Budget snapshot: 18 / 400 chummer-ai-units");
+            StringAssert.Contains(cut.Markup, "Structured summary: Preview Karma against the pinned runtime before you commit advancement changes.");
+            StringAssert.Contains(cut.Markup, "Recommendations: 1 · Preview Karma spend");
+            StringAssert.Contains(cut.Markup, "Evidence: 1 · Pinned runtime");
+            StringAssert.Contains(cut.Markup, "Risks: 1 · Preview first");
+            StringAssert.Contains(cut.Markup, "Sources: 1 sources / 1 action drafts");
+            StringAssert.Contains(cut.Markup, "382 left / 5 burst");
+            StringAssert.Contains(cut.Markup, "data-testid=\"open-workbench-coach-sidecar\"");
+            StringAssert.Contains(cut.Markup, "data-testid=\"workbench-coach-provider-transport\"");
+            StringAssert.Contains(cut.Markup, "data-testid=\"open-workbench-coach-thread\"");
+            StringAssert.Contains(cut.Markup, "/coach/?routeType=coach&amp;conversationId=conv.workbench-coach-1&amp;runtimeFingerprint=sr6-runtime-fp-001&amp;workspaceId=ws-sr6");
+            StringAssert.Contains(cut.Markup, "/coach/?routeType=coach&amp;runtimeFingerprint=sr6-runtime-fp-001&amp;workspaceId=ws-sr6");
+        });
+
+        Assert.AreEqual(1, coachClient.StatusCalls);
+        Assert.AreEqual(1, coachClient.ProviderHealthCalls);
+        Assert.AreEqual(1, coachClient.AuditCalls);
+        Assert.AreEqual(AiRouteTypes.Coach, coachClient.LastAuditRouteType);
+        Assert.AreEqual("sr6-runtime-fp-001", coachClient.LastRuntimeFingerprint);
+        Assert.AreEqual(3, coachClient.LastMaxCount);
     }
 
     private sealed class StaticOverviewPresenter : ICharacterOverviewPresenter
@@ -224,8 +326,8 @@ public sealed class DesktopShellRulesetCatalogTests
         public IRulesetCatalogProvider Catalogs { get; } = new Sr6Catalogs();
         public IRulesetCapabilityDescriptorProvider CapabilityDescriptors { get; } = new Sr6CapabilityDescriptorProvider();
         public IRulesetCapabilityHost Capabilities { get; } = new Sr6CapabilityHost();
-        public IRulesetRuleHost Rules { get; } = new NoOpRulesetRuleHost();
-        public IRulesetScriptHost Scripts { get; } = new NoOpRulesetScriptHost();
+        public IRulesetRuleHost Rules { get; } = new RulesetRuleHostCapabilityAdapter(new Sr6CapabilityHost());
+        public IRulesetScriptHost Scripts { get; } = new RulesetScriptHostCapabilityAdapter(new Sr6CapabilityHost());
     }
 
     private sealed class Sr6Serializer : IRulesetSerializer

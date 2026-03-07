@@ -91,6 +91,7 @@ app.MapOpenApi("/openapi/{documentName}.json");
 app.MapGet("/docs", () => Results.Redirect("/docs/index.html"));
 
 app.MapInfoEndpoints();
+app.MapAiEndpoints();
 app.MapHubCatalogEndpoints();
 app.MapHubPublisherEndpoints();
 app.MapHubReviewEndpoints();

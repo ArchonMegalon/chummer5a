@@ -11,6 +11,7 @@ public partial class MainWindow : Window
     private readonly IShellPresenter _shellPresenter;
     private readonly ICommandAvailabilityEvaluator _commandAvailabilityEvaluator;
     private readonly IShellSurfaceResolver _shellSurfaceResolver;
+    private readonly IAvaloniaCoachSidecarClient _coachSidecarClient;
     private readonly CharacterOverviewViewModelAdapter _adapter;
     private readonly MainWindowActionExecutionCoordinator _actionExecutionCoordinator;
     private readonly MainWindowInteractionCoordinator _interactionCoordinator;
@@ -24,6 +25,7 @@ public partial class MainWindow : Window
             ResolveService<IShellPresenter>(),
             ResolveService<ICommandAvailabilityEvaluator>(),
             ResolveService<IShellSurfaceResolver>(),
+            ResolveService<IAvaloniaCoachSidecarClient>(),
             ResolveService<CharacterOverviewViewModelAdapter>())
     {
     }
@@ -33,6 +35,7 @@ public partial class MainWindow : Window
         IShellPresenter shellPresenter,
         ICommandAvailabilityEvaluator commandAvailabilityEvaluator,
         IShellSurfaceResolver shellSurfaceResolver,
+        IAvaloniaCoachSidecarClient coachSidecarClient,
         CharacterOverviewViewModelAdapter adapter)
     {
         InitializeComponent();
@@ -40,6 +43,7 @@ public partial class MainWindow : Window
         _shellPresenter = shellPresenter;
         _commandAvailabilityEvaluator = commandAvailabilityEvaluator;
         _shellSurfaceResolver = shellSurfaceResolver;
+        _coachSidecarClient = coachSidecarClient;
         _adapter = adapter;
         _actionExecutionCoordinator = new MainWindowActionExecutionCoordinator(
             adapter,
@@ -56,6 +60,7 @@ public partial class MainWindow : Window
             navigatorPane: NavigatorPaneControl,
             sectionHost: SectionHostControl,
             commandDialogPane: CommandDialogPaneControl,
+            coachSidecar: CoachSidecarControl,
             statusStrip: StatusStripControl,
             onImportFileRequested: ToolStrip_OnImportFileRequested,
             onImportRawRequested: ToolStrip_OnImportRawRequested,
@@ -67,6 +72,7 @@ public partial class MainWindow : Window
             onNavigationTabSelected: NavigatorPane_OnNavigationTabSelected,
             onSectionActionSelected: NavigatorPane_OnSectionActionSelected,
             onWorkflowSurfaceSelected: NavigatorPane_OnWorkflowSurfaceSelected,
+            onCoachLaunchCopyRequested: CoachSidecar_OnCopyLaunchRequested,
             onCommandSelected: CommandDialogPane_OnCommandSelected,
             onDialogActionSelected: CommandDialogPane_OnDialogActionSelected);
         _lifecycleCoordinator = new MainWindowLifecycleCoordinator(

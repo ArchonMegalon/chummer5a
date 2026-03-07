@@ -1,0 +1,738 @@
+@page "/"
+
+<main class="page">
+    <section class="hero">
+        <div>
+            <p class="eyebrow">Portal-Backed Coach Sidecar</p>
+            <h1>Chummer Coach</h1>
+            <p class="lede">
+                The coach head now renders live gateway metadata from the protected <code>/api/ai/*</code> seam:
+                provider routing, decker-contact prompt policy, route budgets, tool exposure, and grounded build ideas.
+            </p>
+        </div>
+        <div class="hero-actions">
+            <button class="button ghost" type="button" data-coach-refresh="metadata" @onclick="ReloadAsync" disabled="@_isBusy">Refresh Coach</button>
+            <span class="@GetStatusChipClass()">@GetStatusChipText()</span>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(_statusMessage))
+    {
+        <p class="banner info">@_statusMessage</p>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <p class="banner error">@_errorMessage</p>
+    }
+
+    <section class="panel-grid">
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Gateway</p>
+                    <h2>Coach Runtime Status</h2>
+                </div>
+            </header>
+
+            @if (_status is null)
+            {
+                <p class="empty">No live coach gateway status has been loaded yet.</p>
+            }
+            else
+            {
+                <dl class="facts">
+                    <div><dt>Status</dt><dd>@_status.Status</dd></div>
+                    <div><dt>Routes</dt><dd>@_status.Routes.Count</dd></div>
+                    <div><dt>Streaming</dt><dd>@(_status.SupportsStreaming ? "preferred" : "disabled")</dd></div>
+                    <div><dt>Prompt Policy</dt><dd>@_status.PromptPolicy</dd></div>
+                    <div><dt>Default Persona</dt><dd>@(_status.DefaultPersonaId ?? "n/a")</dd></div>
+                    <div><dt>Budget</dt><dd>@_status.Budget.MonthlyConsumed / @_status.Budget.MonthlyAllowance @_status.Budget.BudgetUnit</dd></div>
+                    <div><dt>Corpora</dt><dd>@_status.RetrievalCorpora.Count</dd></div>
+                </dl>
+
+                @if (_status.Personas?.Count > 0)
+                {
+                    <h3>Personas</h3>
+                    <ul class="detail-list">
+                        @foreach (AiPersonaDescriptor persona in _status.Personas)
+                        {
+                            <li>@persona.DisplayName · @persona.PersonaId · @($"{persona.MinFlavorPercent}%-{persona.MaxFlavorPercent}%")</li>
+                        }
+                    </ul>
+                }
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Providers</p>
+                    <h2>Routing Inventory</h2>
+                </div>
+            </header>
+
+            @if (_status is null)
+            {
+                <p class="empty">Provider routing details will appear after the coach status loads.</p>
+            }
+            else if (GetVisibleProviders().Count == 0)
+            {
+                <p class="empty">No coach providers are currently registered for the selected route.</p>
+            }
+            else
+            {
+                <div class="stack">
+                    @foreach (AiProviderDescriptor provider in GetVisibleProviders())
+                    {
+                        AiProviderHealthProjection? providerHealth = GetProviderHealth(provider.ProviderId);
+                        <section class="list-card">
+                            <div class="list-card-header">
+                                <div>
+                                    <h3>@provider.DisplayName</h3>
+                                    <p class="meta">@provider.ProviderId · @provider.AdapterKind</p>
+                                </div>
+                                <span class="badge @(provider.LiveExecutionEnabled ? "good" : "warn")">
+                                    @(provider.LiveExecutionEnabled ? "live" : "scaffolded")
+                                </span>
+                                <span class="@GetProviderHealthBadgeClass(providerHealth)">
+                                    @(providerHealth?.CircuitState ?? "unknown")
+                                </span>
+                            </div>
+                            <dl class="facts compact">
+                                <div><dt>Configured</dt><dd>@(provider.IsConfigured ? "yes" : "no")</dd></div>
+                                <div><dt>Tooling</dt><dd>@(provider.SupportsToolCalling ? "yes" : "no")</dd></div>
+                                <div><dt>Streaming</dt><dd>@(provider.SupportsStreaming ? "yes" : "no")</dd></div>
+                                <div><dt>Attachments</dt><dd>@(provider.SupportsAttachments ? "yes" : "no")</dd></div>
+                                <div><dt>Transport</dt><dd>@DescribeTransportMetadata(provider)</dd></div>
+                                <div><dt>Base URL</dt><dd>@(provider.TransportBaseUrlConfigured ? "yes" : "no")</dd></div>
+                                <div><dt>Model</dt><dd>@(provider.TransportModelConfigured ? "yes" : "no")</dd></div>
+                                <div><dt>Primary Keys</dt><dd>@provider.PrimaryCredentialCount</dd></div>
+                                <div><dt>Fallback Keys</dt><dd>@provider.FallbackCredentialCount</dd></div>
+                                <div><dt>Routable</dt><dd>@(providerHealth?.IsRoutable == true ? "yes" : "no")</dd></div>
+                                <div><dt>Failures</dt><dd>@(providerHealth?.ConsecutiveFailureCount ?? 0)</dd></div>
+                                <div><dt>Last Route</dt><dd>@(providerHealth?.LastRouteType ?? "n/a")</dd></div>
+                                <div><dt>Last Binding</dt><dd>@DescribeProviderBinding(providerHealth)</dd></div>
+                                <div><dt>Last Success</dt><dd>@FormatTimestamp(providerHealth?.LastSuccessAtUtc)</dd></div>
+                                <div><dt>Last Failure</dt><dd>@FormatTimestamp(providerHealth?.LastFailureAtUtc)</dd></div>
+                            </dl>
+                            <p class="hint">Allowed routes: @string.Join(", ", provider.AllowedRouteTypes)</p>
+                            @if (!string.IsNullOrWhiteSpace(providerHealth?.LastFailureMessage))
+                            {
+                                <p class="hint">Last failure: @providerHealth.LastFailureMessage</p>
+                            }
+                        </section>
+                    }
+                </div>
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Route Policy</p>
+                    <h2>Coach Flow Rules</h2>
+                </div>
+            </header>
+
+            @if (_status is null)
+            {
+                <p class="empty">Route policy metadata will appear after status loads.</p>
+            }
+            else if (_status.RoutePolicies.Count == 0)
+            {
+                <p class="empty">No coach route policies are currently exposed.</p>
+            }
+            else
+            {
+                <div class="stack">
+                    @foreach (AiRoutePolicyDescriptor policy in _status.RoutePolicies)
+                    {
+                        <section class="list-card">
+                            <div class="list-card-header">
+                                <div>
+                                    <h3>@policy.RouteType</h3>
+                                    <p class="meta">@policy.RouteClassId · persona @policy.PersonaId</p>
+                                </div>
+                                <span class="badge">@policy.PrimaryProviderId</span>
+                            </div>
+                            <p class="hint">Fallbacks: @(policy.FallbackProviderIds.Count == 0 ? "none" : string.Join(", ", policy.FallbackProviderIds))</p>
+                            <p class="hint">Corpora: @string.Join(", ", policy.RetrievalCorpusIds)</p>
+                            <p class="hint">Tools: @(policy.AllowedTools.Count == 0 ? "none" : string.Join(", ", policy.AllowedTools.Select(tool => tool.ToolId)))</p>
+                        </section>
+                    }
+                </div>
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Budget Lanes</p>
+                    <h2>Live Route Consumption</h2>
+                </div>
+            </header>
+
+            @if (_status?.RouteBudgetStatuses is not { Count: > 0 } routeBudgetStatuses)
+            {
+                <p class="empty">Live route budget status will appear after coach status loads.</p>
+            }
+            else
+            {
+                <div class="stack">
+                    @foreach (AiRouteBudgetStatusProjection routeBudget in routeBudgetStatuses)
+                    {
+                        <section class="list-card">
+                            <div class="list-card-header">
+                                <div>
+                                    <h3>@routeBudget.RouteType</h3>
+                                    <p class="meta">@routeBudget.BudgetUnit</p>
+                                </div>
+                                <span class="badge @(routeBudget.MonthlyRemaining == 0 || routeBudget.BurstRemaining == 0 ? "warn" : "good")">
+                                    @routeBudget.MonthlyRemaining left
+                                </span>
+                            </div>
+                            <dl class="facts compact">
+                                <div><dt>Monthly</dt><dd>@routeBudget.MonthlyConsumed / @routeBudget.MonthlyAllowance</dd></div>
+                                <div><dt>Burst</dt><dd>@routeBudget.CurrentBurstConsumed / @routeBudget.BurstLimitPerMinute</dd></div>
+                                <div><dt>Monthly Left</dt><dd>@routeBudget.MonthlyRemaining</dd></div>
+                                <div><dt>Burst Left</dt><dd>@routeBudget.BurstRemaining</dd></div>
+                            </dl>
+                            @if (!string.IsNullOrWhiteSpace(routeBudget.Notes))
+                            {
+                                <p class="hint">@routeBudget.Notes</p>
+                            }
+                        </section>
+                    }
+                </div>
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Tool Catalog</p>
+                    <h2>Allowed Tooling</h2>
+                </div>
+            </header>
+
+            @if (_status is null)
+            {
+                <p class="empty">Tool metadata will appear after status loads.</p>
+            }
+            else if (_status.Tools.Count == 0)
+            {
+                <p class="empty">No coach tools are currently exposed.</p>
+            }
+            else
+            {
+                <ul class="detail-list">
+                    @foreach (AiToolDescriptor tool in _status.Tools)
+                    {
+                        <li>@tool.Title · @tool.ToolId · @(tool.Mutating ? "mutating" : "read-only")</li>
+                    }
+                </ul>
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Prompt Registry</p>
+                    <h2>Decker-Contact Prompts</h2>
+                </div>
+            </header>
+
+            @if (_prompts.Count == 0)
+            {
+                <p class="empty">No live prompt descriptors have been loaded yet.</p>
+            }
+            else
+            {
+                <div class="stack">
+                    @foreach (AiPromptDescriptor prompt in _prompts)
+                    {
+                        <section class="list-card">
+                            <div class="list-card-header">
+                                <div>
+                                    <h3>@prompt.Title</h3>
+                                    <p class="meta">@prompt.PromptId · @prompt.RouteType</p>
+                                </div>
+                                <span class="badge">@prompt.PersonaId</span>
+                            </div>
+                            <p class="hint">@prompt.Summary</p>
+                            <p class="hint">Grounding: @string.Join(", ", prompt.RequiredGroundingSectionIds)</p>
+                            <p class="hint">Allowed tools: @(prompt.AllowedToolIds.Count == 0 ? "none" : string.Join(", ", prompt.AllowedToolIds))</p>
+                        </section>
+                    }
+                </div>
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Preview Lane</p>
+                    <h2>Coach Turn Preview</h2>
+                </div>
+            </header>
+
+            <div class="field-grid">
+                <label class="field">
+                    <span>Route</span>
+                    <select data-coach-route="route-select" @bind="_routeType">
+                        @foreach (string route in GetAvailableRoutes())
+                        {
+                            <option value="@route">@route</option>
+                        }
+                    </select>
+                </label>
+                <label class="field field-wide">
+                    <span>Question</span>
+                    <textarea @bind="_messageText" @bind:event="oninput" placeholder="What should I spend 18 Karma on next?"></textarea>
+                </label>
+                <label class="field">
+                    <span>Runtime Fingerprint</span>
+                    <input @bind="_runtimeFingerprint" @bind:event="oninput" placeholder="sha256:..." />
+                </label>
+                <label class="field">
+                    <span>Character Id</span>
+                    <input @bind="_characterId" @bind:event="oninput" placeholder="char-1" />
+                </label>
+                <label class="field">
+                    <span>Workspace Id</span>
+                    <input @bind="_workspaceId" @bind:event="oninput" placeholder="ws-1" />
+                </label>
+            </div>
+
+            <div class="button-row">
+                <button class="button" type="button" data-coach-preview="coach-turn" @onclick="PreviewCoachTurnAsync" disabled="@_isBusy">Preview Coach Turn</button>
+                <button class="button ghost" type="button" data-coach-send="coach-turn" @onclick="SendCoachTurnAsync" disabled="@_isBusy">Ask Coach</button>
+            </div>
+
+            @if (_preview is null)
+            {
+                <p class="empty">No grounded coach turn preview has been loaded yet.</p>
+            }
+            else
+            {
+                <section class="list-card">
+                    <div class="list-card-header">
+                        <div>
+                            <h3>@_preview.RouteType</h3>
+                            <p class="meta">@_preview.RouteDecision.ProviderId · @_preview.RouteDecision.Reason</p>
+                        </div>
+                        <span class="badge">@_preview.Budget.MonthlyConsumed / @_preview.Budget.MonthlyAllowance @_preview.Budget.BudgetUnit</span>
+                    </div>
+                    <dl class="facts compact">
+                        <div><dt>Tools</dt><dd>@_preview.ProviderRequest.AllowedTools.Count</dd></div>
+                        <div><dt>Retrieved</dt><dd>@_preview.Grounding.RetrievedItems.Count</dd></div>
+                        <div><dt>Constraints</dt><dd>@_preview.Grounding.Constraints.Count</dd></div>
+                        <div><dt>Conversation</dt><dd>@(_preview.ProviderRequest.ConversationId ?? "new")</dd></div>
+                        <div><dt>Workspace</dt><dd>@(_preview.ProviderRequest.WorkspaceId ?? _preview.Grounding.WorkspaceId ?? "n/a")</dd></div>
+                        <div><dt>Binding</dt><dd>@DescribeCredentialBinding(_preview.RouteDecision)</dd></div>
+                    </dl>
+                    <p class="hint">Grounding coverage: @DescribeGroundingCoverage(_preview.Grounding.Coverage)</p>
+                    <p class="hint">Present signals: @DescribeCoverageSignals(_preview.Grounding.Coverage?.PresentSignals)</p>
+                    <p class="hint">Missing signals: @DescribeCoverageSignals(_preview.Grounding.Coverage?.MissingSignals)</p>
+                    <p class="hint">Retrieved corpora: @DescribeCoverageSignals(_preview.Grounding.Coverage?.RetrievedCorpusIds)</p>
+                    <p class="hint">System Prompt</p>
+                    <pre class="mono-block">@_preview.SystemPrompt</pre>
+                    @if (_preview.Grounding.RuntimeFacts.Count > 0)
+                    {
+                        <div>
+                            <p class="hint">Runtime Facts</p>
+                            <ul class="detail-list">
+                                @foreach (KeyValuePair<string, string> fact in _preview.Grounding.RuntimeFacts)
+                                {
+                                    <li>@fact.Key: @fact.Value</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    @if (_preview.Grounding.CharacterFacts.Count > 0)
+                    {
+                        <div>
+                            <p class="hint">Character Facts</p>
+                            <ul class="detail-list">
+                                @foreach (KeyValuePair<string, string> fact in _preview.Grounding.CharacterFacts)
+                                {
+                                    <li>@fact.Key: @fact.Value</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    @if (_preview.Grounding.RetrievedItems.Count > 0)
+                    {
+                        <div>
+                            <p class="hint">Retrieved Items</p>
+                            <ul class="detail-list">
+                                @foreach (AiRetrievedItem item in _preview.Grounding.RetrievedItems)
+                                {
+                                    <li>@item.Title · @item.CorpusId · @item.ItemId</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </section>
+            }
+
+            @if (_turnResponse is not null)
+            {
+                <section class="list-card detail-card" data-coach-response="@_turnResponse.ConversationId">
+                    <div class="list-card-header">
+                        <div>
+                            <h3>Latest Coach Turn</h3>
+                            <p class="meta">@_turnResponse.ProviderId · @_turnResponse.RouteType · @DescribeCredentialBinding(_turnResponse.RouteDecision) · @_turnResponse.ConversationId</p>
+                        </div>
+                        <span class="badge good">@(_turnResponse.StructuredAnswer?.Confidence ?? "scaffolded")</span>
+                        <span class="@GetCacheBadgeClass(_turnResponse.Cache)">@FormatCacheStatus(_turnResponse.Cache)</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_turnResponse.FlavorLine))
+                    {
+                        <p class="hint">@_turnResponse.FlavorLine</p>
+                    }
+                    <p class="hint">@_turnResponse.Answer</p>
+                    <p class="hint">Binding: @DescribeCredentialBinding(_turnResponse.RouteDecision)</p>
+                    <p class="hint">Grounding coverage: @DescribeGroundingCoverage(_turnResponse.Grounding.Coverage)</p>
+                    <p class="hint">Workspace: @(_turnResponse.Grounding.WorkspaceId ?? "n/a")</p>
+                    <p class="hint">Present signals: @DescribeCoverageSignals(_turnResponse.Grounding.Coverage?.PresentSignals)</p>
+                    <p class="hint">Missing signals: @DescribeCoverageSignals(_turnResponse.Grounding.Coverage?.MissingSignals)</p>
+                    <p class="hint">Retrieved corpora: @DescribeCoverageSignals(_turnResponse.Grounding.Coverage?.RetrievedCorpusIds)</p>
+                    <p class="hint">Cache: @DescribeCache(_turnResponse.Cache)</p>
+                    @if (!string.IsNullOrWhiteSpace(_turnResponse.Cache?.NormalizedPrompt))
+                    {
+                        <p class="hint">Normalized prompt: @_turnResponse.Cache.NormalizedPrompt</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_turnResponse.Cache?.CacheKey))
+                    {
+                        <p class="hint">Cache key: @_turnResponse.Cache.CacheKey</p>
+                    }
+                    @if (_turnResponse.StructuredAnswer is not null)
+                    {
+                        <div class="stack">
+                            <p class="hint">Summary: @_turnResponse.StructuredAnswer.Summary</p>
+                            <p class="hint">Recommendations: @(_turnResponse.StructuredAnswer.Recommendations.Count == 0 ? "none" : string.Join(", ", _turnResponse.StructuredAnswer.Recommendations.Select(recommendation => recommendation.Title)))</p>
+                            <p class="hint">Evidence: @(_turnResponse.StructuredAnswer.Evidence.Count == 0 ? "none" : string.Join(", ", _turnResponse.StructuredAnswer.Evidence.Select(entry => entry.Title)))</p>
+                            <p class="hint">Risks: @(_turnResponse.StructuredAnswer.Risks.Count == 0 ? "none" : string.Join(", ", _turnResponse.StructuredAnswer.Risks.Select(risk => risk.Title)))</p>
+                            <p class="hint">Sources: @(_turnResponse.StructuredAnswer.Sources.Count == 0 ? "none" : string.Join(", ", _turnResponse.StructuredAnswer.Sources.Select(source => source.ReferenceId)))</p>
+                            <p class="hint">Action Drafts: @(_turnResponse.StructuredAnswer.ActionDrafts.Count == 0 ? "none" : string.Join(", ", _turnResponse.StructuredAnswer.ActionDrafts.Select(draft => draft.Title)))</p>
+                            @if (GetPreviewActionDrafts(_turnResponse.StructuredAnswer).Count > 0)
+                            {
+                                <div class="button-row">
+                                    @foreach (AiActionDraft draft in GetPreviewActionDrafts(_turnResponse.StructuredAnswer))
+                                    {
+                                        <button class="button ghost" type="button" data-action-draft-preview="@(BuildActionDraftButtonKey("latest", draft))" @onclick="() => PreviewActionDraftAsync(draft)" disabled="@_isBusy">@draft.Title</button>
+                                    }
+                                </div>
+                            }
+                            @if (GetRuntimeInspectorActionDrafts(_turnResponse.StructuredAnswer).Count > 0)
+                            {
+                                <div class="button-row">
+                                    @foreach (AiActionDraft draft in GetRuntimeInspectorActionDrafts(_turnResponse.StructuredAnswer))
+                                    {
+                                        <button class="button ghost" type="button" data-action-draft-runtime="@(BuildActionDraftButtonKey("latest", draft))" @onclick="() => OpenRuntimeInspectorActionDraftAsync(draft)" disabled="@_isBusy">@draft.Title</button>
+                                    }
+                                </div>
+                            }
+                            @if (GetBuildIdeaActionDrafts(_turnResponse.StructuredAnswer).Count > 0)
+                            {
+                                <div class="button-row">
+                                    @foreach (AiActionDraft draft in GetBuildIdeaActionDrafts(_turnResponse.StructuredAnswer))
+                                    {
+                                        <button class="button ghost" type="button" data-action-draft-build="@(BuildActionDraftButtonKey("latest", draft))" @onclick="() => BrowseBuildIdeasActionDraftAsync(draft)" disabled="@_isBusy">@draft.Title</button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    <p class="hint">Citations: @(_turnResponse.Citations.Count == 0 ? "none" : string.Join(", ", _turnResponse.Citations.Select(citation => citation.ReferenceId)))</p>
+                    <p class="hint">Tools: @(_turnResponse.ToolInvocations.Count == 0 ? "none" : string.Join(", ", _turnResponse.ToolInvocations.Select(tool => tool.ToolId)))</p>
+                    <p class="hint">Suggested actions: @(_turnResponse.SuggestedActions.Count == 0 ? "none" : string.Join(", ", _turnResponse.SuggestedActions.Select(action => action.Title)))</p>
+                    @if (GetPreviewSuggestedActions(_turnResponse.SuggestedActions).Count > 0)
+                    {
+                        <div class="button-row">
+                            @foreach (AiSuggestedAction action in GetPreviewSuggestedActions(_turnResponse.SuggestedActions))
+                            {
+                                <button class="button ghost" type="button" data-suggested-action-preview="@(BuildSuggestedActionButtonKey("latest", action))" @onclick="() => PreviewActionDraftAsync(CreateActionDraft(action))" disabled="@_isBusy">@action.Title</button>
+                            }
+                        </div>
+                    }
+                    @if (GetRuntimeInspectorSuggestedActions(_turnResponse.SuggestedActions).Count > 0)
+                    {
+                        <div class="button-row">
+                            @foreach (AiSuggestedAction action in GetRuntimeInspectorSuggestedActions(_turnResponse.SuggestedActions))
+                            {
+                                <button class="button ghost" type="button" data-suggested-action-runtime="@(BuildSuggestedActionButtonKey("latest", action))" @onclick="() => OpenRuntimeInspectorActionDraftAsync(CreateActionDraft(action))" disabled="@_isBusy">@action.Title</button>
+                            }
+                        </div>
+                    }
+                    @if (GetBuildIdeaSuggestedActions(_turnResponse.SuggestedActions).Count > 0)
+                    {
+                        <div class="button-row">
+                            @foreach (AiSuggestedAction action in GetBuildIdeaSuggestedActions(_turnResponse.SuggestedActions))
+                            {
+                                <button class="button ghost" type="button" data-suggested-action-build="@(BuildSuggestedActionButtonKey("latest", action))" @onclick="() => BrowseBuildIdeasActionDraftAsync(CreateActionDraft(action))" disabled="@_isBusy">@action.Title</button>
+                            }
+                        </div>
+                    }
+                </section>
+            }
+
+            @if (_actionPreview is not null)
+            {
+                <section class="list-card detail-card" data-action-preview-receipt="@_actionPreview.PreviewId">
+                    <div class="list-card-header">
+                        <div>
+                            <h3>Action Preview</h3>
+                            <p class="meta">@_actionPreview.PreviewKind · @_actionPreview.CharacterDisplayName · workspace @(_actionPreview.WorkspaceId ?? "n/a")</p>
+                        </div>
+                        <span class="badge good">@_actionPreview.State</span>
+                    </div>
+                    <p class="hint">@_actionPreview.Summary</p>
+                    <p class="hint">Prepared effects: @(_actionPreview.PreparedEffects.Count == 0 ? "none" : string.Join(", ", _actionPreview.PreparedEffects))</p>
+                    <p class="hint">Evidence: @(_actionPreview.Evidence.Count == 0 ? "none" : string.Join(", ", _actionPreview.Evidence.Select(entry => entry.Title)))</p>
+                    <p class="hint">Risks: @(_actionPreview.Risks.Count == 0 ? "none" : string.Join(", ", _actionPreview.Risks.Select(entry => entry.Title)))</p>
+                </section>
+            }
+
+            @if (_runtimeSummaryCard is not null)
+            {
+                <section class="list-card detail-card" data-runtime-summary="@_runtimeSummaryCard.RuntimeFingerprint">
+                    <div class="list-card-header">
+                        <div>
+                            <h3>Runtime Summary</h3>
+                            <p class="meta">@_runtimeSummaryCard.Title · @_runtimeSummaryCard.RulesetId · @_runtimeSummaryCard.RuntimeFingerprint</p>
+                        </div>
+                        <span class="badge good">@_runtimeSummaryCard.CatalogKind</span>
+                    </div>
+                    <p class="hint">Engine: @_runtimeSummaryCard.EngineApiVersion</p>
+                    <p class="hint">Content bundles: @(_runtimeSummaryCard.ContentBundles.Count == 0 ? "none" : string.Join(", ", _runtimeSummaryCard.ContentBundles))</p>
+                    <p class="hint">Rule packs: @(_runtimeSummaryCard.RulePacks.Count == 0 ? "none" : string.Join(", ", _runtimeSummaryCard.RulePacks))</p>
+                    <p class="hint">Provider bindings: @(_runtimeSummaryCard.ProviderBindings.Count == 0 ? "none" : string.Join(", ", _runtimeSummaryCard.ProviderBindings.Select(binding => $"{binding.Key}={binding.Value}")))</p>
+                </section>
+            }
+        </article>
+
+        <article class="panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Owner Replay</p>
+                    <h2>Conversation Replay</h2>
+                </div>
+            </header>
+
+            <div class="button-row">
+                <button class="button ghost" type="button" data-coach-refresh="conversations" @onclick="LoadConversationsAsync" disabled="@_isBusy">Refresh Conversations</button>
+            </div>
+
+            @if (_conversationCatalog is null || _conversationCatalog.Items.Count == 0)
+            {
+                <p class="empty">No stored coach conversations matched the current owner/runtime filters.</p>
+            }
+            else
+            {
+                <div class="stack">
+                    @foreach (AiConversationAuditSummary conversation in _conversationCatalog.Items)
+                    {
+                        <section class="list-card">
+                            <div class="list-card-header">
+                                <div>
+                                    <h3>@conversation.ConversationId</h3>
+                                    <p class="meta">@conversation.RouteType · @(conversation.RuntimeFingerprint ?? "no runtime pin") · workspace @(conversation.WorkspaceId ?? "n/a")</p>
+                                </div>
+                                <span class="badge">@(conversation.MessageCount) msgs</span>
+                                <span class="@GetCacheBadgeClass(conversation.Cache)">@FormatCacheStatus(conversation.Cache)</span>
+                                <span class="badge">@DescribeCoverageBadge(conversation.GroundingCoverage)</span>
+                            </div>
+                            <p class="hint">@(conversation.LastAssistantAnswer ?? "No stored assistant answer yet.")</p>
+                            <p class="hint">Last route: @DescribeRouteDecision(conversation.RouteDecision, conversation.LastProviderId ?? "n/a")</p>
+                            <p class="hint">Last coverage: @DescribeGroundingCoverage(conversation.GroundingCoverage)</p>
+                            <p class="hint">Updated: @FormatTimestamp(conversation.LastUpdatedAtUtc)</p>
+                            <div class="button-row">
+                                <button class="button ghost" type="button" data-conversation-open="@conversation.ConversationId" @onclick="() => OpenConversationAsync(conversation.ConversationId)" disabled="@_isBusy">Open Trace</button>
+                            </div>
+                        </section>
+                    }
+                </div>
+            }
+
+            @if (_selectedConversation is not null)
+            {
+                <section class="list-card detail-card" data-conversation-detail="@_selectedConversation.ConversationId">
+                    <div class="list-card-header">
+                        <div>
+                            <h3>@_selectedConversation.ConversationId</h3>
+                            <p class="meta">@_selectedConversation.RouteType · @(_selectedConversation.RuntimeFingerprint ?? "no runtime pin") · workspace @(_selectedConversation.WorkspaceId ?? "n/a")</p>
+                        </div>
+                        <span class="badge good">@((_selectedConversation.Turns?.Count) ?? 0) turns</span>
+                    </div>
+                    <div class="stack">
+                        @foreach (AiConversationMessage message in _selectedConversation.Messages)
+                        {
+                            <article class="message-card">
+                                <p class="meta">@message.Role · @message.CreatedAtUtc.ToString("u")</p>
+                                <p class="hint">@message.Content</p>
+                            </article>
+                        }
+                    </div>
+                    @if ((_selectedConversation.Turns?.Count ?? 0) > 0)
+                    {
+                        <div class="stack">
+                            @foreach (AiConversationTurnRecord turn in _selectedConversation.Turns ?? [])
+                            {
+                                <section class="list-card">
+                                    <div class="list-card-header">
+                                        <div>
+                                            <h3>@turn.TurnId</h3>
+                                            <p class="meta">@turn.ProviderId · @turn.RouteType</p>
+                                        </div>
+                                        <span class="badge">@turn.CreatedAtUtc.ToString("u")</span>
+                                        <span class="@GetCacheBadgeClass(turn.Cache)">@FormatCacheStatus(turn.Cache)</span>
+                                    </div>
+                                    <p class="hint">User: @turn.UserMessage</p>
+                                    @if (!string.IsNullOrWhiteSpace(turn.FlavorLine))
+                                    {
+                                        <p class="hint" data-turn-flavor="@turn.TurnId">@turn.FlavorLine</p>
+                                    }
+                                    @if (turn.Budget is not null)
+                                    {
+                                        <p class="hint" data-turn-budget="@turn.TurnId">Budget: @turn.Budget.MonthlyConsumed / @turn.Budget.MonthlyAllowance @turn.Budget.BudgetUnit · burst @turn.Budget.CurrentBurstConsumed / @turn.Budget.BurstLimitPerMinute</p>
+                                    }
+                                    <p class="hint">Assistant: @turn.AssistantAnswer</p>
+                                    <p class="hint">Route decision: @DescribeRouteDecision(turn.RouteDecision, turn.ProviderId)</p>
+                                    <p class="hint">Workspace: @(turn.WorkspaceId ?? "n/a")</p>
+                                    <p class="hint">Grounding coverage: @DescribeGroundingCoverage(turn.GroundingCoverage)</p>
+                                    <p class="hint">Cache: @DescribeCache(turn.Cache)</p>
+                                    @if (!string.IsNullOrWhiteSpace(turn.Cache?.NormalizedPrompt))
+                                    {
+                                        <p class="hint">Normalized prompt: @turn.Cache.NormalizedPrompt</p>
+                                    }
+                                    @if (turn.StructuredAnswer is not null)
+                                    {
+                                        <div class="stack" data-turn-structured-answer="@turn.TurnId">
+                                            <p class="hint">Summary: @turn.StructuredAnswer.Summary</p>
+                                            <p class="hint">Recommendations: @(turn.StructuredAnswer.Recommendations.Count == 0 ? "none" : string.Join(", ", turn.StructuredAnswer.Recommendations.Select(recommendation => recommendation.Title)))</p>
+                                            <p class="hint">Evidence: @(turn.StructuredAnswer.Evidence.Count == 0 ? "none" : string.Join(", ", turn.StructuredAnswer.Evidence.Select(entry => entry.Title)))</p>
+                                            <p class="hint">Risks: @(turn.StructuredAnswer.Risks.Count == 0 ? "none" : string.Join(", ", turn.StructuredAnswer.Risks.Select(risk => risk.Title)))</p>
+                                            <p class="hint">Sources: @(turn.StructuredAnswer.Sources.Count == 0 ? "none" : string.Join(", ", turn.StructuredAnswer.Sources.Select(source => source.ReferenceId)))</p>
+                                            <p class="hint">Action Drafts: @(turn.StructuredAnswer.ActionDrafts.Count == 0 ? "none" : string.Join(", ", turn.StructuredAnswer.ActionDrafts.Select(draft => draft.Title)))</p>
+                                        </div>
+                                    }
+                                    <p class="hint">Citations: @(turn.Citations.Count == 0 ? "none" : string.Join(", ", turn.Citations.Select(citation => citation.ReferenceId)))</p>
+                                    <p class="hint">Tools: @(turn.ToolInvocations.Count == 0 ? "none" : string.Join(", ", turn.ToolInvocations.Select(tool => tool.ToolId)))</p>
+                                    <p class="hint">Suggested actions: @((turn.SuggestedActions?.Count ?? 0) == 0 ? "none" : string.Join(", ", (turn.SuggestedActions ?? []).Select(action => action.Title)))</p>
+                                    @if (GetPreviewSuggestedActions(turn.SuggestedActions ?? []).Count > 0)
+                                    {
+                                        <div class="button-row">
+                                            @foreach (AiSuggestedAction action in GetPreviewSuggestedActions(turn.SuggestedActions ?? []))
+                                            {
+                                                <button class="button ghost" type="button" data-suggested-action-preview="@(BuildSuggestedActionButtonKey(turn.TurnId, action))" @onclick="() => PreviewActionDraftAsync(CreateActionDraft(action))" disabled="@_isBusy">@action.Title</button>
+                                            }
+                                        </div>
+                                    }
+                                    @if (GetRuntimeInspectorSuggestedActions(turn.SuggestedActions ?? []).Count > 0)
+                                    {
+                                        <div class="button-row">
+                                            @foreach (AiSuggestedAction action in GetRuntimeInspectorSuggestedActions(turn.SuggestedActions ?? []))
+                                            {
+                                                <button class="button ghost" type="button" data-suggested-action-runtime="@(BuildSuggestedActionButtonKey(turn.TurnId, action))" @onclick="() => OpenRuntimeInspectorActionDraftAsync(CreateActionDraft(action))" disabled="@_isBusy">@action.Title</button>
+                                            }
+                                        </div>
+                                    }
+                                    @if (GetBuildIdeaSuggestedActions(turn.SuggestedActions ?? []).Count > 0)
+                                    {
+                                        <div class="button-row">
+                                            @foreach (AiSuggestedAction action in GetBuildIdeaSuggestedActions(turn.SuggestedActions ?? []))
+                                            {
+                                                <button class="button ghost" type="button" data-suggested-action-build="@(BuildSuggestedActionButtonKey(turn.TurnId, action))" @onclick="() => BrowseBuildIdeasActionDraftAsync(CreateActionDraft(action))" disabled="@_isBusy">@action.Title</button>
+                                            }
+                                        </div>
+                                    }
+                                    @if (GetPreviewActionDrafts(turn.StructuredAnswer).Count > 0)
+                                    {
+                                        <div class="button-row">
+                                            @foreach (AiActionDraft draft in GetPreviewActionDrafts(turn.StructuredAnswer))
+                                            {
+                                                <button class="button ghost" type="button" data-action-draft-preview="@(BuildActionDraftButtonKey(turn.TurnId, draft))" @onclick="() => PreviewActionDraftAsync(draft)" disabled="@_isBusy">@draft.Title</button>
+                                            }
+                                        </div>
+                                    }
+                                    @if (GetRuntimeInspectorActionDrafts(turn.StructuredAnswer).Count > 0)
+                                    {
+                                        <div class="button-row">
+                                            @foreach (AiActionDraft draft in GetRuntimeInspectorActionDrafts(turn.StructuredAnswer))
+                                            {
+                                                <button class="button ghost" type="button" data-action-draft-runtime="@(BuildActionDraftButtonKey(turn.TurnId, draft))" @onclick="() => OpenRuntimeInspectorActionDraftAsync(draft)" disabled="@_isBusy">@draft.Title</button>
+                                            }
+                                        </div>
+                                    }
+                                    @if (GetBuildIdeaActionDrafts(turn.StructuredAnswer).Count > 0)
+                                    {
+                                        <div class="button-row">
+                                            @foreach (AiActionDraft draft in GetBuildIdeaActionDrafts(turn.StructuredAnswer))
+                                            {
+                                                <button class="button ghost" type="button" data-action-draft-build="@(BuildActionDraftButtonKey(turn.TurnId, draft))" @onclick="() => BrowseBuildIdeasActionDraftAsync(draft)" disabled="@_isBusy">@draft.Title</button>
+                                            }
+                                        </div>
+                                    }
+                                </section>
+                            }
+                        </div>
+                    }
+                </section>
+            }
+        </article>
+
+        <article class="panel build-panel">
+            <header class="panel-header">
+                <div>
+                    <p class="panel-kicker">Community Corpus</p>
+                    <h2>Build Idea Cards</h2>
+                </div>
+            </header>
+
+            <div class="field-grid">
+                <label class="field">
+                    <span>Query</span>
+                    <input @bind="_buildIdeaQueryText" @bind:event="oninput" placeholder="stealth decker, face mage, drone support..." />
+                </label>
+                <label class="field">
+                    <span>Ruleset</span>
+                    <input @bind="_rulesetId" @bind:event="oninput" placeholder="sr5" />
+                </label>
+            </div>
+
+            <div class="button-row">
+                <button class="button" type="button" data-coach-search="build-ideas" @onclick="SearchBuildIdeasAsync" disabled="@_isBusy">Search Build Ideas</button>
+            </div>
+
+            @if (_buildIdeas.Count == 0)
+            {
+                <p class="empty">No build idea cards matched the current coach query.</p>
+            }
+            else
+            {
+                <div class="stack">
+                    @foreach (BuildIdeaCard idea in _buildIdeas)
+                    {
+                        <section class="list-card" data-build-idea="@idea.IdeaId">
+                            <div class="list-card-header">
+                                <div>
+                                    <h3>@idea.Title</h3>
+                                    <p class="meta">@idea.IdeaId · @idea.RulesetId</p>
+                                </div>
+                                <span class="badge good">@idea.CommunityScore.ToString("0.0")</span>
+                            </div>
+                            <p class="hint">@idea.Summary</p>
+                            <p class="hint">Roles: @string.Join(", ", idea.RoleTags)</p>
+                            <p class="hint">Core loop: @idea.CoreLoop</p>
+                            <p class="hint">25/50/100 Karma path: @string.Join(" / ", idea.KarmaMilestones)</p>
+                            <p class="hint">Trap choices: @(idea.TrapChoices.Count == 0 ? "none" : string.Join(", ", idea.TrapChoices))</p>
+                        </section>
+                    }
+                </div>
+            }
+        </article>
+    </section>
+</main>

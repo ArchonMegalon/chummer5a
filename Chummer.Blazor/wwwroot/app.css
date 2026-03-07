@@ -172,6 +172,103 @@ button:disabled {
     font-size: 0.95rem;
 }
 
+.mono {
+    font-family: "Cascadia Mono", "Fira Code", monospace;
+    word-break: break-all;
+}
+
+.coach-panel {
+    background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+    border-color: #93c5fd;
+}
+
+.coach-header,
+.coach-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.45rem;
+}
+
+.coach-header h2,
+.coach-card h3 {
+    margin: 0;
+}
+
+.coach-facts {
+    margin: 0.45rem 0;
+    display: grid;
+    gap: 0.3rem;
+}
+
+.coach-facts div {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 0.45rem;
+    font-size: 0.82rem;
+}
+
+.coach-facts dt {
+    font-weight: 700;
+    color: #1e3a8a;
+}
+
+.coach-facts dd {
+    margin: 0;
+}
+
+.coach-card-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.coach-card {
+    display: grid;
+    gap: 0.25rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.45rem;
+    background: rgba(255, 255, 255, 0.92);
+}
+
+.coach-meta {
+    margin: 0;
+    font-size: 0.78rem;
+    color: #475569;
+}
+
+.coach-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 4.75rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid #cbd5e1;
+    background: #e2e8f0;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.coach-badge.good {
+    background: #dcfce7;
+    border-color: #4ade80;
+    color: #166534;
+}
+
+.coach-badge.warn {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
+}
+
+.coach-badge.error {
+    background: #fee2e2;
+    border-color: #f87171;
+    color: #b91c1c;
+}
+
 .tree-list {
     margin: 0;
     padding-left: 1rem;
@@ -215,6 +312,10 @@ button:disabled {
 
 .mini-btn {
     font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
 }
 
 .summary-grid {

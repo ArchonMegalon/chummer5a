@@ -44,7 +44,9 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
         ArgumentException.ThrowIfNullOrWhiteSpace(target.TargetKind);
         ArgumentException.ThrowIfNullOrWhiteSpace(target.TargetId);
 
-        return kind.Trim() switch
+        string normalizedKind = HubCatalogItemKinds.NormalizeRequired(kind);
+
+        return normalizedKind switch
         {
             HubCatalogItemKinds.RuleProfile => PreviewRuleProfile(owner, itemId, target, rulesetId),
             HubCatalogItemKinds.RuntimeLock => PreviewRuntimeLock(owner, itemId, target, rulesetId),

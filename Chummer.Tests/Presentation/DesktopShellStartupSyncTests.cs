@@ -4,6 +4,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Bunit;
+using Chummer.Blazor;
 using Chummer.Blazor.Components.Layout;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
@@ -64,6 +65,7 @@ public sealed class DesktopShellStartupSyncTests
         context.Services.AddSingleton(presenter);
         context.Services.AddSingleton(shellPresenter);
         context.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
+        context.Services.AddSingleton<IWorkbenchCoachApiClient>(FakeWorkbenchCoachApiClient.CreateDefault());
         context.Services.AddSingleton<IRulesetPlugin, Sr5RulesetPlugin>();
         context.Services.AddSingleton<IRulesetPluginRegistry, RulesetPluginRegistry>();
         context.Services.AddSingleton<IRulesetShellCatalogResolver, RulesetShellCatalogResolverService>();

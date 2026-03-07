@@ -6,6 +6,9 @@
 *.user
 *.userosscache
 *.sln.docstates
+.env
+.env.*
+!.env.example
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -216,3 +219,8 @@ FakesAssemblies/
 # Local agent runtime state
 AGENT_MEMORY.md
 WORK_QUEUE.md
+
+# Local environment secrets
+.env
+.env.*
+!.env.example

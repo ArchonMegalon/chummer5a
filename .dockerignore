@@ -3,6 +3,7 @@
 **/.env
 **/.git
 **/.gitignore
+!.gitignore
 **/.project
 **/.settings
 **/.toolstarget
@@ -17,6 +18,9 @@
 **/docker-compose*
 !docker-compose.yml
 **/Dockerfile*
+!.dockerignore
+!Chummer.Coach.Web/Dockerfile
+!Chummer.Session.Web/Dockerfile
 !Docker/Dockerfile.tests
 **/node_modules
 **/npm-debug.log
