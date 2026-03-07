@@ -1141,6 +1141,7 @@ public class MigrationComplianceTests
             @"Chummer.Application\Chummer.Application.csproj",
             @"Chummer.Contracts\Chummer.Contracts.csproj",
             @"Chummer.Desktop.Runtime\Chummer.Desktop.Runtime.csproj",
+            @"Chummer.Hub.Web\Chummer.Hub.Web.csproj",
             @"Chummer.Infrastructure\Chummer.Infrastructure.csproj",
             @"Chummer.Presentation\Chummer.Presentation.csproj",
             @"Chummer.Portal\Chummer.Portal.csproj",
@@ -1167,6 +1168,12 @@ public class MigrationComplianceTests
         string projectText = File.ReadAllText(projectPath);
         string programPath = FindPath("Chummer.Blazor", "Program.cs");
         string programText = File.ReadAllText(programPath);
+        string hubProjectPath = FindPath("Chummer.Hub.Web", "Chummer.Hub.Web.csproj");
+        string hubProjectText = File.ReadAllText(hubProjectPath);
+        string hubProgramPath = FindPath("Chummer.Hub.Web", "Program.cs");
+        string hubProgramText = File.ReadAllText(hubProgramPath);
+        string composePath = FindPath("docker-compose.yml");
+        string composeText = File.ReadAllText(composePath);
         string migrationLoopPath = FindPath("scripts", "migration-loop.sh");
         string migrationLoopText = File.ReadAllText(migrationLoopPath);
         string apiIntegrationTestsPath = FindPath("Chummer.Tests", "ApiIntegrationTests.cs");
@@ -1178,6 +1185,14 @@ public class MigrationComplianceTests
         StringAssert.Contains(programText, "AddRazorComponents()");
         StringAssert.Contains(programText, "CHUMMER_API_BASE_URL");
         StringAssert.Contains(programText, "http://chummer-api:8080");
+        StringAssert.Contains(hubProjectText, "<Project Sdk=\"Microsoft.NET.Sdk.Web\">");
+        StringAssert.Contains(hubProgramText, "AddRazorComponents()");
+        StringAssert.Contains(hubProgramText, "CHUMMER_HUB_PATH_BASE");
+        StringAssert.Contains(hubProgramText, "head = \"hub-web\"");
+        StringAssert.Contains(composeText, "chummer-hub-web:");
+        StringAssert.Contains(composeText, "chummer-hub-web-portal:");
+        StringAssert.Contains(composeText, "CHUMMER_HUB_PATH_BASE");
+        StringAssert.Contains(composeText, "CHUMMER_PORTAL_HUB_PROXY_URL");
         StringAssert.Contains(apiIntegrationTestsText, "http://chummer-api:8080");
         StringAssert.Contains(dualHeadTestsText, "http://chummer-api:8080");
         StringAssert.Contains(migrationLoopText, "docker compose up -d --build --remove-orphans chummer-api chummer-blazor");
@@ -2116,6 +2131,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalProgramText, "PortalAuthenticatedOwnerPropagation.Apply");
         StringAssert.Contains(portalProgramText, "CHUMMER_PORTAL_REQUIRE_AUTH");
         StringAssert.Contains(portalProgramText, "CHUMMER_PORTAL_DEV_AUTH_ENABLED");
+        StringAssert.Contains(portalProgramText, "CHUMMER_PORTAL_HUB_URL");
+        StringAssert.Contains(portalProgramText, "CHUMMER_PORTAL_HUB_PROXY_URL");
+        StringAssert.Contains(portalProgramText, "RouteId = \"portal-hub\"");
+        StringAssert.Contains(portalProgramText, "Path = \"/hub/{**catch-all}\"");
         StringAssert.Contains(portalProgramText, "AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)");
         StringAssert.Contains(portalProgramText, "PortalAuthenticationEndpoints.MapPortalAuthenticationEndpoints");
         StringAssert.Contains(portalProgramText, "PortalProtectedRouteMatcher.RequiresAuthenticatedUser");
@@ -2128,7 +2147,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalAuthenticationEndpointsText, "context.SignInAsync");
         StringAssert.Contains(portalAuthenticationEndpointsText, "new ClaimsIdentity(claims, \"portal-dev\")");
         StringAssert.Contains(portalProtectedRouteMatcherText, "path.StartsWithSegments(\"/blazor\"");
+        StringAssert.Contains(portalProtectedRouteMatcherText, "path.StartsWithSegments(\"/hub\"");
         StringAssert.Contains(portalProtectedRouteMatcherText, "path.StartsWithSegments(\"/avalonia\"");
+        StringAssert.Contains(portalPageBuilderText, "Open Hub");
+        StringAssert.Contains(portalPageBuilderText, "<code>/hub</code>");
         StringAssert.Contains(portalPageBuilderText, "enabled for internal <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> upstream compatibility only");
         StringAssert.Contains(portalPageBuilderText, "signed authenticated owner headers enabled for hosted/public <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> proxy traffic");
         StringAssert.Contains(ownerContractText, "X-Chummer-Portal-Owner");
@@ -2492,14 +2514,18 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalScriptText, "CHUMMER_E2E_PLAYWRIGHT_SOFT_FAIL");
         StringAssert.Contains(portalScriptText, "skipping portal e2e: docker daemon permission denied in this environment.");
         StringAssert.Contains(portalScriptText, "chummer-playwright-portal");
-        StringAssert.Contains(portalScriptText, "docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-avalonia-browser chummer-portal");
+        StringAssert.Contains(portalScriptText, "compose_args=(-f docker-compose.yml)");
+        StringAssert.Contains(portalScriptText, "docker compose \"${compose_args[@]}\" --profile portal up -d --build chummer-api chummer-blazor-portal chummer-hub-web-portal chummer-avalonia-browser chummer-portal");
+        StringAssert.Contains(portalScriptText, "docker compose \"${compose_args[@]}\" --profile test --profile portal run --build --rm chummer-playwright-portal");
         StringAssert.Contains(portalPlaywrightText, "requiredLandingLinks");
         StringAssert.Contains(portalPlaywrightText, "requiredLandingLinks.every(link => text.includes(link))");
         StringAssert.Contains(portalPlaywrightText, "'/blazor/'");
+        StringAssert.Contains(portalPlaywrightText, "'/hub/'");
         StringAssert.Contains(portalPlaywrightText, "'/avalonia/'");
         StringAssert.Contains(portalPlaywrightText, "'/downloads/'");
         StringAssert.Contains(portalPlaywrightText, "'/docs/'");
         StringAssert.Contains(portalPlaywrightText, "'/api/health'");
+        StringAssert.Contains(portalPlaywrightText, "http://chummer-portal:8080/hub/health");
         StringAssert.Contains(portalPlaywrightText, "No published desktop builds yet");
         StringAssert.Contains(portalPlaywrightText, "fallback-link");
     }
@@ -2741,11 +2767,15 @@ public class MigrationComplianceTests
         string portalSettingsText = File.ReadAllText(portalSettingsPath);
 
         StringAssert.Contains(readmeText, "Current multi-head runtime (Docker branch)");
-        StringAssert.Contains(readmeText, "multi-head UI stack (`Chummer.Blazor`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`)");
+        StringAssert.Contains(readmeText, "multi-head UI stack (`Chummer.Blazor`, `Chummer.Hub.Web`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`)");
         StringAssert.Contains(readmeText, "## Decommissioned Legacy Runtime Components");
         StringAssert.Contains(readmeText, "`chummer-web` is no longer an active runtime service or parity-test dependency.");
         StringAssert.Contains(readmeText, "Static parity extraction from `Chummer.Web/wwwroot/index.html` has been replaced by the checked-in parity oracle");
+        StringAssert.Contains(readmeText, "Chummer.Hub.Web");
+        StringAssert.Contains(readmeText, "CHUMMER_HUB_PATH_BASE");
+        StringAssert.Contains(readmeText, "chummer-hub-web");
         StringAssert.Contains(readmeText, "chummer-blazor-portal");
+        StringAssert.Contains(readmeText, "chummer-hub-web-portal");
         StringAssert.Contains(readmeText, "chummer-avalonia-browser");
         StringAssert.Contains(readmeText, "chummer-portal");
         StringAssert.Contains(readmeText, "/api/*`, `/openapi/*`, and `/docs/*` share the same upstream contract through `CHUMMER_PORTAL_API_URL`.");
@@ -2772,6 +2802,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh");
         StringAssert.Contains(readmeText, "RUNBOOK_LOG_DIR");
         StringAssert.Contains(readmeText, "RUNBOOK_STATE_DIR");
+        StringAssert.Contains(portalSettingsText, "\"HubBaseUrl\": \"http://127.0.0.1:8092/\"");
+        StringAssert.Contains(portalSettingsText, "\"HubProxyBaseUrl\": \"\"");
         StringAssert.Contains(portalSettingsText, "\"DownloadsBaseUrl\": \"/downloads/\"");
         StringAssert.Contains(portalSettingsText, "\"DownloadsFallbackUrl\": \"\"");
         Assert.IsFalse(
@@ -3788,6 +3820,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(dockerfileText, "COPY Chummer.Rulesets.Sr4/ Chummer.Rulesets.Sr4/");
         StringAssert.Contains(dockerfileText, "COPY Chummer.Rulesets.Sr6/Chummer.Rulesets.Sr6.csproj Chummer.Rulesets.Sr6/");
         StringAssert.Contains(dockerfileText, "COPY Chummer.Rulesets.Sr6/ Chummer.Rulesets.Sr6/");
+        StringAssert.Contains(dockerfileText, "COPY Chummer.Hub.Web/Chummer.Hub.Web.csproj Chummer.Hub.Web/");
+        StringAssert.Contains(dockerfileText, "COPY Chummer.Hub.Web/ Chummer.Hub.Web/");
         StringAssert.Contains(dockerfileText, "COPY README.md ./");
         StringAssert.Contains(dockerfileText, "COPY docs/ docs/");
         Assert.IsFalse(dockerfileText.Contains("COPY ChummerHub/ ChummerHub/", StringComparison.Ordinal));

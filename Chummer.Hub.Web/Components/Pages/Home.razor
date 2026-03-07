@@ -1,0 +1,30 @@
+@page "/"
+@inject NavigationManager Navigation
+
+<main class="page">
+    <section class="hero">
+        <p class="eyebrow">Active Hub Head</p>
+        <h1>ChummerHub Web</h1>
+        <p class="lede">
+            This active replacement head fronts the shared <code>/api/hub/*</code> seams behind
+            <code>Chummer.Portal</code>. Discovery, install, publication, and moderation flows
+            will land here instead of the archived legacy <code>ChummerHub</code> app.
+        </p>
+    </section>
+
+    <section class="grid">
+        <article class="card">
+            <h2>Catalog</h2>
+            <p>Bind discovery/search to <code>/api/hub/search</code> and project detail/install-preview routes.</p>
+        </article>
+        <article class="card">
+            <h2>Publish</h2>
+            <p>Use the protected publication/moderation seams under <code>/api/hub/publish/*</code> and <code>/api/hub/moderation/*</code>.</p>
+        </article>
+        <article class="card">
+            <h2>Profiles</h2>
+            <p>Surface curated install/apply flows without widening the workbench-oriented client seam.</p>
+        </article>
+    </section>
+    <p class="status">Path base: <code>@Navigation.BaseUri</code></p>
+</main>

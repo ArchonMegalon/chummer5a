@@ -16,6 +16,7 @@ COPY Chummer.Presentation/Chummer.Presentation.csproj Chummer.Presentation/
 COPY Chummer.Avalonia/Chummer.Avalonia.csproj Chummer.Avalonia/
 COPY Chummer.Avalonia.Browser/Chummer.Avalonia.Browser.csproj Chummer.Avalonia.Browser/
 COPY Chummer.Blazor/Chummer.Blazor.csproj Chummer.Blazor/
+COPY Chummer.Hub.Web/Chummer.Hub.Web.csproj Chummer.Hub.Web/
 COPY Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj Chummer.Blazor.Desktop/
 COPY Chummer.Portal/Chummer.Portal.csproj Chummer.Portal/
 COPY Chummer.Api/Chummer.Api.csproj Chummer.Api/
@@ -35,11 +36,13 @@ COPY Chummer.Presentation/ Chummer.Presentation/
 COPY Chummer.Avalonia/ Chummer.Avalonia/
 COPY Chummer.Avalonia.Browser/ Chummer.Avalonia.Browser/
 COPY Chummer.Blazor/ Chummer.Blazor/
+COPY Chummer.Hub.Web/ Chummer.Hub.Web/
 COPY Chummer.Blazor.Desktop/ Chummer.Blazor.Desktop/
 COPY Chummer.Portal/ Chummer.Portal/
 COPY Chummer.Api/ Chummer.Api/
 COPY Chummer.Tests/ Chummer.Tests/
 COPY README.md ./
+COPY docker-compose.yml ./
 COPY Chummer.Web/ Chummer.Web/
 COPY Chummer/ Chummer/
 COPY docs/ docs/

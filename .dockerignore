@@ -15,6 +15,7 @@
 **/bin
 **/charts
 **/docker-compose*
+!docker-compose.yml
 **/Dockerfile*
 !Docker/Dockerfile.tests
 **/node_modules

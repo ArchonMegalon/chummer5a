@@ -27,9 +27,11 @@ if [[ -n "$CHUMMER_API_KEY" ]]; then
   export CHUMMER_API_KEY
 fi
 
+compose_args=(-f docker-compose.yml)
+
 compose_up_log="$(mktemp)"
 set +e
-docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-avalonia-browser chummer-portal \
+docker compose "${compose_args[@]}" --profile portal up -d --build chummer-api chummer-blazor-portal chummer-hub-web-portal chummer-avalonia-browser chummer-portal \
   2>&1 | tee "$compose_up_log"
 compose_up_status=${PIPESTATUS[0]}
 set -e
@@ -49,7 +51,7 @@ if [[ "$RUN_PORTAL_PLAYWRIGHT" == "1" ]]; then
   echo "running portal playwright e2e (timeout: ${PORTAL_PLAYWRIGHT_TIMEOUT_SECONDS}s)"
   playwright_log="$(mktemp)"
   set +e
-  timeout "${PORTAL_PLAYWRIGHT_TIMEOUT_SECONDS}"s docker compose --profile test --profile portal run --build --rm chummer-playwright-portal \
+  timeout "${PORTAL_PLAYWRIGHT_TIMEOUT_SECONDS}"s docker compose "${compose_args[@]}" --profile test --profile portal run --build --rm chummer-playwright-portal \
     2>&1 | tee "$playwright_log"
   playwright_status=${PIPESTATUS[0]}
   set -e

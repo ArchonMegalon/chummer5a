@@ -3,6 +3,7 @@
 
 const requiredLandingLinks = [
   '/blazor/',
+  '/hub/',
   '/avalonia/',
   '/downloads/',
   '/docs/',
@@ -30,6 +31,17 @@ const checks = [
   {
     url: 'http://chummer-portal:8080/blazor/deep-link-check',
     assert: text => /<base href="[^"]*\/blazor\/"/i.test(text)
+  },
+  {
+    url: 'http://chummer-portal:8080/hub/health',
+    assert: text => {
+      const payload = JSON.parse(text);
+      return payload?.head === 'hub-web' && payload?.pathBase === '/hub' && payload?.ok === true;
+    }
+  },
+  {
+    url: 'http://chummer-portal:8080/hub/',
+    assert: text => /<base href="[^"]*\/hub\/"/i.test(text) && text.includes('ChummerHub Web')
   },
   {
     url: 'http://chummer-portal:8080/avalonia/',

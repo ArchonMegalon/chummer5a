@@ -28,6 +28,17 @@ services:
       CHUMMER_BLAZOR_PATH_BASE: "${CHUMMER_BLAZOR_PATH_BASE:-}"
     ports:
       - "${CHUMMER_BLAZOR_PORT:-8089}:8080"
+  chummer-hub-web:
+    image: chummer-hub-web:local
+    build:
+      context: .
+      dockerfile: Chummer.Hub.Web/Dockerfile
+    depends_on:
+      - chummer-api
+    environment:
+      CHUMMER_HUB_PATH_BASE: "${CHUMMER_HUB_PATH_BASE:-}"
+    ports:
+      - "${CHUMMER_HUB_PORT:-8092}:8080"
   chummer-blazor-portal:
     image: chummer-blazor:local
     build:
@@ -40,6 +51,16 @@ services:
       CHUMMER_API_BASE_URL: "http://chummer-api:8080"
       CHUMMER_API_KEY: "${CHUMMER_API_KEY:-}"
       CHUMMER_BLAZOR_PATH_BASE: "/blazor"
+  chummer-hub-web-portal:
+    image: chummer-hub-web:local
+    build:
+      context: .
+      dockerfile: Chummer.Hub.Web/Dockerfile
+    depends_on:
+      - chummer-api
+    profiles: ["portal"]
+    environment:
+      CHUMMER_HUB_PATH_BASE: "/hub"
   chummer-avalonia-browser:
     image: chummer-avalonia-browser:local
     build:
@@ -56,11 +77,14 @@ services:
     depends_on:
       - chummer-api
       - chummer-blazor-portal
+      - chummer-hub-web-portal
       - chummer-avalonia-browser
     profiles: ["portal"]
     environment:
       CHUMMER_PORTAL_BLAZOR_URL: "${CHUMMER_PORTAL_BLAZOR_URL:-/blazor/}"
       CHUMMER_PORTAL_BLAZOR_PROXY_URL: "${CHUMMER_PORTAL_BLAZOR_PROXY_URL:-http://chummer-blazor-portal:8080/}"
+      CHUMMER_PORTAL_HUB_URL: "${CHUMMER_PORTAL_HUB_URL:-/hub/}"
+      CHUMMER_PORTAL_HUB_PROXY_URL: "${CHUMMER_PORTAL_HUB_PROXY_URL:-http://chummer-hub-web-portal:8080/}"
       CHUMMER_PORTAL_AVALONIA_URL: "${CHUMMER_PORTAL_AVALONIA_URL:-/avalonia/}"
       CHUMMER_PORTAL_AVALONIA_PROXY_URL: "${CHUMMER_PORTAL_AVALONIA_PROXY_URL:-http://chummer-avalonia-browser:8080/}"
       CHUMMER_PORTAL_API_URL: "${CHUMMER_PORTAL_API_URL:-http://chummer-api:8080/}"

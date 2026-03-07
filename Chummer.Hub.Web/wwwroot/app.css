@@ -1,0 +1,86 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Aptos", "Segoe UI Variable", "Segoe UI", sans-serif;
+    color: #f5f2eb;
+    background:
+        radial-gradient(circle at top left, rgba(201, 116, 35, 0.3), transparent 35%),
+        linear-gradient(160deg, #111822, #253240);
+}
+
+.shell {
+    min-height: 100vh;
+}
+
+.page {
+    width: min(1040px, 100%);
+    margin: 0 auto;
+    padding: 32px 20px 48px;
+}
+
+.hero {
+    padding: 28px;
+    border: 1px solid rgba(255, 214, 170, 0.24);
+    border-radius: 18px;
+    background: rgba(10, 16, 24, 0.62);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+}
+
+.eyebrow {
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.78rem;
+    color: #ffb36c;
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(2rem, 5vw, 3.6rem);
+}
+
+.lede {
+    margin: 14px 0 0;
+    max-width: 62ch;
+    color: #d6dbe2;
+    line-height: 1.55;
+}
+
+.grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-top: 22px;
+}
+
+.card {
+    padding: 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.card h2 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+}
+
+.card p {
+    margin: 0;
+    color: #d6dbe2;
+    line-height: 1.45;
+}
+
+.status {
+    margin-top: 18px;
+    color: #c6ccd3;
+}
+
+code {
+    color: #ffd2a3;
+}

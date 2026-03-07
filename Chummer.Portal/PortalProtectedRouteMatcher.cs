@@ -8,6 +8,7 @@ public static class PortalProtectedRouteMatcher
             || path.StartsWithSegments("/openapi", StringComparison.Ordinal)
             || path.StartsWithSegments("/docs", StringComparison.Ordinal)
             || path.StartsWithSegments("/blazor", StringComparison.Ordinal)
+            || path.StartsWithSegments("/hub", StringComparison.Ordinal)
             || path.StartsWithSegments("/avalonia", StringComparison.Ordinal);
     }
 }
