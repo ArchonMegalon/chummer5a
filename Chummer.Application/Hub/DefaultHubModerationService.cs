@@ -25,6 +25,7 @@ public sealed class DefaultHubModerationService : IHubModerationService
                 RulesetId: record.RulesetId,
                 Title: record.Title,
                 OwnerId: record.OwnerId,
+                PublisherId: record.PublisherId,
                 State: record.State,
                 CreatedAtUtc: record.CreatedAtUtc,
                 Summary: record.Summary))
@@ -71,6 +72,7 @@ public sealed class DefaultHubModerationService : IHubModerationService
                 ProjectId: updated.ProjectId,
                 RulesetId: updated.RulesetId,
                 OwnerId: updated.OwnerId,
+                PublisherId: updated.PublisherId,
                 State: updated.State,
                 Notes: updated.Notes,
                 UpdatedAtUtc: updated.UpdatedAtUtc));

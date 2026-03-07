@@ -34,12 +34,14 @@ public sealed record HubPublishDraftRequest(
     string RulesetId,
     string Title,
     string? Summary = null,
-    string? Description = null);
+    string? Description = null,
+    string? PublisherId = null);
 
 public sealed record HubUpdateDraftRequest(
     string Title,
     string? Summary = null,
-    string? Description = null);
+    string? Description = null,
+    string? PublisherId = null);
 
 public sealed record HubPublishDraftReceipt(
     string DraftId,
@@ -49,6 +51,7 @@ public sealed record HubPublishDraftReceipt(
     string Title,
     string? Summary,
     string OwnerId,
+    string? PublisherId,
     string State,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
@@ -65,7 +68,8 @@ public sealed record HubDraftDetailProjection(
     DateTimeOffset? LatestModerationUpdatedAtUtc = null);
 
 public sealed record HubSubmitProjectRequest(
-    string? Notes = null);
+    string? Notes = null,
+    string? PublisherId = null);
 
 public sealed record HubProjectSubmissionReceipt(
     string DraftId,
@@ -74,6 +78,7 @@ public sealed record HubProjectSubmissionReceipt(
     string ProjectId,
     string RulesetId,
     string OwnerId,
+    string? PublisherId,
     string State,
     string ReviewState,
     string? Notes = null,
@@ -87,6 +92,7 @@ public sealed record HubModerationQueueItem(
     string RulesetId,
     string Title,
     string OwnerId,
+    string? PublisherId,
     string State,
     DateTimeOffset CreatedAtUtc,
     string? Summary = null);
@@ -104,6 +110,7 @@ public sealed record HubModerationDecisionReceipt(
     string ProjectId,
     string RulesetId,
     string OwnerId,
+    string? PublisherId,
     string State,
     string? Notes,
     DateTimeOffset UpdatedAtUtc);
@@ -115,6 +122,7 @@ public sealed record HubDraftRecord(
     string RulesetId,
     string Title,
     string OwnerId,
+    string? PublisherId,
     string State,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,
@@ -130,6 +138,7 @@ public sealed record HubModerationCaseRecord(
     string RulesetId,
     string Title,
     string OwnerId,
+    string? PublisherId,
     string State,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc,

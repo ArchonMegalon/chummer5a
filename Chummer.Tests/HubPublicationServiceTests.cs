@@ -18,7 +18,7 @@ public class HubPublicationServiceTests
     public void Default_publication_service_persists_and_lists_owner_drafts()
     {
         InMemoryHubDraftStore draftStore = new();
-        DefaultHubPublicationService service = new(draftStore, new InMemoryHubModerationCaseStore());
+        DefaultHubPublicationService service = new(draftStore, new InMemoryHubModerationCaseStore(), new InMemoryHubPublisherStore());
 
         HubPublicationResult<HubPublishDraftReceipt> created = service.CreateDraft(
             new OwnerScope("alice"),
@@ -46,7 +46,7 @@ public class HubPublicationServiceTests
     public void Default_publication_service_updates_owner_draft_metadata_by_draft_id()
     {
         InMemoryHubDraftStore draftStore = new();
-        DefaultHubPublicationService service = new(draftStore, new InMemoryHubModerationCaseStore());
+        DefaultHubPublicationService service = new(draftStore, new InMemoryHubModerationCaseStore(), new InMemoryHubPublisherStore());
         OwnerScope owner = new("alice");
 
         HubPublishDraftReceipt created = service.CreateDraft(
@@ -75,11 +75,61 @@ public class HubPublicationServiceTests
     }
 
     [TestMethod]
+    public void Default_publication_service_binds_known_publisher_identity_through_submission_and_moderation()
+    {
+        InMemoryHubDraftStore draftStore = new();
+        InMemoryHubModerationCaseStore moderationCaseStore = new();
+        InMemoryHubPublisherStore publisherStore = new();
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore, publisherStore);
+        DefaultHubModerationService moderationService = new(moderationCaseStore);
+        OwnerScope owner = new("alice");
+
+        publisherStore.Upsert(
+            owner,
+            new HubPublisherRecord(
+                PublisherId: "shadowops",
+                OwnerId: owner.NormalizedValue,
+                DisplayName: "ShadowOps",
+                Slug: "shadowops",
+                VerificationState: HubPublisherVerificationStates.Unverified,
+                CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
+                UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
+                Description: "Campaign publisher"));
+
+        HubPublishDraftReceipt draft = publicationService.CreateDraft(
+            owner,
+            new HubPublishDraftRequest(
+                ProjectKind: HubCatalogItemKinds.RulePack,
+                ProjectId: "campaign.shadowops.publisher",
+                RulesetId: RulesetDefaults.Sr5,
+                Title: "Campaign ShadowOps Publisher",
+                PublisherId: "shadowops")).Payload!;
+
+        HubProjectSubmissionReceipt submission = publicationService.SubmitForReview(
+            owner,
+            HubCatalogItemKinds.RulePack,
+            "campaign.shadowops.publisher",
+            RulesetDefaults.Sr5,
+            new HubSubmitProjectRequest("ready")).Payload!;
+        HubModerationQueue queue = moderationService.ListQueue(owner, HubModerationStates.PendingReview).Payload!;
+        HubModerationDecisionReceipt approved = moderationService.Approve(owner, submission.CaseId, new HubModerationDecisionRequest("approved")).Payload!;
+        HubDraftDetailProjection detail = publicationService.GetDraft(owner, draft.DraftId).Payload!;
+
+        Assert.AreEqual("shadowops", draft.PublisherId);
+        Assert.AreEqual("shadowops", submission.PublisherId);
+        Assert.AreEqual("shadowops", queue.Items[0].PublisherId);
+        Assert.AreEqual("shadowops", approved.PublisherId);
+        Assert.AreEqual("shadowops", detail.Draft.PublisherId);
+        Assert.IsNotNull(detail.Moderation);
+        Assert.AreEqual("shadowops", detail.Moderation.PublisherId);
+    }
+
+    [TestMethod]
     public void Default_publication_service_submit_updates_draft_and_creates_owner_queue_entry()
     {
         InMemoryHubDraftStore draftStore = new();
         InMemoryHubModerationCaseStore moderationCaseStore = new();
-        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore, new InMemoryHubPublisherStore());
         DefaultHubModerationService moderationService = new(moderationCaseStore);
         OwnerScope owner = new("alice");
 
@@ -113,7 +163,7 @@ public class HubPublicationServiceTests
     {
         InMemoryHubDraftStore draftStore = new();
         InMemoryHubModerationCaseStore moderationCaseStore = new();
-        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore, new InMemoryHubPublisherStore());
         DefaultHubModerationService moderationService = new(moderationCaseStore);
         OwnerScope owner = new("alice");
 
@@ -151,7 +201,7 @@ public class HubPublicationServiceTests
     {
         InMemoryHubDraftStore draftStore = new();
         InMemoryHubModerationCaseStore moderationCaseStore = new();
-        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore, new InMemoryHubPublisherStore());
         DefaultHubModerationService moderationService = new(moderationCaseStore);
         OwnerScope owner = new("alice");
 
@@ -187,7 +237,7 @@ public class HubPublicationServiceTests
     {
         InMemoryHubDraftStore draftStore = new();
         InMemoryHubModerationCaseStore moderationCaseStore = new();
-        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore, new InMemoryHubPublisherStore());
         OwnerScope owner = new("alice");
 
         HubPublishDraftReceipt draft = publicationService.CreateDraft(
@@ -222,7 +272,7 @@ public class HubPublicationServiceTests
     {
         InMemoryHubDraftStore draftStore = new();
         InMemoryHubModerationCaseStore moderationCaseStore = new();
-        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore, new InMemoryHubPublisherStore());
         DefaultHubModerationService moderationService = new(moderationCaseStore);
         OwnerScope owner = new("alice");
 
@@ -257,7 +307,7 @@ public class HubPublicationServiceTests
     {
         InMemoryHubDraftStore draftStore = new();
         InMemoryHubModerationCaseStore moderationCaseStore = new();
-        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore);
+        DefaultHubPublicationService publicationService = new(draftStore, moderationCaseStore, new InMemoryHubPublisherStore());
         OwnerScope owner = new("alice");
 
         HubPublishDraftReceipt draft = publicationService.CreateDraft(
@@ -387,6 +437,37 @@ public class HubPublicationServiceTests
             return _records.RemoveAll(current =>
                 string.Equals(current.OwnerId, owner.NormalizedValue, StringComparison.Ordinal)
                 && string.Equals(current.DraftId, draftId, StringComparison.Ordinal)) > 0;
+        }
+    }
+
+    private sealed class InMemoryHubPublisherStore : IHubPublisherStore
+    {
+        private readonly List<HubPublisherRecord> _records = [];
+
+        public IReadOnlyList<HubPublisherRecord> List(OwnerScope owner)
+            => _records
+                .Where(record => string.Equals(record.OwnerId, owner.NormalizedValue, StringComparison.Ordinal))
+                .ToArray();
+
+        public HubPublisherRecord? Get(OwnerScope owner, string publisherId)
+            => List(owner).FirstOrDefault(record => string.Equals(record.PublisherId, publisherId, StringComparison.Ordinal));
+
+        public HubPublisherRecord Upsert(OwnerScope owner, HubPublisherRecord record)
+        {
+            int existingIndex = _records.FindIndex(current =>
+                string.Equals(current.OwnerId, owner.NormalizedValue, StringComparison.Ordinal)
+                && string.Equals(current.PublisherId, record.PublisherId, StringComparison.Ordinal));
+            HubPublisherRecord normalizedRecord = record with { OwnerId = owner.NormalizedValue };
+            if (existingIndex >= 0)
+            {
+                _records[existingIndex] = normalizedRecord;
+            }
+            else
+            {
+                _records.Add(normalizedRecord);
+            }
+
+            return normalizedRecord;
         }
     }
 }

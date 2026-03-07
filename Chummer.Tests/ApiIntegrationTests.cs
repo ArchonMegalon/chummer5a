@@ -314,6 +314,65 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_publish_and_moderation_endpoints_preserve_bound_publisher_identity()
+    {
+        using var client = CreateClient();
+        string publisherId = $"shadowops-{Guid.NewGuid():N}";
+        string projectId = $"campaign.shadowops.{Guid.NewGuid():N}";
+
+        await PutRequiredJsonObject(client, $"/api/hub/publishers/{publisherId}", new JsonObject
+        {
+            ["displayName"] = "ShadowOps",
+            ["slug"] = publisherId,
+            ["description"] = "Campaign runtime publisher"
+        });
+
+        JsonObject created = await PostRequiredJsonObject(
+            client,
+            "/api/hub/publish/drafts",
+            new JsonObject
+            {
+                ["projectKind"] = HubCatalogItemKinds.RulePack,
+                ["projectId"] = projectId,
+                ["rulesetId"] = RulesetDefaults.Sr5,
+                ["title"] = "Campaign ShadowOps",
+                ["publisherId"] = publisherId
+            });
+        string draftId = created["draftId"]?.GetValue<string>() ?? string.Empty;
+
+        JsonObject detail = await GetRequiredJsonObject(client, $"/api/hub/publish/drafts/{draftId}");
+        JsonObject submission = await PostRequiredJsonObject(
+            client,
+            $"/api/hub/publish/rulepack/{projectId}/submit?ruleset=sr5",
+            new JsonObject
+            {
+                ["notes"] = "ready for moderation"
+            });
+        string caseId = submission["caseId"]?.GetValue<string>() ?? string.Empty;
+
+        JsonObject queue = await GetRequiredJsonObject(client, "/api/hub/moderation/queue?state=pending-review");
+        JsonObject approved = await PostRequiredJsonObject(
+            client,
+            $"/api/hub/moderation/queue/{caseId}/approve",
+            new JsonObject
+            {
+                ["notes"] = "approved"
+            });
+
+        bool queued = queue["items"]?.AsArray().OfType<JsonObject>()
+            .Any(item =>
+                string.Equals(item["caseId"]?.GetValue<string>(), caseId, StringComparison.Ordinal)
+                && string.Equals(item["publisherId"]?.GetValue<string>(), publisherId, StringComparison.Ordinal))
+            ?? false;
+
+        Assert.AreEqual(publisherId, created["publisherId"]?.GetValue<string>());
+        Assert.AreEqual(publisherId, detail["draft"]?["publisherId"]?.GetValue<string>());
+        Assert.AreEqual(publisherId, submission["publisherId"]?.GetValue<string>());
+        Assert.IsTrue(queued, $"Expected moderation queue to include publisher '{publisherId}'.");
+        Assert.AreEqual(publisherId, approved["publisherId"]?.GetValue<string>());
+    }
+
+    [TestMethod]
     public async Task Hub_publish_drafts_endpoint_lists_persisted_owner_drafts()
     {
         using var client = CreateClient();

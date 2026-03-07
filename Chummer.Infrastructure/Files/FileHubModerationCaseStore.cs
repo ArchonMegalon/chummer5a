@@ -67,6 +67,7 @@ public sealed class FileHubModerationCaseStore : IHubModerationCaseStore
             RulesetId = RulesetDefaults.NormalizeRequired(record.RulesetId),
             Title = record.Title.Trim(),
             OwnerId = owner.NormalizedValue,
+            PublisherId = NormalizeOptionalPublisherId(record.PublisherId),
             State = NormalizeRequired(record.State)
         };
 
@@ -147,4 +148,9 @@ public sealed class FileHubModerationCaseStore : IHubModerationCaseStore
         => string.IsNullOrWhiteSpace(value)
             ? null
             : NormalizeRequired(value);
+
+    private static string? NormalizeOptionalPublisherId(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim().ToLowerInvariant();
 }

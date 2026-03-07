@@ -61,6 +61,7 @@ public sealed class FileHubDraftStore : IHubDraftStore
             Summary = NormalizeOptional(record.Summary),
             Description = NormalizeOptional(record.Description),
             OwnerId = owner.NormalizedValue,
+            PublisherId = NormalizeOptionalPublisherId(record.PublisherId),
             State = NormalizeRequired(record.State)
         };
 
@@ -141,4 +142,9 @@ public sealed class FileHubDraftStore : IHubDraftStore
         => string.IsNullOrWhiteSpace(value)
             ? null
             : value.Trim();
+
+    private static string? NormalizeOptionalPublisherId(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim().ToLowerInvariant();
 }

@@ -28,6 +28,7 @@ public class HubPublicationStoreTests
                 RulesetId: RulesetDefaults.Sr5,
                 Title: "Campaign ShadowOps",
                 OwnerId: "alice",
+                PublisherId: "shadowops",
                 State: HubPublicationStates.Draft,
                 CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
                 UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:05:00+00:00"),
@@ -43,6 +44,7 @@ public class HubPublicationStoreTests
             Assert.AreEqual("Campaign ShadowOps", reloaded.Title);
             Assert.AreEqual("Street-level campaign", reloaded.Summary);
             Assert.AreEqual("Campaign-specific SR5 publication draft.", reloaded.Description);
+            Assert.AreEqual("shadowops", reloaded.PublisherId);
             Assert.AreEqual(HubPublicationStates.Draft, reloaded.State);
             Assert.IsNull(hiddenFromBob);
         }
@@ -68,6 +70,7 @@ public class HubPublicationStoreTests
                 RulesetId: RulesetDefaults.Sr5,
                 Title: "Campaign Runtime",
                 OwnerId: "alice",
+                PublisherId: "shadowops",
                 State: HubModerationStates.PendingReview,
                 CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:10:00+00:00"),
                 UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:11:00+00:00"),
@@ -80,6 +83,7 @@ public class HubPublicationStoreTests
 
             Assert.IsNotNull(reloaded);
             Assert.AreEqual("Campaign Runtime", reloaded.Title);
+            Assert.AreEqual("shadowops", reloaded.PublisherId);
             Assert.AreEqual(HubModerationStates.PendingReview, reloaded.State);
             Assert.IsNull(hiddenFromBob);
         }
@@ -106,6 +110,7 @@ public class HubPublicationStoreTests
                 RulesetId: RulesetDefaults.Sr5,
                 Title: "Campaign ShadowOps",
                 OwnerId: owner.NormalizedValue,
+                PublisherId: "shadowops",
                 State: HubPublicationStates.Submitted,
                 CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
                 UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:05:00+00:00"));
@@ -117,6 +122,7 @@ public class HubPublicationStoreTests
                 RulesetId: draft.RulesetId,
                 Title: draft.Title,
                 OwnerId: owner.NormalizedValue,
+                PublisherId: draft.PublisherId,
                 State: HubModerationStates.PendingReview,
                 CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:10:00+00:00"),
                 UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:11:00+00:00"));

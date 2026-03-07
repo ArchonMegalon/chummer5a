@@ -8,13 +8,16 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
 {
     private readonly IHubDraftStore _draftStore;
     private readonly IHubModerationCaseStore _moderationCaseStore;
+    private readonly IHubPublisherStore _publisherStore;
 
     public DefaultHubPublicationService(
         IHubDraftStore draftStore,
-        IHubModerationCaseStore moderationCaseStore)
+        IHubModerationCaseStore moderationCaseStore,
+        IHubPublisherStore publisherStore)
     {
         _draftStore = draftStore;
         _moderationCaseStore = moderationCaseStore;
+        _publisherStore = publisherStore;
     }
 
     public HubPublicationResult<HubPublishDraftList> ListDrafts(OwnerScope owner, string? kind = null, string? rulesetId = null, string? state = null)
@@ -49,6 +52,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
                 RulesetId: moderationCase.RulesetId,
                 Title: moderationCase.Title,
                 OwnerId: moderationCase.OwnerId,
+                PublisherId: moderationCase.PublisherId,
                 State: moderationCase.State,
                 CreatedAtUtc: moderationCase.CreatedAtUtc,
                 Summary: moderationCase.Summary);
@@ -74,6 +78,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
         string normalizedRulesetId = RulesetDefaults.NormalizeRequired(request.RulesetId);
         DateTimeOffset now = DateTimeOffset.UtcNow;
         HubDraftRecord? existing = _draftStore.Get(owner, normalizedKind, normalizedProjectId, normalizedRulesetId);
+        string? publisherId = ResolvePublisherId(owner, request.PublisherId, existing?.PublisherId);
 
         HubDraftRecord persisted = _draftStore.Upsert(
             owner,
@@ -86,6 +91,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
                 Summary: normalizedSummary,
                 Description: normalizedDescription,
                 OwnerId: owner.NormalizedValue,
+                PublisherId: publisherId,
                 State: existing?.State ?? HubPublicationStates.Draft,
                 CreatedAtUtc: existing?.CreatedAtUtc ?? now,
                 UpdatedAtUtc: now,
@@ -112,6 +118,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
                 Title = NormalizeTitle(request.Title),
                 Summary = NormalizeOptionalText(request.Summary),
                 Description = NormalizeOptionalText(request.Description),
+                PublisherId = ResolvePublisherId(owner, request.PublisherId, existing.PublisherId),
                 UpdatedAtUtc = DateTimeOffset.UtcNow
             });
 
@@ -156,6 +163,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
         string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
         HubDraftRecord? existing = ResolveDraft(owner, normalizedKind, normalizedItemId, normalizedRulesetId);
         DateTimeOffset now = DateTimeOffset.UtcNow;
+        string? publisherId = ResolvePublisherId(owner, request?.PublisherId, existing?.PublisherId);
 
         HubDraftRecord draft = _draftStore.Upsert(
             owner,
@@ -168,6 +176,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
                 Summary: existing?.Summary,
                 Description: existing?.Description,
                 OwnerId: owner.NormalizedValue,
+                PublisherId: publisherId,
                 State: HubPublicationStates.Submitted,
                 CreatedAtUtc: existing?.CreatedAtUtc ?? now,
                 UpdatedAtUtc: now,
@@ -184,6 +193,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
                 RulesetId: draft.RulesetId,
                 Title: draft.Title,
                 OwnerId: owner.NormalizedValue,
+                PublisherId: draft.PublisherId,
                 State: HubModerationStates.PendingReview,
                 CreatedAtUtc: existingCase?.CreatedAtUtc ?? now,
                 UpdatedAtUtc: now,
@@ -198,6 +208,7 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
                 ProjectId: draft.ProjectId,
                 RulesetId: draft.RulesetId,
                 OwnerId: draft.OwnerId,
+                PublisherId: draft.PublisherId,
                 State: draft.State,
                 ReviewState: moderationCase.State,
                 Notes: request?.Notes,
@@ -232,10 +243,33 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
             Title: record.Title,
             Summary: record.Summary,
             OwnerId: record.OwnerId,
+            PublisherId: record.PublisherId,
             State: record.State,
             CreatedAtUtc: record.CreatedAtUtc,
             UpdatedAtUtc: record.UpdatedAtUtc,
             SubmittedAtUtc: record.SubmittedAtUtc);
+
+    private string? ResolvePublisherId(OwnerScope owner, string? requestedPublisherId, string? existingPublisherId)
+    {
+        string? normalizedRequestedPublisherId = NormalizePublisherIdOptional(requestedPublisherId);
+        if (normalizedRequestedPublisherId is not null)
+        {
+            return _publisherStore.Get(owner, normalizedRequestedPublisherId) is null
+                ? throw new ArgumentException($"Unknown publisher '{normalizedRequestedPublisherId}'.", nameof(requestedPublisherId))
+                : normalizedRequestedPublisherId;
+        }
+
+        string? normalizedExistingPublisherId = NormalizePublisherIdOptional(existingPublisherId);
+        if (normalizedExistingPublisherId is not null)
+        {
+            return normalizedExistingPublisherId;
+        }
+
+        HubPublisherRecord[] publishers = _publisherStore.List(owner).ToArray();
+        return publishers.Length == 1
+            ? publishers[0].PublisherId
+            : null;
+    }
 
     private static string NormalizeKindRequired(string value)
     {
@@ -266,6 +300,11 @@ public sealed class DefaultHubPublicationService : IHubPublicationService
             : NormalizeKindRequired(value);
 
     private static string? NormalizeStateOptional(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim().ToLowerInvariant();
+
+    private static string? NormalizePublisherIdOptional(string? value)
         => string.IsNullOrWhiteSpace(value)
             ? null
             : value.Trim().ToLowerInvariant();

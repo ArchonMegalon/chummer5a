@@ -34,7 +34,7 @@ public static class HubPublicationEndpoints
                 });
             }
 
-            return ToResult(hubPublicationService.CreateDraft(ownerContextAccessor.Current, request));
+            return ToValidatedResult(() => hubPublicationService.CreateDraft(ownerContextAccessor.Current, request));
         });
 
         app.MapPut("/api/hub/publish/drafts/{draftId}", (string draftId, HubUpdateDraftRequest? request, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
@@ -48,7 +48,21 @@ public static class HubPublicationEndpoints
                 });
             }
 
-            HubPublishDraftReceipt? updated = hubPublicationService.UpdateDraft(ownerContextAccessor.Current, draftId, request).Payload;
+            HubPublishDraftReceipt? updated;
+            try
+            {
+                updated = hubPublicationService.UpdateDraft(ownerContextAccessor.Current, draftId, request).Payload;
+            }
+            catch (ArgumentException exception)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "hub_publish_invalid_request",
+                    operation = HubPublicationOperations.UpdateDraft,
+                    message = exception.Message
+                });
+            }
+
             return updated is null
                 ? Results.NotFound(new
                 {
@@ -83,7 +97,7 @@ public static class HubPublicationEndpoints
         });
 
         app.MapPost("/api/hub/publish/{kind}/{itemId}/submit", (string kind, string itemId, string? ruleset, HubSubmitProjectRequest? request, IHubPublicationService hubPublicationService, IOwnerContextAccessor ownerContextAccessor) =>
-            ToResult(hubPublicationService.SubmitForReview(ownerContextAccessor.Current, kind, itemId, ruleset, request)));
+            ToValidatedResult(() => hubPublicationService.SubmitForReview(ownerContextAccessor.Current, kind, itemId, ruleset, request)));
 
         app.MapGet("/api/hub/moderation/queue", (string? state, IHubModerationService hubModerationService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(hubModerationService.ListQueue(ownerContextAccessor.Current, state)));
@@ -125,5 +139,21 @@ public static class HubPublicationEndpoints
         HubPublicationNotImplementedReceipt receipt = result.NotImplemented
             ?? throw new InvalidOperationException("Hub publication result was not implemented but did not include a receipt.");
         return Results.Json(receipt, statusCode: StatusCodes.Status501NotImplemented);
+    }
+
+    private static IResult ToValidatedResult<T>(Func<HubPublicationResult<T>> factory)
+    {
+        try
+        {
+            return ToResult(factory());
+        }
+        catch (ArgumentException exception)
+        {
+            return Results.BadRequest(new
+            {
+                error = "hub_publish_invalid_request",
+                message = exception.Message
+            });
+        }
     }
 }

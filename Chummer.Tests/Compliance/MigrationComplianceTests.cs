@@ -952,12 +952,16 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubPublicationContractsText, "public sealed record HubModerationDecisionReceipt");
         StringAssert.Contains(hubPublicationContractsText, "public sealed record HubDraftRecord");
         StringAssert.Contains(hubPublicationContractsText, "public sealed record HubModerationCaseRecord");
+        StringAssert.Contains(hubPublicationContractsText, "string? PublisherId");
+        StringAssert.Contains(hubPublicationServiceText, "IHubPublisherStore");
+        StringAssert.Contains(hubPublicationServiceText, "ResolvePublisherId");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubDraftStore>(_ => new FileHubDraftStore(stateDirectory))");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubModerationCaseStore>(_ => new FileHubModerationCaseStore(stateDirectory))");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubPublicationService, DefaultHubPublicationService>()");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubModerationService, DefaultHubModerationService>()");
         StringAssert.Contains(readmeText, "/api/hub/publish/*");
         StringAssert.Contains(readmeText, "/api/hub/moderation/*");
+        StringAssert.Contains(readmeText, "stable owner-backed publisher profiles");
     }
 
     [TestMethod]
