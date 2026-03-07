@@ -22,6 +22,36 @@ public sealed class DefaultHubReviewService : IHubReviewService
         return HubPublicationResult<HubReviewCatalog>.Implemented(new HubReviewCatalog(items));
     }
 
+    public HubPublicationResult<HubReviewAggregateSummary> GetAggregateSummary(string kind, string itemId, string? rulesetId = null)
+    {
+        string normalizedKind = NormalizeRequired(kind);
+        string normalizedItemId = NormalizeItemId(itemId);
+        string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+        HubReviewRecord[] reviews = _reviewStore.ListAll(normalizedKind, normalizedItemId, normalizedRulesetId)
+            .OrderByDescending(record => record.UpdatedAtUtc)
+            .ToArray();
+        int ratedReviewCount = reviews.Count(static review => review.Stars.HasValue);
+        double? averageStars = ratedReviewCount == 0
+            ? null
+            : Math.Round(
+                reviews
+                    .Where(static review => review.Stars.HasValue)
+                    .Average(static review => review.Stars!.Value),
+                2,
+                MidpointRounding.AwayFromZero);
+
+        return HubPublicationResult<HubReviewAggregateSummary>.Implemented(
+            new HubReviewAggregateSummary(
+                TotalReviews: reviews.Length,
+                RecommendedCount: reviews.Count(static review => string.Equals(review.RecommendationState, HubRecommendationStates.Recommended, StringComparison.Ordinal)),
+                NeutralCount: reviews.Count(static review => string.Equals(review.RecommendationState, HubRecommendationStates.Neutral, StringComparison.Ordinal)),
+                NotRecommendedCount: reviews.Count(static review => string.Equals(review.RecommendationState, HubRecommendationStates.NotRecommended, StringComparison.Ordinal)),
+                UsedAtTableCount: reviews.Count(static review => review.UsedAtTable),
+                RatedReviewCount: ratedReviewCount,
+                AverageStars: averageStars,
+                LatestReviewAtUtc: reviews.FirstOrDefault()?.UpdatedAtUtc));
+    }
+
     public HubPublicationResult<HubReviewReceipt> UpsertReview(OwnerScope owner, string kind, string itemId, HubUpsertReviewRequest? request)
     {
         ArgumentNullException.ThrowIfNull(request);

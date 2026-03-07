@@ -88,33 +88,45 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
 
             foreach (RulePackRegistryEntry entry in _rulePackRegistryService.List(owner, rulesetId))
             {
+                HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.RulePack, entry.Manifest.PackId, rulesetId);
+                HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.RulePack, entry.Manifest.PackId, rulesetId);
                 yield return ToCatalogItem(
                     rulesetId,
                     entry,
-                    GetOwnerReviewSummary(owner, HubCatalogItemKinds.RulePack, entry.Manifest.PackId, rulesetId));
+                    ownerReview,
+                    aggregateReview);
             }
 
             foreach (BuildKitRegistryEntry entry in _buildKitRegistryService.List(owner, rulesetId))
             {
+                HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.BuildKit, entry.Manifest.BuildKitId, rulesetId);
+                HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.BuildKit, entry.Manifest.BuildKitId, rulesetId);
                 yield return ToCatalogItem(
                     rulesetId,
                     entry,
-                    GetOwnerReviewSummary(owner, HubCatalogItemKinds.BuildKit, entry.Manifest.BuildKitId, rulesetId));
+                    ownerReview,
+                    aggregateReview);
             }
         }
 
         foreach (RuleProfileRegistryEntry entry in _ruleProfileRegistryService.List(owner))
         {
+            HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.RuleProfile, entry.Manifest.ProfileId, entry.Manifest.RulesetId);
+            HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.RuleProfile, entry.Manifest.ProfileId, entry.Manifest.RulesetId);
             yield return ToCatalogItem(
                 entry,
-                GetOwnerReviewSummary(owner, HubCatalogItemKinds.RuleProfile, entry.Manifest.ProfileId, entry.Manifest.RulesetId));
+                ownerReview,
+                aggregateReview);
         }
 
         foreach (RuntimeLockRegistryEntry entry in _runtimeLockRegistryService.List(owner).Entries)
         {
+            HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.RuntimeLock, entry.LockId, entry.RuntimeLock.RulesetId);
+            HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.RuntimeLock, entry.LockId, entry.RuntimeLock.RulesetId);
             yield return ToCatalogItem(
                 entry,
-                GetOwnerReviewSummary(owner, HubCatalogItemKinds.RuntimeLock, entry.LockId, entry.RuntimeLock.RulesetId));
+                ownerReview,
+                aggregateReview);
         }
     }
 
@@ -131,18 +143,22 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             HubProjectDetailFact[] installHistoryFacts = CreateInstallHistoryFacts(
                 _rulePackInstallHistoryStore.GetHistory(owner, entry.Manifest.PackId, entry.Manifest.Version, candidateRulesetId)
                     .Select(record => record.Entry));
+            HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.RulePack, entry.Manifest.PackId, candidateRulesetId);
+            HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.RulePack, entry.Manifest.PackId, candidateRulesetId);
 
             return new HubProjectDetailProjection(
                 Summary: ToCatalogItem(
                     candidateRulesetId,
                     entry,
-                    GetOwnerReviewSummary(owner, HubCatalogItemKinds.RulePack, entry.Manifest.PackId, candidateRulesetId)),
+                    ownerReview,
+                    aggregateReview),
                 OwnerId: entry.Publication.OwnerId,
                 CatalogKind: null,
                 PublicationStatus: entry.Publication.PublicationStatus,
                 ReviewState: entry.Publication.Review.State,
                 RuntimeFingerprint: null,
-                OwnerReview: GetOwnerReviewSummary(owner, HubCatalogItemKinds.RulePack, entry.Manifest.PackId, candidateRulesetId),
+                OwnerReview: ownerReview,
+                AggregateReview: aggregateReview,
                 Facts:
                 [
                     new HubProjectDetailFact("source-kind", "Source Kind", entry.SourceKind),
@@ -182,17 +198,21 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         HubProjectDetailFact[] installHistoryFacts = CreateInstallHistoryFacts(
             _ruleProfileInstallHistoryStore.GetHistory(owner, entry.Manifest.ProfileId, entry.Manifest.RulesetId)
                 .Select(record => record.Entry));
+        HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.RuleProfile, entry.Manifest.ProfileId, entry.Manifest.RulesetId);
+        HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.RuleProfile, entry.Manifest.ProfileId, entry.Manifest.RulesetId);
 
         return new HubProjectDetailProjection(
             Summary: ToCatalogItem(
                 entry,
-                GetOwnerReviewSummary(owner, HubCatalogItemKinds.RuleProfile, entry.Manifest.ProfileId, entry.Manifest.RulesetId)),
+                ownerReview,
+                aggregateReview),
             OwnerId: entry.Publication.OwnerId,
             CatalogKind: entry.Manifest.CatalogKind,
             PublicationStatus: entry.Publication.PublicationStatus,
             ReviewState: entry.Publication.Review.State,
             RuntimeFingerprint: entry.Manifest.RuntimeLock.RuntimeFingerprint,
-            OwnerReview: GetOwnerReviewSummary(owner, HubCatalogItemKinds.RuleProfile, entry.Manifest.ProfileId, entry.Manifest.RulesetId),
+            OwnerReview: ownerReview,
+            AggregateReview: aggregateReview,
             Facts:
             [
                 new HubProjectDetailFact("source-kind", "Source Kind", entry.SourceKind),
@@ -234,18 +254,22 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             {
                 continue;
             }
+            HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.BuildKit, entry.Manifest.BuildKitId, candidateRulesetId);
+            HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.BuildKit, entry.Manifest.BuildKitId, candidateRulesetId);
 
             return new HubProjectDetailProjection(
                 Summary: ToCatalogItem(
                     candidateRulesetId,
                     entry,
-                    GetOwnerReviewSummary(owner, HubCatalogItemKinds.BuildKit, entry.Manifest.BuildKitId, candidateRulesetId)),
+                    ownerReview,
+                    aggregateReview),
                 OwnerId: entry.Owner.NormalizedValue,
                 CatalogKind: null,
                 PublicationStatus: entry.PublicationStatus,
                 ReviewState: null,
                 RuntimeFingerprint: null,
-                OwnerReview: GetOwnerReviewSummary(owner, HubCatalogItemKinds.BuildKit, entry.Manifest.BuildKitId, candidateRulesetId),
+                OwnerReview: ownerReview,
+                AggregateReview: aggregateReview,
                 Facts:
                 [
                     new HubProjectDetailFact("prompt-count", "Prompts", entry.Manifest.Prompts.Count.ToString()),
@@ -291,17 +315,21 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         HubProjectDetailFact[] installHistoryFacts = CreateInstallHistoryFacts(
             _runtimeLockInstallHistoryStore.GetHistory(owner, entry.LockId, entry.RuntimeLock.RulesetId)
                 .Select(record => record.Entry));
+        HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.RuntimeLock, entry.LockId, entry.RuntimeLock.RulesetId);
+        HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.RuntimeLock, entry.LockId, entry.RuntimeLock.RulesetId);
 
         return new HubProjectDetailProjection(
             Summary: ToCatalogItem(
                 entry,
-                GetOwnerReviewSummary(owner, HubCatalogItemKinds.RuntimeLock, entry.LockId, entry.RuntimeLock.RulesetId)),
+                ownerReview,
+                aggregateReview),
             OwnerId: entry.Owner.NormalizedValue,
             CatalogKind: entry.CatalogKind,
             PublicationStatus: null,
             ReviewState: null,
             RuntimeFingerprint: entry.RuntimeLock.RuntimeFingerprint,
-            OwnerReview: GetOwnerReviewSummary(owner, HubCatalogItemKinds.RuntimeLock, entry.LockId, entry.RuntimeLock.RulesetId),
+            OwnerReview: ownerReview,
+            AggregateReview: aggregateReview,
             Facts:
             [
                 new HubProjectDetailFact("install-state", "Install State", entry.Install.State),
@@ -359,7 +387,19 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             UpdatedAtUtc: review.UpdatedAtUtc);
     }
 
-    private static HubCatalogItem ToCatalogItem(string rulesetId, RulePackRegistryEntry entry, HubReviewSummary? ownerReview = null) => new(
+    private HubReviewAggregateSummary? GetAggregateReviewSummary(string kind, string itemId, string? rulesetId)
+    {
+        HubReviewAggregateSummary? summary = _hubReviewService.GetAggregateSummary(kind, itemId, rulesetId).Payload;
+        return summary is null || summary.TotalReviews == 0
+            ? null
+            : summary;
+    }
+
+    private static HubCatalogItem ToCatalogItem(
+        string rulesetId,
+        RulePackRegistryEntry entry,
+        HubReviewSummary? ownerReview = null,
+        HubReviewAggregateSummary? aggregateReview = null) => new(
         ItemId: entry.Manifest.PackId,
         Kind: HubCatalogItemKinds.RulePack,
         Title: entry.Manifest.Title,
@@ -370,9 +410,14 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         LinkTarget: $"/hub/rulepacks/{entry.Manifest.PackId}",
         Version: entry.Manifest.Version,
         InstallState: entry.Install.State,
-        OwnerReview: ownerReview);
+        OwnerReview: ownerReview,
+        AggregateReview: aggregateReview);
 
-    private static HubCatalogItem ToCatalogItem(string rulesetId, BuildKitRegistryEntry entry, HubReviewSummary? ownerReview = null) => new(
+    private static HubCatalogItem ToCatalogItem(
+        string rulesetId,
+        BuildKitRegistryEntry entry,
+        HubReviewSummary? ownerReview = null,
+        HubReviewAggregateSummary? aggregateReview = null) => new(
         ItemId: entry.Manifest.BuildKitId,
         Kind: HubCatalogItemKinds.BuildKit,
         Title: entry.Manifest.Title,
@@ -382,9 +427,13 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         TrustTier: entry.Manifest.TrustTier,
         LinkTarget: $"/hub/buildkits/{entry.Manifest.BuildKitId}",
         Version: entry.Manifest.Version,
-        OwnerReview: ownerReview);
+        OwnerReview: ownerReview,
+        AggregateReview: aggregateReview);
 
-    private static HubCatalogItem ToCatalogItem(RuleProfileRegistryEntry entry, HubReviewSummary? ownerReview = null) => new(
+    private static HubCatalogItem ToCatalogItem(
+        RuleProfileRegistryEntry entry,
+        HubReviewSummary? ownerReview = null,
+        HubReviewAggregateSummary? aggregateReview = null) => new(
         ItemId: entry.Manifest.ProfileId,
         Kind: HubCatalogItemKinds.RuleProfile,
         Title: entry.Manifest.Title,
@@ -395,9 +444,13 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         LinkTarget: $"/hub/profiles/{entry.Manifest.ProfileId}",
         Version: entry.Manifest.RuntimeLock.RuntimeFingerprint,
         InstallState: entry.Install.State,
-        OwnerReview: ownerReview);
+        OwnerReview: ownerReview,
+        AggregateReview: aggregateReview);
 
-    private static HubCatalogItem ToCatalogItem(RuntimeLockRegistryEntry entry, HubReviewSummary? ownerReview = null) => new(
+    private static HubCatalogItem ToCatalogItem(
+        RuntimeLockRegistryEntry entry,
+        HubReviewSummary? ownerReview = null,
+        HubReviewAggregateSummary? aggregateReview = null) => new(
         ItemId: entry.LockId,
         Kind: HubCatalogItemKinds.RuntimeLock,
         Title: entry.Title,
@@ -409,7 +462,8 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         Version: entry.RuntimeLock.RuntimeFingerprint,
         Installable: true,
         InstallState: entry.Install.State,
-        OwnerReview: ownerReview);
+        OwnerReview: ownerReview,
+        AggregateReview: aggregateReview);
 
     private static string ResolveTrustTier(string visibility) =>
         string.Equals(visibility, ArtifactVisibilityModes.Public, StringComparison.Ordinal)

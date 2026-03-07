@@ -61,6 +61,7 @@ public sealed record HubProjectDetailProjection(
     string? ReviewState,
     string? RuntimeFingerprint,
     HubReviewSummary? OwnerReview,
+    HubReviewAggregateSummary? AggregateReview,
     IReadOnlyList<HubProjectDetailFact> Facts,
     IReadOnlyList<HubProjectDependency> Dependencies,
     IReadOnlyList<HubProjectAction> Actions,

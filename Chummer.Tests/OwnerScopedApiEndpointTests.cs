@@ -774,6 +774,16 @@ public sealed class OwnerScopedApiEndpointTests
                 : Array.Empty<HubReviewRecord>();
         }
 
+        public IReadOnlyList<HubReviewRecord> ListAll(string? kind = null, string? itemId = null, string? rulesetId = null)
+        {
+            return _recordsByOwner.Values
+                .SelectMany(static records => records)
+                .Where(record => kind is null || string.Equals(record.ProjectKind, kind, StringComparison.Ordinal))
+                .Where(record => itemId is null || string.Equals(record.ProjectId, itemId, StringComparison.Ordinal))
+                .Where(record => rulesetId is null || string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal))
+                .ToArray();
+        }
+
         public HubReviewRecord? Get(OwnerScope owner, string kind, string itemId, string rulesetId)
         {
             if (!_recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubReviewRecord>? records))

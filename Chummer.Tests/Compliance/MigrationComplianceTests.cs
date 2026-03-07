@@ -986,10 +986,12 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubReviewEndpointsText, "IHubReviewService");
         StringAssert.Contains(hubReviewStoreContractText, "public interface IHubReviewStore");
         StringAssert.Contains(hubReviewStoreContractText, "IReadOnlyList<HubReviewRecord> List");
+        StringAssert.Contains(hubReviewStoreContractText, "IReadOnlyList<HubReviewRecord> ListAll");
         StringAssert.Contains(hubReviewStoreContractText, "HubReviewRecord? Get(OwnerScope owner, string kind, string itemId, string rulesetId)");
         StringAssert.Contains(hubReviewStoreContractText, "HubReviewRecord Upsert");
         StringAssert.Contains(hubReviewServiceContractText, "public interface IHubReviewService");
         StringAssert.Contains(hubReviewServiceContractText, "HubPublicationResult<HubReviewCatalog> ListReviews");
+        StringAssert.Contains(hubReviewServiceContractText, "HubPublicationResult<HubReviewAggregateSummary> GetAggregateSummary");
         StringAssert.Contains(hubReviewServiceContractText, "HubPublicationResult<HubReviewReceipt> UpsertReview");
         StringAssert.Contains(hubReviewServiceText, "public sealed class DefaultHubReviewService : IHubReviewService");
         StringAssert.Contains(hubReviewServiceText, "HubRecommendationStates.Recommended");
@@ -997,6 +999,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubReviewContractsText, "public sealed record HubUpsertReviewRequest");
         StringAssert.Contains(hubReviewContractsText, "public sealed record HubReviewReceipt");
         StringAssert.Contains(hubReviewContractsText, "public sealed record HubReviewCatalog");
+        StringAssert.Contains(hubReviewContractsText, "public sealed record HubReviewAggregateSummary");
         StringAssert.Contains(hubReviewContractsText, "public sealed record HubReviewRecord");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubReviewStore>(_ => new FileHubReviewStore(stateDirectory))");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubReviewService, DefaultHubReviewService>()");
@@ -1464,6 +1467,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubCatalogContractsText, "public sealed record HubCatalogItem");
         StringAssert.Contains(hubCatalogContractsText, "public sealed record HubCatalogResultPage");
         StringAssert.Contains(hubCatalogContractsText, "HubReviewSummary? OwnerReview");
+        StringAssert.Contains(hubCatalogContractsText, "HubReviewAggregateSummary? AggregateReview");
         StringAssert.Contains(hubCatalogContractsText, "BrowseQuery Query");
         StringAssert.Contains(hubCatalogContractsText, "IReadOnlyList<FacetDefinition> Facets");
         StringAssert.Contains(hubCatalogContractsText, "IReadOnlyList<SortDefinition> Sorts");
@@ -1484,6 +1488,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectDetailProjection");
         StringAssert.Contains(hubProjectDetailContractsText, "HubCatalogItem Summary");
         StringAssert.Contains(hubProjectDetailContractsText, "HubReviewSummary? OwnerReview");
+        StringAssert.Contains(hubProjectDetailContractsText, "HubReviewAggregateSummary? AggregateReview");
         StringAssert.Contains(hubProjectDetailContractsText, "string? RuntimeFingerprint");
         StringAssert.Contains(hubProjectDetailContractsText, "IReadOnlyList<HubProjectAction> Actions");
         StringAssert.Contains(hubProjectDetailContractsText, "IReadOnlyList<HubProjectCapabilityDescriptorProjection>? Capabilities = null");

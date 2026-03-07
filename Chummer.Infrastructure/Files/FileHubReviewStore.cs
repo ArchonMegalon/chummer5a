@@ -18,15 +18,12 @@ public sealed class FileHubReviewStore : IHubReviewStore
 
     public IReadOnlyList<HubReviewRecord> List(OwnerScope owner, string? kind = null, string? itemId = null, string? rulesetId = null)
     {
-        string? normalizedKind = NormalizeOptional(kind);
-        string? normalizedItemId = NormalizeItemIdOptional(itemId);
-        string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+        return ApplyFilters(Load(owner), kind, itemId, rulesetId);
+    }
 
-        return Load(owner)
-            .Where(record => normalizedKind is null || string.Equals(record.ProjectKind, normalizedKind, StringComparison.Ordinal))
-            .Where(record => normalizedItemId is null || string.Equals(record.ProjectId, normalizedItemId, StringComparison.Ordinal))
-            .Where(record => normalizedRulesetId is null || string.Equals(record.RulesetId, normalizedRulesetId, StringComparison.Ordinal))
-            .ToArray();
+    public IReadOnlyList<HubReviewRecord> ListAll(string? kind = null, string? itemId = null, string? rulesetId = null)
+    {
+        return ApplyFilters(EnumerateAllRecords(), kind, itemId, rulesetId);
     }
 
     public HubReviewRecord? Get(OwnerScope owner, string kind, string itemId, string rulesetId)
@@ -74,7 +71,11 @@ public sealed class FileHubReviewStore : IHubReviewStore
 
     private IReadOnlyList<HubReviewRecord> Load(OwnerScope owner)
     {
-        string path = GetPath(owner);
+        return Load(GetPath(owner));
+    }
+
+    private IReadOnlyList<HubReviewRecord> Load(string path)
+    {
         if (!File.Exists(path))
         {
             return [];
@@ -82,6 +83,41 @@ public sealed class FileHubReviewStore : IHubReviewStore
 
         List<HubReviewRecord>? records = JsonSerializer.Deserialize<List<HubReviewRecord>>(File.ReadAllText(path));
         return records ?? [];
+    }
+
+    private IReadOnlyList<HubReviewRecord> ApplyFilters(IEnumerable<HubReviewRecord> records, string? kind, string? itemId, string? rulesetId)
+    {
+        string? normalizedKind = NormalizeOptional(kind);
+        string? normalizedItemId = NormalizeItemIdOptional(itemId);
+        string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+
+        return records
+            .Where(record => normalizedKind is null || string.Equals(record.ProjectKind, normalizedKind, StringComparison.Ordinal))
+            .Where(record => normalizedItemId is null || string.Equals(record.ProjectId, normalizedItemId, StringComparison.Ordinal))
+            .Where(record => normalizedRulesetId is null || string.Equals(record.RulesetId, normalizedRulesetId, StringComparison.Ordinal))
+            .ToArray();
+    }
+
+    private IEnumerable<HubReviewRecord> EnumerateAllRecords()
+    {
+        foreach (HubReviewRecord record in Load(Path.Combine(_stateDirectory, "hub", "reviews.json")))
+        {
+            yield return record;
+        }
+
+        string ownersDirectory = Path.Combine(_stateDirectory, "owners");
+        if (!Directory.Exists(ownersDirectory))
+        {
+            yield break;
+        }
+
+        foreach (string ownerDirectory in Directory.EnumerateDirectories(ownersDirectory))
+        {
+            foreach (HubReviewRecord record in Load(Path.Combine(ownerDirectory, "hub", "reviews.json")))
+            {
+                yield return record;
+            }
+        }
     }
 
     private void Save(OwnerScope owner, IReadOnlyList<HubReviewRecord> records)

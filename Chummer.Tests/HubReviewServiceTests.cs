@@ -57,6 +57,42 @@ public sealed class HubReviewServiceTests
         Assert.IsEmpty(bobCatalog.Items);
     }
 
+    [TestMethod]
+    public void Default_review_service_aggregates_reviews_across_owners_for_project_signals()
+    {
+        InMemoryHubReviewStore store = new();
+        DefaultHubReviewService service = new(store);
+        service.UpsertReview(
+            new OwnerScope("alice"),
+            HubCatalogItemKinds.RuleProfile,
+            "campaign.sr5.runtime",
+            new HubUpsertReviewRequest(
+                RulesetDefaults.Sr5,
+                HubRecommendationStates.Recommended,
+                Stars: 5,
+                UsedAtTable: true));
+        service.UpsertReview(
+            new OwnerScope("bob"),
+            HubCatalogItemKinds.RuleProfile,
+            "campaign.sr5.runtime",
+            new HubUpsertReviewRequest(
+                RulesetDefaults.Sr5,
+                HubRecommendationStates.NotRecommended,
+                Stars: 2,
+                ReviewText: "Too swingy"));
+
+        HubReviewAggregateSummary aggregate = service.GetAggregateSummary(HubCatalogItemKinds.RuleProfile, "campaign.sr5.runtime", RulesetDefaults.Sr5).Payload!;
+
+        Assert.AreEqual(2, aggregate.TotalReviews);
+        Assert.AreEqual(1, aggregate.RecommendedCount);
+        Assert.AreEqual(0, aggregate.NeutralCount);
+        Assert.AreEqual(1, aggregate.NotRecommendedCount);
+        Assert.AreEqual(1, aggregate.UsedAtTableCount);
+        Assert.AreEqual(2, aggregate.RatedReviewCount);
+        Assert.AreEqual(3.5d, aggregate.AverageStars.GetValueOrDefault(), 0.001d);
+        Assert.IsNotNull(aggregate.LatestReviewAtUtc);
+    }
+
     private sealed class InMemoryHubReviewStore : IHubReviewStore
     {
         private readonly List<HubReviewRecord> _records = [];
@@ -65,6 +101,15 @@ public sealed class HubReviewServiceTests
         {
             return _records
                 .Where(record => string.Equals(record.OwnerId, owner.NormalizedValue, StringComparison.Ordinal))
+                .Where(record => kind is null || string.Equals(record.ProjectKind, kind, StringComparison.Ordinal))
+                .Where(record => itemId is null || string.Equals(record.ProjectId, itemId, StringComparison.Ordinal))
+                .Where(record => rulesetId is null || string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal))
+                .ToArray();
+        }
+
+        public IReadOnlyList<HubReviewRecord> ListAll(string? kind = null, string? itemId = null, string? rulesetId = null)
+        {
+            return _records
                 .Where(record => kind is null || string.Equals(record.ProjectKind, kind, StringComparison.Ordinal))
                 .Where(record => itemId is null || string.Equals(record.ProjectId, itemId, StringComparison.Ordinal))
                 .Where(record => rulesetId is null || string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal))

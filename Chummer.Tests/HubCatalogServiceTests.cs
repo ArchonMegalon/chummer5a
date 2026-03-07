@@ -41,7 +41,10 @@ public class HubCatalogServiceTests
             item.Kind == HubCatalogItemKinds.RuleProfile
             && item.ItemId == "official.sr5.core"
             && item.OwnerReview?.RecommendationState == HubRecommendationStates.Recommended
-            && item.OwnerReview.Stars == 5));
+            && item.OwnerReview.Stars == 5
+            && item.AggregateReview?.TotalReviews == 2
+            && item.AggregateReview.RecommendedCount == 1
+            && item.AggregateReview.NotRecommendedCount == 1));
         Assert.IsTrue(page.Facets.Any(facet => facet.FacetId == HubCatalogFacetIds.Kind));
     }
 
@@ -84,6 +87,12 @@ public class HubCatalogServiceTests
         Assert.AreEqual(HubRecommendationStates.Recommended, ruleProfile.OwnerReview.RecommendationState);
         Assert.AreEqual(5, ruleProfile.OwnerReview.Stars);
         Assert.IsTrue(ruleProfile.OwnerReview.UsedAtTable);
+        Assert.IsNotNull(ruleProfile.AggregateReview);
+        Assert.AreEqual(2, ruleProfile.AggregateReview.TotalReviews);
+        Assert.AreEqual(1, ruleProfile.AggregateReview.RecommendedCount);
+        Assert.AreEqual(1, ruleProfile.AggregateReview.NotRecommendedCount);
+        Assert.AreEqual(2, ruleProfile.AggregateReview.RatedReviewCount);
+        Assert.AreEqual(3.5d, ruleProfile.AggregateReview.AverageStars.GetValueOrDefault(), 0.001d);
         Assert.IsNotNull(ruleProfile.Capabilities);
         Assert.IsTrue(ruleProfile.Capabilities.Any(capability =>
             capability.CapabilityId == RulePackCapabilityIds.DeriveStat
@@ -253,7 +262,19 @@ public class HubCatalogServiceTests
                     UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:20:00+00:00"),
                     Stars: 5,
                     ReviewText: "Table-ready core runtime.",
-                    UsedAtTable: true)
+                    UsedAtTable: true),
+                new HubReviewRecord(
+                    ReviewId: "review-sr5-core-bob",
+                    ProjectKind: HubCatalogItemKinds.RuleProfile,
+                    ProjectId: "official.sr5.core",
+                    RulesetId: RulesetDefaults.Sr5,
+                    OwnerId: "bob",
+                    RecommendationState: HubRecommendationStates.NotRecommended,
+                    CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:18:00+00:00"),
+                    UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:25:00+00:00"),
+                    Stars: 2,
+                    ReviewText: "Not for my table.",
+                    UsedAtTable: false)
             ])),
         new RuntimeLockInstallHistoryStoreStub(
         [
@@ -435,6 +456,15 @@ public class HubCatalogServiceTests
         {
             return _records
                 .Where(record => string.Equals(record.OwnerId, owner.NormalizedValue, StringComparison.Ordinal))
+                .Where(record => kind is null || string.Equals(record.ProjectKind, kind, StringComparison.Ordinal))
+                .Where(record => itemId is null || string.Equals(record.ProjectId, itemId, StringComparison.Ordinal))
+                .Where(record => rulesetId is null || string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal))
+                .ToArray();
+        }
+
+        public IReadOnlyList<HubReviewRecord> ListAll(string? kind = null, string? itemId = null, string? rulesetId = null)
+        {
+            return _records
                 .Where(record => kind is null || string.Equals(record.ProjectKind, kind, StringComparison.Ordinal))
                 .Where(record => itemId is null || string.Equals(record.ProjectId, itemId, StringComparison.Ordinal))
                 .Where(record => rulesetId is null || string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal))

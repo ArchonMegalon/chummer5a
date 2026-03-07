@@ -37,6 +37,16 @@ public sealed record HubReviewSummary(
     string? ReviewText = null,
     DateTimeOffset? UpdatedAtUtc = null);
 
+public sealed record HubReviewAggregateSummary(
+    int TotalReviews,
+    int RecommendedCount,
+    int NeutralCount,
+    int NotRecommendedCount,
+    int UsedAtTableCount = 0,
+    int RatedReviewCount = 0,
+    double? AverageStars = null,
+    DateTimeOffset? LatestReviewAtUtc = null);
+
 public sealed record HubReviewRecord(
     string ReviewId,
     string ProjectKind,
