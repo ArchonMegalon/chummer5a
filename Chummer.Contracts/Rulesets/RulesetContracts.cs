@@ -55,6 +55,8 @@ public interface IRulesetPlugin
 
     IRulesetCatalogProvider Catalogs { get; }
 
+    IRulesetCapabilityDescriptorProvider CapabilityDescriptors { get; }
+
     IRulesetCapabilityHost Capabilities { get; }
 
     IRulesetRuleHost Rules { get; }

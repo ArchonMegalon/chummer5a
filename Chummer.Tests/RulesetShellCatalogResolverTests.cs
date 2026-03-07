@@ -234,6 +234,7 @@ public sealed class RulesetShellCatalogResolverTests
             Serializer = new StubSerializer(Id);
             ShellDefinitions = new StubShellDefinitions(commands, tabs);
             Catalogs = new StubCatalogs(workflowDefinitions, workflowSurfaces, actions);
+            CapabilityDescriptors = new StubCapabilityDescriptorProvider();
             Capabilities = new StubCapabilityHost();
             Rules = new StubRules();
             Scripts = new StubScripts();
@@ -248,6 +249,8 @@ public sealed class RulesetShellCatalogResolverTests
         public IRulesetShellDefinitionProvider ShellDefinitions { get; }
 
         public IRulesetCatalogProvider Catalogs { get; }
+
+        public IRulesetCapabilityDescriptorProvider CapabilityDescriptors { get; }
 
         public IRulesetCapabilityHost Capabilities { get; }
 
@@ -338,6 +341,11 @@ public sealed class RulesetShellCatalogResolverTests
                         StringComparer.Ordinal)),
                 []));
         }
+    }
+
+    private sealed class StubCapabilityDescriptorProvider : IRulesetCapabilityDescriptorProvider
+    {
+        public IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors() => [];
     }
 
     private sealed class StubScripts : IRulesetScriptHost

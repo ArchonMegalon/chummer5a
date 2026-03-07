@@ -61,6 +61,20 @@ public sealed record RulesetCapabilityInvocationResult(
     IReadOnlyList<RulesetCapabilityDiagnostic> Diagnostics,
     RulesetExplainTrace? Explain = null);
 
+public sealed record RulesetCapabilityDescriptor(
+    string CapabilityId,
+    string InvocationKind,
+    string Title,
+    bool Explainable,
+    bool SessionSafe,
+    RulesetGasBudget DefaultGasBudget,
+    RulesetGasBudget? MaximumGasBudget = null);
+
+public interface IRulesetCapabilityDescriptorProvider
+{
+    IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors();
+}
+
 public interface IRulesetCapabilityHost
 {
     ValueTask<RulesetCapabilityInvocationResult> InvokeAsync(RulesetCapabilityInvocationRequest request, CancellationToken ct);

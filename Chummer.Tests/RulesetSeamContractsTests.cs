@@ -2695,6 +2695,26 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Ruleset_capability_descriptor_contracts_define_invocation_kind_session_safety_and_gas_policy()
+    {
+        RulesetCapabilityDescriptor descriptor = new(
+            CapabilityId: RulePackCapabilityIds.SessionQuickActions,
+            InvocationKind: RulesetCapabilityInvocationKinds.Script,
+            Title: "Session Quick Actions",
+            Explainable: true,
+            SessionSafe: true,
+            DefaultGasBudget: new RulesetGasBudget(1_000, 5_000, 1_048_576, TimeSpan.FromSeconds(1)),
+            MaximumGasBudget: new RulesetGasBudget(5_000, 20_000, 4_194_304, TimeSpan.FromSeconds(2)));
+
+        Assert.AreEqual(RulePackCapabilityIds.SessionQuickActions, descriptor.CapabilityId);
+        Assert.AreEqual(RulesetCapabilityInvocationKinds.Script, descriptor.InvocationKind);
+        Assert.IsTrue(descriptor.Explainable);
+        Assert.IsTrue(descriptor.SessionSafe);
+        Assert.AreEqual(1_000, descriptor.DefaultGasBudget.ProviderInstructionLimit);
+        Assert.AreEqual(20_000, descriptor.MaximumGasBudget?.RequestInstructionLimit);
+    }
+
+    [TestMethod]
     public void Ruleset_defaults_expose_sr4_sr5_and_sr6_ids()
     {
         Assert.AreEqual(string.Empty, RulesetId.Default.NormalizedValue);
@@ -2772,6 +2792,8 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
+        Assert.IsTrue(plugin.CapabilityDescriptors.GetCapabilityDescriptors().Any(descriptor => string.Equals(descriptor.CapabilityId, RulePackCapabilityIds.DeriveStat, StringComparison.Ordinal)));
+        Assert.IsTrue(plugin.CapabilityDescriptors.GetCapabilityDescriptors().Any(static descriptor => descriptor.SessionSafe));
 
         RulesetCapabilityInvocationResult capabilityResult = await plugin.Capabilities.InvokeAsync(
             new RulesetCapabilityInvocationRequest(
@@ -2829,6 +2851,7 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
+        Assert.IsTrue(plugin.CapabilityDescriptors.GetCapabilityDescriptors().Any(descriptor => string.Equals(descriptor.CapabilityId, RulePackCapabilityIds.DeriveStat, StringComparison.Ordinal)));
 
         RulesetCapabilityInvocationResult capabilityResult = await plugin.Capabilities.InvokeAsync(
             new RulesetCapabilityInvocationRequest(
@@ -2896,6 +2919,7 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
+        Assert.IsTrue(plugin.CapabilityDescriptors.GetCapabilityDescriptors().Any(descriptor => string.Equals(descriptor.CapabilityId, RulePackCapabilityIds.DeriveStat, StringComparison.Ordinal)));
 
         RulesetCapabilityInvocationResult capabilityResult = await plugin.Capabilities.InvokeAsync(
             new RulesetCapabilityInvocationRequest(

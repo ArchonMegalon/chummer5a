@@ -1,3 +1,4 @@
+using Chummer.Contracts.Content;
 using Chummer.Contracts.Presentation;
 using Chummer.Contracts.Rulesets;
 
@@ -21,6 +22,8 @@ public class Sr5RulesetPlugin : IRulesetPlugin
     public IRulesetShellDefinitionProvider ShellDefinitions { get; } = new Sr5RulesetShellDefinitionProvider();
 
     public IRulesetCatalogProvider Catalogs { get; } = new Sr5RulesetCatalogProvider();
+
+    public IRulesetCapabilityDescriptorProvider CapabilityDescriptors { get; } = new Sr5RulesetCapabilityDescriptorProvider();
 
     public IRulesetCapabilityHost Capabilities { get; }
 
@@ -101,6 +104,43 @@ internal static class Sr5WorkflowCatalog
         new("sr5.tool.dice", WorkflowDefinitionIds.DiceTool, WorkflowSurfaceKinds.Tool, ShellRegionIds.DialogHost, WorkflowLayoutTokens.ToolPanel, ["dice_roller"]),
         new("sr5.session.summary", WorkflowDefinitionIds.SessionDashboard, WorkflowSurfaceKinds.Dashboard, ShellRegionIds.SummaryHeader, WorkflowLayoutTokens.SessionDashboard, ["tab-info.summary", "tab-info.validate"])
     ];
+}
+
+public class Sr5RulesetCapabilityDescriptorProvider : IRulesetCapabilityDescriptorProvider
+{
+    private static readonly RulesetGasBudget DefaultBudget = new(
+        ProviderInstructionLimit: 1_000,
+        RequestInstructionLimit: 5_000,
+        MemoryBytesLimit: 1_048_576,
+        WallClockLimit: TimeSpan.FromSeconds(1));
+
+    private static readonly RulesetGasBudget MaximumBudget = new(
+        ProviderInstructionLimit: 5_000,
+        RequestInstructionLimit: 20_000,
+        MemoryBytesLimit: 4_194_304,
+        WallClockLimit: TimeSpan.FromSeconds(2));
+
+    private static readonly IReadOnlyList<RulesetCapabilityDescriptor> Descriptors =
+    [
+        new(
+            CapabilityId: RulePackCapabilityIds.DeriveStat,
+            InvocationKind: RulesetCapabilityInvocationKinds.Rule,
+            Title: "Derived Stat Evaluation",
+            Explainable: true,
+            SessionSafe: false,
+            DefaultGasBudget: DefaultBudget,
+            MaximumGasBudget: MaximumBudget),
+        new(
+            CapabilityId: RulePackCapabilityIds.SessionQuickActions,
+            InvocationKind: RulesetCapabilityInvocationKinds.Script,
+            Title: "Session Quick Actions",
+            Explainable: true,
+            SessionSafe: true,
+            DefaultGasBudget: DefaultBudget,
+            MaximumGasBudget: MaximumBudget)
+    ];
+
+    public IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors() => Descriptors;
 }
 
 public class Sr5NoOpRulesetCapabilityHost : IRulesetCapabilityHost

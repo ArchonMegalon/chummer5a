@@ -404,6 +404,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
             Serializer = new StubRulesetSerializer(Id);
             ShellDefinitions = new StubRulesetShellDefinitions(commands, tabs);
             Catalogs = new StubRulesetCatalogProvider();
+            CapabilityDescriptors = new StubRulesetCapabilityDescriptorProvider();
             Capabilities = new StubRulesetCapabilityHost();
             Rules = new StubRulesetRuleHost();
             Scripts = new StubRulesetScriptHost();
@@ -418,6 +419,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         public IRulesetShellDefinitionProvider ShellDefinitions { get; }
 
         public IRulesetCatalogProvider Catalogs { get; }
+
+        public IRulesetCapabilityDescriptorProvider CapabilityDescriptors { get; }
 
         public IRulesetCapabilityHost Capabilities { get; }
 
@@ -517,6 +520,11 @@ public sealed class InProcessChummerClientRulesetPluginTests
                         StringComparer.Ordinal)),
                 Diagnostics: Array.Empty<RulesetCapabilityDiagnostic>()));
         }
+    }
+
+    private sealed class StubRulesetCapabilityDescriptorProvider : IRulesetCapabilityDescriptorProvider
+    {
+        public IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors() => [];
     }
 
     private sealed class StubRulesetScriptHost : IRulesetScriptHost

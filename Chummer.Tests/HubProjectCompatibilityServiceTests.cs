@@ -230,6 +230,7 @@ public class HubProjectCompatibilityServiceTests
             Serializer = new RulesetSerializerStub(Id);
             ShellDefinitions = new ShellDefinitionProviderStub();
             Catalogs = new CatalogProviderStub();
+            CapabilityDescriptors = new CapabilityDescriptorProviderStub();
             Capabilities = new CapabilityHostStub();
             Rules = new RuleHostStub();
             Scripts = new ScriptHostStub();
@@ -244,6 +245,8 @@ public class HubProjectCompatibilityServiceTests
         public IRulesetShellDefinitionProvider ShellDefinitions { get; }
 
         public IRulesetCatalogProvider Catalogs { get; }
+
+        public IRulesetCapabilityDescriptorProvider CapabilityDescriptors { get; }
 
         public IRulesetCapabilityHost Capabilities { get; }
 
@@ -291,6 +294,11 @@ public class HubProjectCompatibilityServiceTests
                 true,
                 new RulesetCapabilityValue(RulesetCapabilityValueKinds.Object, Properties: new Dictionary<string, RulesetCapabilityValue>(StringComparer.Ordinal)),
                 []));
+    }
+
+    private sealed class CapabilityDescriptorProviderStub : IRulesetCapabilityDescriptorProvider
+    {
+        public IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors() => [];
     }
 
     private sealed class ScriptHostStub : IRulesetScriptHost

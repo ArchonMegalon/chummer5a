@@ -465,6 +465,7 @@ public class RuleProfileRegistryServiceTests
             Serializer = new StubSerializer(Id, schemaVersion);
             ShellDefinitions = new StubShellDefinitions();
             Catalogs = new StubCatalogs();
+            CapabilityDescriptors = new StubCapabilityDescriptorProvider();
             Capabilities = new StubCapabilityHost();
             Rules = new StubRuleHost();
             Scripts = new StubScriptHost();
@@ -479,6 +480,8 @@ public class RuleProfileRegistryServiceTests
         public IRulesetShellDefinitionProvider ShellDefinitions { get; }
 
         public IRulesetCatalogProvider Catalogs { get; }
+
+        public IRulesetCapabilityDescriptorProvider CapabilityDescriptors { get; }
 
         public IRulesetCapabilityHost Capabilities { get; }
 
@@ -527,6 +530,11 @@ public class RuleProfileRegistryServiceTests
                 true,
                 new RulesetCapabilityValue(RulesetCapabilityValueKinds.Object, Properties: new Dictionary<string, RulesetCapabilityValue>(StringComparer.Ordinal)),
                 []));
+    }
+
+    private sealed class StubCapabilityDescriptorProvider : IRulesetCapabilityDescriptorProvider
+    {
+        public IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors() => [];
     }
 
     private sealed class StubScriptHost : IRulesetScriptHost

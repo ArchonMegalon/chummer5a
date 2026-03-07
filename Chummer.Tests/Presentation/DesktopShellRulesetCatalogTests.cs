@@ -222,6 +222,7 @@ public sealed class DesktopShellRulesetCatalogTests
         public IRulesetSerializer Serializer { get; } = new Sr6Serializer();
         public IRulesetShellDefinitionProvider ShellDefinitions { get; } = new Sr6ShellDefinitions();
         public IRulesetCatalogProvider Catalogs { get; } = new Sr6Catalogs();
+        public IRulesetCapabilityDescriptorProvider CapabilityDescriptors { get; } = new Sr6CapabilityDescriptorProvider();
         public IRulesetCapabilityHost Capabilities { get; } = new Sr6CapabilityHost();
         public IRulesetRuleHost Rules { get; } = new NoOpRulesetRuleHost();
         public IRulesetScriptHost Scripts { get; } = new NoOpRulesetScriptHost();
@@ -282,5 +283,10 @@ public sealed class DesktopShellRulesetCatalogTests
                         StringComparer.Ordinal)),
                 []));
         }
+    }
+
+    private sealed class Sr6CapabilityDescriptorProvider : IRulesetCapabilityDescriptorProvider
+    {
+        public IReadOnlyList<RulesetCapabilityDescriptor> GetCapabilityDescriptors() => [];
     }
 }

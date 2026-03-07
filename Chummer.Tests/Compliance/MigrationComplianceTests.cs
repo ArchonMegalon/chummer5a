@@ -3245,6 +3245,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetSerializer");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetShellDefinitionProvider");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetCatalogProvider");
+        StringAssert.Contains(rulesetContractsText, "IRulesetCapabilityDescriptorProvider CapabilityDescriptors");
         StringAssert.Contains(rulesetContractsText, "IRulesetCapabilityHost Capabilities");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetRuleHost");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetScriptHost");
@@ -3254,6 +3255,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(capabilityContractsText, "public sealed record RulesetCapabilityValue");
         StringAssert.Contains(capabilityContractsText, "public sealed record RulesetCapabilityInvocationRequest");
         StringAssert.Contains(capabilityContractsText, "public sealed record RulesetCapabilityInvocationResult");
+        StringAssert.Contains(capabilityContractsText, "public sealed record RulesetCapabilityDescriptor");
+        StringAssert.Contains(capabilityContractsText, "public interface IRulesetCapabilityDescriptorProvider");
         StringAssert.Contains(capabilityContractsText, "public interface IRulesetCapabilityHost");
         StringAssert.Contains(capabilityContractsText, "public sealed class RulesetRuleHostCapabilityAdapter");
         StringAssert.Contains(capabilityContractsText, "public sealed class RulesetScriptHostCapabilityAdapter");
