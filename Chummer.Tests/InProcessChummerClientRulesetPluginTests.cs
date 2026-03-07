@@ -404,6 +404,7 @@ public sealed class InProcessChummerClientRulesetPluginTests
             Serializer = new StubRulesetSerializer(Id);
             ShellDefinitions = new StubRulesetShellDefinitions(commands, tabs);
             Catalogs = new StubRulesetCatalogProvider();
+            Capabilities = new StubRulesetCapabilityHost();
             Rules = new StubRulesetRuleHost();
             Scripts = new StubRulesetScriptHost();
         }
@@ -417,6 +418,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         public IRulesetShellDefinitionProvider ShellDefinitions { get; }
 
         public IRulesetCatalogProvider Catalogs { get; }
+
+        public IRulesetCapabilityHost Capabilities { get; }
 
         public IRulesetRuleHost Rules { get; }
 
@@ -496,6 +499,23 @@ public sealed class InProcessChummerClientRulesetPluginTests
                 Success: true,
                 Outputs: request.Inputs,
                 Messages: Array.Empty<string>()));
+        }
+    }
+
+    private sealed class StubRulesetCapabilityHost : IRulesetCapabilityHost
+    {
+        public ValueTask<RulesetCapabilityInvocationResult> InvokeAsync(RulesetCapabilityInvocationRequest request, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            return ValueTask.FromResult(new RulesetCapabilityInvocationResult(
+                Success: true,
+                Output: new RulesetCapabilityValue(
+                    RulesetCapabilityValueKinds.Object,
+                    Properties: request.Arguments.ToDictionary(
+                        static argument => argument.Name,
+                        static argument => argument.Value,
+                        StringComparer.Ordinal)),
+                Diagnostics: Array.Empty<RulesetCapabilityDiagnostic>()));
         }
     }
 

@@ -3201,6 +3201,8 @@ public class MigrationComplianceTests
     {
         string rulesetContractsPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetContracts.cs");
         string rulesetContractsText = File.ReadAllText(rulesetContractsPath);
+        string capabilityContractsPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetCapabilityContracts.cs");
+        string capabilityContractsText = File.ReadAllText(capabilityContractsPath);
         string workspaceModelsPath = FindPath("Chummer.Contracts", "Workspaces", "CharacterWorkspaceModels.cs");
         string workspaceModelsText = File.ReadAllText(workspaceModelsPath);
         string workspaceApiModelsPath = FindPath("Chummer.Contracts", "Workspaces", "WorkspaceApiModels.cs");
@@ -3243,8 +3245,19 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetSerializer");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetShellDefinitionProvider");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetCatalogProvider");
+        StringAssert.Contains(rulesetContractsText, "IRulesetCapabilityHost Capabilities");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetRuleHost");
         StringAssert.Contains(rulesetContractsText, "public interface IRulesetScriptHost");
+        StringAssert.Contains(capabilityContractsText, "public static class RulesetCapabilityInvocationKinds");
+        StringAssert.Contains(capabilityContractsText, "public static class RulesetCapabilityValueKinds");
+        StringAssert.Contains(capabilityContractsText, "public sealed record RulesetCapabilityArgument");
+        StringAssert.Contains(capabilityContractsText, "public sealed record RulesetCapabilityValue");
+        StringAssert.Contains(capabilityContractsText, "public sealed record RulesetCapabilityInvocationRequest");
+        StringAssert.Contains(capabilityContractsText, "public sealed record RulesetCapabilityInvocationResult");
+        StringAssert.Contains(capabilityContractsText, "public interface IRulesetCapabilityHost");
+        StringAssert.Contains(capabilityContractsText, "public sealed class RulesetRuleHostCapabilityAdapter");
+        StringAssert.Contains(capabilityContractsText, "public sealed class RulesetScriptHostCapabilityAdapter");
+        StringAssert.Contains(capabilityContractsText, "public static class RulesetCapabilityBridge");
 
         string rulesetServicesPath = FindPath("Chummer.Contracts", "Rulesets", "RulesetShellServices.cs");
         string rulesetServicesText = File.ReadAllText(rulesetServicesPath);

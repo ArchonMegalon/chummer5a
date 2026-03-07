@@ -465,6 +465,7 @@ public class RuleProfileRegistryServiceTests
             Serializer = new StubSerializer(Id, schemaVersion);
             ShellDefinitions = new StubShellDefinitions();
             Catalogs = new StubCatalogs();
+            Capabilities = new StubCapabilityHost();
             Rules = new StubRuleHost();
             Scripts = new StubScriptHost();
         }
@@ -478,6 +479,8 @@ public class RuleProfileRegistryServiceTests
         public IRulesetShellDefinitionProvider ShellDefinitions { get; }
 
         public IRulesetCatalogProvider Catalogs { get; }
+
+        public IRulesetCapabilityHost Capabilities { get; }
 
         public IRulesetRuleHost Rules { get; }
 
@@ -515,6 +518,15 @@ public class RuleProfileRegistryServiceTests
     {
         public ValueTask<RulesetRuleEvaluationResult> EvaluateAsync(RulesetRuleEvaluationRequest request, CancellationToken ct) =>
             ValueTask.FromResult(new RulesetRuleEvaluationResult(true, new Dictionary<string, object?>(), []));
+    }
+
+    private sealed class StubCapabilityHost : IRulesetCapabilityHost
+    {
+        public ValueTask<RulesetCapabilityInvocationResult> InvokeAsync(RulesetCapabilityInvocationRequest request, CancellationToken ct) =>
+            ValueTask.FromResult(new RulesetCapabilityInvocationResult(
+                true,
+                new RulesetCapabilityValue(RulesetCapabilityValueKinds.Object, Properties: new Dictionary<string, RulesetCapabilityValue>(StringComparer.Ordinal)),
+                []));
     }
 
     private sealed class StubScriptHost : IRulesetScriptHost

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Chummer.Contracts.Presentation;
@@ -233,6 +234,7 @@ public sealed class RulesetShellCatalogResolverTests
             Serializer = new StubSerializer(Id);
             ShellDefinitions = new StubShellDefinitions(commands, tabs);
             Catalogs = new StubCatalogs(workflowDefinitions, workflowSurfaces, actions);
+            Capabilities = new StubCapabilityHost();
             Rules = new StubRules();
             Scripts = new StubScripts();
         }
@@ -246,6 +248,8 @@ public sealed class RulesetShellCatalogResolverTests
         public IRulesetShellDefinitionProvider ShellDefinitions { get; }
 
         public IRulesetCatalogProvider Catalogs { get; }
+
+        public IRulesetCapabilityHost Capabilities { get; }
 
         public IRulesetRuleHost Rules { get; }
 
@@ -316,6 +320,23 @@ public sealed class RulesetShellCatalogResolverTests
         {
             ct.ThrowIfCancellationRequested();
             return ValueTask.FromResult(new RulesetRuleEvaluationResult(true, request.Inputs, Array.Empty<string>()));
+        }
+    }
+
+    private sealed class StubCapabilityHost : IRulesetCapabilityHost
+    {
+        public ValueTask<RulesetCapabilityInvocationResult> InvokeAsync(RulesetCapabilityInvocationRequest request, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            return ValueTask.FromResult(new RulesetCapabilityInvocationResult(
+                true,
+                new RulesetCapabilityValue(
+                    RulesetCapabilityValueKinds.Object,
+                    Properties: request.Arguments.ToDictionary(
+                        static argument => argument.Name,
+                        static argument => argument.Value,
+                        StringComparer.Ordinal)),
+                []));
         }
     }
 

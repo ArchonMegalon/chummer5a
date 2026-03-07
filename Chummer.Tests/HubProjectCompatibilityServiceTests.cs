@@ -230,6 +230,7 @@ public class HubProjectCompatibilityServiceTests
             Serializer = new RulesetSerializerStub(Id);
             ShellDefinitions = new ShellDefinitionProviderStub();
             Catalogs = new CatalogProviderStub();
+            Capabilities = new CapabilityHostStub();
             Rules = new RuleHostStub();
             Scripts = new ScriptHostStub();
         }
@@ -243,6 +244,8 @@ public class HubProjectCompatibilityServiceTests
         public IRulesetShellDefinitionProvider ShellDefinitions { get; }
 
         public IRulesetCatalogProvider Catalogs { get; }
+
+        public IRulesetCapabilityHost Capabilities { get; }
 
         public IRulesetRuleHost Rules { get; }
 
@@ -279,6 +282,15 @@ public class HubProjectCompatibilityServiceTests
     {
         public ValueTask<RulesetRuleEvaluationResult> EvaluateAsync(RulesetRuleEvaluationRequest request, CancellationToken ct) =>
             ValueTask.FromResult(new RulesetRuleEvaluationResult(true, new Dictionary<string, object?>(), []));
+    }
+
+    private sealed class CapabilityHostStub : IRulesetCapabilityHost
+    {
+        public ValueTask<RulesetCapabilityInvocationResult> InvokeAsync(RulesetCapabilityInvocationRequest request, CancellationToken ct) =>
+            ValueTask.FromResult(new RulesetCapabilityInvocationResult(
+                true,
+                new RulesetCapabilityValue(RulesetCapabilityValueKinds.Object, Properties: new Dictionary<string, RulesetCapabilityValue>(StringComparer.Ordinal)),
+                []));
     }
 
     private sealed class ScriptHostStub : IRulesetScriptHost

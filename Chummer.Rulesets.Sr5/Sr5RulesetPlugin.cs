@@ -5,6 +5,13 @@ namespace Chummer.Rulesets.Sr5;
 
 public class Sr5RulesetPlugin : IRulesetPlugin
 {
+    public Sr5RulesetPlugin()
+    {
+        Capabilities = new Sr5NoOpRulesetCapabilityHost();
+        Rules = new NoOpRulesetRuleHost(Capabilities);
+        Scripts = new NoOpRulesetScriptHost(Capabilities);
+    }
+
     public RulesetId Id { get; } = new(RulesetDefaults.Sr5);
 
     public string DisplayName => "Shadowrun 5";
@@ -15,9 +22,11 @@ public class Sr5RulesetPlugin : IRulesetPlugin
 
     public IRulesetCatalogProvider Catalogs { get; } = new Sr5RulesetCatalogProvider();
 
-    public IRulesetRuleHost Rules { get; } = new NoOpRulesetRuleHost();
+    public IRulesetCapabilityHost Capabilities { get; }
 
-    public IRulesetScriptHost Scripts { get; } = new NoOpRulesetScriptHost();
+    public IRulesetRuleHost Rules { get; }
+
+    public IRulesetScriptHost Scripts { get; }
 }
 
 public class Sr5RulesetSerializer : IRulesetSerializer
@@ -94,35 +103,76 @@ internal static class Sr5WorkflowCatalog
     ];
 }
 
+public class Sr5NoOpRulesetCapabilityHost : IRulesetCapabilityHost
+{
+    private static readonly IReadOnlyList<RulesetCapabilityDiagnostic> RuleDiagnostics =
+    [
+        new("sr5.noop.rule", "Rule host not configured; no-op evaluation applied.")
+    ];
+
+    public ValueTask<RulesetCapabilityInvocationResult> InvokeAsync(RulesetCapabilityInvocationRequest request, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        IReadOnlyDictionary<string, RulesetCapabilityValue> outputProperties = string.Equals(request.InvocationKind, RulesetCapabilityInvocationKinds.Script, StringComparison.Ordinal)
+            ? new Dictionary<string, RulesetCapabilityValue>(StringComparer.Ordinal)
+            {
+                ["scriptId"] = RulesetCapabilityBridge.FromObject(request.CapabilityId),
+                ["mode"] = RulesetCapabilityBridge.FromObject("noop"),
+                ["inputCount"] = RulesetCapabilityBridge.FromObject(request.Arguments.Count)
+            }
+            : request.Arguments.ToDictionary(
+                static argument => argument.Name,
+                static argument => argument.Value,
+                StringComparer.Ordinal);
+
+        IReadOnlyList<RulesetCapabilityDiagnostic> diagnostics = string.Equals(request.InvocationKind, RulesetCapabilityInvocationKinds.Script, StringComparison.Ordinal)
+            ? [new("sr5.noop.script", "Script host not configured; no-op execution applied.")]
+            : RuleDiagnostics;
+
+        return ValueTask.FromResult(new RulesetCapabilityInvocationResult(
+            Success: true,
+            Output: new RulesetCapabilityValue(RulesetCapabilityValueKinds.Object, Properties: outputProperties),
+            Diagnostics: diagnostics));
+    }
+}
+
 public class NoOpRulesetRuleHost : IRulesetRuleHost
 {
-    private static readonly IReadOnlyList<string> Messages = ["Rule host not configured; no-op evaluation applied."];
+    private readonly RulesetRuleHostCapabilityAdapter _adapter;
+
+    public NoOpRulesetRuleHost()
+        : this(new Sr5NoOpRulesetCapabilityHost())
+    {
+    }
+
+    public NoOpRulesetRuleHost(IRulesetCapabilityHost capabilityHost)
+    {
+        _adapter = new RulesetRuleHostCapabilityAdapter(capabilityHost);
+    }
 
     public ValueTask<RulesetRuleEvaluationResult> EvaluateAsync(RulesetRuleEvaluationRequest request, CancellationToken ct)
     {
-        ct.ThrowIfCancellationRequested();
-        return ValueTask.FromResult(new RulesetRuleEvaluationResult(
-            Success: true,
-            Outputs: request.Inputs,
-            Messages: Messages));
+        return _adapter.EvaluateAsync(request, ct);
     }
 }
 
 public class NoOpRulesetScriptHost : IRulesetScriptHost
 {
+    private readonly RulesetScriptHostCapabilityAdapter _adapter;
+
+    public NoOpRulesetScriptHost()
+        : this(new Sr5NoOpRulesetCapabilityHost())
+    {
+    }
+
+    public NoOpRulesetScriptHost(IRulesetCapabilityHost capabilityHost)
+    {
+        _adapter = new RulesetScriptHostCapabilityAdapter(capabilityHost);
+    }
+
     public ValueTask<RulesetScriptExecutionResult> ExecuteAsync(RulesetScriptExecutionRequest request, CancellationToken ct)
     {
-        ct.ThrowIfCancellationRequested();
-        Dictionary<string, object?> outputs = new(StringComparer.Ordinal)
-        {
-            ["scriptId"] = request.ScriptId,
-            ["mode"] = "noop",
-            ["inputCount"] = request.Inputs.Count
-        };
-
-        return ValueTask.FromResult(new RulesetScriptExecutionResult(
-            Success: true,
-            Error: null,
-            Outputs: outputs));
+        return _adapter.ExecuteAsync(request, ct);
     }
 }

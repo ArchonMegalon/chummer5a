@@ -5,6 +5,13 @@ namespace Chummer.Rulesets.Sr4;
 
 public class Sr4RulesetPlugin : IRulesetPlugin
 {
+    public Sr4RulesetPlugin()
+    {
+        Capabilities = new Sr4NoOpRulesetCapabilityHost();
+        Rules = new Sr4NoOpRulesetRuleHost(Capabilities);
+        Scripts = new Sr4NoOpRulesetScriptHost(Capabilities);
+    }
+
     public RulesetId Id { get; } = new(RulesetDefaults.Sr4);
 
     public string DisplayName => "Shadowrun 4";
@@ -15,9 +22,11 @@ public class Sr4RulesetPlugin : IRulesetPlugin
 
     public IRulesetCatalogProvider Catalogs { get; } = new Sr4RulesetCatalogProvider();
 
-    public IRulesetRuleHost Rules { get; } = new Sr4NoOpRulesetRuleHost();
+    public IRulesetCapabilityHost Capabilities { get; }
 
-    public IRulesetScriptHost Scripts { get; } = new Sr4NoOpRulesetScriptHost();
+    public IRulesetRuleHost Rules { get; }
+
+    public IRulesetScriptHost Scripts { get; }
 }
 
 public class Sr4RulesetSerializer : IRulesetSerializer
@@ -94,34 +103,74 @@ internal static class Sr4WorkflowCatalog
     ];
 }
 
+public class Sr4NoOpRulesetCapabilityHost : IRulesetCapabilityHost
+{
+    private const string RuleErrorMessage = "SR4 rules engine is not implemented; this ruleset remains experimental.";
+
+    public ValueTask<RulesetCapabilityInvocationResult> InvokeAsync(RulesetCapabilityInvocationRequest request, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        IReadOnlyList<RulesetCapabilityDiagnostic> diagnostics = string.Equals(request.InvocationKind, RulesetCapabilityInvocationKinds.Script, StringComparison.Ordinal)
+            ?
+            [
+                new(
+                    "sr4.script.experimental",
+                    $"SR4 script host is not implemented; script '{request.CapabilityId}' cannot be executed because the ruleset remains experimental.",
+                    RulesetCapabilityDiagnosticSeverities.Error)
+            ]
+            :
+            [
+                new("sr4.rule.experimental", RuleErrorMessage, RulesetCapabilityDiagnosticSeverities.Error),
+                new(
+                    "sr4.rule.unavailable",
+                    $"Rule '{request.CapabilityId}' cannot be evaluated until SR4 rule providers are implemented.",
+                    RulesetCapabilityDiagnosticSeverities.Error)
+            ];
+
+        return ValueTask.FromResult(new RulesetCapabilityInvocationResult(
+            Success: false,
+            Output: null,
+            Diagnostics: diagnostics));
+    }
+}
+
 public class Sr4NoOpRulesetRuleHost : IRulesetRuleHost
 {
-    private const string ErrorMessage = "SR4 rules engine is not implemented; this ruleset remains experimental.";
+    private readonly RulesetRuleHostCapabilityAdapter _adapter;
+
+    public Sr4NoOpRulesetRuleHost()
+        : this(new Sr4NoOpRulesetCapabilityHost())
+    {
+    }
+
+    public Sr4NoOpRulesetRuleHost(IRulesetCapabilityHost capabilityHost)
+    {
+        _adapter = new RulesetRuleHostCapabilityAdapter(capabilityHost);
+    }
 
     public ValueTask<RulesetRuleEvaluationResult> EvaluateAsync(RulesetRuleEvaluationRequest request, CancellationToken ct)
     {
-        ct.ThrowIfCancellationRequested();
-        return ValueTask.FromResult(new RulesetRuleEvaluationResult(
-            Success: false,
-            Outputs: new Dictionary<string, object?>(StringComparer.Ordinal),
-            Messages:
-            [
-                ErrorMessage,
-                $"Rule '{request.RuleId}' cannot be evaluated until SR4 rule providers are implemented."
-            ]));
+        return _adapter.EvaluateAsync(request, ct);
     }
 }
 
 public class Sr4NoOpRulesetScriptHost : IRulesetScriptHost
 {
+    private readonly RulesetScriptHostCapabilityAdapter _adapter;
+
+    public Sr4NoOpRulesetScriptHost()
+        : this(new Sr4NoOpRulesetCapabilityHost())
+    {
+    }
+
+    public Sr4NoOpRulesetScriptHost(IRulesetCapabilityHost capabilityHost)
+    {
+        _adapter = new RulesetScriptHostCapabilityAdapter(capabilityHost);
+    }
+
     public ValueTask<RulesetScriptExecutionResult> ExecuteAsync(RulesetScriptExecutionRequest request, CancellationToken ct)
     {
-        ct.ThrowIfCancellationRequested();
-        string error = $"SR4 script host is not implemented; script '{request.ScriptId}' cannot be executed because the ruleset remains experimental.";
-
-        return ValueTask.FromResult(new RulesetScriptExecutionResult(
-            Success: false,
-            Error: error,
-            Outputs: new Dictionary<string, object?>(StringComparer.Ordinal)));
+        return _adapter.ExecuteAsync(request, ct);
     }
 }

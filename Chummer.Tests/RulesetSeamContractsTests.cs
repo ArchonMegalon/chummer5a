@@ -2501,7 +2501,7 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
-    public void Ruleset_plugin_contracts_are_declared_for_serializer_shell_catalog_rule_and_script_hosts()
+    public void Ruleset_plugin_contracts_are_declared_for_serializer_shell_catalog_capability_rule_and_script_hosts()
     {
         Assert.IsTrue(typeof(IRulesetPlugin).IsInterface);
         Assert.IsTrue(typeof(IRulesetPluginRegistry).IsInterface);
@@ -2510,6 +2510,7 @@ public class RulesetSeamContractsTests
         Assert.IsTrue(typeof(IRulesetSerializer).IsInterface);
         Assert.IsTrue(typeof(IRulesetShellDefinitionProvider).IsInterface);
         Assert.IsTrue(typeof(IRulesetCatalogProvider).IsInterface);
+        Assert.IsTrue(typeof(IRulesetCapabilityHost).IsInterface);
         Assert.IsTrue(typeof(IRulesetRuleHost).IsInterface);
         Assert.IsTrue(typeof(IRulesetScriptHost).IsInterface);
     }
@@ -2626,6 +2627,74 @@ public class RulesetSeamContractsTests
     }
 
     [TestMethod]
+    public void Ruleset_capability_contracts_bridge_legacy_rule_and_script_requests_through_typed_values()
+    {
+        RulesetExecutionOptions options = new(
+            Explain: true,
+            GasBudget: new RulesetGasBudget(100, 500, 1024, TimeSpan.FromSeconds(1)));
+        RulesetRuleEvaluationRequest ruleRequest = new(
+            RuleId: RulePackCapabilityIds.DeriveStat,
+            Inputs: new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["metatype"] = "human",
+                ["body"] = 3
+            },
+            Options: options);
+        RulesetCapabilityInvocationRequest typedRuleRequest = RulesetCapabilityBridge.FromRuleRequest(ruleRequest);
+
+        Assert.AreEqual(RulesetCapabilityInvocationKinds.Rule, typedRuleRequest.InvocationKind);
+        Assert.AreEqual(RulePackCapabilityIds.DeriveStat, typedRuleRequest.CapabilityId);
+        Assert.AreEqual(RulesetCapabilityValueKinds.String, typedRuleRequest.Arguments.Single(argument => argument.Name == "metatype").Value.Kind);
+        Assert.AreEqual(3L, typedRuleRequest.Arguments.Single(argument => argument.Name == "body").Value.IntegerValue);
+        Assert.IsTrue(typedRuleRequest.Options?.Explain);
+
+        RulesetCapabilityInvocationResult typedRuleResult = new(
+            Success: true,
+            Output: new RulesetCapabilityValue(
+                RulesetCapabilityValueKinds.Object,
+                Properties: new Dictionary<string, RulesetCapabilityValue>(StringComparer.Ordinal)
+                {
+                    ["value"] = new(RulesetCapabilityValueKinds.Integer, IntegerValue: 5)
+                }),
+            Diagnostics:
+            [
+                new RulesetCapabilityDiagnostic("rule.ok", "rule ok")
+            ]);
+        RulesetRuleEvaluationResult bridgedRuleResult = RulesetCapabilityBridge.ToRuleResult(typedRuleResult);
+
+        Assert.IsTrue(bridgedRuleResult.Success);
+        Assert.AreEqual(5L, bridgedRuleResult.Outputs["value"]);
+        CollectionAssert.Contains(bridgedRuleResult.Messages.ToArray(), "rule ok");
+
+        RulesetScriptExecutionRequest scriptRequest = new(
+            ScriptId: RulePackCapabilityIds.SessionQuickActions,
+            ScriptSource: "-- compiled provider reference",
+            Inputs: new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["runtimeFingerprint"] = "runtime-lock-sha256"
+            },
+            Options: options);
+        RulesetCapabilityInvocationRequest typedScriptRequest = RulesetCapabilityBridge.FromScriptRequest(scriptRequest);
+
+        Assert.AreEqual(RulesetCapabilityInvocationKinds.Script, typedScriptRequest.InvocationKind);
+        Assert.AreEqual("-- compiled provider reference", typedScriptRequest.Source);
+        Assert.AreEqual("runtime-lock-sha256", typedScriptRequest.Arguments.Single().Value.StringValue);
+
+        RulesetCapabilityInvocationResult typedScriptResult = new(
+            Success: false,
+            Output: null,
+            Diagnostics:
+            [
+                new RulesetCapabilityDiagnostic("script.fail", "script failed", RulesetCapabilityDiagnosticSeverities.Error)
+            ]);
+        RulesetScriptExecutionResult bridgedScriptResult = RulesetCapabilityBridge.ToScriptResult(typedScriptResult);
+
+        Assert.IsFalse(bridgedScriptResult.Success);
+        Assert.AreEqual("script failed", bridgedScriptResult.Error);
+        Assert.IsEmpty(bridgedScriptResult.Outputs);
+    }
+
+    [TestMethod]
     public void Ruleset_defaults_expose_sr4_sr5_and_sr6_ids()
     {
         Assert.AreEqual(string.Empty, RulesetId.Default.NormalizedValue);
@@ -2704,6 +2773,18 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
 
+        RulesetCapabilityInvocationResult capabilityResult = await plugin.Capabilities.InvokeAsync(
+            new RulesetCapabilityInvocationRequest(
+                CapabilityId: RulePackCapabilityIds.DeriveStat,
+                InvocationKind: RulesetCapabilityInvocationKinds.Rule,
+                Arguments:
+                [
+                    new RulesetCapabilityArgument("karma", RulesetCapabilityBridge.FromObject(12))
+                ]),
+            CancellationToken.None);
+        Assert.IsTrue(capabilityResult.Success);
+        Assert.AreEqual(12L, capabilityResult.Output?.Properties?["karma"].IntegerValue);
+
         RulesetRuleEvaluationResult ruleResult = await plugin.Rules.EvaluateAsync(
             new RulesetRuleEvaluationRequest(
                 RuleId: "sr5.noop",
@@ -2748,6 +2829,20 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
+
+        RulesetCapabilityInvocationResult capabilityResult = await plugin.Capabilities.InvokeAsync(
+            new RulesetCapabilityInvocationRequest(
+                CapabilityId: RulePackCapabilityIds.DeriveStat,
+                InvocationKind: RulesetCapabilityInvocationKinds.Rule,
+                Arguments:
+                [
+                    new RulesetCapabilityArgument("edge", RulesetCapabilityBridge.FromObject(2))
+                ]),
+            CancellationToken.None);
+        Assert.IsFalse(capabilityResult.Success);
+        CollectionAssert.Contains(
+            capabilityResult.Diagnostics.Select(static diagnostic => diagnostic.Message).ToArray(),
+            "SR6 rules engine is not implemented; this ruleset remains experimental.");
 
         WorkspaceDownloadReceipt download = codec.BuildDownload(
             new CharacterWorkspaceId("ws-sr6"),
@@ -2801,6 +2896,20 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
+
+        RulesetCapabilityInvocationResult capabilityResult = await plugin.Capabilities.InvokeAsync(
+            new RulesetCapabilityInvocationRequest(
+                CapabilityId: RulePackCapabilityIds.DeriveStat,
+                InvocationKind: RulesetCapabilityInvocationKinds.Rule,
+                Arguments:
+                [
+                    new RulesetCapabilityArgument("essence", RulesetCapabilityBridge.FromObject(5.5m))
+                ]),
+            CancellationToken.None);
+        Assert.IsFalse(capabilityResult.Success);
+        CollectionAssert.Contains(
+            capabilityResult.Diagnostics.Select(static diagnostic => diagnostic.Message).ToArray(),
+            "SR4 rules engine is not implemented; this ruleset remains experimental.");
 
         WorkspaceDownloadReceipt download = codec.BuildDownload(
             new CharacterWorkspaceId("ws-sr4"),

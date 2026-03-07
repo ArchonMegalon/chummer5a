@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Bunit;
@@ -221,6 +222,7 @@ public sealed class DesktopShellRulesetCatalogTests
         public IRulesetSerializer Serializer { get; } = new Sr6Serializer();
         public IRulesetShellDefinitionProvider ShellDefinitions { get; } = new Sr6ShellDefinitions();
         public IRulesetCatalogProvider Catalogs { get; } = new Sr6Catalogs();
+        public IRulesetCapabilityHost Capabilities { get; } = new Sr6CapabilityHost();
         public IRulesetRuleHost Rules { get; } = new NoOpRulesetRuleHost();
         public IRulesetScriptHost Scripts { get; } = new NoOpRulesetScriptHost();
     }
@@ -263,5 +265,22 @@ public sealed class DesktopShellRulesetCatalogTests
                 EnabledByDefault: true,
                 RulesetId: "sr6")
         ];
+    }
+
+    private sealed class Sr6CapabilityHost : IRulesetCapabilityHost
+    {
+        public ValueTask<RulesetCapabilityInvocationResult> InvokeAsync(RulesetCapabilityInvocationRequest request, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            return ValueTask.FromResult(new RulesetCapabilityInvocationResult(
+                true,
+                new RulesetCapabilityValue(
+                    RulesetCapabilityValueKinds.Object,
+                    Properties: request.Arguments.ToDictionary(
+                        static argument => argument.Name,
+                        static argument => argument.Value,
+                        StringComparer.Ordinal)),
+                []));
+        }
     }
 }
