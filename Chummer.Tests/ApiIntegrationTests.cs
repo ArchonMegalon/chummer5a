@@ -245,6 +245,30 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_review_endpoints_upsert_and_list_owner_reviews()
+    {
+        using var client = CreateClient();
+        string projectId = $"campaign.shadowops.{Guid.NewGuid():N}";
+
+        JsonObject review = await PutRequiredJsonObject(client, $"/api/hub/reviews/rulepack/{projectId}", new JsonObject
+        {
+            ["rulesetId"] = RulesetDefaults.Sr5,
+            ["recommendationState"] = HubRecommendationStates.Recommended,
+            ["stars"] = 5,
+            ["reviewText"] = "Great pack",
+            ["usedAtTable"] = true
+        });
+        JsonObject list = await GetRequiredJsonObject(client, $"/api/hub/reviews?kind=rulepack&itemId={projectId}&ruleset=sr5");
+
+        Assert.AreEqual(HubRecommendationStates.Recommended, review["recommendationState"]?.GetValue<string>());
+        Assert.AreEqual(5, review["stars"]?.GetValue<int>());
+        bool found = list["items"]?.AsArray().OfType<JsonObject>()
+            .Any(item => string.Equals(item["projectId"]?.GetValue<string>(), projectId, StringComparison.Ordinal))
+            ?? false;
+        Assert.IsTrue(found, $"Expected hub review catalog to include '{projectId}'.");
+    }
+
+    [TestMethod]
     public async Task Hub_publish_draft_endpoint_persists_owner_draft_receipt()
     {
         using var client = CreateClient();

@@ -945,6 +945,51 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Hub_review_surface_is_exposed_through_protected_hub_api_seam()
+    {
+        string infoEndpointsPath = FindPath("Chummer.Api", "Endpoints", "InfoEndpoints.cs");
+        string infoEndpointsText = File.ReadAllText(infoEndpointsPath);
+        string hubReviewEndpointsPath = FindPath("Chummer.Api", "Endpoints", "HubReviewEndpoints.cs");
+        string hubReviewEndpointsText = File.ReadAllText(hubReviewEndpointsPath);
+        string hubReviewStoreContractPath = FindPath("Chummer.Application", "Hub", "IHubReviewStore.cs");
+        string hubReviewStoreContractText = File.ReadAllText(hubReviewStoreContractPath);
+        string hubReviewServiceContractPath = FindPath("Chummer.Application", "Hub", "IHubReviewService.cs");
+        string hubReviewServiceContractText = File.ReadAllText(hubReviewServiceContractPath);
+        string hubReviewServicePath = FindPath("Chummer.Application", "Hub", "DefaultHubReviewService.cs");
+        string hubReviewServiceText = File.ReadAllText(hubReviewServicePath);
+        string hubReviewContractsPath = FindPath("Chummer.Contracts", "Hub", "HubReviewContracts.cs");
+        string hubReviewContractsText = File.ReadAllText(hubReviewContractsPath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(infoEndpointsText, "/api/hub/reviews");
+        StringAssert.Contains(infoEndpointsText, "/api/hub/reviews/{kind}/{itemId}");
+        StringAssert.Contains(hubReviewEndpointsText, "public static class HubReviewEndpoints");
+        StringAssert.Contains(hubReviewEndpointsText, "MapGet(\"/api/hub/reviews\"");
+        StringAssert.Contains(hubReviewEndpointsText, "MapPut(\"/api/hub/reviews/{kind}/{itemId}\"");
+        StringAssert.Contains(hubReviewEndpointsText, "IHubReviewService");
+        StringAssert.Contains(hubReviewStoreContractText, "public interface IHubReviewStore");
+        StringAssert.Contains(hubReviewStoreContractText, "IReadOnlyList<HubReviewRecord> List");
+        StringAssert.Contains(hubReviewStoreContractText, "HubReviewRecord? Get(OwnerScope owner, string kind, string itemId, string rulesetId)");
+        StringAssert.Contains(hubReviewStoreContractText, "HubReviewRecord Upsert");
+        StringAssert.Contains(hubReviewServiceContractText, "public interface IHubReviewService");
+        StringAssert.Contains(hubReviewServiceContractText, "HubPublicationResult<HubReviewCatalog> ListReviews");
+        StringAssert.Contains(hubReviewServiceContractText, "HubPublicationResult<HubReviewReceipt> UpsertReview");
+        StringAssert.Contains(hubReviewServiceText, "public sealed class DefaultHubReviewService : IHubReviewService");
+        StringAssert.Contains(hubReviewServiceText, "HubRecommendationStates.Recommended");
+        StringAssert.Contains(hubReviewContractsText, "public static class HubRecommendationStates");
+        StringAssert.Contains(hubReviewContractsText, "public sealed record HubUpsertReviewRequest");
+        StringAssert.Contains(hubReviewContractsText, "public sealed record HubReviewReceipt");
+        StringAssert.Contains(hubReviewContractsText, "public sealed record HubReviewCatalog");
+        StringAssert.Contains(hubReviewContractsText, "public sealed record HubReviewRecord");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubReviewStore>(_ => new FileHubReviewStore(stateDirectory))");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubReviewService, DefaultHubReviewService>()");
+        StringAssert.Contains(readmeText, "/api/hub/reviews/*");
+    }
+
+    [TestMethod]
     public void Project_paths_use_matching_primary_namespaces_for_application_hosting_and_infrastructure()
     {
         AssertProjectNamespacesMatch("Chummer.Application", "Chummer.Application");
@@ -973,6 +1018,8 @@ public class MigrationComplianceTests
         string runtimeLockEndpointsText = File.ReadAllText(runtimeLockEndpointsPath);
         string hubPublisherEndpointsPath = FindPath("Chummer.Api", "Endpoints", "HubPublisherEndpoints.cs");
         string hubPublisherEndpointsText = File.ReadAllText(hubPublisherEndpointsPath);
+        string hubReviewEndpointsPath = FindPath("Chummer.Api", "Endpoints", "HubReviewEndpoints.cs");
+        string hubReviewEndpointsText = File.ReadAllText(hubReviewEndpointsPath);
         string hubPublicationEndpointsPath = FindPath("Chummer.Api", "Endpoints", "HubPublicationEndpoints.cs");
         string hubPublicationEndpointsText = File.ReadAllText(hubPublicationEndpointsPath);
         string readmePath = FindPath("README.md");
@@ -987,6 +1034,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(infoEndpointsText, "AllowPublicApiKeyBypass()");
         StringAssert.Contains(hubEndpointsText, "AllowPublicApiKeyBypass()");
         Assert.AreEqual(0, Regex.Count(hubPublisherEndpointsText, "AllowPublicApiKeyBypass\\(\\)"), "Hub publisher routes must stay protected until public publisher projections exist.");
+        Assert.AreEqual(0, Regex.Count(hubReviewEndpointsText, "AllowPublicApiKeyBypass\\(\\)"), "Hub review routes must stay protected until public review aggregation exists.");
         Assert.AreEqual(0, Regex.Count(hubPublicationEndpointsText, "AllowPublicApiKeyBypass\\(\\)"), "Hub publication and moderation routes must stay protected.");
         Assert.AreEqual(2, Regex.Count(rulePackEndpointsText, "AllowPublicApiKeyBypass\\(\\)"), "RulePack registry should expose only list/detail as public metadata endpoints.");
         Assert.AreEqual(3, Regex.Count(ruleProfileEndpointsText, "AllowPublicApiKeyBypass\\(\\)"), "RuleProfile registry should expose list/detail/preview as public metadata endpoints.");
@@ -1000,6 +1048,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeLockEndpointsText, "\"/api/runtime/locks/{lockId}/install\"");
         StringAssert.Contains(hubPublisherEndpointsText, "\"/api/hub/publishers\"");
         StringAssert.Contains(hubPublisherEndpointsText, "\"/api/hub/publishers/{publisherId}\"");
+        StringAssert.Contains(hubReviewEndpointsText, "\"/api/hub/reviews\"");
+        StringAssert.Contains(hubReviewEndpointsText, "\"/api/hub/reviews/{kind}/{itemId}\"");
         StringAssert.Contains(hubPublicationEndpointsText, "\"/api/hub/publish/drafts\"");
         StringAssert.Contains(hubPublicationEndpointsText, "\"/api/hub/publish/{kind}/{itemId}/submit\"");
         StringAssert.Contains(hubPublicationEndpointsText, "\"/api/hub/moderation/queue\"");

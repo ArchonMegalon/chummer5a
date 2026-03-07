@@ -300,6 +300,29 @@ public sealed class OwnerScopedApiEndpointTests
         Assert.AreEqual(StatusCodes.Status404NotFound, (int)response.StatusCode);
     }
 
+    [TestMethod]
+    public async Task Hub_review_endpoints_respect_forwarded_owner_scope()
+    {
+        await using WebApplication app = await CreateAppAsync();
+        using HttpClient client = app.GetTestClient();
+
+        JsonObject aliceReview = await PutRequiredJsonObject(client, "/api/hub/reviews/rulepack/alice.pack", new JsonObject
+        {
+            ["rulesetId"] = "sr5",
+            ["recommendationState"] = HubRecommendationStates.Recommended,
+            ["stars"] = 5,
+            ["reviewText"] = "Great pack",
+            ["usedAtTable"] = true
+        }, "alice@example.com");
+        Assert.AreEqual(HubRecommendationStates.Recommended, aliceReview["recommendationState"]?.GetValue<string>());
+
+        JsonObject aliceList = await GetRequiredJsonObject(client, "/api/hub/reviews?kind=rulepack&itemId=alice.pack&ruleset=sr5", "alice@example.com");
+        JsonObject bobList = await GetRequiredJsonObject(client, "/api/hub/reviews?kind=rulepack&itemId=alice.pack&ruleset=sr5", "bob@example.com");
+
+        Assert.AreEqual(1, aliceList["items"]?.AsArray().Count);
+        Assert.AreEqual(0, bobList["items"]?.AsArray().Count);
+    }
+
     private static async Task<WebApplication> CreateAppAsync()
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder();
@@ -312,6 +335,8 @@ public sealed class OwnerScopedApiEndpointTests
                 OwnerHeaderName));
         builder.Services.AddSingleton<IHubPublisherStore, InMemoryHubPublisherStore>();
         builder.Services.AddSingleton<IHubPublisherService, DefaultHubPublisherService>();
+        builder.Services.AddSingleton<IHubReviewStore, InMemoryHubReviewStore>();
+        builder.Services.AddSingleton<IHubReviewService, DefaultHubReviewService>();
         builder.Services.AddSingleton<IHubDraftStore, InMemoryHubDraftStore>();
         builder.Services.AddSingleton<IHubModerationCaseStore, InMemoryHubModerationCaseStore>();
         builder.Services.AddSingleton<IHubPublicationService, DefaultHubPublicationService>();
@@ -322,6 +347,7 @@ public sealed class OwnerScopedApiEndpointTests
 
         WebApplication app = builder.Build();
         app.MapHubPublisherEndpoints();
+        app.MapHubReviewEndpoints();
         app.MapHubPublicationEndpoints();
         app.MapSettingsEndpoints();
         app.MapRosterEndpoints();
@@ -730,6 +756,60 @@ public sealed class OwnerScopedApiEndpointTests
             }
 
             return records.RemoveAll(record => string.Equals(record.DraftId, draftId, StringComparison.Ordinal)) > 0;
+        }
+    }
+
+    private sealed class InMemoryHubReviewStore : IHubReviewStore
+    {
+        private readonly Dictionary<string, List<HubReviewRecord>> _recordsByOwner = new(StringComparer.Ordinal);
+
+        public IReadOnlyList<HubReviewRecord> List(OwnerScope owner, string? kind = null, string? itemId = null, string? rulesetId = null)
+        {
+            return _recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubReviewRecord>? records)
+                ? records
+                    .Where(record => kind is null || string.Equals(record.ProjectKind, kind, StringComparison.Ordinal))
+                    .Where(record => itemId is null || string.Equals(record.ProjectId, itemId, StringComparison.Ordinal))
+                    .Where(record => rulesetId is null || string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal))
+                    .ToArray()
+                : Array.Empty<HubReviewRecord>();
+        }
+
+        public HubReviewRecord? Get(OwnerScope owner, string kind, string itemId, string rulesetId)
+        {
+            if (!_recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubReviewRecord>? records))
+            {
+                return null;
+            }
+
+            return records.Find(record =>
+                string.Equals(record.ProjectKind, kind, StringComparison.Ordinal)
+                && string.Equals(record.ProjectId, itemId, StringComparison.Ordinal)
+                && string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal));
+        }
+
+        public HubReviewRecord Upsert(OwnerScope owner, HubReviewRecord record)
+        {
+            if (!_recordsByOwner.TryGetValue(owner.NormalizedValue, out List<HubReviewRecord>? records))
+            {
+                records = [];
+                _recordsByOwner[owner.NormalizedValue] = records;
+            }
+
+            int existingIndex = records.FindIndex(current =>
+                string.Equals(current.ProjectKind, record.ProjectKind, StringComparison.Ordinal)
+                && string.Equals(current.ProjectId, record.ProjectId, StringComparison.Ordinal)
+                && string.Equals(current.RulesetId, record.RulesetId, StringComparison.Ordinal));
+            HubReviewRecord normalizedRecord = record with { OwnerId = owner.NormalizedValue };
+            if (existingIndex >= 0)
+            {
+                records[existingIndex] = normalizedRecord;
+            }
+            else
+            {
+                records.Add(normalizedRecord);
+            }
+
+            return normalizedRecord;
         }
     }
 }
