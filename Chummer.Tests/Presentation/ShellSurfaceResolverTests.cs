@@ -66,19 +66,11 @@ public sealed class ShellSurfaceResolverTests
             RequiresOpenCharacter: false,
             EnabledByDefault: true,
             RulesetId: "sr6");
-        var uiControl = new DesktopUiControlDefinition(
-            Id: "ui.refresh",
-            Label: "Refresh",
-            TabId: profileTab.Id,
-            RequiresOpenCharacter: false,
-            EnabledByDefault: true,
-            RulesetId: "sr6");
-        var catalogResolver = new StubShellCatalogResolver([workspaceAction], [uiControl]);
+        var catalogResolver = new StubShellCatalogResolver([workspaceAction]);
         var availability = new StubAvailabilityEvaluator(
             commandEnabled: true,
             tabEnabled: true,
-            actionEnabled: true,
-            controlEnabled: true);
+            actionEnabled: true);
         var resolver = new ShellSurfaceResolver(catalogResolver, availability);
 
         CharacterOverviewState overviewState = CharacterOverviewState.Empty with
@@ -106,10 +98,7 @@ public sealed class ShellSurfaceResolverTests
         Assert.AreEqual(WorkflowDefinitionIds.CareerWorkbench, surface.WorkflowSurfaces[0].WorkflowId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastWorkspaceActionTabId);
         Assert.AreEqual("sr6", catalogResolver.LastWorkspaceActionRulesetId);
-        Assert.AreEqual(profileTab.Id, catalogResolver.LastUiControlTabId);
-        Assert.AreEqual("sr6", catalogResolver.LastUiControlRulesetId);
         Assert.HasCount(1, surface.WorkspaceActions);
-        Assert.HasCount(1, surface.DesktopUiControls);
         Assert.HasCount(1, surface.ActiveWorkflowSurfaceActions);
         Assert.AreEqual("career.main", surface.ActiveWorkflowSurfaceActions[0].SurfaceId);
         Assert.AreEqual("action.profile", surface.ActiveWorkflowSurfaceActions[0].ActionId);
@@ -119,12 +108,11 @@ public sealed class ShellSurfaceResolverTests
     public void Resolve_does_not_rehydrate_shell_session_facts_from_overview_state_when_shell_state_is_empty()
     {
         var resolver = new ShellSurfaceResolver(
-            new StubShellCatalogResolver([], []),
+            new StubShellCatalogResolver([]),
             new StubAvailabilityEvaluator(
                 commandEnabled: true,
                 tabEnabled: true,
-                actionEnabled: true,
-                controlEnabled: true));
+                actionEnabled: true));
 
         CharacterOverviewState overviewState = CharacterOverviewState.Empty with
         {
@@ -188,24 +176,13 @@ public sealed class ShellSurfaceResolverTests
             EnabledByDefault: true,
             RulesetId: "sr6");
         var blockedAction = allowedAction with { Id = "action.blocked", Label = "Blocked" };
-        var allowedControl = new DesktopUiControlDefinition(
-            Id: "ui.allowed",
-            Label: "Allowed",
-            TabId: profileTab.Id,
-            RequiresOpenCharacter: false,
-            EnabledByDefault: true,
-            RulesetId: "sr6");
-        var blockedControl = allowedControl with { Id = "ui.blocked", Label = "Blocked" };
         var catalogResolver = new StubShellCatalogResolver(
-            [allowedAction, blockedAction],
-            [allowedControl, blockedControl]);
+            [allowedAction, blockedAction]);
         var availability = new StubAvailabilityEvaluator(
             commandEnabled: true,
             tabEnabled: true,
             actionEnabled: true,
-            controlEnabled: true,
-            blockedActionIds: ["action.blocked"],
-            blockedControlIds: ["ui.blocked"]);
+            blockedActionIds: ["action.blocked"]);
         var resolver = new ShellSurfaceResolver(catalogResolver, availability);
 
         CharacterOverviewState overviewState = CharacterOverviewState.Empty with
@@ -223,12 +200,8 @@ public sealed class ShellSurfaceResolverTests
         Assert.AreEqual("shell-command", surface.LastCommandId);
         Assert.AreEqual(profileTab.Id, catalogResolver.LastWorkspaceActionTabId);
         Assert.AreEqual("sr6", catalogResolver.LastWorkspaceActionRulesetId);
-        Assert.AreEqual(profileTab.Id, catalogResolver.LastUiControlTabId);
-        Assert.AreEqual("sr6", catalogResolver.LastUiControlRulesetId);
         Assert.HasCount(1, surface.WorkspaceActions);
         Assert.AreEqual("action.allowed", surface.WorkspaceActions[0].Id);
-        Assert.HasCount(1, surface.DesktopUiControls);
-        Assert.AreEqual("ui.allowed", surface.DesktopUiControls[0].Id);
         Assert.HasCount(1, surface.ActiveWorkflowSurfaceActions);
         Assert.AreEqual("surface.allowed", surface.ActiveWorkflowSurfaceActions[0].SurfaceId);
         Assert.AreEqual("action.allowed", surface.ActiveWorkflowSurfaceActions[0].ActionId);
@@ -237,20 +210,15 @@ public sealed class ShellSurfaceResolverTests
     private sealed class StubShellCatalogResolver : IRulesetShellCatalogResolver
     {
         private readonly IReadOnlyList<WorkspaceSurfaceActionDefinition> _workspaceActions;
-        private readonly IReadOnlyList<DesktopUiControlDefinition> _uiControls;
 
         public StubShellCatalogResolver(
-            IReadOnlyList<WorkspaceSurfaceActionDefinition> workspaceActions,
-            IReadOnlyList<DesktopUiControlDefinition> uiControls)
+            IReadOnlyList<WorkspaceSurfaceActionDefinition> workspaceActions)
         {
             _workspaceActions = workspaceActions;
-            _uiControls = uiControls;
         }
 
         public string? LastWorkspaceActionTabId { get; private set; }
         public string? LastWorkspaceActionRulesetId { get; private set; }
-        public string? LastUiControlTabId { get; private set; }
-        public string? LastUiControlRulesetId { get; private set; }
 
         public IReadOnlyList<AppCommandDefinition> ResolveCommands(string? rulesetId) => [];
 
@@ -269,9 +237,7 @@ public sealed class ShellSurfaceResolverTests
 
         public IReadOnlyList<DesktopUiControlDefinition> ResolveDesktopUiControlsForTab(string? tabId, string? rulesetId)
         {
-            LastUiControlTabId = tabId;
-            LastUiControlRulesetId = rulesetId;
-            return _uiControls;
+            return [];
         }
     }
 
@@ -280,25 +246,18 @@ public sealed class ShellSurfaceResolverTests
         private readonly bool _commandEnabled;
         private readonly bool _tabEnabled;
         private readonly bool _actionEnabled;
-        private readonly bool _controlEnabled;
         private readonly HashSet<string> _blockedActionIds;
-        private readonly HashSet<string> _blockedControlIds;
 
         public StubAvailabilityEvaluator(
             bool commandEnabled,
             bool tabEnabled,
             bool actionEnabled,
-            bool controlEnabled,
-            IReadOnlyList<string>? blockedActionIds = null,
-            IReadOnlyList<string>? blockedControlIds = null)
+            IReadOnlyList<string>? blockedActionIds = null)
         {
             _commandEnabled = commandEnabled;
             _tabEnabled = tabEnabled;
             _actionEnabled = actionEnabled;
-            _controlEnabled = controlEnabled;
             _blockedActionIds = (blockedActionIds ?? [])
-                .ToHashSet(StringComparer.Ordinal);
-            _blockedControlIds = (blockedControlIds ?? [])
                 .ToHashSet(StringComparer.Ordinal);
         }
 
@@ -309,11 +268,6 @@ public sealed class ShellSurfaceResolverTests
         public bool IsWorkspaceActionEnabled(WorkspaceSurfaceActionDefinition action, CharacterOverviewState state)
         {
             return _actionEnabled && !_blockedActionIds.Contains(action.Id);
-        }
-
-        public bool IsUiControlEnabled(DesktopUiControlDefinition control, CharacterOverviewState state)
-        {
-            return _controlEnabled && !_blockedControlIds.Contains(control.Id);
         }
     }
 }

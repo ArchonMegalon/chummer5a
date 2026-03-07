@@ -51,14 +51,6 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
                     activeRulesetId)
                 .Where(action => _availabilityEvaluator.IsWorkspaceActionEnabled(action, overviewState))
                 .ToArray();
-
-        DesktopUiControlDefinition[] uiControls = string.IsNullOrWhiteSpace(activeRulesetId)
-            ? []
-            : _catalogResolver.ResolveDesktopUiControlsForTab(
-                    activeTabId,
-                    activeRulesetId)
-                .Where(control => _availabilityEvaluator.IsUiControlEnabled(control, overviewState))
-                .ToArray();
         WorkflowSurfaceActionBinding[] workflowSurfaceActions = BuildWorkflowSurfaceActions(
             shellState.WorkflowSurfaces ?? [],
             workspaceActions);
@@ -68,7 +60,6 @@ public sealed class ShellSurfaceResolver : IShellSurfaceResolver
             MenuRoots: shellState.MenuRoots,
             NavigationTabs: shellState.NavigationTabs,
             WorkspaceActions: workspaceActions,
-            DesktopUiControls: uiControls,
             ActiveWorkflowSurfaceActions: workflowSurfaceActions,
             OpenWorkspaces: openWorkspaces,
             ActiveRulesetId: activeRulesetId,

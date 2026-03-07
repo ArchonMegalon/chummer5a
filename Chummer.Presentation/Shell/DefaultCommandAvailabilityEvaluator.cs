@@ -19,9 +19,4 @@ public sealed class DefaultCommandAvailabilityEvaluator : ICommandAvailabilityEv
     {
         return CommandAvailabilityEvaluator.IsWorkspaceActionEnabled(action, state);
     }
-
-    public bool IsUiControlEnabled(DesktopUiControlDefinition control, CharacterOverviewState state)
-    {
-        return CommandAvailabilityEvaluator.IsUiControlEnabled(control, state);
-    }
 }

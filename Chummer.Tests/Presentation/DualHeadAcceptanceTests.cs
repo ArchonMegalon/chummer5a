@@ -1080,21 +1080,6 @@ public class DualHeadAcceptanceTests
             .ToArray();
         CollectionAssert.AreEquivalent(avaloniaActionIds, blazorActionIds);
 
-        string[] avaloniaControlIds = ShellCatalogResolver.ResolveDesktopUiControlsForTab(
-                avaloniaState.ActiveTabId,
-                ResolveActiveRulesetId(avaloniaState))
-            .Where(control => evaluator.IsUiControlEnabled(control, avaloniaState))
-            .Select(control => control.Id)
-            .OrderBy(id => id, StringComparer.Ordinal)
-            .ToArray();
-        string[] blazorControlIds = ShellCatalogResolver.ResolveDesktopUiControlsForTab(
-                blazorState.ActiveTabId,
-                ResolveActiveRulesetId(blazorState))
-            .Where(control => evaluator.IsUiControlEnabled(control, blazorState))
-            .Select(control => control.Id)
-            .OrderBy(id => id, StringComparer.Ordinal)
-            .ToArray();
-        CollectionAssert.AreEquivalent(avaloniaControlIds, blazorControlIds);
     }
 
     [TestMethod]

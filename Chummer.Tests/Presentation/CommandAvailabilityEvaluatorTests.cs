@@ -61,18 +61,4 @@ public class CommandAvailabilityEvaluatorTests
         Assert.IsTrue(withWorkspace);
     }
 
-    [TestMethod]
-    public void IsUiControlEnabled_requires_open_workspace_when_flagged()
-    {
-        DefaultCommandAvailabilityEvaluator evaluator = new();
-        DesktopUiControlDefinition control = new("gear_add", "Add Gear", "tab-gear", true, true, RulesetDefaults.Sr5);
-
-        bool withoutWorkspace = evaluator.IsUiControlEnabled(control, CharacterOverviewState.Empty);
-        bool withWorkspace = evaluator.IsUiControlEnabled(
-            control,
-            CharacterOverviewState.Empty with { WorkspaceId = new CharacterWorkspaceId("ws-1") });
-
-        Assert.IsFalse(withoutWorkspace);
-        Assert.IsTrue(withWorkspace);
-    }
 }

@@ -20,11 +20,6 @@ public static class CommandAvailabilityEvaluator
         return action.EnabledByDefault && (!action.RequiresOpenCharacter || HasOpenWorkspace(state));
     }
 
-    public static bool IsUiControlEnabled(DesktopUiControlDefinition control, CharacterOverviewState state)
-    {
-        return control.EnabledByDefault && (!control.RequiresOpenCharacter || HasOpenWorkspace(state));
-    }
-
     private static bool HasOpenWorkspace(CharacterOverviewState state)
     {
         return state.WorkspaceId is not null;

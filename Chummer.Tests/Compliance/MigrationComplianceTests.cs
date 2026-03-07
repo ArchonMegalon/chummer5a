@@ -3006,6 +3006,8 @@ public class MigrationComplianceTests
     {
         string blazorShellCodePath = FindPath("Chummer.Blazor", "Components", "Layout", "DesktopShell.razor.cs");
         string blazorShellCodeText = File.ReadAllText(blazorShellCodePath);
+        string shellSurfaceResolverPath = FindPath("Chummer.Presentation", "Shell", "ShellSurfaceResolver.cs");
+        string shellSurfaceResolverText = File.ReadAllText(shellSurfaceResolverPath);
         string avaloniaStatePath = FindPath("Chummer.Avalonia", "MainWindow.StateRefresh.cs");
         string avaloniaStateText = File.ReadAllText(avaloniaStatePath);
         string avaloniaProjectorPath = FindPath("Chummer.Avalonia", "MainWindow.ShellFrameProjector.cs");
@@ -3030,11 +3032,11 @@ public class MigrationComplianceTests
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.WorkspaceActions");
         StringAssert.Contains(avaloniaProjectorText, "shellSurface.ActiveWorkflowSurfaceActions");
         StringAssert.Contains(avaloniaProjectorText, "ProjectCommandDialogState(");
+        Assert.IsFalse(shellSurfaceResolverText.Contains("DesktopUiControls", StringComparison.Ordinal));
+        Assert.IsFalse(shellSurfaceResolverText.Contains("ResolveDesktopUiControlsForTab(", StringComparison.Ordinal));
 
         StringAssert.Contains(dualHeadAcceptanceText, "ShellCatalogResolver.ResolveWorkspaceActionsForTab(");
-        StringAssert.Contains(dualHeadAcceptanceText, "ShellCatalogResolver.ResolveDesktopUiControlsForTab(");
         Assert.IsFalse(dualHeadAcceptanceText.Contains("WorkspaceSurfaceActionCatalog.ForTab(avaloniaState.ActiveTabId", StringComparison.Ordinal));
-        Assert.IsFalse(dualHeadAcceptanceText.Contains("DesktopUiControlCatalog.ForTab(avaloniaState.ActiveTabId", StringComparison.Ordinal));
     }
 
     [TestMethod]
