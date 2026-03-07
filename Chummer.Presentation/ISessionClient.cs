@@ -15,6 +15,8 @@ public interface ISessionClient
 
     Task<SessionApiResult<SessionProfileCatalog>> ListProfilesAsync(CancellationToken ct);
 
+    Task<SessionApiResult<SessionRuntimeStatusProjection>> GetRuntimeStateAsync(string characterId, CancellationToken ct);
+
     Task<SessionApiResult<SessionRuntimeBundleIssueReceipt>> GetRuntimeBundleAsync(string characterId, CancellationToken ct);
 
     Task<SessionApiResult<SessionProfileSelectionReceipt>> SelectProfileAsync(string characterId, SessionProfileSelectionRequest request, CancellationToken ct);

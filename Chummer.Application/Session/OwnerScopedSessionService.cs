@@ -68,6 +68,63 @@ public sealed class OwnerScopedSessionService : ISessionService
                 ActiveProfileId: activeBinding?.ProfileId ?? defaultProfileId));
     }
 
+    public SessionApiResult<SessionRuntimeStatusProjection> GetRuntimeState(OwnerScope owner, string characterId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(characterId);
+
+        string normalizedCharacterId = characterId.Trim();
+        SessionProfileBinding? binding = _profileSelectionStore.Get(owner, normalizedCharacterId);
+        if (binding is null)
+        {
+            return SessionApiResult<SessionRuntimeStatusProjection>.Implemented(
+                new SessionRuntimeStatusProjection(
+                    CharacterId: normalizedCharacterId,
+                    SelectionState: SessionRuntimeSelectionStates.Unselected,
+                    RequiresBundleRefresh: true,
+                    DeferredReason: "No session profile has been selected for this character yet."));
+        }
+
+        RuleProfileRegistryEntry? profile = _ruleProfileRegistryService.Get(owner, binding.ProfileId, binding.RulesetId);
+        if (profile is null)
+        {
+            return SessionApiResult<SessionRuntimeStatusProjection>.Implemented(
+                new SessionRuntimeStatusProjection(
+                    CharacterId: normalizedCharacterId,
+                    SelectionState: SessionRuntimeSelectionStates.Blocked,
+                    ProfileId: binding.ProfileId,
+                    RulesetId: binding.RulesetId,
+                    RuntimeFingerprint: binding.RuntimeFingerprint,
+                    RequiresBundleRefresh: true,
+                    DeferredReason: $"Session profile '{binding.ProfileId}' is no longer available."));
+        }
+
+        bool sessionReady = IsSessionReady(owner, profile);
+        SessionRuntimeBundleRecord? bundleRecord = _runtimeBundleStore.Get(owner, normalizedCharacterId);
+        string bundleFreshness = ResolveBundleFreshness(bundleRecord, profile);
+        SessionRuntimeBundleIssueReceipt? bundleReceipt = bundleRecord?.Receipt;
+        bool requiresBundleRefresh = !string.Equals(bundleFreshness, SessionRuntimeBundleFreshnessStates.Current, StringComparison.Ordinal);
+
+        return SessionApiResult<SessionRuntimeStatusProjection>.Implemented(
+            new SessionRuntimeStatusProjection(
+                CharacterId: normalizedCharacterId,
+                SelectionState: sessionReady ? SessionRuntimeSelectionStates.Selected : SessionRuntimeSelectionStates.Blocked,
+                ProfileId: profile.Manifest.ProfileId,
+                ProfileTitle: profile.Manifest.Title,
+                RulesetId: profile.Manifest.RulesetId,
+                RuntimeFingerprint: profile.Manifest.RuntimeLock.RuntimeFingerprint,
+                SessionReady: sessionReady,
+                BundleFreshness: bundleFreshness,
+                BundleId: bundleReceipt?.Bundle.BundleId,
+                BundleDeliveryMode: bundleReceipt?.DeliveryMode,
+                BundleTrustState: bundleReceipt?.Diagnostics.FirstOrDefault()?.State,
+                BundleSignedAtUtc: bundleReceipt?.SignatureEnvelope.SignedAtUtc,
+                BundleExpiresAtUtc: bundleReceipt?.SignatureEnvelope.ExpiresAtUtc,
+                RequiresBundleRefresh: requiresBundleRefresh,
+                DeferredReason: sessionReady
+                    ? null
+                    : $"Session profile '{profile.Manifest.ProfileId}' is not session-ready."));
+    }
+
     public SessionApiResult<SessionRuntimeBundleIssueReceipt> GetRuntimeBundle(OwnerScope owner, string characterId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(characterId);
@@ -256,7 +313,26 @@ public sealed class OwnerScopedSessionService : ISessionService
 
         return entry.Manifest.ExecutionPolicies.Any(policy =>
             string.Equals(policy.Environment, RulePackExecutionEnvironments.SessionRuntimeBundle, StringComparison.Ordinal)
-            && !string.Equals(policy.PolicyMode, RulePackExecutionPolicyModes.Deny, StringComparison.Ordinal));
+                && !string.Equals(policy.PolicyMode, RulePackExecutionPolicyModes.Deny, StringComparison.Ordinal));
+    }
+
+    private static string ResolveBundleFreshness(SessionRuntimeBundleRecord? record, RuleProfileRegistryEntry profile)
+    {
+        if (record is null)
+        {
+            return SessionRuntimeBundleFreshnessStates.Missing;
+        }
+
+        if (!string.Equals(record.ProfileId, profile.Manifest.ProfileId, StringComparison.Ordinal)
+            || !string.Equals(record.Receipt.Bundle.BaseCharacterVersion.RuntimeFingerprint, profile.Manifest.RuntimeLock.RuntimeFingerprint, StringComparison.Ordinal)
+            || record.Receipt.SignatureEnvelope.ExpiresAtUtc <= DateTimeOffset.UtcNow)
+        {
+            return SessionRuntimeBundleFreshnessStates.RefreshRequired;
+        }
+
+        return record.Receipt.SignatureEnvelope.ExpiresAtUtc - DateTimeOffset.UtcNow <= ExpiringSoonThreshold
+            ? SessionRuntimeBundleFreshnessStates.ExpiringSoon
+            : SessionRuntimeBundleFreshnessStates.Current;
     }
 
     private static SessionRuntimeBundleIssueReceipt CreateBlockedBundleReceipt(string characterId, string message)

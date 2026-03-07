@@ -9,6 +9,7 @@ public static class SessionApiOperations
     public const string ApplyCharacterPatches = "apply-character-patches";
     public const string SyncCharacterLedger = "sync-character-ledger";
     public const string ListProfiles = "list-profiles";
+    public const string GetRuntimeState = "get-runtime-state";
     public const string GetRuntimeBundle = "get-runtime-bundle";
     public const string SelectProfile = "select-profile";
     public const string ListRulePacks = "list-rulepacks";

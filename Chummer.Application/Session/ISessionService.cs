@@ -16,6 +16,8 @@ public interface ISessionService
 
     SessionApiResult<SessionProfileCatalog> ListProfiles(OwnerScope owner);
 
+    SessionApiResult<SessionRuntimeStatusProjection> GetRuntimeState(OwnerScope owner, string characterId);
+
     SessionApiResult<SessionRuntimeBundleIssueReceipt> GetRuntimeBundle(OwnerScope owner, string characterId);
 
     SessionApiResult<SessionProfileSelectionReceipt> SelectProfile(OwnerScope owner, string characterId, SessionProfileSelectionRequest? request);

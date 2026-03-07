@@ -21,6 +21,9 @@ public sealed class NotImplementedSessionService : ISessionService
     public SessionApiResult<SessionProfileCatalog> ListProfiles(OwnerScope owner)
         => NotImplemented<SessionProfileCatalog>(owner, SessionApiOperations.ListProfiles);
 
+    public SessionApiResult<SessionRuntimeStatusProjection> GetRuntimeState(OwnerScope owner, string characterId)
+        => NotImplemented<SessionRuntimeStatusProjection>(owner, SessionApiOperations.GetRuntimeState, characterId);
+
     public SessionApiResult<SessionRuntimeBundleIssueReceipt> GetRuntimeBundle(OwnerScope owner, string characterId)
         => NotImplemented<SessionRuntimeBundleIssueReceipt>(owner, SessionApiOperations.GetRuntimeBundle, characterId);
 

@@ -51,6 +51,20 @@ public sealed class SessionServiceTests
     }
 
     [TestMethod]
+    public void Owner_scoped_session_service_projects_unselected_runtime_state_when_no_profile_binding_exists()
+    {
+        OwnerScopedSessionService service = CreateService();
+
+        SessionApiResult<SessionRuntimeStatusProjection> result = service.GetRuntimeState(OwnerScope.LocalSingleUser, "char-9");
+
+        Assert.IsTrue(result.IsImplemented);
+        Assert.IsNotNull(result.Payload);
+        Assert.AreEqual(SessionRuntimeSelectionStates.Unselected, result.Payload.SelectionState);
+        Assert.AreEqual(SessionRuntimeBundleFreshnessStates.Missing, result.Payload.BundleFreshness);
+        Assert.IsTrue(result.Payload.RequiresBundleRefresh);
+    }
+
+    [TestMethod]
     public void Owner_scoped_session_service_blocks_runtime_bundle_when_profile_has_not_been_selected()
     {
         OwnerScopedSessionService service = CreateService();
@@ -61,6 +75,45 @@ public sealed class SessionServiceTests
         Assert.IsNotNull(result.Payload);
         Assert.AreEqual(SessionRuntimeBundleIssueOutcomes.Blocked, result.Payload.Outcome);
         Assert.AreEqual(SessionRuntimeBundleTrustStates.MissingKey, result.Payload.Diagnostics[0].State);
+    }
+
+    [TestMethod]
+    public void Owner_scoped_session_service_projects_selected_runtime_state_and_bundle_freshness()
+    {
+        InMemorySessionProfileSelectionStore selectionStore = new();
+        InMemorySessionRuntimeBundleStore runtimeBundleStore = new();
+        OwnerScopedSessionService service = CreateService(selectionStore: selectionStore, runtimeBundleStore: runtimeBundleStore);
+
+        SessionApiResult<SessionProfileSelectionReceipt> selection = service.SelectProfile(
+            OwnerScope.LocalSingleUser,
+            "char-1",
+            new SessionProfileSelectionRequest("campaign.sr5.ready"));
+        SessionApiResult<SessionRuntimeStatusProjection> beforeBundle = service.GetRuntimeState(OwnerScope.LocalSingleUser, "char-1");
+        SessionApiResult<SessionRuntimeBundleIssueReceipt> bundle = service.GetRuntimeBundle(OwnerScope.LocalSingleUser, "char-1");
+        SessionApiResult<SessionRuntimeStatusProjection> afterBundle = service.GetRuntimeState(OwnerScope.LocalSingleUser, "char-1");
+
+        Assert.IsTrue(selection.IsImplemented);
+        Assert.IsNotNull(selection.Payload);
+        Assert.AreEqual(SessionProfileSelectionOutcomes.Selected, selection.Payload.Outcome);
+
+        Assert.IsTrue(beforeBundle.IsImplemented);
+        Assert.IsNotNull(beforeBundle.Payload);
+        Assert.AreEqual(SessionRuntimeSelectionStates.Selected, beforeBundle.Payload.SelectionState);
+        Assert.AreEqual(SessionRuntimeBundleFreshnessStates.Missing, beforeBundle.Payload.BundleFreshness);
+        Assert.IsTrue(beforeBundle.Payload.RequiresBundleRefresh);
+        Assert.AreEqual("campaign.sr5.ready", beforeBundle.Payload.ProfileId);
+
+        Assert.IsTrue(bundle.IsImplemented);
+        Assert.IsNotNull(bundle.Payload);
+        Assert.AreEqual(SessionRuntimeBundleIssueOutcomes.Issued, bundle.Payload.Outcome);
+
+        Assert.IsTrue(afterBundle.IsImplemented);
+        Assert.IsNotNull(afterBundle.Payload);
+        Assert.AreEqual(SessionRuntimeSelectionStates.Selected, afterBundle.Payload.SelectionState);
+        Assert.AreEqual(SessionRuntimeBundleFreshnessStates.Current, afterBundle.Payload.BundleFreshness);
+        Assert.IsFalse(afterBundle.Payload.RequiresBundleRefresh);
+        Assert.AreEqual(SessionRuntimeBundleTrustStates.Trusted, afterBundle.Payload.BundleTrustState);
+        Assert.AreEqual(bundle.Payload.Bundle.BundleId, afterBundle.Payload.BundleId);
     }
 
     [TestMethod]

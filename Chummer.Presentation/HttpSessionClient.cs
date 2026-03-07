@@ -41,6 +41,13 @@ public sealed class HttpSessionClient : ISessionClient
     public Task<SessionApiResult<SessionProfileCatalog>> ListProfilesAsync(CancellationToken ct)
         => SendAsync<SessionProfileCatalog>(HttpMethod.Get, "/api/session/profiles", payload: null, ct);
 
+    public Task<SessionApiResult<SessionRuntimeStatusProjection>> GetRuntimeStateAsync(string characterId, CancellationToken ct)
+        => SendAsync<SessionRuntimeStatusProjection>(
+            HttpMethod.Get,
+            $"/api/session/characters/{Uri.EscapeDataString(characterId)}/runtime-state",
+            payload: null,
+            ct);
+
     public Task<SessionApiResult<SessionRuntimeBundleIssueReceipt>> GetRuntimeBundleAsync(string characterId, CancellationToken ct)
         => SendAsync<SessionRuntimeBundleIssueReceipt>(
             HttpMethod.Get,

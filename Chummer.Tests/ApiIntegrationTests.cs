@@ -878,14 +878,17 @@ public class ApiIntegrationTests
     {
         using var http = CreateClient();
         HttpSessionClient sessionClient = new(http);
+        string characterId = $"char-{Guid.NewGuid():N}";
         SessionApiResult<SessionProfileCatalog> profilesResult = await sessionClient.ListProfilesAsync(default);
         SessionApiResult<RulePackCatalog> rulePackResult = await sessionClient.ListRulePacksAsync(default);
 
         SessionApiResult<SessionProfileSelectionReceipt> profileResult = await sessionClient.SelectProfileAsync(
-            "char-1",
+            characterId,
             new SessionProfileSelectionRequest("official.sr5.core"),
             default);
-        SessionApiResult<SessionRuntimeBundleIssueReceipt> bundleResult = await sessionClient.GetRuntimeBundleAsync("char-1", default);
+        SessionApiResult<SessionRuntimeStatusProjection> runtimeStateBeforeBundle = await sessionClient.GetRuntimeStateAsync(characterId, default);
+        SessionApiResult<SessionRuntimeBundleIssueReceipt> bundleResult = await sessionClient.GetRuntimeBundleAsync(characterId, default);
+        SessionApiResult<SessionRuntimeStatusProjection> runtimeStateAfterBundle = await sessionClient.GetRuntimeStateAsync(characterId, default);
 
         Assert.IsTrue(profilesResult.IsImplemented);
         Assert.IsNotNull(profilesResult.Payload);
@@ -898,14 +901,26 @@ public class ApiIntegrationTests
         Assert.IsTrue(profileResult.IsImplemented);
         Assert.IsNotNull(profileResult.Payload);
         Assert.AreEqual(SessionProfileSelectionOutcomes.Selected, profileResult.Payload.Outcome);
-        Assert.AreEqual("char-1", profileResult.Payload.CharacterId);
+        Assert.AreEqual(characterId, profileResult.Payload.CharacterId);
         Assert.AreEqual("official.sr5.core", profileResult.Payload.ProfileId);
+
+        Assert.IsTrue(runtimeStateBeforeBundle.IsImplemented);
+        Assert.IsNotNull(runtimeStateBeforeBundle.Payload);
+        Assert.AreEqual(SessionRuntimeSelectionStates.Selected, runtimeStateBeforeBundle.Payload.SelectionState);
+        Assert.AreEqual(SessionRuntimeBundleFreshnessStates.Missing, runtimeStateBeforeBundle.Payload.BundleFreshness);
+        Assert.IsTrue(runtimeStateBeforeBundle.Payload.RequiresBundleRefresh);
 
         Assert.IsTrue(bundleResult.IsImplemented);
         Assert.IsNotNull(bundleResult.Payload);
         Assert.AreEqual(SessionRuntimeBundleIssueOutcomes.Issued, bundleResult.Payload.Outcome);
-        Assert.AreEqual("char-1", bundleResult.Payload.Bundle.BaseCharacterVersion.CharacterId);
+        Assert.AreEqual(characterId, bundleResult.Payload.Bundle.BaseCharacterVersion.CharacterId);
         Assert.AreEqual(profileResult.Payload.RuntimeFingerprint, bundleResult.Payload.Bundle.BaseCharacterVersion.RuntimeFingerprint);
+
+        Assert.IsTrue(runtimeStateAfterBundle.IsImplemented);
+        Assert.IsNotNull(runtimeStateAfterBundle.Payload);
+        Assert.AreEqual(SessionRuntimeBundleFreshnessStates.Current, runtimeStateAfterBundle.Payload.BundleFreshness);
+        Assert.IsFalse(runtimeStateAfterBundle.Payload.RequiresBundleRefresh);
+        Assert.AreEqual(bundleResult.Payload.Bundle.BundleId, runtimeStateAfterBundle.Payload.BundleId);
     }
 
     [TestMethod]

@@ -23,6 +23,9 @@ public static class SessionEndpoints
         app.MapGet("/api/session/profiles", (ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(sessionService.ListProfiles(ownerContextAccessor.Current)));
 
+        app.MapGet("/api/session/characters/{characterId}/runtime-state", (string characterId, ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
+            ToResult(sessionService.GetRuntimeState(ownerContextAccessor.Current, characterId)));
+
         app.MapGet("/api/session/characters/{characterId}/runtime-bundle", (string characterId, ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(sessionService.GetRuntimeBundle(ownerContextAccessor.Current, characterId)));
 
