@@ -17,6 +17,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
     private readonly IRuleProfileRegistryService _ruleProfileRegistryService;
     private readonly IBuildKitRegistryService _buildKitRegistryService;
     private readonly IHubReviewService _hubReviewService;
+    private readonly INpcVaultRegistryService _npcVaultRegistryService;
     private readonly IRuntimeLockInstallHistoryStore _runtimeLockInstallHistoryStore;
     private readonly IRuntimeLockRegistryService _runtimeLockRegistryService;
 
@@ -28,6 +29,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         IRuleProfileRegistryService ruleProfileRegistryService,
         IBuildKitRegistryService buildKitRegistryService,
         IHubReviewService hubReviewService,
+        INpcVaultRegistryService npcVaultRegistryService,
         IRuntimeLockInstallHistoryStore runtimeLockInstallHistoryStore,
         IRuntimeLockRegistryService runtimeLockRegistryService)
     {
@@ -38,6 +40,7 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         _ruleProfileRegistryService = ruleProfileRegistryService;
         _buildKitRegistryService = buildKitRegistryService;
         _hubReviewService = hubReviewService;
+        _npcVaultRegistryService = npcVaultRegistryService;
         _runtimeLockInstallHistoryStore = runtimeLockInstallHistoryStore;
         _runtimeLockRegistryService = runtimeLockRegistryService;
     }
@@ -75,6 +78,9 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
             HubCatalogItemKinds.RulePack => GetRulePackDetail(owner, itemId, rulesetId),
             HubCatalogItemKinds.RuleProfile => GetRuleProfileDetail(owner, itemId, rulesetId),
             HubCatalogItemKinds.BuildKit => GetBuildKitDetail(owner, itemId, rulesetId),
+            HubCatalogItemKinds.NpcEntry => GetNpcEntryDetail(owner, itemId, rulesetId),
+            HubCatalogItemKinds.NpcPack => GetNpcPackDetail(owner, itemId, rulesetId),
+            HubCatalogItemKinds.EncounterPack => GetEncounterPackDetail(owner, itemId, rulesetId),
             HubCatalogItemKinds.RuntimeLock => GetRuntimeLockDetail(owner, itemId, rulesetId),
             _ => null
         };
@@ -106,6 +112,27 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
                     entry,
                     ownerReview,
                     aggregateReview);
+            }
+
+            foreach (NpcEntryRegistryEntry entry in _npcVaultRegistryService.ListEntries(owner, rulesetId))
+            {
+                HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.NpcEntry, entry.Manifest.EntryId, rulesetId);
+                HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.NpcEntry, entry.Manifest.EntryId, rulesetId);
+                yield return ToCatalogItem(entry, ownerReview, aggregateReview);
+            }
+
+            foreach (NpcPackRegistryEntry entry in _npcVaultRegistryService.ListPacks(owner, rulesetId))
+            {
+                HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.NpcPack, entry.Manifest.PackId, rulesetId);
+                HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.NpcPack, entry.Manifest.PackId, rulesetId);
+                yield return ToCatalogItem(entry, ownerReview, aggregateReview);
+            }
+
+            foreach (EncounterPackRegistryEntry entry in _npcVaultRegistryService.ListEncounterPacks(owner, rulesetId))
+            {
+                HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.EncounterPack, entry.Manifest.EncounterPackId, rulesetId);
+                HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.EncounterPack, entry.Manifest.EncounterPackId, rulesetId);
+                yield return ToCatalogItem(entry, ownerReview, aggregateReview);
             }
         }
 
@@ -355,6 +382,134 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
                 entry.RuntimeLock.RulePacks.Select(reference => reference.Id)));
     }
 
+    private HubProjectDetailProjection? GetNpcEntryDetail(OwnerScope owner, string itemId, string? rulesetId)
+    {
+        foreach (string candidateRulesetId in EnumerateRulesetIds(rulesetId))
+        {
+            NpcEntryRegistryEntry? entry = _npcVaultRegistryService.GetEntry(owner, itemId, candidateRulesetId);
+            if (entry is null)
+            {
+                continue;
+            }
+
+            HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.NpcEntry, entry.Manifest.EntryId, candidateRulesetId);
+            HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.NpcEntry, entry.Manifest.EntryId, candidateRulesetId);
+            return new HubProjectDetailProjection(
+                Summary: ToCatalogItem(entry, ownerReview, aggregateReview),
+                OwnerId: entry.Owner.NormalizedValue,
+                CatalogKind: null,
+                PublicationStatus: entry.PublicationStatus,
+                ReviewState: null,
+                RuntimeFingerprint: entry.Manifest.RuntimeFingerprint,
+                OwnerReview: ownerReview,
+                AggregateReview: aggregateReview,
+                Facts:
+                [
+                    new HubProjectDetailFact("threat-tier", "Threat Tier", entry.Manifest.ThreatTier),
+                    new HubProjectDetailFact("session-ready", "Session Ready", entry.Manifest.SessionReady ? "true" : "false"),
+                    new HubProjectDetailFact("gm-board-ready", "GM Board Ready", entry.Manifest.GmBoardReady ? "true" : "false"),
+                    new HubProjectDetailFact("tag-count", "Tags", (entry.Manifest.Tags?.Count ?? 0).ToString())
+                ],
+                Dependencies: [],
+                Actions:
+                [
+                    new HubProjectAction("clone-npc-entry", "Clone to Library", HubProjectActionKinds.CloneToLibrary, LinkTarget: $"/hub/npcs/{entry.Manifest.EntryId}/clone"),
+                    new HubProjectAction("open-npc-entry", "Open Registry Entry", HubProjectActionKinds.OpenRegistry, LinkTarget: $"/hub/npcs/{entry.Manifest.EntryId}")
+                ],
+                Capabilities: []);
+        }
+
+        return null;
+    }
+
+    private HubProjectDetailProjection? GetNpcPackDetail(OwnerScope owner, string itemId, string? rulesetId)
+    {
+        foreach (string candidateRulesetId in EnumerateRulesetIds(rulesetId))
+        {
+            NpcPackRegistryEntry? entry = _npcVaultRegistryService.GetPack(owner, itemId, candidateRulesetId);
+            if (entry is null)
+            {
+                continue;
+            }
+
+            HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.NpcPack, entry.Manifest.PackId, candidateRulesetId);
+            HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.NpcPack, entry.Manifest.PackId, candidateRulesetId);
+            return new HubProjectDetailProjection(
+                Summary: ToCatalogItem(entry, ownerReview, aggregateReview),
+                OwnerId: entry.Owner.NormalizedValue,
+                CatalogKind: null,
+                PublicationStatus: entry.PublicationStatus,
+                ReviewState: null,
+                RuntimeFingerprint: null,
+                OwnerReview: ownerReview,
+                AggregateReview: aggregateReview,
+                Facts:
+                [
+                    new HubProjectDetailFact("entry-count", "Entries", entry.Manifest.Entries.Count.ToString()),
+                    new HubProjectDetailFact("session-ready", "Session Ready", entry.Manifest.SessionReady ? "true" : "false"),
+                    new HubProjectDetailFact("gm-board-ready", "GM Board Ready", entry.Manifest.GmBoardReady ? "true" : "false"),
+                    new HubProjectDetailFact("tag-count", "Tags", (entry.Manifest.Tags?.Count ?? 0).ToString())
+                ],
+                Dependencies:
+                [
+                    .. entry.Manifest.Entries.Select(reference =>
+                        new HubProjectDependency(HubProjectDependencyKinds.IncludesNpcEntry, HubCatalogItemKinds.NpcEntry, reference.EntryId, reference.Quantity.ToString()))
+                ],
+                Actions:
+                [
+                    new HubProjectAction("clone-npc-pack", "Clone to Library", HubProjectActionKinds.CloneToLibrary, LinkTarget: $"/hub/npc-packs/{entry.Manifest.PackId}/clone"),
+                    new HubProjectAction("open-npc-pack", "Open Registry Entry", HubProjectActionKinds.OpenRegistry, LinkTarget: $"/hub/npc-packs/{entry.Manifest.PackId}")
+                ],
+                Capabilities: []);
+        }
+
+        return null;
+    }
+
+    private HubProjectDetailProjection? GetEncounterPackDetail(OwnerScope owner, string itemId, string? rulesetId)
+    {
+        foreach (string candidateRulesetId in EnumerateRulesetIds(rulesetId))
+        {
+            EncounterPackRegistryEntry? entry = _npcVaultRegistryService.GetEncounterPack(owner, itemId, candidateRulesetId);
+            if (entry is null)
+            {
+                continue;
+            }
+
+            HubReviewSummary? ownerReview = GetOwnerReviewSummary(owner, HubCatalogItemKinds.EncounterPack, entry.Manifest.EncounterPackId, candidateRulesetId);
+            HubReviewAggregateSummary? aggregateReview = GetAggregateReviewSummary(HubCatalogItemKinds.EncounterPack, entry.Manifest.EncounterPackId, candidateRulesetId);
+            return new HubProjectDetailProjection(
+                Summary: ToCatalogItem(entry, ownerReview, aggregateReview),
+                OwnerId: entry.Owner.NormalizedValue,
+                CatalogKind: null,
+                PublicationStatus: entry.PublicationStatus,
+                ReviewState: null,
+                RuntimeFingerprint: null,
+                OwnerReview: ownerReview,
+                AggregateReview: aggregateReview,
+                Facts:
+                [
+                    new HubProjectDetailFact("participant-count", "Participants", entry.Manifest.Participants.Count.ToString()),
+                    new HubProjectDetailFact("session-ready", "Session Ready", entry.Manifest.SessionReady ? "true" : "false"),
+                    new HubProjectDetailFact("gm-board-ready", "GM Board Ready", entry.Manifest.GmBoardReady ? "true" : "false"),
+                    new HubProjectDetailFact("tag-count", "Tags", (entry.Manifest.Tags?.Count ?? 0).ToString())
+                ],
+                Dependencies:
+                [
+                    .. entry.Manifest.Participants.Select(reference =>
+                        new HubProjectDependency(HubProjectDependencyKinds.IncludesNpcEntry, HubCatalogItemKinds.NpcEntry, reference.EntryId, reference.Quantity.ToString(), reference.Role))
+                ],
+                Actions:
+                [
+                    new HubProjectAction("clone-encounter-pack", "Clone to Library", HubProjectActionKinds.CloneToLibrary, LinkTarget: $"/hub/encounters/{entry.Manifest.EncounterPackId}/clone"),
+                    new HubProjectAction("open-encounter-pack", "Open Registry Entry", HubProjectActionKinds.OpenRegistry, LinkTarget: $"/hub/encounters/{entry.Manifest.EncounterPackId}")
+                ],
+                Capabilities: []);
+        }
+
+        return null;
+    }
+
     private IEnumerable<string> EnumerateRulesetIds(string? rulesetId)
     {
         string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
@@ -462,6 +617,54 @@ public sealed class DefaultHubCatalogService : IHubCatalogService
         Version: entry.RuntimeLock.RuntimeFingerprint,
         Installable: true,
         InstallState: entry.Install.State,
+        OwnerReview: ownerReview,
+        AggregateReview: aggregateReview);
+
+    private static HubCatalogItem ToCatalogItem(
+        NpcEntryRegistryEntry entry,
+        HubReviewSummary? ownerReview = null,
+        HubReviewAggregateSummary? aggregateReview = null) => new(
+        ItemId: entry.Manifest.EntryId,
+        Kind: HubCatalogItemKinds.NpcEntry,
+        Title: entry.Manifest.Title,
+        Description: entry.Manifest.Description,
+        RulesetId: entry.Manifest.RulesetId,
+        Visibility: entry.Manifest.Visibility,
+        TrustTier: entry.Manifest.TrustTier,
+        LinkTarget: $"/hub/npcs/{entry.Manifest.EntryId}",
+        Version: entry.Manifest.Version,
+        OwnerReview: ownerReview,
+        AggregateReview: aggregateReview);
+
+    private static HubCatalogItem ToCatalogItem(
+        NpcPackRegistryEntry entry,
+        HubReviewSummary? ownerReview = null,
+        HubReviewAggregateSummary? aggregateReview = null) => new(
+        ItemId: entry.Manifest.PackId,
+        Kind: HubCatalogItemKinds.NpcPack,
+        Title: entry.Manifest.Title,
+        Description: entry.Manifest.Description,
+        RulesetId: entry.Manifest.RulesetId,
+        Visibility: entry.Manifest.Visibility,
+        TrustTier: entry.Manifest.TrustTier,
+        LinkTarget: $"/hub/npc-packs/{entry.Manifest.PackId}",
+        Version: entry.Manifest.Version,
+        OwnerReview: ownerReview,
+        AggregateReview: aggregateReview);
+
+    private static HubCatalogItem ToCatalogItem(
+        EncounterPackRegistryEntry entry,
+        HubReviewSummary? ownerReview = null,
+        HubReviewAggregateSummary? aggregateReview = null) => new(
+        ItemId: entry.Manifest.EncounterPackId,
+        Kind: HubCatalogItemKinds.EncounterPack,
+        Title: entry.Manifest.Title,
+        Description: entry.Manifest.Description,
+        RulesetId: entry.Manifest.RulesetId,
+        Visibility: entry.Manifest.Visibility,
+        TrustTier: entry.Manifest.TrustTier,
+        LinkTarget: $"/hub/encounters/{entry.Manifest.EncounterPackId}",
+        Version: entry.Manifest.Version,
         OwnerReview: ownerReview,
         AggregateReview: aggregateReview);
 

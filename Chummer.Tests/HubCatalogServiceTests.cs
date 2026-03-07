@@ -32,10 +32,13 @@ public class HubCatalogServiceTests
                 FacetSelections: new Dictionary<string, IReadOnlyList<string>>(),
                 SortId: HubCatalogSortIds.Title));
 
-        Assert.AreEqual(5, page.TotalCount);
+        Assert.AreEqual(7, page.TotalCount);
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.RulePack));
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.RuleProfile));
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.BuildKit));
+        Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.NpcEntry));
+        Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.NpcPack));
+        Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.EncounterPack));
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.RuntimeLock));
         Assert.IsTrue(page.Items.Any(item =>
             item.Kind == HubCatalogItemKinds.RuleProfile
@@ -55,6 +58,9 @@ public class HubCatalogServiceTests
 
         HubProjectDetailProjection? rulePack = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.RulePack, "house-rules", RulesetDefaults.Sr5);
         HubProjectDetailProjection? buildKit = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.BuildKit, "street-sam-starter", RulesetDefaults.Sr5);
+        HubProjectDetailProjection? npcEntry = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.NpcEntry, "red-samurai", RulesetDefaults.Sr5);
+        HubProjectDetailProjection? npcPack = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.NpcPack, "renraku-security", RulesetDefaults.Sr5);
+        HubProjectDetailProjection? encounterPack = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.EncounterPack, "renraku-checkpoint", RulesetDefaults.Sr5);
         HubProjectDetailProjection? ruleProfile = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.RuleProfile, "official.sr5.core", RulesetDefaults.Sr5);
         HubProjectDetailProjection? runtimeLock = service.GetProjectDetail(OwnerScope.LocalSingleUser, HubCatalogItemKinds.RuntimeLock, "sha256:core", RulesetDefaults.Sr5);
 
@@ -75,6 +81,26 @@ public class HubCatalogServiceTests
         Assert.AreEqual(HubCatalogItemKinds.BuildKit, buildKit.Summary.Kind);
         Assert.AreEqual(BuildKitPublicationStatuses.Published, buildKit.PublicationStatus);
         Assert.IsTrue(buildKit.Dependencies.Any(dependency => dependency.Kind == HubProjectDependencyKinds.RequiresRulePack));
+
+        Assert.IsNotNull(npcEntry);
+        Assert.AreEqual(HubCatalogItemKinds.NpcEntry, npcEntry.Summary.Kind);
+        Assert.AreEqual(NpcPublicationStatuses.Published, npcEntry.PublicationStatus);
+        Assert.IsTrue(npcEntry.Facts.Any(fact => fact.FactId == "threat-tier" && fact.Value == "high"));
+        Assert.IsTrue(npcEntry.Actions.Any(action => action.Kind == HubProjectActionKinds.CloneToLibrary));
+
+        Assert.IsNotNull(npcPack);
+        Assert.AreEqual(HubCatalogItemKinds.NpcPack, npcPack.Summary.Kind);
+        Assert.AreEqual(NpcPublicationStatuses.Published, npcPack.PublicationStatus);
+        Assert.IsTrue(npcPack.Dependencies.Any(dependency =>
+            dependency.Kind == HubProjectDependencyKinds.IncludesNpcEntry
+            && dependency.ItemId == "red-samurai"));
+
+        Assert.IsNotNull(encounterPack);
+        Assert.AreEqual(HubCatalogItemKinds.EncounterPack, encounterPack.Summary.Kind);
+        Assert.AreEqual(NpcPublicationStatuses.Published, encounterPack.PublicationStatus);
+        Assert.IsTrue(encounterPack.Dependencies.Any(dependency =>
+            dependency.Kind == HubProjectDependencyKinds.IncludesNpcEntry
+            && dependency.Notes == "lead"));
 
         Assert.IsNotNull(ruleProfile);
         Assert.AreEqual(HubCatalogItemKinds.RuleProfile, ruleProfile.Summary.Kind);
@@ -276,6 +302,69 @@ public class HubCatalogServiceTests
                     ReviewText: "Not for my table.",
                     UsedAtTable: false)
             ])),
+        new NpcVaultRegistryServiceStub(
+        [
+            new NpcEntryRegistryEntry(
+                new NpcEntryManifest(
+                    EntryId: "red-samurai",
+                    Version: "1.0.0",
+                    Title: "Red Samurai",
+                    Description: "Renraku elite trooper.",
+                    RulesetId: RulesetDefaults.Sr5,
+                    ThreatTier: "high",
+                    Faction: "Renraku",
+                    RuntimeFingerprint: "sha256:core",
+                    SessionReady: true,
+                    GmBoardReady: true,
+                    Visibility: ArtifactVisibilityModes.Public,
+                    TrustTier: ArtifactTrustTiers.Curated,
+                    Tags: ["elite", "corporate"]),
+                OwnerScope.LocalSingleUser,
+                NpcPublicationStatuses.Published,
+                DateTimeOffset.UtcNow)
+        ],
+        [
+            new NpcPackRegistryEntry(
+                new NpcPackManifest(
+                    PackId: "renraku-security",
+                    Version: "1.0.0",
+                    Title: "Renraku Security",
+                    Description: "Security roster.",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Entries:
+                    [
+                        new NpcPackMemberReference("red-samurai", 2)
+                    ],
+                    SessionReady: true,
+                    GmBoardReady: true,
+                    Visibility: ArtifactVisibilityModes.Public,
+                    TrustTier: ArtifactTrustTiers.Curated,
+                    Tags: ["security"]),
+                OwnerScope.LocalSingleUser,
+                NpcPublicationStatuses.Published,
+                DateTimeOffset.UtcNow)
+        ],
+        [
+            new EncounterPackRegistryEntry(
+                new EncounterPackManifest(
+                    EncounterPackId: "renraku-checkpoint",
+                    Version: "1.0.0",
+                    Title: "Renraku Checkpoint",
+                    Description: "Checkpoint encounter.",
+                    RulesetId: RulesetDefaults.Sr5,
+                    Participants:
+                    [
+                        new EncounterPackParticipantReference("red-samurai", 1, "lead")
+                    ],
+                    SessionReady: true,
+                    GmBoardReady: true,
+                    Visibility: ArtifactVisibilityModes.Public,
+                    TrustTier: ArtifactTrustTiers.Curated,
+                    Tags: ["checkpoint"]),
+                OwnerScope.LocalSingleUser,
+                NpcPublicationStatuses.Published,
+                DateTimeOffset.UtcNow)
+        ]),
         new RuntimeLockInstallHistoryStoreStub(
         [
             new RuntimeLockInstallHistoryRecord(
@@ -437,10 +526,78 @@ public class HubCatalogServiceTests
             _entries = entries;
         }
 
-        public IReadOnlyList<BuildKitRegistryEntry> List(OwnerScope owner, string? rulesetId = null) => _entries;
+        public IReadOnlyList<BuildKitRegistryEntry> List(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return normalizedRulesetId is null
+                ? _entries
+                : _entries.Where(entry => entry.Manifest.Targets.Contains(normalizedRulesetId, StringComparer.Ordinal)).ToArray();
+        }
 
         public BuildKitRegistryEntry? Get(OwnerScope owner, string buildKitId, string? rulesetId = null) =>
-            _entries.FirstOrDefault(entry => entry.Manifest.BuildKitId == buildKitId);
+            _entries.FirstOrDefault(entry =>
+                string.Equals(entry.Manifest.BuildKitId, buildKitId, StringComparison.Ordinal)
+                && (string.IsNullOrWhiteSpace(rulesetId)
+                    || entry.Manifest.Targets.Contains(RulesetDefaults.NormalizeRequired(rulesetId), StringComparer.Ordinal)));
+    }
+
+    private sealed class NpcVaultRegistryServiceStub : INpcVaultRegistryService
+    {
+        private readonly IReadOnlyList<NpcEntryRegistryEntry> _entries;
+        private readonly IReadOnlyList<NpcPackRegistryEntry> _packs;
+        private readonly IReadOnlyList<EncounterPackRegistryEntry> _encounters;
+
+        public NpcVaultRegistryServiceStub(
+            IReadOnlyList<NpcEntryRegistryEntry> entries,
+            IReadOnlyList<NpcPackRegistryEntry> packs,
+            IReadOnlyList<EncounterPackRegistryEntry> encounters)
+        {
+            _entries = entries;
+            _packs = packs;
+            _encounters = encounters;
+        }
+
+        public IReadOnlyList<NpcEntryRegistryEntry> ListEntries(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return normalizedRulesetId is null
+                ? _entries
+                : _entries.Where(entry => string.Equals(entry.Manifest.RulesetId, normalizedRulesetId, StringComparison.Ordinal)).ToArray();
+        }
+
+        public NpcEntryRegistryEntry? GetEntry(OwnerScope owner, string entryId, string? rulesetId = null)
+            => _entries.FirstOrDefault(entry =>
+                string.Equals(entry.Manifest.EntryId, entryId, StringComparison.Ordinal)
+                && (string.IsNullOrWhiteSpace(rulesetId)
+                    || string.Equals(entry.Manifest.RulesetId, RulesetDefaults.NormalizeRequired(rulesetId), StringComparison.Ordinal)));
+
+        public IReadOnlyList<NpcPackRegistryEntry> ListPacks(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return normalizedRulesetId is null
+                ? _packs
+                : _packs.Where(entry => string.Equals(entry.Manifest.RulesetId, normalizedRulesetId, StringComparison.Ordinal)).ToArray();
+        }
+
+        public NpcPackRegistryEntry? GetPack(OwnerScope owner, string packId, string? rulesetId = null)
+            => _packs.FirstOrDefault(entry =>
+                string.Equals(entry.Manifest.PackId, packId, StringComparison.Ordinal)
+                && (string.IsNullOrWhiteSpace(rulesetId)
+                    || string.Equals(entry.Manifest.RulesetId, RulesetDefaults.NormalizeRequired(rulesetId), StringComparison.Ordinal)));
+
+        public IReadOnlyList<EncounterPackRegistryEntry> ListEncounterPacks(OwnerScope owner, string? rulesetId = null)
+        {
+            string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+            return normalizedRulesetId is null
+                ? _encounters
+                : _encounters.Where(entry => string.Equals(entry.Manifest.RulesetId, normalizedRulesetId, StringComparison.Ordinal)).ToArray();
+        }
+
+        public EncounterPackRegistryEntry? GetEncounterPack(OwnerScope owner, string encounterPackId, string? rulesetId = null)
+            => _encounters.FirstOrDefault(entry =>
+                string.Equals(entry.Manifest.EncounterPackId, encounterPackId, StringComparison.Ordinal)
+                && (string.IsNullOrWhiteSpace(rulesetId)
+                    || string.Equals(entry.Manifest.RulesetId, RulesetDefaults.NormalizeRequired(rulesetId), StringComparison.Ordinal)));
     }
 
     private sealed class HubReviewStoreStub : IHubReviewStore

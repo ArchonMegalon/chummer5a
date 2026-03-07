@@ -7,6 +7,7 @@ public static class HubProjectDependencyKinds
     public const string DependsOn = "depends-on";
     public const string ConflictsWith = "conflicts-with";
     public const string IncludesRulePack = "includes-rulepack";
+    public const string IncludesNpcEntry = "includes-npc-entry";
     public const string RequiresRulePack = "requires-rulepack";
     public const string RequiresRuntimeFingerprint = "requires-runtime-fingerprint";
 }
@@ -18,6 +19,7 @@ public static class HubProjectActionKinds
     public const string PreviewRuntime = "preview-runtime";
     public const string InspectRuntime = "inspect-runtime";
     public const string OpenRegistry = "open-registry";
+    public const string CloneToLibrary = "clone-to-library";
 }
 
 public sealed record HubProjectDetailFact(

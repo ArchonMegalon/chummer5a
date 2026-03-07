@@ -7,6 +7,9 @@ public static class HubCatalogItemKinds
     public const string RulePack = "rulepack";
     public const string RuleProfile = "ruleprofile";
     public const string BuildKit = "buildkit";
+    public const string NpcEntry = "npc-entry";
+    public const string NpcPack = "npc-pack";
+    public const string EncounterPack = "encounter-pack";
     public const string RuntimeLock = "runtime-lock";
 }
 

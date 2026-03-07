@@ -61,6 +61,7 @@ public static class ServiceCollectionExtensions
                 provider.GetRequiredService<ICharacterSocialNarrativeQueries>()));
         services.AddSingleton<IContentOverlayCatalogService>(overlays);
         services.AddSingleton<IBuildKitRegistryService, DefaultBuildKitRegistryService>();
+        services.AddSingleton<INpcVaultRegistryService, DefaultNpcVaultRegistryService>();
         services.AddSingleton<IRulePackManifestStore>(_ => new FileRulePackManifestStore(stateDirectory));
         services.AddSingleton<IRulePackInstallHistoryStore>(_ => new FileRulePackInstallHistoryStore(stateDirectory));
         services.AddSingleton<IRulePackInstallStateStore>(_ => new FileRulePackInstallStateStore(stateDirectory));

@@ -432,6 +432,46 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Npc_vault_registry_surface_is_integrated_into_hub_catalog_seam()
+    {
+        string npcVaultRegistryContractsPath = FindPath("Chummer.Contracts", "Content", "NpcVaultRegistryContracts.cs");
+        string npcVaultRegistryContractsText = File.ReadAllText(npcVaultRegistryContractsPath);
+        string npcVaultRegistryServiceContractPath = FindPath("Chummer.Application", "Content", "INpcVaultRegistryService.cs");
+        string npcVaultRegistryServiceContractText = File.ReadAllText(npcVaultRegistryServiceContractPath);
+        string defaultNpcVaultRegistryServicePath = FindPath("Chummer.Application", "Content", "DefaultNpcVaultRegistryService.cs");
+        string defaultNpcVaultRegistryServiceText = File.ReadAllText(defaultNpcVaultRegistryServicePath);
+        string hubCatalogContractsPath = FindPath("Chummer.Contracts", "Hub", "HubCatalogContracts.cs");
+        string hubCatalogContractsText = File.ReadAllText(hubCatalogContractsPath);
+        string hubProjectDetailContractsPath = FindPath("Chummer.Contracts", "Hub", "HubProjectDetailContracts.cs");
+        string hubProjectDetailContractsText = File.ReadAllText(hubProjectDetailContractsPath);
+        string hubCatalogServicePath = FindPath("Chummer.Application", "Hub", "DefaultHubCatalogService.cs");
+        string hubCatalogServiceText = File.ReadAllText(hubCatalogServicePath);
+        string serviceRegistrationPath = FindPath("Chummer.Infrastructure", "DependencyInjection", "ServiceCollectionExtensions.cs");
+        string serviceRegistrationText = File.ReadAllText(serviceRegistrationPath);
+        string readmePath = FindPath("README.md");
+        string readmeText = File.ReadAllText(readmePath);
+
+        StringAssert.Contains(npcVaultRegistryContractsText, "public sealed record NpcEntryManifest");
+        StringAssert.Contains(npcVaultRegistryContractsText, "public sealed record NpcPackManifest");
+        StringAssert.Contains(npcVaultRegistryContractsText, "public sealed record EncounterPackManifest");
+        StringAssert.Contains(npcVaultRegistryContractsText, "public sealed record NpcEntryRegistryEntry");
+        StringAssert.Contains(npcVaultRegistryServiceContractText, "public interface INpcVaultRegistryService");
+        StringAssert.Contains(npcVaultRegistryServiceContractText, "IReadOnlyList<NpcEntryRegistryEntry> ListEntries");
+        StringAssert.Contains(defaultNpcVaultRegistryServiceText, "public sealed class DefaultNpcVaultRegistryService : INpcVaultRegistryService");
+        StringAssert.Contains(hubCatalogContractsText, "public const string NpcEntry = \"npc-entry\";");
+        StringAssert.Contains(hubCatalogContractsText, "public const string NpcPack = \"npc-pack\";");
+        StringAssert.Contains(hubCatalogContractsText, "public const string EncounterPack = \"encounter-pack\";");
+        StringAssert.Contains(hubProjectDetailContractsText, "public const string IncludesNpcEntry = \"includes-npc-entry\";");
+        StringAssert.Contains(hubProjectDetailContractsText, "public const string CloneToLibrary = \"clone-to-library\";");
+        StringAssert.Contains(hubCatalogServiceText, "INpcVaultRegistryService");
+        StringAssert.Contains(hubCatalogServiceText, "HubCatalogItemKinds.NpcEntry");
+        StringAssert.Contains(hubCatalogServiceText, "HubCatalogItemKinds.NpcPack");
+        StringAssert.Contains(hubCatalogServiceText, "HubCatalogItemKinds.EncounterPack");
+        StringAssert.Contains(serviceRegistrationText, "AddSingleton<INpcVaultRegistryService, DefaultNpcVaultRegistryService>()");
+        StringAssert.Contains(readmeText, "NPC entries/packs/encounters");
+    }
+
+    [TestMethod]
     public void Ruleprofile_registry_surface_is_separate_from_rulepack_registry_surface()
     {
         string apiProgramPath = FindPath("Chummer.Api", "Program.cs");
