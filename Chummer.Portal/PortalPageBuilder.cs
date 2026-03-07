@@ -188,6 +188,9 @@ internal static class PortalPageBuilder
         string hubBaseUrl,
         string hubProxyBaseUrl,
         bool useHubProxy,
+        string sessionBaseUrl,
+        string sessionProxyBaseUrl,
+        bool useSessionProxy,
         string avaloniaBrowserBaseUrl,
         string avaloniaProxyBaseUrl,
         bool useAvaloniaProxy,
@@ -285,10 +288,13 @@ internal static class PortalPageBuilder
         string hubModeText = useHubProxy
             ? "<code>/hub</code> in-process proxy is active."
             : "<code>/hub</code> currently uses redirect mode.";
+        string sessionModeText = useSessionProxy
+            ? "<code>/session</code> in-process proxy is active."
+            : "<code>/session</code> currently uses redirect mode.";
         string avaloniaModeText = useAvaloniaProxy
             ? "<code>/avalonia</code> in-process proxy is active."
             : "<code>/avalonia</code> currently serves a setup placeholder.";
-        html.AppendLine("      <p class=\"lead\">Single landing surface for migration heads. Current milestone proxies <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> in-process; " + blazorModeText + " " + hubModeText + " " + avaloniaModeText + "</p>");
+        html.AppendLine("      <p class=\"lead\">Single landing surface for migration heads. Current milestone proxies <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> in-process; " + blazorModeText + " " + hubModeText + " " + sessionModeText + " " + avaloniaModeText + "</p>");
         html.AppendLine("    </header>");
         html.AppendLine("    <section class=\"grid\">");
         html.AppendLine("      <article class=\"card\">");
@@ -300,6 +306,11 @@ internal static class PortalPageBuilder
         html.AppendLine("        <h2>ChummerHub Web</h2>");
         html.AppendLine("        <p>Active hub/discovery head over the shared publication, review, and install seams.</p>");
         html.AppendLine("        <a href=\"/hub/\">Open Hub</a>");
+        html.AppendLine("      </article>");
+        html.AppendLine("      <article class=\"card\">");
+        html.AppendLine("        <h2>Session Web</h2>");
+        html.AppendLine("        <p>Mobile/session head over dedicated runtime-state, bundle, and ledger seams.</p>");
+        html.AppendLine("        <a href=\"/session/\">Open Session</a>");
         html.AppendLine("      </article>");
         html.AppendLine("      <article class=\"card\">");
         html.AppendLine("        <h2>API Surface</h2>");
@@ -328,6 +339,7 @@ internal static class PortalPageBuilder
         html.AppendLine("      <div><code>/docs</code> proxy upstream → " + HtmlEncode(apiBaseUrl) + "</div>");
         html.AppendLine("      <div><code>/blazor</code> " + (useBlazorProxy ? "proxy upstream → " + HtmlEncode(blazorProxyBaseUrl) : "redirect → " + HtmlEncode(blazorBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/hub</code> " + (useHubProxy ? "proxy upstream → " + HtmlEncode(hubProxyBaseUrl) : "redirect → " + HtmlEncode(hubBaseUrl)) + "</div>");
+        html.AppendLine("      <div><code>/session</code> " + (useSessionProxy ? "proxy upstream → " + HtmlEncode(sessionProxyBaseUrl) : "redirect → " + HtmlEncode(sessionBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/avalonia</code> " + (useAvaloniaProxy ? "proxy upstream → " + HtmlEncode(avaloniaProxyBaseUrl) : "placeholder route at " + HtmlEncode(avaloniaBrowserBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>/downloads</code> " + (useDownloadsProxy ? "proxy upstream → " + HtmlEncode(downloadsProxyBaseUrl) : "local files + manifest with fallback feed → " + HtmlEncode(downloadsBaseUrl)) + "</div>");
         html.AppendLine("      <div><code>X-Api-Key</code> forwarding → " + (isApiKeyForwardingEnabled ? "enabled for internal <code>/api</code>, <code>/openapi</code>, and <code>/docs</code> upstream compatibility only" : "disabled") + "</div>");

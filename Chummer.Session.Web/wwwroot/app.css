@@ -1,0 +1,86 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Aptos", "Segoe UI Variable", "Segoe UI", sans-serif;
+    color: #f2f6f3;
+    background:
+        radial-gradient(circle at top right, rgba(90, 163, 120, 0.26), transparent 34%),
+        linear-gradient(160deg, #0d1816, #1c2f2b);
+}
+
+.shell {
+    min-height: 100vh;
+}
+
+.page {
+    width: min(1040px, 100%);
+    margin: 0 auto;
+    padding: 32px 20px 48px;
+}
+
+.hero {
+    padding: 28px;
+    border: 1px solid rgba(169, 230, 185, 0.22);
+    border-radius: 18px;
+    background: rgba(9, 18, 16, 0.68);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
+}
+
+.eyebrow {
+    margin: 0 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.78rem;
+    color: #9fd7ad;
+}
+
+h1 {
+    margin: 0;
+    font-size: clamp(2rem, 5vw, 3.6rem);
+}
+
+.lede {
+    margin: 14px 0 0;
+    max-width: 62ch;
+    color: #d6e0db;
+    line-height: 1.55;
+}
+
+.grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-top: 22px;
+}
+
+.card {
+    padding: 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.card h2 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+}
+
+.card p {
+    margin: 0;
+    color: #d6e0db;
+    line-height: 1.45;
+}
+
+.status {
+    margin-top: 18px;
+    color: #c6d2cb;
+}
+
+code {
+    color: #d3ffd9;
+}

@@ -15,7 +15,7 @@ Chummer is a character creation and management application for the tabletop RPG 
 This repository currently has two tracks:
 
 * **Legacy path**: the WinForms desktop app (`Chummer`) that continues to serve as compatibility reference and regression oracle.
-* **Current multi-head runtime (Docker branch)**: API + shared presentation seam + gateway + multi-head UI stack (`Chummer.Blazor`, `Chummer.Hub.Web`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`).
+* **Current multi-head runtime (Docker branch)**: API + shared presentation seam + gateway + multi-head UI stack (`Chummer.Blazor`, `Chummer.Hub.Web`, `Chummer.Session.Web`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`).
 
 ## Current Multi-Head Runtime (Docker Branch)
 
@@ -25,6 +25,7 @@ The `Docker` branch is the current multi-head runtime architecture for this repo
 * `Chummer.Application`, `Chummer.Contracts`, `Chummer.Infrastructure`, and `Chummer.Presentation` provide the shared behavior seam.
 * `Chummer.Contracts.Rulesets` defines host-neutral ruleset/plugin/script interfaces plus a shared workspace payload envelope for peer SR4/SR5/SR6 module expansion without changing the active runtime seam.
 * `Chummer.Hub.Web` is the active `/hub` web head scaffold for the future ChummerHub product path. It sits behind `Chummer.Portal`, uses a dedicated `CHUMMER_HUB_PATH_BASE`, and replaces the archived legacy `ChummerHub` app as the runtime-facing hub head.
+* `Chummer.Session.Web` is the active `/session` web head scaffold for the future mobile/session product path. It sits behind `Chummer.Portal`, uses a dedicated `CHUMMER_SESSION_PATH_BASE`, and binds to the dedicated session/mobile API seam instead of widening the workbench head path.
 * `/api/session/*` is the dedicated session/mobile boundary. The seam now exposes owner-backed session profile catalog/selection, a per-character session runtime-state route, session-ready RulePack listing, deterministic runtime-bundle routes, deterministic runtime-bundle issuance, and explicit runtime-bundle refresh/rebind receipts while character projection, ledger sync, patch mutation, and pin mutation paths remain explicit `session_not_implemented` receipts until the broader session product path is implemented. Session/mobile heads should bind to the dedicated `ISessionClient` seam instead of widening the workbench-oriented `IChummerClient` contract.
 * `/api/hub/search`, `/api/hub/projects/*`, `/api/hub/projects/*/install-preview`, and `/api/hub/projects/*/compatibility` are the first ChummerHub-style discovery/detail/install-preview/compatibility surfaces. They already aggregate RulePacks, RuleProfiles, BuildKits, NPC entries/packs/encounters, and runtime locks through shared browse/query and install-preview contracts, and RulePack/Profile discovery now surfaces bound publisher attribution when publication metadata is available so hub-style discovery does not depend on head-specific catalog composition.
 * `/api/hub/publishers/*` now provides the first owner-backed publisher profile seam so hub publication and review flows can attach to stable publisher identities instead of draft-only owner ids.
@@ -35,12 +36,12 @@ The `Docker` branch is the current multi-head runtime architecture for this repo
 * `/api/runtime/profiles/{profileId}` exposes a dedicated runtime-inspector projection for a resolved RuleProfile runtime so support, hub, and future workbench surfaces can inspect fingerprints, install state, pack bindings, warnings, and migration preview data through one shared seam. Runtime fingerprints are resolved from content bundle identity, RulePack asset checksums, and provider bindings instead of only profile/version identifiers.
 * `/api/runtime/locks/*` exposes a reusable runtime-lock catalog that now merges owner-scoped persisted runtime locks with the current profile-derived entries so saved, installed, pinned, published, and derived runtime fingerprints have an explicit registry path instead of living only inside profile detail payloads. Runtime locks now expose dedicated owner-backed save, install-preview, and install routes at `/api/runtime/locks/{lockId}`, `/api/runtime/locks/{lockId}/install-preview`, and `/api/runtime/locks/{lockId}/install`, and hub install previews surface owner install state before those mutation calls persist owner-backed lock copies and install history.
 * `Chummer.Blazor` is the browser/web head, `Chummer.Avalonia` is the native desktop head, and `Chummer.Blazor.Desktop` is the desktop webview host.
-* `Chummer.Portal` is the single public gateway surface; `Chummer.Hub.Web` provides the `/hub` head; and `Chummer.Avalonia.Browser` provides the browser-hosted `/avalonia` route behind the portal profile.
+* `Chummer.Portal` is the single public gateway surface; `Chummer.Hub.Web` provides the `/hub` head; `Chummer.Session.Web` provides the `/session` head; and `Chummer.Avalonia.Browser` provides the browser-hosted `/avalonia` route behind the portal profile.
 * `Chummer.Web` is retained only as a compatibility/oracle asset and is not part of the default runtime or parity-check contract.
 * Legacy hub policy: `ChummerHub` and `ChummerHub.Client` are archived compatibility assets only. They are not part of the active solution, public runtime, or future ChummerHub product path; all public-edge and hub work belongs behind `Chummer.Portal`.
 * Default runtime registration currently enables SR5 and SR6 only. `Chummer.Rulesets.Sr4` remains a scaffolded/experimental module and is not part of the default headless/runtime path until import/open/runtime coverage is complete. Set `CHUMMER_DEFAULT_RULESET` to choose the explicit host default ruleset; if it points at an unregistered ruleset, shell/bootstrap flows fail with diagnostics instead of following plugin registration order.
 * Legacy head policy: `Chummer` and `Chummer.Web` are oracle/parity assets only. Net-new user-facing behavior belongs in the shared seam and active heads; legacy changes must be limited to regression-oracle maintenance, parity extraction, or compatibility verification.
-* Runtime compose flows target `chummer-api`, `chummer-blazor`, and `chummer-hub-web`; portal flows add `chummer-portal`, `chummer-blazor-portal`, `chummer-hub-web-portal`, and `chummer-avalonia-browser`; no `chummer-web` service is part of the active product path.
+* Runtime compose flows target `chummer-api`, `chummer-blazor`, `chummer-hub-web`, and `chummer-session-web`; portal flows add `chummer-portal`, `chummer-blazor-portal`, `chummer-hub-web-portal`, `chummer-session-web-portal`, and `chummer-avalonia-browser`; no `chummer-web` service is part of the active product path.
 * Migration execution backlog: [`docs/MIGRATION_BACKLOG.md`](docs/MIGRATION_BACKLOG.md).
 
 ## Decommissioned Legacy Runtime Components
@@ -57,8 +58,10 @@ The following legacy components are no longer part of the active product/runtime
 * `chummer-api` (default service)
 * `chummer-blazor` (default service)
 * `chummer-hub-web` (default service)
+* `chummer-session-web` (default service)
 * `chummer-blazor-portal` (under the `portal` profile; internal `/blazor` path-base host)
 * `chummer-hub-web-portal` (under the `portal` profile; internal `/hub` path-base host)
+* `chummer-session-web-portal` (under the `portal` profile; internal `/session` path-base host)
 * `chummer-avalonia-browser` (under the `portal` profile; internal `/avalonia` browser-head host)
 * `chummer-portal` (under the `portal` profile; single landing + proxy gateway)
 * `chummer-tests` (under the `test` profile only)
@@ -85,10 +88,16 @@ Start API + Hub UI:
 docker compose up -d --build chummer-api chummer-hub-web
 ```
 
+Start API + Session UI:
+
+```bash
+docker compose up -d --build chummer-api chummer-session-web
+```
+
 Start API + Blazor + Portal landing surface:
 
 ```bash
-docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-hub-web-portal chummer-avalonia-browser chummer-portal
+docker compose --profile portal up -d --build chummer-api chummer-blazor-portal chummer-hub-web-portal chummer-session-web-portal chummer-avalonia-browser chummer-portal
 ```
 
 Direct API access (local/dev/ops or private upstreams):

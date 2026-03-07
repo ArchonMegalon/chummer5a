@@ -1,0 +1,31 @@
+@page "/"
+@inject NavigationManager Navigation
+
+<main class="page">
+    <section class="hero">
+        <p class="eyebrow">Active Session Head</p>
+        <h1>Chummer Session Web</h1>
+        <p class="lede">
+            This mobile-first session head fronts the dedicated <code>/api/session/*</code>
+            seams behind <code>Chummer.Portal</code>. Runtime-state, runtime-bundle,
+            profile-selection, and session-ledger flows can land here without widening the
+            workbench-oriented client path.
+        </p>
+    </section>
+
+    <section class="grid">
+        <article class="card">
+            <h2>Runtime State</h2>
+            <p>Bind session runtime selection and bundle freshness to <code>/api/session/characters/{id}/runtime-state</code>.</p>
+        </article>
+        <article class="card">
+            <h2>Bundles</h2>
+            <p>Issue and refresh signed runtime bundles through the dedicated <code>/api/session/characters/{id}/runtime-bundle*</code> seams.</p>
+        </article>
+        <article class="card">
+            <h2>Profile Pinning</h2>
+            <p>Keep mobile/runtime profile selection on <code>ISessionClient</code> instead of tunneling through workbench bootstrap contracts.</p>
+        </article>
+    </section>
+    <p class="status">Path base: <code>@Navigation.BaseUri</code></p>
+</main>

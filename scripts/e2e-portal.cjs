@@ -4,6 +4,7 @@
 const requiredLandingLinks = [
   '/blazor/',
   '/hub/',
+  '/session/',
   '/avalonia/',
   '/downloads/',
   '/docs/',
@@ -42,6 +43,17 @@ const checks = [
   {
     url: 'http://chummer-portal:8080/hub/',
     assert: text => /<base href="[^"]*\/hub\/"/i.test(text) && text.includes('ChummerHub Web')
+  },
+  {
+    url: 'http://chummer-portal:8080/session/health',
+    assert: text => {
+      const payload = JSON.parse(text);
+      return payload?.head === 'session-web' && payload?.pathBase === '/session' && payload?.ok === true;
+    }
+  },
+  {
+    url: 'http://chummer-portal:8080/session/',
+    assert: text => /<base href="[^"]*\/session\/"/i.test(text) && text.includes('Chummer Session Web')
   },
   {
     url: 'http://chummer-portal:8080/avalonia/',
