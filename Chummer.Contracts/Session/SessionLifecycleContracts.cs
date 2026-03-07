@@ -39,4 +39,5 @@ public sealed record SessionRuntimeBundleRefreshReceipt(
     CharacterVersionReference BaseCharacterVersion,
     string RuntimeFingerprint,
     DateTimeOffset RefreshedAtUtc,
-    bool SignatureChanged = false);
+    bool SignatureChanged = false,
+    string? DeferredReason = null);

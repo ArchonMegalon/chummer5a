@@ -888,6 +888,7 @@ public class ApiIntegrationTests
             default);
         SessionApiResult<SessionRuntimeStatusProjection> runtimeStateBeforeBundle = await sessionClient.GetRuntimeStateAsync(characterId, default);
         SessionApiResult<SessionRuntimeBundleIssueReceipt> bundleResult = await sessionClient.GetRuntimeBundleAsync(characterId, default);
+        SessionApiResult<SessionRuntimeBundleRefreshReceipt> refreshResult = await sessionClient.RefreshRuntimeBundleAsync(characterId, default);
         SessionApiResult<SessionRuntimeStatusProjection> runtimeStateAfterBundle = await sessionClient.GetRuntimeStateAsync(characterId, default);
 
         Assert.IsTrue(profilesResult.IsImplemented);
@@ -915,6 +916,11 @@ public class ApiIntegrationTests
         Assert.AreEqual(SessionRuntimeBundleIssueOutcomes.Issued, bundleResult.Payload.Outcome);
         Assert.AreEqual(characterId, bundleResult.Payload.Bundle.BaseCharacterVersion.CharacterId);
         Assert.AreEqual(profileResult.Payload.RuntimeFingerprint, bundleResult.Payload.Bundle.BaseCharacterVersion.RuntimeFingerprint);
+
+        Assert.IsTrue(refreshResult.IsImplemented);
+        Assert.IsNotNull(refreshResult.Payload);
+        Assert.AreEqual(SessionRuntimeBundleRefreshOutcomes.Unchanged, refreshResult.Payload.Outcome);
+        Assert.AreEqual(bundleResult.Payload.Bundle.BundleId, refreshResult.Payload.CurrentBundleId);
 
         Assert.IsTrue(runtimeStateAfterBundle.IsImplemented);
         Assert.IsNotNull(runtimeStateAfterBundle.Payload);
@@ -1388,6 +1394,16 @@ public class ApiIntegrationTests
         Assert.AreEqual("issued", selectedBundlePayload["outcome"]?.GetValue<string>());
         Assert.IsNotNull(selectedBundlePayload["bundle"]);
         Assert.AreEqual(characterId, selectedBundlePayload["bundle"]?["baseCharacterVersion"]?["characterId"]?.GetValue<string>());
+
+        using HttpResponseMessage refreshBundleResponse = await client.PostAsync($"/api/session/characters/{characterId}/runtime-bundle/refresh", null);
+        Assert.AreEqual(HttpStatusCode.OK, refreshBundleResponse.StatusCode);
+        JsonNode refreshBundleParsed = JsonNode.Parse(await refreshBundleResponse.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(refreshBundleParsed);
+        JsonObject refreshBundlePayload = (JsonObject)refreshBundleParsed!;
+        Assert.AreEqual("unchanged", refreshBundlePayload["outcome"]?.GetValue<string>());
+        Assert.AreEqual(
+            selectedBundlePayload["bundle"]?["bundleId"]?.GetValue<string>(),
+            refreshBundlePayload["currentBundleId"]?.GetValue<string>());
     }
 
     [TestMethod]

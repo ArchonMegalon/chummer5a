@@ -129,61 +129,59 @@ public sealed class OwnerScopedSessionService : ISessionService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(characterId);
 
-        SessionProfileBinding? binding = _profileSelectionStore.Get(owner, characterId);
-        if (binding is null)
-        {
-            return SessionApiResult<SessionRuntimeBundleIssueReceipt>.Implemented(
-                CreateBlockedBundleReceipt(characterId, "No session profile has been selected for this character yet."));
-        }
-
-        RuleProfileRegistryEntry? profile = _ruleProfileRegistryService.Get(owner, binding.ProfileId, binding.RulesetId);
+        string normalizedCharacterId = characterId.Trim();
+        RuleProfileRegistryEntry? profile = ResolveSelectedProfile(owner, normalizedCharacterId, out string? blockedReason);
         if (profile is null)
         {
             return SessionApiResult<SessionRuntimeBundleIssueReceipt>.Implemented(
-                CreateBlockedBundleReceipt(characterId, $"Session profile '{binding.ProfileId}' is no longer available."));
+                CreateBlockedBundleReceipt(normalizedCharacterId, blockedReason!));
         }
 
-        if (!IsSessionReady(owner, profile))
-        {
-            return SessionApiResult<SessionRuntimeBundleIssueReceipt>.Implemented(
-                CreateBlockedBundleReceipt(characterId, $"Session profile '{profile.Manifest.ProfileId}' is not session-ready."));
-        }
-
-        SessionRuntimeBundleRecord? existingRecord = _runtimeBundleStore.Get(owner, characterId);
-        if (existingRecord is not null
-            && string.Equals(existingRecord.ProfileId, profile.Manifest.ProfileId, StringComparison.Ordinal)
-            && string.Equals(existingRecord.Receipt.Bundle.BaseCharacterVersion.RuntimeFingerprint, profile.Manifest.RuntimeLock.RuntimeFingerprint, StringComparison.Ordinal)
-            && existingRecord.Receipt.SignatureEnvelope.ExpiresAtUtc > DateTimeOffset.UtcNow)
-        {
-            SessionRuntimeBundleIssueReceipt cachedReceipt = existingRecord.Receipt with
-            {
-                DeliveryMode = SessionRuntimeBundleDeliveryModes.Cached,
-                Diagnostics = UpdateDiagnostics(existingRecord.Receipt.SignatureEnvelope, existingRecord.Receipt.Diagnostics)
-            };
-            _runtimeBundleStore.Upsert(owner, existingRecord with { Receipt = cachedReceipt });
-            return SessionApiResult<SessionRuntimeBundleIssueReceipt>.Implemented(cachedReceipt);
-        }
-
-        DateTimeOffset signedAtUtc = DateTimeOffset.UtcNow;
-        SessionRuntimeBundle bundle = CreateBundle(characterId, profile, signedAtUtc);
-        SessionRuntimeBundleSignatureEnvelope signatureEnvelope = CreateSignatureEnvelope(owner, characterId, profile, bundle, signedAtUtc);
-        SessionRuntimeBundleIssueReceipt receipt = new(
-            Outcome: existingRecord is null
-                ? SessionRuntimeBundleIssueOutcomes.Issued
-                : SessionRuntimeBundleIssueOutcomes.Rotated,
-            Bundle: bundle,
-            SignatureEnvelope: signatureEnvelope,
-            DeliveryMode: SessionRuntimeBundleDeliveryModes.Inline,
-            Diagnostics: UpdateDiagnostics(signatureEnvelope, []));
-        _runtimeBundleStore.Upsert(
-            owner,
-            new SessionRuntimeBundleRecord(
-                CharacterId: characterId.Trim(),
-                ProfileId: profile.Manifest.ProfileId,
-                RulesetId: profile.Manifest.RulesetId,
-                Receipt: receipt,
-                IssuedAtUtc: signedAtUtc));
+        SessionRuntimeBundleRecord? existingRecord = _runtimeBundleStore.Get(owner, normalizedCharacterId);
+        SessionRuntimeBundleIssueReceipt receipt = IssueRuntimeBundle(owner, normalizedCharacterId, profile, existingRecord, allowCached: true);
         return SessionApiResult<SessionRuntimeBundleIssueReceipt>.Implemented(receipt);
+    }
+
+    public SessionApiResult<SessionRuntimeBundleRefreshReceipt> RefreshRuntimeBundle(OwnerScope owner, string characterId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(characterId);
+
+        string normalizedCharacterId = characterId.Trim();
+        SessionRuntimeBundleRecord? existingRecord = _runtimeBundleStore.Get(owner, normalizedCharacterId);
+        RuleProfileRegistryEntry? profile = ResolveSelectedProfile(owner, normalizedCharacterId, out string? blockedReason);
+        if (profile is null)
+        {
+            return SessionApiResult<SessionRuntimeBundleRefreshReceipt>.Implemented(
+                CreateBlockedBundleRefreshReceipt(normalizedCharacterId, existingRecord, profile, blockedReason!));
+        }
+
+        string bundleFreshness = ResolveBundleFreshness(existingRecord, profile);
+        if (existingRecord is not null
+            && string.Equals(bundleFreshness, SessionRuntimeBundleFreshnessStates.Current, StringComparison.Ordinal))
+        {
+            return SessionApiResult<SessionRuntimeBundleRefreshReceipt>.Implemented(
+                new SessionRuntimeBundleRefreshReceipt(
+                    PreviousBundleId: existingRecord.Receipt.Bundle.BundleId,
+                    CurrentBundleId: existingRecord.Receipt.Bundle.BundleId,
+                    Outcome: SessionRuntimeBundleRefreshOutcomes.Unchanged,
+                    BaseCharacterVersion: existingRecord.Receipt.Bundle.BaseCharacterVersion,
+                    RuntimeFingerprint: profile.Manifest.RuntimeLock.RuntimeFingerprint,
+                    RefreshedAtUtc: DateTimeOffset.UtcNow));
+        }
+
+        SessionRuntimeBundleIssueReceipt refreshedReceipt = IssueRuntimeBundle(owner, normalizedCharacterId, profile, existingRecord, allowCached: false);
+        return SessionApiResult<SessionRuntimeBundleRefreshReceipt>.Implemented(
+            new SessionRuntimeBundleRefreshReceipt(
+                PreviousBundleId: existingRecord?.Receipt.Bundle.BundleId ?? string.Empty,
+                CurrentBundleId: refreshedReceipt.Bundle.BundleId,
+                Outcome: RequiresBundleRebind(existingRecord, profile)
+                    ? SessionRuntimeBundleRefreshOutcomes.Rebound
+                    : SessionRuntimeBundleRefreshOutcomes.Refreshed,
+                BaseCharacterVersion: refreshedReceipt.Bundle.BaseCharacterVersion,
+                RuntimeFingerprint: refreshedReceipt.Bundle.BaseCharacterVersion.RuntimeFingerprint,
+                RefreshedAtUtc: refreshedReceipt.SignatureEnvelope.SignedAtUtc,
+                SignatureChanged: existingRecord is null
+                    || !string.Equals(existingRecord.Receipt.SignatureEnvelope.Signature, refreshedReceipt.SignatureEnvelope.Signature, StringComparison.Ordinal)));
     }
 
     public SessionApiResult<SessionProfileSelectionReceipt> SelectProfile(OwnerScope owner, string characterId, SessionProfileSelectionRequest? request)
@@ -316,6 +314,83 @@ public sealed class OwnerScopedSessionService : ISessionService
                 && !string.Equals(policy.PolicyMode, RulePackExecutionPolicyModes.Deny, StringComparison.Ordinal));
     }
 
+    private RuleProfileRegistryEntry? ResolveSelectedProfile(OwnerScope owner, string characterId, out string? blockedReason)
+    {
+        SessionProfileBinding? binding = _profileSelectionStore.Get(owner, characterId);
+        if (binding is null)
+        {
+            blockedReason = "No session profile has been selected for this character yet.";
+            return null;
+        }
+
+        RuleProfileRegistryEntry? profile = _ruleProfileRegistryService.Get(owner, binding.ProfileId, binding.RulesetId);
+        if (profile is null)
+        {
+            blockedReason = $"Session profile '{binding.ProfileId}' is no longer available.";
+            return null;
+        }
+
+        if (!IsSessionReady(owner, profile))
+        {
+            blockedReason = $"Session profile '{profile.Manifest.ProfileId}' is not session-ready.";
+            return null;
+        }
+
+        blockedReason = null;
+        return profile;
+    }
+
+    private SessionRuntimeBundleIssueReceipt IssueRuntimeBundle(
+        OwnerScope owner,
+        string characterId,
+        RuleProfileRegistryEntry profile,
+        SessionRuntimeBundleRecord? existingRecord,
+        bool allowCached)
+    {
+        if (allowCached && CanReuseBundle(existingRecord, profile))
+        {
+            SessionRuntimeBundleIssueReceipt cachedReceipt = existingRecord!.Receipt with
+            {
+                DeliveryMode = SessionRuntimeBundleDeliveryModes.Cached,
+                Diagnostics = UpdateDiagnostics(existingRecord.Receipt.SignatureEnvelope, existingRecord.Receipt.Diagnostics)
+            };
+            _runtimeBundleStore.Upsert(owner, existingRecord with { Receipt = cachedReceipt });
+            return cachedReceipt;
+        }
+
+        DateTimeOffset signedAtUtc = DateTimeOffset.UtcNow;
+        SessionRuntimeBundle bundle = CreateBundle(characterId, profile, signedAtUtc);
+        SessionRuntimeBundleSignatureEnvelope signatureEnvelope = CreateSignatureEnvelope(owner, characterId, profile, bundle, signedAtUtc);
+        SessionRuntimeBundleIssueReceipt receipt = new(
+            Outcome: existingRecord is null
+                ? SessionRuntimeBundleIssueOutcomes.Issued
+                : SessionRuntimeBundleIssueOutcomes.Rotated,
+            Bundle: bundle,
+            SignatureEnvelope: signatureEnvelope,
+            DeliveryMode: SessionRuntimeBundleDeliveryModes.Inline,
+            Diagnostics: UpdateDiagnostics(signatureEnvelope, []));
+        _runtimeBundleStore.Upsert(
+            owner,
+            new SessionRuntimeBundleRecord(
+                CharacterId: characterId,
+                ProfileId: profile.Manifest.ProfileId,
+                RulesetId: profile.Manifest.RulesetId,
+                Receipt: receipt,
+                IssuedAtUtc: signedAtUtc));
+        return receipt;
+    }
+
+    private static bool CanReuseBundle(SessionRuntimeBundleRecord? existingRecord, RuleProfileRegistryEntry profile)
+        => existingRecord is not null
+            && string.Equals(existingRecord.ProfileId, profile.Manifest.ProfileId, StringComparison.Ordinal)
+            && string.Equals(existingRecord.Receipt.Bundle.BaseCharacterVersion.RuntimeFingerprint, profile.Manifest.RuntimeLock.RuntimeFingerprint, StringComparison.Ordinal)
+            && existingRecord.Receipt.SignatureEnvelope.ExpiresAtUtc > DateTimeOffset.UtcNow;
+
+    private static bool RequiresBundleRebind(SessionRuntimeBundleRecord? existingRecord, RuleProfileRegistryEntry profile)
+        => existingRecord is not null
+            && (!string.Equals(existingRecord.ProfileId, profile.Manifest.ProfileId, StringComparison.Ordinal)
+                || !string.Equals(existingRecord.Receipt.Bundle.BaseCharacterVersion.RuntimeFingerprint, profile.Manifest.RuntimeLock.RuntimeFingerprint, StringComparison.Ordinal));
+
     private static string ResolveBundleFreshness(SessionRuntimeBundleRecord? record, RuleProfileRegistryEntry profile)
     {
         if (record is null)
@@ -368,6 +443,30 @@ public sealed class OwnerScopedSessionService : ISessionService
                     State: SessionRuntimeBundleTrustStates.MissingKey,
                     Message: message)
             ]);
+    }
+
+    private static SessionRuntimeBundleRefreshReceipt CreateBlockedBundleRefreshReceipt(
+        string characterId,
+        SessionRuntimeBundleRecord? existingRecord,
+        RuleProfileRegistryEntry? profile,
+        string message)
+    {
+        CharacterVersionReference baseCharacterVersion = existingRecord?.Receipt.Bundle.BaseCharacterVersion
+            ?? new CharacterVersionReference(
+                CharacterId: characterId.Trim(),
+                VersionId: profile is null ? "unbound" : $"session:{profile.Manifest.ProfileId}",
+                RulesetId: profile?.Manifest.RulesetId ?? string.Empty,
+                RuntimeFingerprint: profile?.Manifest.RuntimeLock.RuntimeFingerprint ?? string.Empty);
+        string existingBundleId = existingRecord?.Receipt.Bundle.BundleId ?? string.Empty;
+
+        return new SessionRuntimeBundleRefreshReceipt(
+            PreviousBundleId: existingBundleId,
+            CurrentBundleId: existingBundleId,
+            Outcome: SessionRuntimeBundleRefreshOutcomes.Blocked,
+            BaseCharacterVersion: baseCharacterVersion,
+            RuntimeFingerprint: baseCharacterVersion.RuntimeFingerprint,
+            RefreshedAtUtc: DateTimeOffset.UtcNow,
+            DeferredReason: message);
     }
 
     private static SessionRuntimeBundle CreateBundle(

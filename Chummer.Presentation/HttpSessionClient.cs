@@ -55,6 +55,13 @@ public sealed class HttpSessionClient : ISessionClient
             payload: null,
             ct);
 
+    public Task<SessionApiResult<SessionRuntimeBundleRefreshReceipt>> RefreshRuntimeBundleAsync(string characterId, CancellationToken ct)
+        => SendAsync<SessionRuntimeBundleRefreshReceipt>(
+            HttpMethod.Post,
+            $"/api/session/characters/{Uri.EscapeDataString(characterId)}/runtime-bundle/refresh",
+            payload: null,
+            ct);
+
     public Task<SessionApiResult<SessionProfileSelectionReceipt>> SelectProfileAsync(string characterId, SessionProfileSelectionRequest request, CancellationToken ct)
         => SendAsync<SessionProfileSelectionReceipt>(
             HttpMethod.Post,

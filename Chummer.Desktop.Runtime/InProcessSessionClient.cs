@@ -39,6 +39,9 @@ public sealed class InProcessSessionClient : ISessionClient
     public Task<SessionApiResult<SessionRuntimeBundleIssueReceipt>> GetRuntimeBundleAsync(string characterId, CancellationToken ct)
         => Task.FromResult(_sessionService.GetRuntimeBundle(_ownerContextAccessor.Current, characterId));
 
+    public Task<SessionApiResult<SessionRuntimeBundleRefreshReceipt>> RefreshRuntimeBundleAsync(string characterId, CancellationToken ct)
+        => Task.FromResult(_sessionService.RefreshRuntimeBundle(_ownerContextAccessor.Current, characterId));
+
     public Task<SessionApiResult<SessionProfileSelectionReceipt>> SelectProfileAsync(string characterId, SessionProfileSelectionRequest request, CancellationToken ct)
         => Task.FromResult(_sessionService.SelectProfile(_ownerContextAccessor.Current, characterId, request));
 

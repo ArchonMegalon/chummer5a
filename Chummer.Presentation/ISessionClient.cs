@@ -19,6 +19,8 @@ public interface ISessionClient
 
     Task<SessionApiResult<SessionRuntimeBundleIssueReceipt>> GetRuntimeBundleAsync(string characterId, CancellationToken ct);
 
+    Task<SessionApiResult<SessionRuntimeBundleRefreshReceipt>> RefreshRuntimeBundleAsync(string characterId, CancellationToken ct);
+
     Task<SessionApiResult<SessionProfileSelectionReceipt>> SelectProfileAsync(string characterId, SessionProfileSelectionRequest request, CancellationToken ct);
 
     Task<SessionApiResult<RulePackCatalog>> ListRulePacksAsync(CancellationToken ct);

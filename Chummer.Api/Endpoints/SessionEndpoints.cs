@@ -29,6 +29,9 @@ public static class SessionEndpoints
         app.MapGet("/api/session/characters/{characterId}/runtime-bundle", (string characterId, ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(sessionService.GetRuntimeBundle(ownerContextAccessor.Current, characterId)));
 
+        app.MapPost("/api/session/characters/{characterId}/runtime-bundle/refresh", (string characterId, ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
+            ToResult(sessionService.RefreshRuntimeBundle(ownerContextAccessor.Current, characterId)));
+
         app.MapPost("/api/session/characters/{characterId}/profile", (string characterId, SessionProfileSelectionRequest? request, ISessionService sessionService, IOwnerContextAccessor ownerContextAccessor) =>
             ToResult(sessionService.SelectProfile(ownerContextAccessor.Current, characterId, request)));
 

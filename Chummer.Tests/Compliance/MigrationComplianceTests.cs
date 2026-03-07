@@ -211,6 +211,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(sessionEndpointsText, "/api/session/profiles");
         StringAssert.Contains(sessionEndpointsText, "/api/session/characters/{characterId}/runtime-state");
         StringAssert.Contains(sessionEndpointsText, "/api/session/characters/{characterId}/runtime-bundle");
+        StringAssert.Contains(sessionEndpointsText, "/api/session/characters/{characterId}/runtime-bundle/refresh");
         StringAssert.Contains(sessionEndpointsText, "/api/session/characters/{characterId}/profile");
         StringAssert.Contains(sessionEndpointsText, "/api/session/rulepacks");
         StringAssert.Contains(sessionEndpointsText, "/api/session/pins");
@@ -231,6 +232,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(sessionServiceContractText, "SessionApiResult<SessionProfileCatalog> ListProfiles");
         StringAssert.Contains(sessionServiceContractText, "SessionApiResult<SessionRuntimeStatusProjection> GetRuntimeState");
         StringAssert.Contains(sessionServiceContractText, "SessionApiResult<SessionRuntimeBundleIssueReceipt> GetRuntimeBundle");
+        StringAssert.Contains(sessionServiceContractText, "SessionApiResult<SessionRuntimeBundleRefreshReceipt> RefreshRuntimeBundle");
         StringAssert.Contains(sessionServiceContractText, "SessionApiResult<SessionProfileSelectionReceipt> SelectProfile");
         StringAssert.Contains(ownerScopedSessionServiceText, "public sealed class OwnerScopedSessionService : ISessionService");
         StringAssert.Contains(ownerScopedSessionServiceText, "SessionApiResult<SessionProfileCatalog>.Implemented");
@@ -253,6 +255,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(sessionClientContractText, "ListProfilesAsync");
         StringAssert.Contains(sessionClientContractText, "GetRuntimeStateAsync");
         StringAssert.Contains(sessionClientContractText, "GetRuntimeBundleAsync");
+        StringAssert.Contains(sessionClientContractText, "RefreshRuntimeBundleAsync");
         StringAssert.Contains(sessionClientContractText, "SelectProfileAsync");
         StringAssert.Contains(sessionEndpointsText, "ISessionService sessionService");
         StringAssert.Contains(sessionEndpointsText, "sessionService.ListCharacters(ownerContextAccessor.Current)");
@@ -260,12 +263,14 @@ public class MigrationComplianceTests
         StringAssert.Contains(sessionEndpointsText, "sessionService.ListProfiles(ownerContextAccessor.Current)");
         StringAssert.Contains(sessionEndpointsText, "sessionService.GetRuntimeState(ownerContextAccessor.Current, characterId)");
         StringAssert.Contains(sessionEndpointsText, "sessionService.GetRuntimeBundle(ownerContextAccessor.Current, characterId)");
+        StringAssert.Contains(sessionEndpointsText, "sessionService.RefreshRuntimeBundle(ownerContextAccessor.Current, characterId)");
         StringAssert.Contains(sessionEndpointsText, "sessionService.SelectProfile(ownerContextAccessor.Current, characterId, request)");
         StringAssert.Contains(sessionEndpointsText, "ToResult(");
         StringAssert.Contains(httpSessionClientText, "/api/session/characters");
         StringAssert.Contains(httpSessionClientText, "/api/session/profiles");
         StringAssert.Contains(httpSessionClientText, "/api/session/characters/{Uri.EscapeDataString(characterId)}/runtime-state");
         StringAssert.Contains(httpSessionClientText, "/api/session/characters/{Uri.EscapeDataString(characterId)}/runtime-bundle");
+        StringAssert.Contains(httpSessionClientText, "/api/session/characters/{Uri.EscapeDataString(characterId)}/runtime-bundle/refresh");
         StringAssert.Contains(httpSessionClientText, "/api/session/characters/{Uri.EscapeDataString(characterId)}/profile");
         StringAssert.Contains(httpSessionClientText, "SessionApiResult<T>.FromNotImplemented");
         StringAssert.Contains(inProcessSessionClientText, "ISessionService");
@@ -273,6 +278,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(inProcessSessionClientText, "_sessionService.ListProfiles");
         StringAssert.Contains(inProcessSessionClientText, "_sessionService.GetRuntimeState");
         StringAssert.Contains(inProcessSessionClientText, "_sessionService.GetRuntimeBundle");
+        StringAssert.Contains(inProcessSessionClientText, "_sessionService.RefreshRuntimeBundle");
         StringAssert.Contains(inProcessSessionClientText, "_sessionService.SelectProfile");
         StringAssert.Contains(blazorProgramText, "AddHttpClient<ISessionClient, HttpSessionClient>");
         StringAssert.Contains(desktopRuntimeExtensionsText, "RemoveAll<ISessionClient>()");
@@ -291,11 +297,13 @@ public class MigrationComplianceTests
         StringAssert.Contains(sessionApiContractsText, "ListProfiles = \"list-profiles\"");
         StringAssert.Contains(sessionApiContractsText, "GetRuntimeState = \"get-runtime-state\"");
         StringAssert.Contains(sessionApiContractsText, "GetRuntimeBundle = \"get-runtime-bundle\"");
+        StringAssert.Contains(sessionApiContractsText, "RefreshRuntimeBundle = \"refresh-runtime-bundle\"");
         StringAssert.Contains(sessionApiContractsText, "SelectProfile = \"select-profile\"");
         StringAssert.Contains(readmeText, "/api/session/*");
         StringAssert.Contains(readmeText, "owner-backed session profile catalog/selection");
         StringAssert.Contains(readmeText, "session runtime-state route");
         StringAssert.Contains(readmeText, "runtime-bundle issuance");
+        StringAssert.Contains(readmeText, "runtime-bundle refresh");
         StringAssert.Contains(readmeText, "character projection, ledger sync, patch mutation, and pin mutation paths remain explicit `session_not_implemented` receipts");
         StringAssert.Contains(readmeText, "runtime-bundle routes");
         StringAssert.Contains(readmeText, "dedicated `ISessionClient` seam");

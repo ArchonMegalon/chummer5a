@@ -20,6 +20,8 @@ public interface ISessionService
 
     SessionApiResult<SessionRuntimeBundleIssueReceipt> GetRuntimeBundle(OwnerScope owner, string characterId);
 
+    SessionApiResult<SessionRuntimeBundleRefreshReceipt> RefreshRuntimeBundle(OwnerScope owner, string characterId);
+
     SessionApiResult<SessionProfileSelectionReceipt> SelectProfile(OwnerScope owner, string characterId, SessionProfileSelectionRequest? request);
 
     SessionApiResult<RulePackCatalog> ListRulePacks(OwnerScope owner);
