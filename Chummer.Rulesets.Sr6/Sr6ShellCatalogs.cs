@@ -76,26 +76,3 @@ internal static class Sr6WorkspaceSurfaceActionCatalog
         bool enabledByDefault)
         => new(id, label, tabId, kind, targetId, requiresOpenCharacter, enabledByDefault, RulesetDefaults.Sr6);
 }
-
-internal static class Sr6DesktopUiControlCatalog
-{
-    public static readonly IReadOnlyList<DesktopUiControlDefinition> All =
-    [
-        Sr6("create_entry", "Add", "tab-info", true, true),
-        Sr6("edit_entry", "Edit", "tab-info", true, true),
-        Sr6("delete_entry", "Delete", "tab-info", true, true),
-        Sr6("open_notes", "Notes", "tab-info", true, true),
-        Sr6("skill_add", "Add Skill", "tab-skills", true, true),
-        Sr6("skill_remove", "Remove", "tab-skills", true, true),
-        Sr6("gear_add", "Add Gear", "tab-gear", true, true),
-        Sr6("gear_delete", "Delete Gear", "tab-gear", true, true)
-    ];
-
-    private static DesktopUiControlDefinition Sr6(
-        string id,
-        string label,
-        string tabId,
-        bool requiresOpenCharacter,
-        bool enabledByDefault)
-        => new(id, label, tabId, requiresOpenCharacter, enabledByDefault, RulesetDefaults.Sr6);
-}

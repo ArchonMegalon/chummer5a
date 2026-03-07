@@ -24,6 +24,39 @@ namespace Chummer.Tests.Presentation;
 [TestClass]
 public class CharacterOverviewPresenterTests
 {
+    private static readonly string[] LegacyUiControlIds =
+    [
+        "create_entry",
+        "edit_entry",
+        "delete_entry",
+        "move_up",
+        "move_down",
+        "toggle_free_paid",
+        "show_source",
+        "open_notes",
+        "gear_add",
+        "gear_edit",
+        "gear_delete",
+        "gear_mount",
+        "gear_source",
+        "magic_add",
+        "magic_delete",
+        "magic_bind",
+        "magic_source",
+        "skill_add",
+        "skill_specialize",
+        "skill_remove",
+        "skill_group",
+        "combat_add_weapon",
+        "combat_add_armor",
+        "combat_reload",
+        "combat_damage_track",
+        "contact_add",
+        "contact_edit",
+        "contact_remove",
+        "contact_connection"
+    ];
+
     [TestMethod]
     public async Task InitializeAsync_loads_command_catalog()
     {
@@ -613,12 +646,8 @@ public class CharacterOverviewPresenterTests
     public async Task HandleUiControlAsync_all_catalog_controls_are_non_generic()
     {
         var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
-        string[] controlIds = DesktopUiControlCatalog.All
-            .Select(control => control.Id)
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
 
-        foreach (string controlId in controlIds)
+        foreach (string controlId in LegacyUiControlIds)
         {
             await presenter.HandleUiControlAsync(controlId, CancellationToken.None);
             Assert.AreNotEqual("dialog.ui.generic", presenter.State.ActiveDialog?.Id, $"Control '{controlId}' fell back to generic dialog.");

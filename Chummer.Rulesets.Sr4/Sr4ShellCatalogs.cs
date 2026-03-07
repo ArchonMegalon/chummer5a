@@ -80,26 +80,3 @@ internal static class Sr4WorkspaceSurfaceActionCatalog
         bool enabledByDefault)
         => new(id, label, tabId, kind, targetId, requiresOpenCharacter, enabledByDefault, RulesetDefaults.Sr4);
 }
-
-internal static class Sr4DesktopUiControlCatalog
-{
-    public static readonly IReadOnlyList<DesktopUiControlDefinition> All =
-    [
-        Sr4("create_entry", "Add", "tab-info", true, true),
-        Sr4("edit_entry", "Edit", "tab-info", true, true),
-        Sr4("delete_entry", "Delete", "tab-info", true, true),
-        Sr4("open_notes", "Notes", "tab-info", true, true),
-        Sr4("skill_add", "Add Skill", "tab-skills", true, true),
-        Sr4("skill_remove", "Remove", "tab-skills", true, true),
-        Sr4("gear_add", "Add Gear", "tab-gear", true, true),
-        Sr4("gear_delete", "Delete Gear", "tab-gear", true, true)
-    ];
-
-    private static DesktopUiControlDefinition Sr4(
-        string id,
-        string label,
-        string tabId,
-        bool requiresOpenCharacter,
-        bool enabledByDefault)
-        => new(id, label, tabId, requiresOpenCharacter, enabledByDefault, RulesetDefaults.Sr4);
-}

@@ -234,11 +234,6 @@ public sealed class ShellSurfaceResolverTests
             LastWorkspaceActionRulesetId = rulesetId;
             return _workspaceActions;
         }
-
-        public IReadOnlyList<DesktopUiControlDefinition> ResolveDesktopUiControlsForTab(string? tabId, string? rulesetId)
-        {
-            return [];
-        }
     }
 
     private sealed class StubAvailabilityEvaluator : ICommandAvailabilityEvaluator

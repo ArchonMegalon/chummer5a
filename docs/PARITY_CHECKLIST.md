@@ -4,10 +4,10 @@ Generated automatically from the parity oracle and current contracts catalogs.
 
 - Regenerate command: `RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh`
 - Parity oracle source: `docs/PARITY_ORACLE.json`
-- Tab catalog source: `Chummer.Contracts/Presentation/NavigationTabCatalog.cs`
-- Action catalog source: `Chummer.Contracts/Presentation/WorkspaceSurfaceActionCatalog.cs`
-- Control catalog source: `Chummer.Contracts/Presentation/DesktopUiControlCatalog.cs`
+- Tab catalog source: `Chummer.Rulesets.Hosting/Presentation/NavigationTabCatalog.cs`
+- Action catalog source: `Chummer.Rulesets.Hosting/Presentation/WorkspaceSurfaceActionCatalog.cs`
 - Workspace Actions coverage compares parity-oracle action IDs to action `TargetId` values.
+- Legacy desktop control parity is enforced by dialog-template compliance tests, not by a shared control catalog.
 
 ## Summary
 
@@ -15,7 +15,6 @@ Generated automatically from the parity oracle and current contracts catalogs.
 | --- | ---: | ---: | ---: | ---: |
 | Tabs | 17 | 17 | 0 | 1 |
 | Workspace Actions | 47 | 47 | 0 | 1 |
-| Desktop Controls | 29 | 29 | 0 | 0 |
 
 ## Tabs Coverage
 
@@ -92,37 +91,3 @@ Generated automatically from the parity oracle and current contracts catalogs.
 | `weaponlocations` | covered |
 | `weapons` | covered |
 | `data_exporter` | catalog_only |
-
-## Desktop Controls Coverage
-
-| ID | Status |
-| --- | --- |
-| `combat_add_armor` | covered |
-| `combat_add_weapon` | covered |
-| `combat_damage_track` | covered |
-| `combat_reload` | covered |
-| `contact_add` | covered |
-| `contact_connection` | covered |
-| `contact_edit` | covered |
-| `contact_remove` | covered |
-| `create_entry` | covered |
-| `delete_entry` | covered |
-| `edit_entry` | covered |
-| `gear_add` | covered |
-| `gear_delete` | covered |
-| `gear_edit` | covered |
-| `gear_mount` | covered |
-| `gear_source` | covered |
-| `magic_add` | covered |
-| `magic_bind` | covered |
-| `magic_delete` | covered |
-| `magic_source` | covered |
-| `move_down` | covered |
-| `move_up` | covered |
-| `open_notes` | covered |
-| `show_source` | covered |
-| `skill_add` | covered |
-| `skill_group` | covered |
-| `skill_remove` | covered |
-| `skill_specialize` | covered |
-| `toggle_free_paid` | covered |

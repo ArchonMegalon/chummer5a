@@ -49,9 +49,4 @@ internal sealed class CatalogOnlyRulesetShellCatalogResolver : IRulesetShellCata
     {
         return WorkspaceSurfaceActionCatalog.ForTab(tabId, rulesetId);
     }
-
-    public IReadOnlyList<DesktopUiControlDefinition> ResolveDesktopUiControlsForTab(string? tabId, string? rulesetId)
-    {
-        return DesktopUiControlCatalog.ForTab(tabId, rulesetId);
-    }
 }

@@ -483,8 +483,6 @@ public class HubCatalogServiceTests
     private sealed class HubCatalogProviderStub : IRulesetCatalogProvider
     {
         public IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions() => [];
-
-        public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls() => [];
     }
 
     private sealed class HubRuleHostStub : IRulesetRuleHost

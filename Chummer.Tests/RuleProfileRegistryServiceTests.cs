@@ -509,8 +509,6 @@ public class RuleProfileRegistryServiceTests
     private sealed class StubCatalogs : IRulesetCatalogProvider
     {
         public IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions() => [];
-
-        public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls() => [];
     }
 
     private sealed class StubRuleHost : IRulesetRuleHost

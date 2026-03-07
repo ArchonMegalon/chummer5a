@@ -2138,7 +2138,7 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
-    public void Desktop_ui_control_catalog_covers_legacy_shell_controls()
+    public void Legacy_ui_control_dialog_templates_cover_legacy_shell_controls()
     {
         string presenterPath = FindPath("Chummer.Presentation", "Overview", "CharacterOverviewPresenter.cs");
         string dialogFactoryPath = FindPath("Chummer.Presentation", "Overview", "DesktopDialogFactory.cs");
@@ -2148,16 +2148,6 @@ public class MigrationComplianceTests
             File.ReadAllText(dialogFactoryPath));
 
         HashSet<string> legacyControlIds = LoadParityOracleIds("desktopControls");
-        HashSet<string> catalogControlIds = DesktopUiControlCatalog.All
-            .Select(control => control.Id)
-            .ToHashSet(StringComparer.Ordinal);
-
-        List<string> missingControls = legacyControlIds
-            .Where(controlId => !catalogControlIds.Contains(controlId))
-            .OrderBy(x => x)
-            .ToList();
-        Assert.IsEmpty(missingControls, "Legacy ui-control ids missing in DesktopUiControlCatalog: " + string.Join(", ", missingControls));
-
         List<string> controlsMissingPresenterTemplate = legacyControlIds
             .Where(controlId => !dialogTemplateText.Contains($"\"{controlId}\" =>", StringComparison.Ordinal))
             .OrderBy(x => x)
@@ -2378,7 +2368,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(testText, "WorkspaceLeftPane_renders_shell_controls_and_invokes_callbacks");
         StringAssert.Contains(testText, "SectionPane_switches_between_placeholder_and_section_payload");
         StringAssert.Contains(testText, "DialogHost_renders_dialog_and_emits_events");
-        StringAssert.Contains(desktopShellRulesetText, "DesktopShell_uses_active_ruleset_plugin_catalogs_for_actions_and_controls");
+        StringAssert.Contains(desktopShellRulesetText, "DesktopShell_uses_active_ruleset_plugin_catalogs_for_actions_and_workflow_surfaces");
     }
 
     [TestMethod]
@@ -3114,13 +3104,13 @@ public class MigrationComplianceTests
         Assert.IsFalse(sr5RulesetPluginText.Contains("AppCommandCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr5RulesetPluginText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr5RulesetPluginText.Contains("WorkspaceSurfaceActionCatalog.ForRuleset(", StringComparison.Ordinal));
-        Assert.IsFalse(sr5RulesetPluginText.Contains("DesktopUiControlCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(sr5RulesetPluginText.Contains("GetDesktopUiControls()", StringComparison.Ordinal));
         StringAssert.Contains(sr5RulesetPluginText, "GetWorkflowDefinitions()");
         StringAssert.Contains(sr5RulesetPluginText, "GetWorkflowSurfaces()");
         StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5AppCommandCatalog");
         StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5NavigationTabCatalog");
         StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5WorkspaceSurfaceActionCatalog");
-        StringAssert.Contains(sr5ShellCatalogsText, "internal static class Sr5DesktopUiControlCatalog");
+        Assert.IsFalse(sr5ShellCatalogsText.Contains("Sr5DesktopUiControlCatalog", StringComparison.Ordinal));
         StringAssert.Contains(sr4RulesetProjectText, "<Project Sdk=\"Microsoft.NET.Sdk\">");
         StringAssert.Contains(sr4RulesetDiText, "AddSr4Ruleset(this IServiceCollection services)");
         StringAssert.Contains(sr4RulesetDiText, "Chummer.Rulesets.Sr4.Sr4RulesetPlugin");
@@ -3129,7 +3119,7 @@ public class MigrationComplianceTests
         Assert.IsFalse(sr4RulesetPluginText.Contains("AppCommandCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr4RulesetPluginText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr4RulesetPluginText.Contains("WorkspaceSurfaceActionCatalog.ForRuleset(", StringComparison.Ordinal));
-        Assert.IsFalse(sr4RulesetPluginText.Contains("DesktopUiControlCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(sr4RulesetPluginText.Contains("GetDesktopUiControls()", StringComparison.Ordinal));
         StringAssert.Contains(sr4RulesetPluginText, "GetWorkflowDefinitions()");
         StringAssert.Contains(sr4RulesetPluginText, "GetWorkflowSurfaces()");
         StringAssert.Contains(sr4RulesetPluginText, "SR4 rules engine is not implemented; this ruleset remains experimental.");
@@ -3139,7 +3129,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(sr4ShellCatalogsText, "internal static class Sr4AppCommandCatalog");
         StringAssert.Contains(sr4ShellCatalogsText, "internal static class Sr4NavigationTabCatalog");
         StringAssert.Contains(sr4ShellCatalogsText, "internal static class Sr4WorkspaceSurfaceActionCatalog");
-        StringAssert.Contains(sr4ShellCatalogsText, "internal static class Sr4DesktopUiControlCatalog");
+        Assert.IsFalse(sr4ShellCatalogsText.Contains("Sr4DesktopUiControlCatalog", StringComparison.Ordinal));
         StringAssert.Contains(sr6RulesetDiText, "AddSr6Ruleset(this IServiceCollection services)");
         StringAssert.Contains(sr6RulesetDiText, "Chummer.Rulesets.Sr6.Sr6RulesetPlugin");
         StringAssert.Contains(sr6RulesetPluginText, "public class Sr6RulesetPlugin");
@@ -3147,7 +3137,7 @@ public class MigrationComplianceTests
         Assert.IsFalse(sr6RulesetPluginText.Contains("AppCommandCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr6RulesetPluginText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(sr6RulesetPluginText.Contains("WorkspaceSurfaceActionCatalog.ForRuleset(", StringComparison.Ordinal));
-        Assert.IsFalse(sr6RulesetPluginText.Contains("DesktopUiControlCatalog.ForRuleset(", StringComparison.Ordinal));
+        Assert.IsFalse(sr6RulesetPluginText.Contains("GetDesktopUiControls()", StringComparison.Ordinal));
         StringAssert.Contains(sr6RulesetPluginText, "GetWorkflowDefinitions()");
         StringAssert.Contains(sr6RulesetPluginText, "GetWorkflowSurfaces()");
         StringAssert.Contains(sr6RulesetPluginText, "SR6 rules engine is not implemented; this ruleset remains experimental.");
@@ -3157,7 +3147,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6AppCommandCatalog");
         StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6NavigationTabCatalog");
         StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6WorkspaceSurfaceActionCatalog");
-        StringAssert.Contains(sr6ShellCatalogsText, "internal static class Sr6DesktopUiControlCatalog");
+        Assert.IsFalse(sr6ShellCatalogsText.Contains("Sr6DesktopUiControlCatalog", StringComparison.Ordinal));
         StringAssert.Contains(rulesetHostingDiExtensionsText, "AddRulesetInfrastructure(this IServiceCollection services)");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "CHUMMER_DEFAULT_RULESET");
         StringAssert.Contains(rulesetHostingDiExtensionsText, "CreateRulesetSelectionOptions()");
@@ -3221,12 +3211,11 @@ public class MigrationComplianceTests
         string tabDefinitionText = File.ReadAllText(tabDefinitionPath);
         string actionDefinitionPath = FindPath("Chummer.Contracts", "Presentation", "WorkspaceSurfaceActionDefinition.cs");
         string actionDefinitionText = File.ReadAllText(actionDefinitionPath);
-        string controlDefinitionPath = FindPath("Chummer.Contracts", "Presentation", "DesktopUiControlDefinition.cs");
-        string controlDefinitionText = File.ReadAllText(controlDefinitionPath);
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Presentation", "AppCommandCatalog.cs"));
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Presentation", "NavigationTabCatalog.cs"));
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Presentation", "WorkspaceSurfaceActionCatalog.cs"));
         Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Presentation", "DesktopUiControlCatalog.cs"));
+        Assert.IsFalse(PathExistsInCandidateRoots("Chummer.Contracts", "Presentation", "DesktopUiControlDefinition.cs"));
 
         string commandCatalogPath = FindPath("Chummer.Rulesets.Hosting", "Presentation", "AppCommandCatalog.cs");
         string commandCatalogText = File.ReadAllText(commandCatalogPath);
@@ -3234,8 +3223,6 @@ public class MigrationComplianceTests
         string tabCatalogText = File.ReadAllText(tabCatalogPath);
         string actionCatalogPath = FindPath("Chummer.Rulesets.Hosting", "Presentation", "WorkspaceSurfaceActionCatalog.cs");
         string actionCatalogText = File.ReadAllText(actionCatalogPath);
-        string controlCatalogPath = FindPath("Chummer.Rulesets.Hosting", "Presentation", "DesktopUiControlCatalog.cs");
-        string controlCatalogText = File.ReadAllText(controlCatalogPath);
         string dialogFactoryPath = FindPath("Chummer.Presentation", "Overview", "DesktopDialogFactory.cs");
         string dialogFactoryText = File.ReadAllText(dialogFactoryPath);
         string overviewCommandDispatcherPath = FindPath("Chummer.Presentation", "Overview", "OverviewCommandDispatcher.cs");
@@ -3273,7 +3260,7 @@ public class MigrationComplianceTests
         Assert.IsFalse(rulesetHostingServicesText.Contains("AppCommandCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(rulesetHostingServicesText.Contains("NavigationTabCatalog.ForRuleset(", StringComparison.Ordinal));
         Assert.IsFalse(rulesetHostingServicesText.Contains("WorkspaceSurfaceActionCatalog.ForTab(", StringComparison.Ordinal));
-        Assert.IsFalse(rulesetHostingServicesText.Contains("DesktopUiControlCatalog.ForTab(", StringComparison.Ordinal));
+        Assert.IsFalse(rulesetHostingServicesText.Contains("ResolveDesktopUiControlsForTab(", StringComparison.Ordinal));
 
         string catalogOnlyResolverPath = FindPath("Chummer.Presentation", "Shell", "CatalogOnlyRulesetShellCatalogResolver.cs");
         string catalogOnlyResolverText = File.ReadAllText(catalogOnlyResolverPath);
@@ -3281,22 +3268,19 @@ public class MigrationComplianceTests
         StringAssert.Contains(catalogOnlyResolverText, "AppCommandCatalog.ForRuleset(");
         StringAssert.Contains(catalogOnlyResolverText, "NavigationTabCatalog.ForRuleset(");
         StringAssert.Contains(catalogOnlyResolverText, "WorkspaceSurfaceActionCatalog.ForTab(");
-        StringAssert.Contains(catalogOnlyResolverText, "DesktopUiControlCatalog.ForTab(");
+        Assert.IsFalse(catalogOnlyResolverText.Contains("ResolveDesktopUiControlsForTab(", StringComparison.Ordinal));
 
         StringAssert.Contains(commandCatalogText, "namespace Chummer.Rulesets.Hosting.Presentation;");
         StringAssert.Contains(tabCatalogText, "namespace Chummer.Rulesets.Hosting.Presentation;");
         StringAssert.Contains(actionCatalogText, "namespace Chummer.Rulesets.Hosting.Presentation;");
-        StringAssert.Contains(controlCatalogText, "namespace Chummer.Rulesets.Hosting.Presentation;");
         Assert.IsFalse(commandCatalogText.Contains("namespace Chummer.Contracts.Presentation;", StringComparison.Ordinal));
         Assert.IsFalse(tabCatalogText.Contains("namespace Chummer.Contracts.Presentation;", StringComparison.Ordinal));
         Assert.IsFalse(actionCatalogText.Contains("namespace Chummer.Contracts.Presentation;", StringComparison.Ordinal));
-        Assert.IsFalse(controlCatalogText.Contains("namespace Chummer.Contracts.Presentation;", StringComparison.Ordinal));
         Assert.IsFalse(workspaceModelsText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(workspaceApiModelsText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(commandDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(tabDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(actionDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
-        Assert.IsFalse(controlDefinitionText.Contains("string RulesetId = RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(workspaceModelsText.Contains("RulesetDefaults.Normalize(rulesetId)", StringComparison.Ordinal));
         StringAssert.Contains(workspaceModelsText, "NativeXml = 0");
         StringAssert.Contains(workspaceModelsText, "WorkspaceDocumentFormat Format = WorkspaceDocumentFormat.NativeXml");
@@ -3305,16 +3289,12 @@ public class MigrationComplianceTests
         StringAssert.Contains(tabCatalogText, "ForRuleset(string? rulesetId)");
         StringAssert.Contains(actionCatalogText, "ForRuleset(string? rulesetId)");
         StringAssert.Contains(actionCatalogText, "ForTab(string? tabId, string? rulesetId)");
-        StringAssert.Contains(controlCatalogText, "ForRuleset(string? rulesetId)");
-        StringAssert.Contains(controlCatalogText, "ForTab(string? tabId, string? rulesetId)");
         StringAssert.Contains(commandCatalogText, "RulesetDefaults.Sr5");
         StringAssert.Contains(tabCatalogText, "RulesetDefaults.Sr5");
         StringAssert.Contains(actionCatalogText, "RulesetDefaults.Sr5");
-        StringAssert.Contains(controlCatalogText, "RulesetDefaults.Sr5");
         Assert.IsFalse(commandCatalogText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
         Assert.IsFalse(tabCatalogText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
         Assert.IsFalse(actionCatalogText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
-        Assert.IsFalse(controlCatalogText.Contains("RulesetDefaults.Normalize(", StringComparison.Ordinal));
         Assert.IsFalse(dialogFactoryText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         Assert.IsFalse(overviewCommandDispatcherText.Contains("RulesetDefaults.Sr5", StringComparison.Ordinal));
         string workspaceSessionManagerPath = FindPath("Chummer.Presentation", "Overview", "WorkspaceSessionManager.cs");

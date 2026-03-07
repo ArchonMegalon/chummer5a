@@ -83,8 +83,6 @@ public interface IRulesetCatalogProvider
     IReadOnlyList<WorkflowSurfaceDefinition> GetWorkflowSurfaces() => System.Array.Empty<WorkflowSurfaceDefinition>();
 
     IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions();
-
-    IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls();
 }
 
 public sealed record RulesetRuleEvaluationRequest(

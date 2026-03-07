@@ -485,8 +485,6 @@ public sealed class InProcessChummerClientRulesetPluginTests
     private sealed class StubRulesetCatalogProvider : IRulesetCatalogProvider
     {
         public IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions() => Array.Empty<WorkspaceSurfaceActionDefinition>();
-
-        public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls() => Array.Empty<DesktopUiControlDefinition>();
     }
 
     private sealed class StubRulesetRuleHost : IRulesetRuleHost

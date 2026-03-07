@@ -22,7 +22,7 @@ namespace Chummer.Tests.Presentation;
 public sealed class DesktopShellRulesetCatalogTests
 {
     [TestMethod]
-    public void DesktopShell_uses_active_ruleset_plugin_catalogs_for_actions_and_controls()
+    public void DesktopShell_uses_active_ruleset_plugin_catalogs_for_actions_and_workflow_surfaces()
     {
         using var context = new BunitContext();
         context.JSInterop.Mode = JSRuntimeMode.Loose;
@@ -100,13 +100,13 @@ public sealed class DesktopShellRulesetCatalogTests
         cut.WaitForAssertion(() =>
         {
             IReadOnlyList<AngleSharp.Dom.IElement> actionButtons = cut.FindAll(".section-actions .action-button");
-            IReadOnlyList<AngleSharp.Dom.IElement> controlButtons = cut.FindAll(".controls .mini-btn");
+            IReadOnlyList<AngleSharp.Dom.IElement> workflowButtons = cut.FindAll(".controls .mini-btn");
 
             Assert.HasCount(1, actionButtons);
-            Assert.HasCount(1, controlButtons);
+            Assert.HasCount(1, workflowButtons);
             StringAssert.Contains(actionButtons[0].TextContent, "SR6 Matrix Action");
-            Assert.AreEqual("ui-sr6-control", controlButtons[0].GetAttribute("data-ui-control"));
-            StringAssert.Contains(controlButtons[0].TextContent, "SR6 Matrix Control");
+            Assert.AreEqual("workflow.surface.sr6", workflowButtons[0].GetAttribute("data-workflow-surface"));
+            StringAssert.Contains(workflowButtons[0].TextContent, "SR6 Matrix Action");
             StringAssert.Contains(cut.Find("#complianceState").TextContent, "Runtime: SR6 Core [sr6-runtime-fp-001]");
             Assert.AreEqual("SR6 Core [sr6-runtime-fp-001] (available)", cut.Find("#summaryRuntime").GetAttribute("value"));
             StringAssert.Contains(cut.Find("#complianceState").TextContent, "Ruleset: sr6");
@@ -259,17 +259,6 @@ public sealed class DesktopShellRulesetCatalogTests
                 TabId: "tab-info",
                 Kind: WorkspaceSurfaceActionKind.Section,
                 TargetId: "profile",
-                RequiresOpenCharacter: true,
-                EnabledByDefault: true,
-                RulesetId: "sr6")
-        ];
-
-        public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls() =>
-        [
-            new DesktopUiControlDefinition(
-                Id: "ui-sr6-control",
-                Label: "SR6 Matrix Control",
-                TabId: "tab-info",
                 RequiresOpenCharacter: true,
                 EnabledByDefault: true,
                 RulesetId: "sr6")

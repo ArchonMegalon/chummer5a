@@ -2485,12 +2485,10 @@ public class RulesetSeamContractsTests
         IReadOnlyList<AppCommandDefinition> sr5Commands = AppCommandCatalog.ForRuleset(null);
         IReadOnlyList<NavigationTabDefinition> sr5Tabs = NavigationTabCatalog.ForRuleset(RulesetDefaults.Sr5);
         IReadOnlyList<WorkspaceSurfaceActionDefinition> sr5Actions = WorkspaceSurfaceActionCatalog.ForRuleset(string.Empty);
-        IReadOnlyList<DesktopUiControlDefinition> sr5Controls = DesktopUiControlCatalog.ForRuleset("SR5");
 
         Assert.IsGreaterThan(0, sr5Commands.Count);
         Assert.IsGreaterThan(0, sr5Tabs.Count);
         Assert.IsGreaterThan(0, sr5Actions.Count);
-        Assert.IsGreaterThan(0, sr5Controls.Count);
 
         Assert.IsFalse(AppCommandCatalog.ForRuleset("sr6").Any());
         Assert.IsFalse(AppCommandCatalog.ForRuleset("sr4").Any());
@@ -2498,12 +2496,8 @@ public class RulesetSeamContractsTests
         Assert.IsFalse(NavigationTabCatalog.ForRuleset("sr4").Any());
         Assert.IsFalse(WorkspaceSurfaceActionCatalog.ForRuleset("sr6").Any());
         Assert.IsFalse(WorkspaceSurfaceActionCatalog.ForRuleset("sr4").Any());
-        Assert.IsFalse(DesktopUiControlCatalog.ForRuleset("sr6").Any());
-        Assert.IsFalse(DesktopUiControlCatalog.ForRuleset("sr4").Any());
         Assert.IsFalse(WorkspaceSurfaceActionCatalog.ForTab("tab-info", "sr6").Any());
         Assert.IsFalse(WorkspaceSurfaceActionCatalog.ForTab("tab-info", "sr4").Any());
-        Assert.IsFalse(DesktopUiControlCatalog.ForTab("tab-info", "sr6").Any());
-        Assert.IsFalse(DesktopUiControlCatalog.ForTab("tab-info", "sr4").Any());
     }
 
     [TestMethod]
@@ -2709,7 +2703,6 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
-        Assert.IsGreaterThan(0, plugin.Catalogs.GetDesktopUiControls().Count);
 
         RulesetRuleEvaluationResult ruleResult = await plugin.Rules.EvaluateAsync(
             new RulesetRuleEvaluationRequest(
@@ -2755,7 +2748,6 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
-        Assert.IsGreaterThan(0, plugin.Catalogs.GetDesktopUiControls().Count);
 
         WorkspaceDownloadReceipt download = codec.BuildDownload(
             new CharacterWorkspaceId("ws-sr6"),
@@ -2809,7 +2801,6 @@ public class RulesetSeamContractsTests
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowDefinitions().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkflowSurfaces().Count);
         Assert.IsGreaterThan(0, plugin.Catalogs.GetWorkspaceActions().Count);
-        Assert.IsGreaterThan(0, plugin.Catalogs.GetDesktopUiControls().Count);
 
         WorkspaceDownloadReceipt download = codec.BuildDownload(
             new CharacterWorkspaceId("ws-sr4"),

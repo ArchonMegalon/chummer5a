@@ -103,8 +103,7 @@ public sealed class RulesetShellCatalogResolverTests
                         RequiresOpenCharacter: true,
                         EnabledByDefault: true,
                         RulesetId: "sr6")
-                ],
-                controls: []));
+                ]));
         IReadOnlyList<WorkspaceSurfaceActionDefinition> actions = resolver.ResolveWorkspaceActionsForTab("tab-sr6", "sr6");
 
         Assert.HasCount(1, actions);
@@ -138,8 +137,7 @@ public sealed class RulesetShellCatalogResolverTests
                         LayoutToken: WorkflowLayoutTokens.ShellFrame,
                         ActionIds: ["sr6-only"])
                 ],
-                actions: [],
-                controls: []));
+                actions: []));
         IReadOnlyList<WorkflowDefinition> workflows = resolver.ResolveWorkflowDefinitions("sr6");
         IReadOnlyList<WorkflowSurfaceDefinition> workflowSurfaces = resolver.ResolveWorkflowSurfaces("sr6");
 
@@ -147,17 +145,6 @@ public sealed class RulesetShellCatalogResolverTests
         Assert.AreEqual("SR6 Library Shell", workflows[0].Title);
         Assert.HasCount(1, workflowSurfaces);
         Assert.AreEqual("sr6.shell.menu", workflowSurfaces[0].SurfaceId);
-    }
-
-    [TestMethod]
-    public void ResolveDesktopUiControlsForTab_throws_when_requested_ruleset_has_no_registered_plugin()
-    {
-        RulesetShellCatalogResolverService resolver = CreateResolver(new StubRulesetPlugin("sr6", commands: [], tabs: []));
-
-        InvalidOperationException ex = Assert.ThrowsExactly<InvalidOperationException>(() =>
-            resolver.ResolveDesktopUiControlsForTab("tab-info", "sr5"));
-
-        StringAssert.Contains(ex.Message, "sr5");
     }
 
     [TestMethod]
@@ -239,14 +226,13 @@ public sealed class RulesetShellCatalogResolverTests
             IReadOnlyList<NavigationTabDefinition> tabs,
             IReadOnlyList<WorkflowDefinition>? workflowDefinitions = null,
             IReadOnlyList<WorkflowSurfaceDefinition>? workflowSurfaces = null,
-            IReadOnlyList<WorkspaceSurfaceActionDefinition>? actions = null,
-            IReadOnlyList<DesktopUiControlDefinition>? controls = null)
+            IReadOnlyList<WorkspaceSurfaceActionDefinition>? actions = null)
         {
             Id = new RulesetId(rulesetId);
             DisplayName = rulesetId;
             Serializer = new StubSerializer(Id);
             ShellDefinitions = new StubShellDefinitions(commands, tabs);
-            Catalogs = new StubCatalogs(workflowDefinitions, workflowSurfaces, actions, controls);
+            Catalogs = new StubCatalogs(workflowDefinitions, workflowSurfaces, actions);
             Rules = new StubRules();
             Scripts = new StubScripts();
         }
@@ -301,23 +287,20 @@ public sealed class RulesetShellCatalogResolverTests
         public IReadOnlyList<NavigationTabDefinition> GetNavigationTabs() => _tabs;
     }
 
-    private sealed class StubCatalogs : IRulesetCatalogProvider
-    {
-        private readonly IReadOnlyList<WorkflowDefinition> _workflowDefinitions;
-        private readonly IReadOnlyList<WorkflowSurfaceDefinition> _workflowSurfaces;
-        private readonly IReadOnlyList<WorkspaceSurfaceActionDefinition> _actions;
-        private readonly IReadOnlyList<DesktopUiControlDefinition> _controls;
+        private sealed class StubCatalogs : IRulesetCatalogProvider
+        {
+            private readonly IReadOnlyList<WorkflowDefinition> _workflowDefinitions;
+            private readonly IReadOnlyList<WorkflowSurfaceDefinition> _workflowSurfaces;
+            private readonly IReadOnlyList<WorkspaceSurfaceActionDefinition> _actions;
 
         public StubCatalogs(
             IReadOnlyList<WorkflowDefinition>? workflowDefinitions = null,
             IReadOnlyList<WorkflowSurfaceDefinition>? workflowSurfaces = null,
-            IReadOnlyList<WorkspaceSurfaceActionDefinition>? actions = null,
-            IReadOnlyList<DesktopUiControlDefinition>? controls = null)
+            IReadOnlyList<WorkspaceSurfaceActionDefinition>? actions = null)
         {
             _workflowDefinitions = workflowDefinitions ?? Array.Empty<WorkflowDefinition>();
             _workflowSurfaces = workflowSurfaces ?? Array.Empty<WorkflowSurfaceDefinition>();
             _actions = actions ?? Array.Empty<WorkspaceSurfaceActionDefinition>();
-            _controls = controls ?? Array.Empty<DesktopUiControlDefinition>();
         }
 
         public IReadOnlyList<WorkflowDefinition> GetWorkflowDefinitions() => _workflowDefinitions;
@@ -325,8 +308,6 @@ public sealed class RulesetShellCatalogResolverTests
         public IReadOnlyList<WorkflowSurfaceDefinition> GetWorkflowSurfaces() => _workflowSurfaces;
 
         public IReadOnlyList<WorkspaceSurfaceActionDefinition> GetWorkspaceActions() => _actions;
-
-        public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls() => _controls;
     }
 
     private sealed class StubRules : IRulesetRuleHost

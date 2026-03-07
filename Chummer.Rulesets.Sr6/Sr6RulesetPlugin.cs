@@ -70,11 +70,6 @@ public class Sr6RulesetCatalogProvider : IRulesetCatalogProvider
     {
         return Sr6WorkspaceSurfaceActionCatalog.All;
     }
-
-    public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls()
-    {
-        return Sr6DesktopUiControlCatalog.All;
-    }
 }
 
 internal static class Sr6WorkflowCatalog

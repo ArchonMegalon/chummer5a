@@ -70,11 +70,6 @@ public class Sr5RulesetCatalogProvider : IRulesetCatalogProvider
     {
         return Sr5WorkspaceSurfaceActionCatalog.All;
     }
-
-    public IReadOnlyList<DesktopUiControlDefinition> GetDesktopUiControls()
-    {
-        return Sr5DesktopUiControlCatalog.All;
-    }
 }
 
 internal static class Sr5WorkflowCatalog

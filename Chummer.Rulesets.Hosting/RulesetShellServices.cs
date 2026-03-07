@@ -109,11 +109,6 @@ public sealed class RulesetShellCatalogResolverService : IRulesetShellCatalogRes
         return SelectTabActions(ResolveRequiredPlugin(rulesetId).Catalogs.GetWorkspaceActions(), tabId);
     }
 
-    public IReadOnlyList<DesktopUiControlDefinition> ResolveDesktopUiControlsForTab(string? tabId, string? rulesetId)
-    {
-        return SelectTabControls(ResolveRequiredPlugin(rulesetId).Catalogs.GetDesktopUiControls(), tabId);
-    }
-
     private IRulesetPlugin ResolveRequiredPlugin(string? requestedRulesetId)
     {
         string effectiveRulesetId = RulesetDefaults.NormalizeOptional(requestedRulesetId)
@@ -142,20 +137,4 @@ public sealed class RulesetShellCatalogResolverService : IRulesetShellCatalogRes
             .ToArray();
     }
 
-    private static IReadOnlyList<DesktopUiControlDefinition> SelectTabControls(
-        IReadOnlyList<DesktopUiControlDefinition> controls,
-        string? tabId)
-    {
-        string effectiveTabId = string.IsNullOrWhiteSpace(tabId) ? "tab-info" : tabId;
-
-        DesktopUiControlDefinition[] tabControls = controls
-            .Where(control => string.Equals(control.TabId, effectiveTabId, StringComparison.Ordinal))
-            .ToArray();
-        if (tabControls.Length > 0)
-            return tabControls;
-
-        return controls
-            .Where(control => string.Equals(control.TabId, "tab-info", StringComparison.Ordinal))
-            .ToArray();
-    }
 }
