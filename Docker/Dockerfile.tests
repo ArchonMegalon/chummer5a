@@ -42,7 +42,6 @@ COPY Chummer.Tests/ Chummer.Tests/
 COPY README.md ./
 COPY Chummer.Web/ Chummer.Web/
 COPY Chummer/ Chummer/
-COPY ChummerHub/ ChummerHub/
 COPY docs/ docs/
 COPY scripts/ scripts/
 COPY .github/PULL_REQUEST_TEMPLATE.md .github/

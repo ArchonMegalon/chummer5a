@@ -3775,7 +3775,7 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
-    public void Dockerfile_tests_includes_blazor_desktop_project_for_container_build_checks()
+    public void Dockerfile_tests_excludes_archived_chummerhub_project_from_container_build_checks()
     {
         string dockerfilePath = FindPath("Docker", "Dockerfile.tests");
         string dockerfileText = File.ReadAllText(dockerfilePath);
@@ -3790,7 +3790,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(dockerfileText, "COPY Chummer.Rulesets.Sr6/ Chummer.Rulesets.Sr6/");
         StringAssert.Contains(dockerfileText, "COPY README.md ./");
         StringAssert.Contains(dockerfileText, "COPY docs/ docs/");
-        StringAssert.Contains(dockerfileText, "COPY ChummerHub/ ChummerHub/");
+        Assert.IsFalse(dockerfileText.Contains("COPY ChummerHub/ ChummerHub/", StringComparison.Ordinal));
         StringAssert.Contains(dockerfileText, "COPY .github/PULL_REQUEST_TEMPLATE.md .github/");
         StringAssert.Contains(dockerfileText, "COPY Docker/Amends/ Docker/Amends/");
         StringAssert.Contains(dockerfileText, "COPY Docker/Downloads/ Docker/Downloads/");
@@ -3803,16 +3803,8 @@ public class MigrationComplianceTests
         string solutionText = File.ReadAllText(solutionPath);
         string readmePath = FindPath("README.md");
         string readmeText = File.ReadAllText(readmePath);
-        string legacyHubReadmePath = FindPath("ChummerHub", "README.md");
-        string legacyHubReadmeText = File.ReadAllText(legacyHubReadmePath);
-        string legacyHubProgramPath = FindPath("ChummerHub", "Program.cs");
-        string legacyHubProgramText = File.ReadAllText(legacyHubProgramPath);
-        string legacyHubAppSettingsPath = FindPath("ChummerHub", "appsettings.json");
-        string legacyHubAppSettingsText = File.ReadAllText(legacyHubAppSettingsPath);
-        string legacyHubInsightsConfigPath = FindPath("ChummerHub", "ApplicationInsights.config");
-        string legacyHubInsightsConfigText = File.ReadAllText(legacyHubInsightsConfigPath);
-        string legacyHubProjectPath = FindPath("ChummerHub", "ChummerHub.csproj");
-        string legacyHubProjectText = File.ReadAllText(legacyHubProjectPath);
+        string dockerfilePath = FindPath("Docker", "Dockerfile.tests");
+        string dockerfileText = File.ReadAllText(dockerfilePath);
         string backlogPath = FindPath("docs", "MIGRATION_BACKLOG.md");
         string backlogText = File.ReadAllText(backlogPath);
         string prTemplatePath = FindPath(".github", "PULL_REQUEST_TEMPLATE.md");
@@ -3829,15 +3821,32 @@ public class MigrationComplianceTests
         StringAssert.Contains(readmeText, "Legacy hub policy: `ChummerHub` and `ChummerHub.Client` are archived compatibility assets only.");
         StringAssert.Contains(readmeText, "They are not part of the active solution, public runtime, or future ChummerHub product path;");
         StringAssert.Contains(readmeText, "all public-edge and hub work belongs behind `Chummer.Portal`.");
-        StringAssert.Contains(legacyHubReadmeText, "This project is an archived compatibility asset only.");
-        StringAssert.Contains(legacyHubReadmeText, "It is not part of the active solution or public runtime.");
-        StringAssert.Contains(legacyHubReadmeText, "Active hub, portal, and public-edge work belongs behind `Chummer.Portal`");
-        Assert.IsFalse(legacyHubProgramText.Contains("logging.AddApplicationInsights(\"", StringComparison.Ordinal));
-        Assert.IsFalse(legacyHubAppSettingsText.Contains("95c486ab-aeb7-4361-8667-409b7bf62713", StringComparison.Ordinal));
-        Assert.IsFalse(legacyHubAppSettingsText.Contains("1/-zsfciq55d9xfAYQ_-U1tmpsMiwHT7oKf1fEO8bm9hQ", StringComparison.Ordinal));
-        Assert.IsFalse(legacyHubInsightsConfigText.Contains("8a551326-7224-4b2d-a0d1-81a7b0415824", StringComparison.Ordinal));
-        Assert.IsFalse(legacyHubProjectText.Contains("<ApplicationInsightsResourceId>", StringComparison.Ordinal));
-        Assert.IsFalse(legacyHubProjectText.Contains("<ApplicationInsightsAnnotationResourceId>", StringComparison.Ordinal));
+        if (TryFindPath("ChummerHub", "README.md") is string legacyHubReadmePath
+            && TryFindPath("ChummerHub", "Program.cs") is string legacyHubProgramPath
+            && TryFindPath("ChummerHub", "appsettings.json") is string legacyHubAppSettingsPath
+            && TryFindPath("ChummerHub", "ApplicationInsights.config") is string legacyHubInsightsConfigPath
+            && TryFindPath("ChummerHub", "ChummerHub.csproj") is string legacyHubProjectPath)
+        {
+            string legacyHubReadmeText = File.ReadAllText(legacyHubReadmePath);
+            string legacyHubProgramText = File.ReadAllText(legacyHubProgramPath);
+            string legacyHubAppSettingsText = File.ReadAllText(legacyHubAppSettingsPath);
+            string legacyHubInsightsConfigText = File.ReadAllText(legacyHubInsightsConfigPath);
+            string legacyHubProjectText = File.ReadAllText(legacyHubProjectPath);
+
+            StringAssert.Contains(legacyHubReadmeText, "This project is an archived compatibility asset only.");
+            StringAssert.Contains(legacyHubReadmeText, "It is not part of the active solution or public runtime.");
+            StringAssert.Contains(legacyHubReadmeText, "Active hub, portal, and public-edge work belongs behind `Chummer.Portal`");
+            Assert.IsFalse(legacyHubProgramText.Contains("logging.AddApplicationInsights(\"", StringComparison.Ordinal));
+            Assert.IsFalse(legacyHubAppSettingsText.Contains("95c486ab-aeb7-4361-8667-409b7bf62713", StringComparison.Ordinal));
+            Assert.IsFalse(legacyHubAppSettingsText.Contains("1/-zsfciq55d9xfAYQ_-U1tmpsMiwHT7oKf1fEO8bm9hQ", StringComparison.Ordinal));
+            Assert.IsFalse(legacyHubInsightsConfigText.Contains("8a551326-7224-4b2d-a0d1-81a7b0415824", StringComparison.Ordinal));
+            Assert.IsFalse(legacyHubProjectText.Contains("<ApplicationInsightsResourceId>", StringComparison.Ordinal));
+            Assert.IsFalse(legacyHubProjectText.Contains("<ApplicationInsightsAnnotationResourceId>", StringComparison.Ordinal));
+        }
+        else
+        {
+            Assert.IsFalse(dockerfileText.Contains("COPY ChummerHub/ ChummerHub/", StringComparison.Ordinal));
+        }
 
         StringAssert.Contains(backlogText, "Exit state: `Chummer` (WinForms) and `Chummer.Web` are oracle/parity assets only.");
         StringAssert.Contains(backlogText, "Net-new user-facing behavior must land in the shared seam and active heads;");
@@ -4312,6 +4321,18 @@ public class MigrationComplianceTests
         }
 
         throw new FileNotFoundException("Could not locate file.", Path.Combine(parts));
+    }
+
+    private static string? TryFindPath(params string[] parts)
+    {
+        try
+        {
+            return FindPath(parts);
+        }
+        catch (FileNotFoundException)
+        {
+            return null;
+        }
     }
 
     private static void AssertProjectNamespacesMatch(string projectName, string expectedNamespacePrefix)
