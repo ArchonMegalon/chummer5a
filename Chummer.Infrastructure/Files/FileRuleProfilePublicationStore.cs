@@ -39,7 +39,14 @@ public sealed class FileRuleProfilePublicationStore : IRuleProfilePublicationSto
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(record.ProfileId);
         string normalizedRulesetId = RulesetDefaults.NormalizeRequired(record.RulesetId);
-        RuleProfilePublicationRecord normalizedRecord = record with { RulesetId = normalizedRulesetId };
+        RuleProfilePublicationRecord normalizedRecord = record with
+        {
+            RulesetId = normalizedRulesetId,
+            Publication = record.Publication with
+            {
+                PublisherId = NormalizeOptionalPublisherId(record.Publication.PublisherId)
+            }
+        };
 
         List<RuleProfilePublicationRecord> records = Load(owner).ToList();
         int existingIndex = records.FindIndex(
@@ -84,4 +91,9 @@ public sealed class FileRuleProfilePublicationStore : IRuleProfilePublicationSto
         Directory.CreateDirectory(ownerDirectory);
         return Path.Combine(ownerDirectory, "profiles", "publication-metadata.json");
     }
+
+    private static string? NormalizeOptionalPublisherId(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim().ToLowerInvariant();
 }

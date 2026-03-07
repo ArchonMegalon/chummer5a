@@ -30,7 +30,8 @@ public class PublicationStoreTests
                     Visibility: ArtifactVisibilityModes.Private,
                     PublicationStatus: RulePackPublicationStatuses.Draft,
                     Review: new RulePackReviewDecision(RulePackReviewStates.PendingReview),
-                    Shares: []));
+                    Shares: [],
+                    PublisherId: "ShadowOps"));
 
             store.Upsert(new OwnerScope("alice"), aliceRecord);
 
@@ -40,6 +41,7 @@ public class PublicationStoreTests
             Assert.IsNotNull(reloaded);
             Assert.AreEqual("alice", reloaded.Publication.OwnerId);
             Assert.AreEqual(ArtifactVisibilityModes.Private, reloaded.Publication.Visibility);
+            Assert.AreEqual("shadowops", reloaded.Publication.PublisherId);
             Assert.IsNull(hiddenFromBob);
         }
         finally
@@ -64,7 +66,8 @@ public class PublicationStoreTests
                     Visibility: ArtifactVisibilityModes.CampaignShared,
                     PublicationStatus: RuleProfilePublicationStatuses.Published,
                     Review: new RulePackReviewDecision(RulePackReviewStates.Approved),
-                    Shares: []));
+                    Shares: [],
+                    PublisherId: "ShadowOps"));
 
             store.Upsert(new OwnerScope("alice"), aliceRecord);
 
@@ -74,6 +77,7 @@ public class PublicationStoreTests
             Assert.IsNotNull(reloaded);
             Assert.AreEqual("alice", reloaded.Publication.OwnerId);
             Assert.AreEqual(ArtifactVisibilityModes.CampaignShared, reloaded.Publication.Visibility);
+            Assert.AreEqual("shadowops", reloaded.Publication.PublisherId);
             Assert.IsNull(hiddenFromBob);
         }
         finally

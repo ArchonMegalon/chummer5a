@@ -60,7 +60,8 @@ public sealed record RuleProfilePublicationMetadata(
     string PublicationStatus,
     RulePackReviewDecision Review,
     IReadOnlyList<RulePackShareGrant> Shares,
-    DateTimeOffset? PublishedAtUtc = null);
+    DateTimeOffset? PublishedAtUtc = null,
+    string? PublisherId = null);
 
 public sealed record RuleProfileRegistryEntry(
     RuleProfileManifest Manifest,

@@ -27,6 +27,13 @@ public sealed record HubPublisherProfile(
 public sealed record HubPublisherCatalog(
     IReadOnlyList<HubPublisherProfile> Items);
 
+public sealed record HubPublisherSummary(
+    string PublisherId,
+    string DisplayName,
+    string Slug,
+    string VerificationState,
+    string LinkTarget);
+
 public sealed record HubPublisherRecord(
     string PublisherId,
     string OwnerId,

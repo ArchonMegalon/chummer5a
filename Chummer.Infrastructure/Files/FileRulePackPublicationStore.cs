@@ -42,7 +42,14 @@ public sealed class FileRulePackPublicationStore : IRulePackPublicationStore
         ArgumentException.ThrowIfNullOrWhiteSpace(record.PackId);
         ArgumentException.ThrowIfNullOrWhiteSpace(record.Version);
         string normalizedRulesetId = RulesetDefaults.NormalizeRequired(record.RulesetId);
-        RulePackPublicationRecord normalizedRecord = record with { RulesetId = normalizedRulesetId };
+        RulePackPublicationRecord normalizedRecord = record with
+        {
+            RulesetId = normalizedRulesetId,
+            Publication = record.Publication with
+            {
+                PublisherId = NormalizeOptionalPublisherId(record.Publication.PublisherId)
+            }
+        };
 
         List<RulePackPublicationRecord> records = Load(owner).ToList();
         int existingIndex = records.FindIndex(
@@ -88,4 +95,9 @@ public sealed class FileRulePackPublicationStore : IRulePackPublicationStore
         Directory.CreateDirectory(ownerDirectory);
         return Path.Combine(ownerDirectory, "rulepacks", "publication-metadata.json");
     }
+
+    private static string? NormalizeOptionalPublisherId(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim().ToLowerInvariant();
 }

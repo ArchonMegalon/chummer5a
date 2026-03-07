@@ -67,4 +67,5 @@ public sealed record HubProjectDetailProjection(
     IReadOnlyList<HubProjectDetailFact> Facts,
     IReadOnlyList<HubProjectDependency> Dependencies,
     IReadOnlyList<HubProjectAction> Actions,
-    IReadOnlyList<HubProjectCapabilityDescriptorProjection>? Capabilities = null);
+    IReadOnlyList<HubProjectCapabilityDescriptorProjection>? Capabilities = null,
+    HubPublisherSummary? Publisher = null);

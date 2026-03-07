@@ -47,7 +47,12 @@ public class HubCatalogServiceTests
             && item.OwnerReview.Stars == 5
             && item.AggregateReview?.TotalReviews == 2
             && item.AggregateReview.RecommendedCount == 1
-            && item.AggregateReview.NotRecommendedCount == 1));
+            && item.AggregateReview.NotRecommendedCount == 1
+            && item.Publisher?.PublisherId == "official-sr5"));
+        Assert.IsTrue(page.Items.Any(item =>
+            item.Kind == HubCatalogItemKinds.RulePack
+            && item.ItemId == "house-rules"
+            && item.Publisher?.DisplayName == "ShadowOps"));
         Assert.IsTrue(page.Facets.Any(facet => facet.FacetId == HubCatalogFacetIds.Kind));
     }
 
@@ -72,6 +77,8 @@ public class HubCatalogServiceTests
         Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "install-history-count" && fact.Value == "1"));
         Assert.IsTrue(rulePack.Facts.Any(fact => fact.FactId == "last-install-target" && fact.Value == "workspace-1"));
         Assert.IsNotNull(rulePack.Capabilities);
+        Assert.IsNotNull(rulePack.Publisher);
+        Assert.AreEqual("shadowops", rulePack.Publisher.PublisherId);
         Assert.IsTrue(rulePack.Capabilities.Any(capability =>
             capability.CapabilityId == RulePackCapabilityIds.SessionQuickActions
             && capability.AssetMode == RulePackAssetModes.AddProvider
@@ -120,6 +127,8 @@ public class HubCatalogServiceTests
         Assert.AreEqual(2, ruleProfile.AggregateReview.RatedReviewCount);
         Assert.AreEqual(3.5d, ruleProfile.AggregateReview.AverageStars.GetValueOrDefault(), 0.001d);
         Assert.IsNotNull(ruleProfile.Capabilities);
+        Assert.IsNotNull(ruleProfile.Publisher);
+        Assert.AreEqual("official-sr5", ruleProfile.Publisher.PublisherId);
         Assert.IsTrue(ruleProfile.Capabilities.Any(capability =>
             capability.CapabilityId == RulePackCapabilityIds.DeriveStat
             && capability.InvocationKind == RulesetCapabilityInvocationKinds.Rule
@@ -190,7 +199,8 @@ public class HubCatalogServiceTests
                     Visibility: ArtifactVisibilityModes.LocalOnly,
                     PublicationStatus: RulePackPublicationStatuses.Published,
                     Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                    Shares: []),
+                    Shares: [],
+                    PublisherId: "shadowops"),
                 new ArtifactInstallState(ArtifactInstallStates.Installed))
         ]),
         new RuleProfileInstallHistoryStoreStub(
@@ -232,7 +242,8 @@ public class HubCatalogServiceTests
                     Visibility: ArtifactVisibilityModes.Public,
                     PublicationStatus: RuleProfilePublicationStatuses.Published,
                     Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
-                    Shares: []),
+                    Shares: [],
+                    PublisherId: "official-sr5"),
                 new ArtifactInstallState(ArtifactInstallStates.Available))
         ]),
         new BuildKitRegistryServiceStub(
@@ -302,6 +313,27 @@ public class HubCatalogServiceTests
                     ReviewText: "Not for my table.",
                     UsedAtTable: false)
             ])),
+        new HubPublisherStoreStub(
+        [
+            new HubPublisherRecord(
+                PublisherId: "shadowops",
+                OwnerId: OwnerScope.LocalSingleUser.NormalizedValue,
+                DisplayName: "ShadowOps",
+                Slug: "shadowops",
+                VerificationState: HubPublisherVerificationStates.Verified,
+                CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
+                UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
+                Description: "Campaign publisher"),
+            new HubPublisherRecord(
+                PublisherId: "official-sr5",
+                OwnerId: "system",
+                DisplayName: "Official SR5",
+                Slug: "official-sr5",
+                VerificationState: HubPublisherVerificationStates.Official,
+                CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
+                UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:00:00+00:00"),
+                Description: "Official runtime publisher")
+        ]),
         new NpcVaultRegistryServiceStub(
         [
             new NpcEntryRegistryEntry(
@@ -598,6 +630,26 @@ public class HubCatalogServiceTests
                 string.Equals(entry.Manifest.EncounterPackId, encounterPackId, StringComparison.Ordinal)
                 && (string.IsNullOrWhiteSpace(rulesetId)
                     || string.Equals(entry.Manifest.RulesetId, RulesetDefaults.NormalizeRequired(rulesetId), StringComparison.Ordinal)));
+    }
+
+    private sealed class HubPublisherStoreStub : IHubPublisherStore
+    {
+        private readonly IReadOnlyList<HubPublisherRecord> _records;
+
+        public HubPublisherStoreStub(IReadOnlyList<HubPublisherRecord> records)
+        {
+            _records = records;
+        }
+
+        public IReadOnlyList<HubPublisherRecord> List(OwnerScope owner)
+            => _records
+                .Where(record => string.Equals(record.OwnerId, owner.NormalizedValue, StringComparison.Ordinal))
+                .ToArray();
+
+        public HubPublisherRecord? Get(OwnerScope owner, string publisherId)
+            => List(owner).FirstOrDefault(record => string.Equals(record.PublisherId, publisherId, StringComparison.Ordinal));
+
+        public HubPublisherRecord Upsert(OwnerScope owner, HubPublisherRecord record) => throw new NotSupportedException();
     }
 
     private sealed class HubReviewStoreStub : IHubReviewStore

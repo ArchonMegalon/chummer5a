@@ -1004,6 +1004,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubPublisherContractsText, "public sealed record HubUpdatePublisherRequest");
         StringAssert.Contains(hubPublisherContractsText, "public sealed record HubPublisherProfile");
         StringAssert.Contains(hubPublisherContractsText, "public sealed record HubPublisherCatalog");
+        StringAssert.Contains(hubPublisherContractsText, "public sealed record HubPublisherSummary");
         StringAssert.Contains(hubPublisherContractsText, "public sealed record HubPublisherRecord");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubPublisherStore>(_ => new FileHubPublisherStore(stateDirectory))");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubPublisherService, DefaultHubPublisherService>()");
@@ -1469,6 +1470,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(rulePackRegistryContractsText, "OverlayCatalogBridge");
         StringAssert.Contains(rulePackRegistryContractsText, "PersistedManifest");
         StringAssert.Contains(rulePackRegistryContractsText, "DateTimeOffset? PublishedAtUtc = null");
+        StringAssert.Contains(rulePackRegistryContractsText, "string? PublisherId = null");
     }
 
     [TestMethod]
@@ -1488,6 +1490,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(ruleProfileRegistryContractsText, "public sealed record RuleProfileRegistryEntry");
         StringAssert.Contains(ruleProfileRegistryContractsText, "ResolvedRuntimeLock RuntimeLock");
         StringAssert.Contains(ruleProfileRegistryContractsText, "RulePackReviewDecision Review");
+        StringAssert.Contains(ruleProfileRegistryContractsText, "string? PublisherId = null");
     }
 
     [TestMethod]
@@ -1520,6 +1523,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubCatalogContractsText, "public sealed record HubCatalogResultPage");
         StringAssert.Contains(hubCatalogContractsText, "HubReviewSummary? OwnerReview");
         StringAssert.Contains(hubCatalogContractsText, "HubReviewAggregateSummary? AggregateReview");
+        StringAssert.Contains(hubCatalogContractsText, "HubPublisherSummary? Publisher = null");
         StringAssert.Contains(hubCatalogContractsText, "BrowseQuery Query");
         StringAssert.Contains(hubCatalogContractsText, "IReadOnlyList<FacetDefinition> Facets");
         StringAssert.Contains(hubCatalogContractsText, "IReadOnlyList<SortDefinition> Sorts");
@@ -1541,6 +1545,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubProjectDetailContractsText, "HubCatalogItem Summary");
         StringAssert.Contains(hubProjectDetailContractsText, "HubReviewSummary? OwnerReview");
         StringAssert.Contains(hubProjectDetailContractsText, "HubReviewAggregateSummary? AggregateReview");
+        StringAssert.Contains(hubProjectDetailContractsText, "HubPublisherSummary? Publisher = null");
         StringAssert.Contains(hubProjectDetailContractsText, "string? RuntimeFingerprint");
         StringAssert.Contains(hubProjectDetailContractsText, "IReadOnlyList<HubProjectAction> Actions");
         StringAssert.Contains(hubProjectDetailContractsText, "IReadOnlyList<HubProjectCapabilityDescriptorProjection>? Capabilities = null");

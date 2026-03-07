@@ -41,7 +41,8 @@ public sealed record HubCatalogItem(
     bool Installable = true,
     string? InstallState = null,
     HubReviewSummary? OwnerReview = null,
-    HubReviewAggregateSummary? AggregateReview = null);
+    HubReviewAggregateSummary? AggregateReview = null,
+    HubPublisherSummary? Publisher = null);
 
 public sealed record HubCatalogResultPage(
     BrowseQuery Query,

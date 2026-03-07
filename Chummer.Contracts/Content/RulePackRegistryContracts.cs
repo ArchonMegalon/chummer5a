@@ -62,7 +62,8 @@ public sealed record RulePackPublicationMetadata(
     RulePackReviewDecision Review,
     IReadOnlyList<RulePackShareGrant> Shares,
     RulePackForkLineage? ForkLineage = null,
-    DateTimeOffset? PublishedAtUtc = null);
+    DateTimeOffset? PublishedAtUtc = null,
+    string? PublisherId = null);
 
 public sealed record RulePackRegistryEntry(
     RulePackManifest Manifest,
