@@ -36,7 +36,8 @@ public sealed record HubCatalogItem(
     string LinkTarget,
     string? Version = null,
     bool Installable = true,
-    string? InstallState = null);
+    string? InstallState = null,
+    HubReviewSummary? OwnerReview = null);
 
 public sealed record HubCatalogResultPage(
     BrowseQuery Query,

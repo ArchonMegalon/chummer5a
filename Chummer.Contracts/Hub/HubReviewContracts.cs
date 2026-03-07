@@ -30,6 +30,13 @@ public sealed record HubReviewReceipt(
 public sealed record HubReviewCatalog(
     IReadOnlyList<HubReviewReceipt> Items);
 
+public sealed record HubReviewSummary(
+    string RecommendationState,
+    int? Stars = null,
+    bool UsedAtTable = false,
+    string? ReviewText = null,
+    DateTimeOffset? UpdatedAtUtc = null);
+
 public sealed record HubReviewRecord(
     string ReviewId,
     string ProjectKind,

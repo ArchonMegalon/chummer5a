@@ -155,6 +155,27 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_project_detail_endpoint_surfaces_owner_review_summary_when_present()
+    {
+        using var client = CreateClient();
+
+        await PutRequiredJsonObject(client, "/api/hub/reviews/ruleprofile/official.sr5.core", new JsonObject
+        {
+            ["rulesetId"] = RulesetDefaults.Sr5,
+            ["recommendationState"] = HubRecommendationStates.Recommended,
+            ["stars"] = 5,
+            ["reviewText"] = "Stable runtime",
+            ["usedAtTable"] = true
+        });
+
+        JsonObject payload = await GetRequiredJsonObject(client, "/api/hub/projects/ruleprofile/official.sr5.core?ruleset=sr5");
+
+        Assert.AreEqual(HubRecommendationStates.Recommended, payload["ownerReview"]?["recommendationState"]?.GetValue<string>());
+        Assert.AreEqual(5, payload["ownerReview"]?["stars"]?.GetValue<int>());
+        Assert.IsTrue(payload["ownerReview"]?["usedAtTable"]?.GetValue<bool>() ?? false);
+    }
+
+    [TestMethod]
     public async Task Hub_project_detail_endpoint_returns_not_found_for_unknown_project()
     {
         using var client = CreateClient();

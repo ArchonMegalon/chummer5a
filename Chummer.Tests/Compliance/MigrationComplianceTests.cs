@@ -1449,6 +1449,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubCatalogContractsText, "public static class HubCatalogSortIds");
         StringAssert.Contains(hubCatalogContractsText, "public sealed record HubCatalogItem");
         StringAssert.Contains(hubCatalogContractsText, "public sealed record HubCatalogResultPage");
+        StringAssert.Contains(hubCatalogContractsText, "HubReviewSummary? OwnerReview");
         StringAssert.Contains(hubCatalogContractsText, "BrowseQuery Query");
         StringAssert.Contains(hubCatalogContractsText, "IReadOnlyList<FacetDefinition> Facets");
         StringAssert.Contains(hubCatalogContractsText, "IReadOnlyList<SortDefinition> Sorts");
@@ -1467,6 +1468,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectAction");
         StringAssert.Contains(hubProjectDetailContractsText, "public sealed record HubProjectDetailProjection");
         StringAssert.Contains(hubProjectDetailContractsText, "HubCatalogItem Summary");
+        StringAssert.Contains(hubProjectDetailContractsText, "HubReviewSummary? OwnerReview");
         StringAssert.Contains(hubProjectDetailContractsText, "string? RuntimeFingerprint");
         StringAssert.Contains(hubProjectDetailContractsText, "IReadOnlyList<HubProjectAction> Actions");
     }

@@ -37,6 +37,11 @@ public class HubCatalogServiceTests
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.RuleProfile));
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.BuildKit));
         Assert.IsTrue(page.Items.Any(item => item.Kind == HubCatalogItemKinds.RuntimeLock));
+        Assert.IsTrue(page.Items.Any(item =>
+            item.Kind == HubCatalogItemKinds.RuleProfile
+            && item.ItemId == "official.sr5.core"
+            && item.OwnerReview?.RecommendationState == HubRecommendationStates.Recommended
+            && item.OwnerReview.Stars == 5));
         Assert.IsTrue(page.Facets.Any(facet => facet.FacetId == HubCatalogFacetIds.Kind));
     }
 
@@ -70,6 +75,10 @@ public class HubCatalogServiceTests
         Assert.IsTrue(ruleProfile.Facts.Any(fact => fact.FactId == "source-kind" && fact.Value == RegistryEntrySourceKinds.PersistedManifest));
         Assert.IsTrue(ruleProfile.Actions.Any(action => action.Kind == HubProjectActionKinds.InspectRuntime));
         Assert.IsTrue(ruleProfile.Facts.Any(fact => fact.FactId == "last-install-operation" && fact.Value == ArtifactInstallHistoryOperations.Pin));
+        Assert.IsNotNull(ruleProfile.OwnerReview);
+        Assert.AreEqual(HubRecommendationStates.Recommended, ruleProfile.OwnerReview.RecommendationState);
+        Assert.AreEqual(5, ruleProfile.OwnerReview.Stars);
+        Assert.IsTrue(ruleProfile.OwnerReview.UsedAtTable);
 
         Assert.IsNotNull(runtimeLock);
         Assert.AreEqual(HubCatalogItemKinds.RuntimeLock, runtimeLock.Summary.Kind);
@@ -208,6 +217,22 @@ public class HubCatalogServiceTests
                 PublicationStatus: BuildKitPublicationStatuses.Published,
                 UpdatedAtUtc: DateTimeOffset.UtcNow)
         ]),
+        new DefaultHubReviewService(
+            new HubReviewStoreStub(
+            [
+                new HubReviewRecord(
+                    ReviewId: "review-sr5-core",
+                    ProjectKind: HubCatalogItemKinds.RuleProfile,
+                    ProjectId: "official.sr5.core",
+                    RulesetId: RulesetDefaults.Sr5,
+                    OwnerId: OwnerScope.LocalSingleUser.NormalizedValue,
+                    RecommendationState: HubRecommendationStates.Recommended,
+                    CreatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:15:00+00:00"),
+                    UpdatedAtUtc: DateTimeOffset.Parse("2026-03-06T12:20:00+00:00"),
+                    Stars: 5,
+                    ReviewText: "Table-ready core runtime.",
+                    UsedAtTable: true)
+            ])),
         new RuntimeLockInstallHistoryStoreStub(
         [
             new RuntimeLockInstallHistoryRecord(
@@ -373,6 +398,37 @@ public class HubCatalogServiceTests
 
         public BuildKitRegistryEntry? Get(OwnerScope owner, string buildKitId, string? rulesetId = null) =>
             _entries.FirstOrDefault(entry => entry.Manifest.BuildKitId == buildKitId);
+    }
+
+    private sealed class HubReviewStoreStub : IHubReviewStore
+    {
+        private readonly IReadOnlyList<HubReviewRecord> _records;
+
+        public HubReviewStoreStub(IReadOnlyList<HubReviewRecord> records)
+        {
+            _records = records;
+        }
+
+        public IReadOnlyList<HubReviewRecord> List(OwnerScope owner, string? kind = null, string? itemId = null, string? rulesetId = null)
+        {
+            return _records
+                .Where(record => string.Equals(record.OwnerId, owner.NormalizedValue, StringComparison.Ordinal))
+                .Where(record => kind is null || string.Equals(record.ProjectKind, kind, StringComparison.Ordinal))
+                .Where(record => itemId is null || string.Equals(record.ProjectId, itemId, StringComparison.Ordinal))
+                .Where(record => rulesetId is null || string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal))
+                .ToArray();
+        }
+
+        public HubReviewRecord? Get(OwnerScope owner, string kind, string itemId, string rulesetId)
+        {
+            return _records.FirstOrDefault(record =>
+                string.Equals(record.OwnerId, owner.NormalizedValue, StringComparison.Ordinal)
+                && string.Equals(record.ProjectKind, kind, StringComparison.Ordinal)
+                && string.Equals(record.ProjectId, itemId, StringComparison.Ordinal)
+                && string.Equals(record.RulesetId, rulesetId, StringComparison.Ordinal));
+        }
+
+        public HubReviewRecord Upsert(OwnerScope owner, HubReviewRecord record) => throw new NotSupportedException();
     }
 
     private sealed class HubRulesetPluginStub : IRulesetPlugin
