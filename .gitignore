@@ -224,3 +224,4 @@ WORK_QUEUE.md
 .env
 .env.*
 !.env.example
+.env.providers

@@ -1,3 +1,4 @@
+using Chummer.Blazor;
 using Chummer.Presentation;
 using Chummer.Presentation.Overview;
 using Chummer.Presentation.Shell;
@@ -22,6 +23,7 @@ internal static class Program
         appBuilder.Services.AddSingleton<ICommandAvailabilityEvaluator, DefaultCommandAvailabilityEvaluator>();
         appBuilder.Services.AddSingleton<IShellSurfaceResolver, ShellSurfaceResolver>();
         appBuilder.Services.AddSingleton<Chummer.Blazor.CharacterOverviewStateBridge>();
+        appBuilder.Services.AddSingleton<IWorkbenchCoachApiClient, DesktopWorkbenchCoachApiClient>();
 
         appBuilder.RootComponents.Add<App>("app");
 

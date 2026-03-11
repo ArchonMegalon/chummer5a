@@ -1,6 +1,35 @@
 {
-  "version": "unpublished",
-  "channel": "docker",
-  "publishedAt": "2026-03-04T15:31:02Z",
-  "downloads": []
+  "version": "Chummer 6 local 20260310-210534",
+  "channel": "preview",
+  "publishedAt": "2026-03-10T21:05:34Z",
+  "downloads": [
+    {
+      "id": "avalonia-osx-arm64-20260310-210534",
+      "platform": "Chummer 6 Avalonia macOS ARM64",
+      "url": "/downloads/files/chummer-6-avalonia-osx-arm64-20260310-210534.zip",
+      "sha256": "dc6b53a0d15a2fbe9e2ab45473a0dc5c3fac25cf9c33bdf491279cd6e467a20f",
+      "sizeBytes": 42507093
+    },
+    {
+      "id": "avalonia-win-x64-20260310-210534",
+      "platform": "Chummer 6 Avalonia Windows x64",
+      "url": "/downloads/files/chummer-6-avalonia-win-x64-20260310-210534.zip",
+      "sha256": "f52277b120855dc58113e9c4076ba8ef3c51d68d5ba2b1014b402f2932868c6e",
+      "sizeBytes": 42499112
+    },
+    {
+      "id": "blazor-osx-arm64-20260310-210534",
+      "platform": "Chummer 6 Blazor macOS ARM64",
+      "url": "/downloads/files/chummer-6-blazor-osx-arm64-20260310-210534.zip",
+      "sha256": "ee624edf1d569cbbf482aeba6c9abc5b9fdab0ba4e8765fb0715b31c4dc2abe9",
+      "sizeBytes": 43778534
+    },
+    {
+      "id": "blazor-win-x64-20260310-210534",
+      "platform": "Chummer 6 Blazor Windows x64",
+      "url": "/downloads/files/chummer-6-blazor-win-x64-20260310-210534.zip",
+      "sha256": "2c6ec2bcc914e5fe407fbac133ccf928a273a7e868e1147411523673a522d968",
+      "sizeBytes": 46234492
+    }
+  ]
 }
