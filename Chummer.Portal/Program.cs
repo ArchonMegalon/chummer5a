@@ -40,6 +40,7 @@ string downloadsProxyBaseUrl = PortalSettingsResolver.ResolveSetting(builder.Con
 string downloadsFallbackUrl = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:DownloadsFallbackUrl", "CHUMMER_PORTAL_DOWNLOADS_FALLBACK_URL", string.Empty);
 string releaseManifestPath = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ReleaseManifestPath", "CHUMMER_PORTAL_RELEASES_FILE", "downloads/releases.json");
 string releaseFilesPath = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:ReleaseFilesPath", "CHUMMER_PORTAL_RELEASES_DIR", string.Empty);
+string publicCanonRoot = PortalSettingsResolver.ResolveSetting(builder.Configuration, "Portal:PublicCanonRoot", "CHUMMER_PUBLIC_CANON_ROOT", "/design-canon");
 string resolvedManifestPath = PortalDownloadsService.ResolveManifestPath(releaseManifestPath);
 string resolvedReleaseFilesPath = PortalDownloadsService.ResolveReleaseFilesPath(releaseFilesPath, resolvedManifestPath);
 bool useBlazorProxy = !string.IsNullOrWhiteSpace(blazorProxyBaseUrl);
@@ -60,6 +61,8 @@ IReadOnlyList<IReadOnlyDictionary<string, string>>? apiRouteTransforms = PortalP
 IReadOnlyList<IReadOnlyDictionary<string, string>>? aiRouteTransforms = useAiProxy
     ? null
     : PortalProxyUtils.BuildRouteTransforms(apiRouteTransforms);
+var publicLanding = new PortalPublicLandingService(publicCanonRoot);
+var publicSurface = publicLanding.LoadSurface();
 
 var proxyRoutes = new List<RouteConfig>
 {
@@ -319,6 +322,16 @@ app.Use((context, next) =>
     PortalAuthenticatedOwnerPropagation.Apply(context, portalOwnerSharedKey);
     return next();
 });
+app.Use((context, next) =>
+{
+    if (context.Request.Path.Equals("/downloads/", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.Redirect("/downloads");
+        return Task.CompletedTask;
+    }
+
+    return next();
+});
 
 PortalAuthenticationEndpoints.MapPortalAuthenticationEndpoints(app, portalAuthenticationSettings);
 
@@ -330,37 +343,58 @@ app.MapGet("/health", () => Results.Ok(new
 }));
 
 app.MapGet("/", () => Results.Content(
-    PortalPageBuilder.BuildLandingHtml(
-        blazorBaseUrl,
-        blazorProxyBaseUrl,
-        useBlazorProxy,
-        hubBaseUrl,
-        hubProxyBaseUrl,
-        useHubProxy,
-        sessionBaseUrl,
-        sessionProxyBaseUrl,
-        useSessionProxy,
-        coachBaseUrl,
-        coachProxyBaseUrl,
-        useCoachProxy,
-        aiProxyBaseUrl,
-        useAiProxy,
-        avaloniaBrowserBaseUrl,
-        avaloniaProxyBaseUrl,
-        useAvaloniaProxy,
-        apiBaseUrl,
-        isApiKeyForwardingEnabled,
-        isPortalOwnerForwardingEnabled,
-        downloadsBaseUrl,
-        downloadsProxyBaseUrl,
-        useDownloadsProxy),
+    PortalPublicLandingRenderer.BuildLandingPage(publicSurface, publicLanding),
     "text/html; charset=utf-8"));
+
+app.MapGet("/what-is-chummer", () => Results.Content(
+    PortalPublicLandingRenderer.BuildStoryPage(publicSurface, publicLanding),
+    "text/html; charset=utf-8"));
+
+app.MapGet("/now", () => Results.Content(
+    PortalPublicLandingRenderer.BuildNowPage(publicSurface, publicLanding),
+    "text/html; charset=utf-8"));
+
+app.MapGet("/horizons", () => Results.Content(
+    PortalPublicLandingRenderer.BuildHorizonsPage(publicSurface, publicLanding),
+    "text/html; charset=utf-8"));
+
+app.MapGet("/status", () => Results.Content(
+    PortalPublicLandingRenderer.BuildStatusPage(publicSurface, publicLanding),
+    "text/html; charset=utf-8"));
+
+app.MapGet("/artifacts", () => Results.Content(
+    PortalPublicLandingRenderer.BuildArtifactsPage(publicSurface, publicLanding),
+    "text/html; charset=utf-8"));
+
+app.MapGet("/participate", (HttpContext context) => Results.Content(
+    PortalPublicLandingRenderer.BuildParticipatePage(publicSurface, publicLanding, context.User.Identity?.IsAuthenticated == true),
+    "text/html; charset=utf-8"));
+
+app.MapGet("/participate/codex", (HttpContext context) => Results.Content(
+    PortalPublicLandingRenderer.BuildParticipatePage(publicSurface, publicLanding, context.User.Identity?.IsAuthenticated == true),
+    "text/html; charset=utf-8"));
+
+app.MapGet("/home", (HttpContext context) => Results.Content(
+    PortalPublicLandingRenderer.BuildHomePage(publicSurface, context.User.Identity?.IsAuthenticated == true, context.User.Identity?.Name),
+    "text/html; charset=utf-8"));
+
+app.MapGet("/account", (HttpContext context) => Results.Content(
+    PortalPublicLandingRenderer.BuildAccountPage(publicSurface, context.User.Identity?.IsAuthenticated == true, context.User.Identity?.Name),
+    "text/html; charset=utf-8"));
+
+app.MapGet("/api/public/landing", () => Results.Json(
+    publicSurface,
+    new JsonSerializerOptions(JsonSerializerDefaults.Web)));
+
+app.MapGet("/api/public/cards/{bucket}", (string bucket) => Results.Json(
+    publicLanding.CardsForBucket(publicSurface, bucket),
+    new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 
 app.MapGet("/downloads/releases.json", () => Results.Json(
     PortalDownloadsService.LoadReleaseManifest(resolvedManifestPath, resolvedReleaseFilesPath, downloadsFallbackUrl),
     new JsonSerializerOptions(JsonSerializerDefaults.Web)));
 
-app.MapGet("/downloads/", () => Results.Content(
+app.MapGet("/downloads", () => Results.Content(
     PortalPageBuilder.BuildDownloadsHtml(downloadsFallbackUrl, PortalDownloadsService.HasConfiguredFallbackSource(downloadsFallbackUrl)),
     "text/html; charset=utf-8"));
 
@@ -400,7 +434,7 @@ if (!useAvaloniaProxy)
 
 if (!useDownloadsProxy)
 {
-    app.MapGet("/downloads/{**path}", (HttpContext context, string? path) =>
+    app.MapGet("/downloads/files/{**path}", (HttpContext context, string? path) =>
     {
         string? filePath = PortalDownloadsService.ResolveDownloadFilePath(resolvedReleaseFilesPath, path);
         if (!string.IsNullOrWhiteSpace(filePath))
@@ -411,7 +445,8 @@ if (!useDownloadsProxy)
 
         if (PortalDownloadsService.HasConfiguredFallbackSource(downloadsFallbackUrl))
         {
-            return Results.Redirect(PortalProxyUtils.ComposeRedirect(downloadsFallbackUrl, path, context.Request.QueryString));
+            string fallbackPath = string.IsNullOrWhiteSpace(path) ? "files" : $"files/{path}";
+            return Results.Redirect(PortalProxyUtils.ComposeRedirect(downloadsFallbackUrl, fallbackPath, context.Request.QueryString));
         }
 
         return Results.NotFound(new
