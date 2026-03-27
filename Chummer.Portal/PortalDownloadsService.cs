@@ -285,6 +285,10 @@ internal static class PortalDownloadsService
                 string rid = match.Groups["rid"].Value;
                 string ext = match.Groups["ext"].Value;
                 string flavor = NormalizeFlavor(match.Groups["flavor"].Value, ext);
+                if (!IsPublicShelfArtifact(rid))
+                {
+                    continue;
+                }
 
                 artifacts.Add(new DownloadArtifact(
                     Id: $"{app}-{rid}-{flavor}",
@@ -362,6 +366,25 @@ internal static class PortalDownloadsService
     private static string ResolveHead(string app)
     {
         return string.Equals(app, "avalonia", StringComparison.OrdinalIgnoreCase) ? "flagship" : "fallback";
+    }
+
+    private static bool IsPublicShelfArtifact(string rid)
+    {
+        if (!rid.StartsWith("osx", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        string? rawValue = Environment.GetEnvironmentVariable("CHUMMER_MACOS_PUBLIC_SHELF_ENABLED");
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            return false;
+        }
+
+        return rawValue.Trim().Equals("1", StringComparison.OrdinalIgnoreCase)
+            || rawValue.Trim().Equals("true", StringComparison.OrdinalIgnoreCase)
+            || rawValue.Trim().Equals("yes", StringComparison.OrdinalIgnoreCase)
+            || rawValue.Trim().Equals("on", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string ComputeSha256(string filePath)

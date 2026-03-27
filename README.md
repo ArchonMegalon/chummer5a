@@ -271,7 +271,8 @@ Content overlay notes (`CHUMMER_AMENDS_PATH`):
 
 Desktop artifact workflow:
 
-* `.github/workflows/desktop-downloads-matrix.yml` publishes both Avalonia and Blazor desktop artifacts for multiple RIDs and generates `releases.json` with SHA-256 checksums.
+* `.github/workflows/desktop-downloads-matrix.yml` builds both desktop heads for Windows, Linux, and macOS, emits portable Windows `.exe` plus macOS `.dmg` installer images, and generates the public `releases.json` compatibility manifest with SHA-256 checksums.
+* macOS build output is real release evidence, but it stays off the public shelf until the signed/notarized `.dmg` promotion gate is explicitly opened.
 * CI manifest generation now uses the shared `scripts/generate-releases-manifest.sh` path to keep local/runbook/workflow output logic in sync.
 * Checked-in `Chummer.Portal/downloads/releases.json` remains a local-dev fallback snapshot and is excluded from published portal output; deploy environments must mount/publish real downloads storage and treat published manifest verification as source of truth.
 * Local `scripts/generate-releases-manifest.sh` runs now also sync discovered desktop files into `Chummer.Portal/downloads/files` (configurable with `PORTAL_DOWNLOADS_DIR`) so `/downloads/*` can serve generated artifacts without extra manual copy steps.

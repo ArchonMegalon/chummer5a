@@ -11,12 +11,13 @@ PORTAL_DOWNLOADS_DIR="${PORTAL_DOWNLOADS_DIR:-$REPO_ROOT/Chummer.Portal/download
 RELEASE_VERSION="${RELEASE_VERSION:-unpublished}"
 RELEASE_CHANNEL="${RELEASE_CHANNEL:-docker}"
 RELEASE_PUBLISHED_AT="${RELEASE_PUBLISHED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+CHUMMER_MACOS_PUBLIC_SHELF_ENABLED="${CHUMMER_MACOS_PUBLIC_SHELF_ENABLED:-false}"
 
 mkdir -p "$(dirname "$MANIFEST_PATH")"
 mkdir -p "$(dirname "$PORTAL_MANIFEST_PATH")"
 mkdir -p "$DOWNLOADS_DIR"
 
-python3 - "$DOWNLOADS_DIR" "$MANIFEST_PATH" "$RELEASE_VERSION" "$RELEASE_CHANNEL" "$RELEASE_PUBLISHED_AT" <<'PY'
+python3 - "$DOWNLOADS_DIR" "$MANIFEST_PATH" "$RELEASE_VERSION" "$RELEASE_CHANNEL" "$RELEASE_PUBLISHED_AT" "$CHUMMER_MACOS_PUBLIC_SHELF_ENABLED" <<'PY'
 import hashlib
 import json
 import re
@@ -28,6 +29,7 @@ manifest_path = Path(sys.argv[2])
 version = sys.argv[3]
 channel = sys.argv[4]
 published_at = sys.argv[5]
+macos_public_shelf_enabled = sys.argv[6].strip().lower() in {"1", "true", "yes", "on"}
 
 app_labels = {
     "avalonia": "Avalonia Desktop",
@@ -70,6 +72,12 @@ def build_platform_label(app: str, rid: str, flavor: str) -> str:
     }.get(flavor, flavor.title())
     return f"{app_labels.get(app, app)} {platform_names.get(rid, rid)} {flavor_label}"
 
+
+def is_public_shelf_artifact(rid: str) -> bool:
+    if rid.lower().startswith("osx"):
+        return macos_public_shelf_enabled
+    return True
+
 for artifact in sorted(downloads_dir.iterdir()):
     if not artifact.is_file():
         continue
@@ -82,6 +90,8 @@ for artifact in sorted(downloads_dir.iterdir()):
     rid = match.group("rid")
     ext = match.group("ext")
     flavor = normalize_flavor(match.group("flavor"), ext)
+    if not is_public_shelf_artifact(rid):
+        continue
     sha256 = hashlib.sha256(artifact.read_bytes()).hexdigest()
     size_bytes = artifact.stat().st_size
     downloads.append(
@@ -124,9 +134,24 @@ else
 
   portal_files_dir="$PORTAL_DOWNLOADS_DIR/files"
   mkdir -p "$portal_files_dir"
-  mapfile -t portal_artifacts < <(find "$DOWNLOADS_DIR" -maxdepth 1 -type f \
-    \( -name "chummer-*.zip" -o -name "chummer-*.tar.gz" -o -name "chummer-*.exe" -o -name "chummer-*.deb" -o -name "chummer-*.dmg" \) \
-    | sort)
+  is_public_artifact() {
+    local artifact_name
+    artifact_name="$(basename "$1")"
+    if [[ "$artifact_name" == chummer-*-osx-* ]] && [[ "${CHUMMER_MACOS_PUBLIC_SHELF_ENABLED,,}" != "1" && "${CHUMMER_MACOS_PUBLIC_SHELF_ENABLED,,}" != "true" && "${CHUMMER_MACOS_PUBLIC_SHELF_ENABLED,,}" != "yes" && "${CHUMMER_MACOS_PUBLIC_SHELF_ENABLED,,}" != "on" ]]; then
+      return 1
+    fi
+    return 0
+  }
+  mapfile -t portal_artifacts < <(
+    while IFS= read -r artifact; do
+      [[ -f "$artifact" ]] || continue
+      if is_public_artifact "$artifact"; then
+        printf '%s\n' "$artifact"
+      fi
+    done < <(find "$DOWNLOADS_DIR" -maxdepth 1 -type f \
+      \( -name "chummer-*.zip" -o -name "chummer-*.tar.gz" -o -name "chummer-*.exe" -o -name "chummer-*.deb" -o -name "chummer-*.dmg" \) \
+      | sort)
+  )
   if [[ "${#portal_artifacts[@]}" -gt 0 ]]; then
     rm -f "$portal_files_dir"/chummer-*.zip "$portal_files_dir"/chummer-*.tar.gz "$portal_files_dir"/chummer-*.exe "$portal_files_dir"/chummer-*.deb "$portal_files_dir"/chummer-*.dmg
     cp "${portal_artifacts[@]}" "$portal_files_dir"/

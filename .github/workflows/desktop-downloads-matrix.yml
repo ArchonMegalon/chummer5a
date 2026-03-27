@@ -34,6 +34,9 @@ on:
 permissions:
   contents: read
 
+env:
+  CHUMMER_MACOS_PUBLIC_SHELF_ENABLED: ${{ vars.CHUMMER_MACOS_PUBLIC_SHELF_ENABLED || 'false' }}
+
 jobs:
   build-desktop:
     name: Build ${{ matrix.app }} ${{ matrix.rid }}
@@ -145,13 +148,26 @@ jobs:
           if (Test-Path $archive) { Remove-Item $archive -Force }
           Compress-Archive -Path "out/${{ matrix.app }}/${{ matrix.rid }}/*" -DestinationPath $archive -Force
 
-      - name: Package archive (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Package archive (Linux)
+        if: runner.os == 'Linux'
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
           tar -C "out/${{ matrix.app }}/${{ matrix.rid }}" -czf "dist/chummer-${{ matrix.app }}-${{ matrix.rid }}.tar.gz" .
+
+      - name: Package installer image (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          hdiutil create \
+            -volname "Chummer ${{ matrix.app }} ${{ matrix.rid }}" \
+            -srcfolder "out/${{ matrix.app }}/${{ matrix.rid }}" \
+            -ov \
+            -format UDZO \
+            "dist/chummer-${{ matrix.app }}-${{ matrix.rid }}-installer.dmg"
 
       - name: Upload RID artifact
         uses: actions/upload-artifact@v4

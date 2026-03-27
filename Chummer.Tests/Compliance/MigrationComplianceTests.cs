@@ -3201,6 +3201,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalDownloadsServiceText, "Flavor: flavor");
         StringAssert.Contains(portalDownloadsServiceText, "Head: ResolveHead(app)");
         StringAssert.Contains(portalDownloadsServiceText, "Recommended: string.Equals(app, \"avalonia\"");
+        StringAssert.Contains(portalDownloadsServiceText, "CHUMMER_MACOS_PUBLIC_SHELF_ENABLED");
+        StringAssert.Contains(portalDownloadsServiceText, "if (!IsPublicShelfArtifact(rid))");
     }
 
     [TestMethod]
@@ -3268,9 +3270,13 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID");
+        StringAssert.Contains(workflowText, "CHUMMER_MACOS_PUBLIC_SHELF_ENABLED");
         StringAssert.Contains(workflowText, "portable_name: Chummer.Avalonia.exe");
         StringAssert.Contains(workflowText, "portable_name: Chummer.Blazor.Desktop.exe");
         StringAssert.Contains(workflowText, "chummer-${{ matrix.app }}-${{ matrix.rid }}-portable.exe");
+        StringAssert.Contains(workflowText, "Package installer image (macOS)");
+        StringAssert.Contains(workflowText, "hdiutil create");
+        StringAssert.Contains(workflowText, "dist/chummer-${{ matrix.app }}-${{ matrix.rid }}-installer.dmg");
         StringAssert.Contains(workflowText, "dist/chummer-${{ matrix.app }}-${{ matrix.rid }}*");
         StringAssert.Contains(workflowText, "Validate live verify URL");
         StringAssert.Contains(workflowText, "Set CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL to verify the live portal manifest after deployment.");
@@ -3288,6 +3294,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(manifestScriptText, "\"url\": f\"/downloads/files/{artifact.name}\"");
         StringAssert.Contains(manifestScriptText, "\"flavor\": flavor");
         StringAssert.Contains(manifestScriptText, "\"head\": resolve_head(app)");
+        StringAssert.Contains(manifestScriptText, "CHUMMER_MACOS_PUBLIC_SHELF_ENABLED");
+        StringAssert.Contains(manifestScriptText, "if not is_public_shelf_artifact(rid):");
         StringAssert.Contains(verifyScriptText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(verifyScriptText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS");
         StringAssert.Contains(verifyScriptText, "failed artifact verification");
