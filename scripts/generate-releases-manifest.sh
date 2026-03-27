@@ -42,8 +42,33 @@ platform_names = {
     "osx-x64": "macOS x64",
 }
 
-pattern = re.compile(r"^chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>[^.]+)\.(?P<ext>zip|tar\.gz)$")
+pattern = re.compile(
+    r"^chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>.+?)(?:-(?P<flavor>installer|portable))?\.(?P<ext>zip|tar\.gz|exe|deb|dmg)$"
+)
 downloads = []
+
+
+def normalize_flavor(raw_flavor: str | None, ext: str) -> str:
+    if raw_flavor:
+        return raw_flavor
+    if ext in {"zip", "tar.gz"}:
+        return "archive"
+    if ext in {"deb", "dmg"}:
+        return "installer"
+    return "portable"
+
+
+def resolve_head(app: str) -> str:
+    return "flagship" if app == "avalonia" else "fallback"
+
+
+def build_platform_label(app: str, rid: str, flavor: str) -> str:
+    flavor_label = {
+        "installer": "Installer",
+        "portable": "Portable",
+        "archive": "Archive",
+    }.get(flavor, flavor.title())
+    return f"{app_labels.get(app, app)} {platform_names.get(rid, rid)} {flavor_label}"
 
 for artifact in sorted(downloads_dir.iterdir()):
     if not artifact.is_file():
@@ -55,15 +80,23 @@ for artifact in sorted(downloads_dir.iterdir()):
 
     app = match.group("app")
     rid = match.group("rid")
+    ext = match.group("ext")
+    flavor = normalize_flavor(match.group("flavor"), ext)
     sha256 = hashlib.sha256(artifact.read_bytes()).hexdigest()
     size_bytes = artifact.stat().st_size
     downloads.append(
         {
-            "id": f"{app}-{rid}",
-            "platform": f"{app_labels.get(app, app)} {platform_names.get(rid, rid)}",
+            "id": f"{app}-{rid}-{flavor}",
+            "platform": build_platform_label(app, rid, flavor),
             "url": f"/downloads/files/{artifact.name}",
             "sha256": sha256,
             "sizeBytes": size_bytes,
+            "format": ext,
+            "flavor": flavor,
+            "app": app,
+            "rid": rid,
+            "head": resolve_head(app),
+            "recommended": app == "avalonia" and flavor == "installer",
         }
     )
 
@@ -91,9 +124,11 @@ else
 
   portal_files_dir="$PORTAL_DOWNLOADS_DIR/files"
   mkdir -p "$portal_files_dir"
-  mapfile -t portal_artifacts < <(find "$DOWNLOADS_DIR" -maxdepth 1 -type f \( -name "chummer-*.zip" -o -name "chummer-*.tar.gz" \) | sort)
+  mapfile -t portal_artifacts < <(find "$DOWNLOADS_DIR" -maxdepth 1 -type f \
+    \( -name "chummer-*.zip" -o -name "chummer-*.tar.gz" -o -name "chummer-*.exe" -o -name "chummer-*.deb" -o -name "chummer-*.dmg" \) \
+    | sort)
   if [[ "${#portal_artifacts[@]}" -gt 0 ]]; then
-    rm -f "$portal_files_dir"/chummer-*.zip "$portal_files_dir"/chummer-*.tar.gz
+    rm -f "$portal_files_dir"/chummer-*.zip "$portal_files_dir"/chummer-*.tar.gz "$portal_files_dir"/chummer-*.exe "$portal_files_dir"/chummer-*.deb "$portal_files_dir"/chummer-*.dmg
     cp "${portal_artifacts[@]}" "$portal_files_dir"/
     echo "synced ${#portal_artifacts[@]} local portal artifact(s) -> $portal_files_dir"
   else

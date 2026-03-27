@@ -2159,6 +2159,9 @@ public class ApiIntegrationTests
 
         JsonObject response = await GetRequiredJsonObject(client, "/api/tools/translator/languages");
         Assert.IsGreaterThan(0, response["count"]?.GetValue<int>() ?? 0);
+        Assert.AreEqual("en-us", response["sourceCode"]?.GetValue<string>());
+        Assert.AreEqual("en-us", response["fallbackCode"]?.GetValue<string>());
+        Assert.IsTrue(response["requiresRestartOnChange"]?.GetValue<bool>() ?? false);
         Assert.IsTrue(response["languages"] is JsonArray);
     }
 

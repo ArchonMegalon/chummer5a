@@ -63,26 +63,64 @@ public sealed class XmlToolCatalogService : IToolCatalogService
             catalog.BaseLanguagePath,
             pack => pack.LanguagePath);
         if (filesByName.Count == 0)
-            return new TranslatorLanguagesResponse(0, Array.Empty<TranslatorLanguageEntry>());
+            return new TranslatorLanguagesResponse(
+                Count: 0,
+                SourceCode: TranslatorLanguageCatalog.SourceCode,
+                FallbackCode: TranslatorLanguageCatalog.FallbackCode,
+                RequiresRestartOnChange: true,
+                Languages: Array.Empty<TranslatorLanguageEntry>());
 
         List<TranslatorLanguageEntry> languages = new();
         Dictionary<string, XDocument?> filesByCode = CollapseLanguageFilesByCode(filesByName);
+        HashSet<string> dataDomainCodes = CollectDataDomainCodes(filesByName);
         foreach ((string code, XDocument? languageDocument) in filesByCode.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
         {
-            string name = code;
+            string normalizedCode = TranslatorLanguageCatalog.NormalizeCode(code);
+            string name = TranslatorLanguageCatalog.ResolveName(normalizedCode);
             if (languageDocument is not null)
             {
                 name = languageDocument.Root?.Element("name")?.Value?.Trim() ?? code;
             }
 
             languages.Add(new TranslatorLanguageEntry(
-                Code: code,
-                Name: name));
+                Code: normalizedCode,
+                Name: name,
+                IsSource: string.Equals(normalizedCode, TranslatorLanguageCatalog.SourceCode, StringComparison.OrdinalIgnoreCase),
+                IsShippingTarget: TranslatorLanguageCatalog.IsShippingTarget(normalizedCode),
+                HasUiChromeDomain: languageDocument is not null,
+                HasDataNamesDomain: string.Equals(normalizedCode, TranslatorLanguageCatalog.SourceCode, StringComparison.OrdinalIgnoreCase)
+                    || dataDomainCodes.Contains(normalizedCode)));
         }
 
         return new TranslatorLanguagesResponse(
             Count: languages.Count,
+            SourceCode: TranslatorLanguageCatalog.SourceCode,
+            FallbackCode: TranslatorLanguageCatalog.FallbackCode,
+            RequiresRestartOnChange: true,
             Languages: languages);
+    }
+
+    private static HashSet<string> CollectDataDomainCodes(IReadOnlyDictionary<string, XDocument?> filesByName)
+    {
+        HashSet<string> codes = new(StringComparer.OrdinalIgnoreCase);
+        foreach (string fileName in filesByName.Keys.OrderBy(name => name, StringComparer.Ordinal))
+        {
+            string stem = Path.GetFileNameWithoutExtension(fileName);
+            if (string.IsNullOrWhiteSpace(stem) || !stem.EndsWith("_data", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string code = stem[..^"_data".Length];
+            if (!LooksLikeLanguageCode(code))
+            {
+                continue;
+            }
+
+            codes.Add(TranslatorLanguageCatalog.NormalizeCode(code));
+        }
+
+        return codes;
     }
 
     private static Dictionary<string, XDocument?> CollapseLanguageFilesByCode(IReadOnlyDictionary<string, XDocument?> filesByName)

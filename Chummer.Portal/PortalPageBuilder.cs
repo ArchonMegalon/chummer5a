@@ -60,9 +60,9 @@ internal static class PortalPageBuilder
             </select>
           </div>
           <div class="filter">
-            <label for="download-type">Type</label>
+            <label for="download-type">Head</label>
             <select id="download-type">
-              <option value="all">All types</option>
+              <option value="all">All heads</option>
             </select>
           </div>
         </div>
@@ -91,21 +91,60 @@ internal static class PortalPageBuilder
           'osx-x64': 'macOS x64'
         };
 
-        const inferType = (item) => {
-          const text = `${item.id || ''} ${item.platform || ''}`.toLowerCase();
-          if (text.includes('avalonia')) return { value: 'avalonia', label: 'Avalonia' };
-          if (text.includes('blazor')) return { value: 'blazor', label: 'Blazor' };
+        const inferHead = (item) => {
+          const explicitHead = `${item.head || ''}`.toLowerCase();
+          if (explicitHead === 'flagship') return { value: 'flagship', label: 'Flagship' };
+          if (explicitHead === 'fallback') return { value: 'fallback', label: 'Fallback' };
+
+          const text = `${item.id || ''} ${item.platform || ''} ${item.app || ''}`.toLowerCase();
+          if (text.includes('avalonia')) return { value: 'flagship', label: 'Flagship' };
+          if (text.includes('blazor')) return { value: 'fallback', label: 'Fallback' };
           return { value: 'desktop', label: 'Desktop' };
         };
 
         const inferPlatform = (item) => {
-          const text = `${item.id || ''} ${item.platform || ''} ${item.url || ''}`.toLowerCase();
+          const text = `${item.id || ''} ${item.platform || ''} ${item.url || ''} ${item.rid || ''}`.toLowerCase();
           for (const [rid, label] of Object.entries(ridLabels)) {
             if (text.includes(rid.toLowerCase())) {
               return { value: rid, label };
             }
           }
           return { value: 'unknown', label: 'Other' };
+        };
+
+        const inferFlavor = (item) => {
+          const explicitFlavor = `${item.flavor || ''}`.toLowerCase();
+          if (explicitFlavor === 'installer') return { value: 'installer', label: 'Installer' };
+          if (explicitFlavor === 'portable') return { value: 'portable', label: 'Portable' };
+          if (explicitFlavor === 'archive') return { value: 'archive', label: 'Archive' };
+
+          const text = `${item.id || ''} ${item.url || ''}`.toLowerCase();
+          if (text.includes('-installer.') || text.endsWith('.deb') || text.endsWith('.dmg')) return { value: 'installer', label: 'Installer' };
+          if (text.includes('-portable.') || text.endsWith('.exe')) return { value: 'portable', label: 'Portable' };
+          return { value: 'archive', label: 'Archive' };
+        };
+
+        const compareDownloads = (left, right) => {
+          const recommendedDelta = Number(Boolean(right.recommended)) - Number(Boolean(left.recommended));
+          if (recommendedDelta !== 0) {
+            return recommendedDelta;
+          }
+
+          const headRank = { flagship: 0, fallback: 1, desktop: 2 };
+          const flavorRank = { installer: 0, portable: 1, archive: 2 };
+          const leftHead = headRank[left.headInfo.value] ?? 99;
+          const rightHead = headRank[right.headInfo.value] ?? 99;
+          if (leftHead !== rightHead) {
+            return leftHead - rightHead;
+          }
+
+          const leftFlavor = flavorRank[left.flavorInfo.value] ?? 99;
+          const rightFlavor = flavorRank[right.flavorInfo.value] ?? 99;
+          if (leftFlavor !== rightFlavor) {
+            return leftFlavor - rightFlavor;
+          }
+
+          return `${left.platform || ''}`.localeCompare(`${right.platform || ''}`);
         };
 
         const formatSize = (sizeBytes) => {
@@ -140,7 +179,7 @@ internal static class PortalPageBuilder
           const selectedType = typeSelect.value || 'all';
           const filtered = enrichedDownloads.filter((item) => {
             const platformOk = selectedPlatform === 'all' || item.platformInfo.value === selectedPlatform;
-            const typeOk = selectedType === 'all' || item.typeInfo.value === selectedType;
+            const typeOk = selectedType === 'all' || item.headInfo.value === selectedType;
             return platformOk && typeOk;
           });
 
@@ -164,15 +203,27 @@ internal static class PortalPageBuilder
             const tags = document.createElement('div');
             tags.className = 'artifact-tags';
 
-            const typeTag = document.createElement('span');
-            typeTag.className = 'tag';
-            typeTag.textContent = item.typeInfo.label;
-            tags.appendChild(typeTag);
+            const headTag = document.createElement('span');
+            headTag.className = 'tag';
+            headTag.textContent = item.headInfo.label;
+            tags.appendChild(headTag);
 
             const platformTag = document.createElement('span');
             platformTag.className = 'tag';
             platformTag.textContent = item.platformInfo.label;
             tags.appendChild(platformTag);
+
+            const flavorTag = document.createElement('span');
+            flavorTag.className = 'tag';
+            flavorTag.textContent = item.flavorInfo.label;
+            tags.appendChild(flavorTag);
+
+            if (item.recommended === true) {
+              const recommendedTag = document.createElement('span');
+              recommendedTag.className = 'tag';
+              recommendedTag.textContent = 'Recommended';
+              tags.appendChild(recommendedTag);
+            }
 
             top.appendChild(tags);
             row.appendChild(top);
@@ -183,6 +234,11 @@ internal static class PortalPageBuilder
               const idMeta = document.createElement('span');
               idMeta.textContent = item.id;
               artifactMeta.appendChild(idMeta);
+            }
+            if (item.format) {
+              const formatMeta = document.createElement('span');
+              formatMeta.textContent = `${item.format}`;
+              artifactMeta.appendChild(formatMeta);
             }
             const sizeLabel = formatSize(item.sizeBytes);
             if (sizeLabel) {
@@ -201,7 +257,7 @@ internal static class PortalPageBuilder
             if (item.url) {
               const anchor = document.createElement('a');
               anchor.href = item.url;
-              anchor.textContent = `Download ${item.typeInfo.label}`;
+              anchor.textContent = `Download ${item.flavorInfo.label}`;
               row.appendChild(anchor);
             }
 
@@ -267,16 +323,17 @@ internal static class PortalPageBuilder
 
           enrichedDownloads = downloads.map((item) => ({
             ...item,
-            typeInfo: inferType(item),
-            platformInfo: inferPlatform(item)
-          }));
+            headInfo: inferHead(item),
+            platformInfo: inferPlatform(item),
+            flavorInfo: inferFlavor(item)
+          })).sort(compareDownloads);
 
           resetOptions(platformSelect, 'All platforms');
-          resetOptions(typeSelect, 'All types');
+          resetOptions(typeSelect, 'All heads');
 
           const platforms = [...new Map(enrichedDownloads.map((item) => [item.platformInfo.value, item.platformInfo])).values()]
             .sort((left, right) => left.label.localeCompare(right.label));
-          const types = [...new Map(enrichedDownloads.map((item) => [item.typeInfo.value, item.typeInfo])).values()]
+          const types = [...new Map(enrichedDownloads.map((item) => [item.headInfo.value, item.headInfo])).values()]
             .sort((left, right) => left.label.localeCompare(right.label));
 
           for (const platform of platforms) {

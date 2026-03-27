@@ -474,4 +474,11 @@ public sealed record DownloadArtifact(
     string Id,
     string Platform,
     string Url,
-    string Sha256);
+    string Sha256,
+    long? SizeBytes = null,
+    string? Format = null,
+    string? Flavor = null,
+    string? App = null,
+    string? Rid = null,
+    string? Head = null,
+    bool Recommended = false);

@@ -12,8 +12,15 @@ public sealed record MasterIndexResponse(
 
 public sealed record TranslatorLanguageEntry(
     string Code,
-    string Name);
+    string Name,
+    bool IsSource,
+    bool IsShippingTarget,
+    bool HasUiChromeDomain,
+    bool HasDataNamesDomain);
 
 public sealed record TranslatorLanguagesResponse(
     int Count,
+    string SourceCode,
+    string FallbackCode,
+    bool RequiresRestartOnChange,
     IReadOnlyList<TranslatorLanguageEntry> Languages);

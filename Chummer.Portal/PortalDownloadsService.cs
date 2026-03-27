@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 internal static class PortalDownloadsService
 {
     private static readonly Regex LocalArtifactPattern = new(
-        @"^chummer-(?<app>avalonia|blazor-desktop)-(?<rid>[^.]+)\.(?<ext>zip|tar\.gz)$",
+        @"^chummer-(?<app>avalonia|blazor-desktop)-(?<rid>.+?)(?:-(?<flavor>installer|portable))?\.(?<ext>zip|tar\.gz|exe|deb|dmg)$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     public static DownloadReleaseManifest LoadReleaseManifest(string manifestPath, string releaseFilesPath, string fallbackDownloadsUrl)
@@ -281,11 +281,24 @@ internal static class PortalDownloadsService
                     continue;
                 }
 
+                string app = match.Groups["app"].Value;
+                string rid = match.Groups["rid"].Value;
+                string ext = match.Groups["ext"].Value;
+                string flavor = NormalizeFlavor(match.Groups["flavor"].Value, ext);
+
                 artifacts.Add(new DownloadArtifact(
-                    Id: $"{match.Groups["app"].Value}-{match.Groups["rid"].Value}",
-                    Platform: BuildPlatformLabel(match.Groups["app"].Value, match.Groups["rid"].Value),
+                    Id: $"{app}-{rid}-{flavor}",
+                    Platform: BuildPlatformLabel(app, rid, flavor),
                     Url: $"/downloads/{relativePath}",
-                    Sha256: ComputeSha256(filePath)));
+                    Sha256: ComputeSha256(filePath),
+                    SizeBytes: new FileInfo(filePath).Length,
+                    Format: ext,
+                    Flavor: flavor,
+                    App: app,
+                    Rid: rid,
+                    Head: ResolveHead(app),
+                    Recommended: string.Equals(app, "avalonia", StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(flavor, "installer", StringComparison.OrdinalIgnoreCase)));
             }
         }
 
@@ -294,7 +307,7 @@ internal static class PortalDownloadsService
             .ToArray();
     }
 
-    private static string BuildPlatformLabel(string app, string rid)
+    private static string BuildPlatformLabel(string app, string rid, string flavor)
     {
         string appLabel = app.ToLowerInvariant() switch
         {
@@ -314,7 +327,41 @@ internal static class PortalDownloadsService
             _ => rid
         };
 
-        return $"{appLabel} {ridLabel}";
+        string flavorLabel = flavor.ToLowerInvariant() switch
+        {
+            "installer" => "Installer",
+            "portable" => "Portable",
+            "archive" => "Archive",
+            _ => flavor
+        };
+
+        return $"{appLabel} {ridLabel} {flavorLabel}";
+    }
+
+    private static string NormalizeFlavor(string rawFlavor, string ext)
+    {
+        if (!string.IsNullOrWhiteSpace(rawFlavor))
+        {
+            return rawFlavor.ToLowerInvariant();
+        }
+
+        string normalizedExt = ext.ToLowerInvariant();
+        if (string.Equals(normalizedExt, "zip", StringComparison.Ordinal) || string.Equals(normalizedExt, "tar.gz", StringComparison.Ordinal))
+        {
+            return "archive";
+        }
+
+        if (string.Equals(normalizedExt, "deb", StringComparison.Ordinal) || string.Equals(normalizedExt, "dmg", StringComparison.Ordinal))
+        {
+            return "installer";
+        }
+
+        return "portable";
+    }
+
+    private static string ResolveHead(string app)
+    {
+        return string.Equals(app, "avalonia", StringComparison.OrdinalIgnoreCase) ? "flagship" : "fallback";
     }
 
     private static string ComputeSha256(string filePath)

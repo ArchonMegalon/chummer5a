@@ -2624,10 +2624,12 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalProgramText, "app.MapGet(\"/what-is-chummer\"");
         StringAssert.Contains(portalProgramText, "app.MapGet(\"/participate\"");
         StringAssert.Contains(portalProgramText, "app.MapGet(\"/api/public/landing\"");
-        StringAssert.Contains(portalLandingRendererText, "Shadowrun rules truth, with receipts.");
+        StringAssert.Contains(portalLandingRendererText, "RenderHero(surface)");
         StringAssert.Contains(portalLandingRendererText, "What changes when you sign in");
         StringAssert.Contains(portalLandingRendererText, "How participation works");
-        StringAssert.Contains(portalLandingRendererText, "Generated from the canonical landing manifest");
+        StringAssert.Contains(portalLandingRendererText, "surface.FooterGeneratedNote");
+        StringAssert.Contains(portalLandingServiceText, "Shadowrun rules truth, with receipts.");
+        StringAssert.Contains(portalLandingServiceText, "Generated from the canonical landing manifest");
         StringAssert.Contains(portalLandingServiceText, "PUBLIC_LANDING_MANIFEST.yaml");
         StringAssert.Contains(portalLandingServiceText, "PUBLIC_FEATURE_REGISTRY.yaml");
         StringAssert.Contains(portalLandingServiceText, "DefaultManifestYaml");
@@ -2999,17 +3001,18 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalScriptText, "docker compose \"${compose_args[@]}\" --profile test --profile portal run --build --rm chummer-playwright-portal");
         StringAssert.Contains(portalPlaywrightText, "requiredLandingLinks");
         StringAssert.Contains(portalPlaywrightText, "requiredLandingLinks.every(link => text.includes(link))");
-        StringAssert.Contains(portalPlaywrightText, "'/blazor/'");
-        StringAssert.Contains(portalPlaywrightText, "'/hub/'");
-        StringAssert.Contains(portalPlaywrightText, "'/session/'");
-        StringAssert.Contains(portalPlaywrightText, "'/avalonia/'");
-        StringAssert.Contains(portalPlaywrightText, "'/downloads/'");
-        StringAssert.Contains(portalPlaywrightText, "'/docs/'");
-        StringAssert.Contains(portalPlaywrightText, "'/api/health'");
-        StringAssert.Contains(portalPlaywrightText, "http://chummer-portal:8080/api/ai/status");
-        StringAssert.Contains(portalPlaywrightText, "http://chummer-portal:8080/hub/health");
-        StringAssert.Contains(portalPlaywrightText, "http://chummer-portal:8080/session/health");
-        StringAssert.Contains(portalPlaywrightText, "No published desktop builds yet");
+        StringAssert.Contains(portalPlaywrightText, "verifyProxies");
+        StringAssert.Contains(portalPlaywrightText, "`${baseUrl}/blazor/health`");
+        StringAssert.Contains(portalPlaywrightText, "`${baseUrl}/hub/health`");
+        StringAssert.Contains(portalPlaywrightText, "`${baseUrl}/session/health`");
+        StringAssert.Contains(portalPlaywrightText, "`${baseUrl}/avalonia/health`");
+        StringAssert.Contains(portalPlaywrightText, "`${baseUrl}/downloads/`");
+        StringAssert.Contains(portalPlaywrightText, "`${baseUrl}/docs/`");
+        StringAssert.Contains(portalPlaywrightText, "`${baseUrl}/api/health`");
+        StringAssert.Contains(portalPlaywrightText, "`${baseUrl}/api/ai/status`");
+        StringAssert.Contains(portalPlaywrightText, "`${baseUrl}/hub/health`");
+        StringAssert.Contains(portalPlaywrightText, "`${baseUrl}/session/health`");
+        StringAssert.Contains(portalPlaywrightText, "Desktop Downloads");
         StringAssert.Contains(portalPlaywrightText, "fallback-link");
     }
 
@@ -3185,7 +3188,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalProgramText, "return Results.NotFound(new");
         StringAssert.Contains(portalDownloadsServiceText, "DiscoverLocalArtifacts");
         StringAssert.Contains(portalDownloadsServiceText, "LocalArtifactPattern");
-        StringAssert.Contains(portalDownloadsServiceText, "chummer-(?<app>avalonia|blazor-desktop)-(?<rid>[^.]+)\\.(?<ext>zip|tar\\.gz)");
+        StringAssert.Contains(portalDownloadsServiceText, "chummer-(?<app>avalonia|blazor-desktop)-(?<rid>.+?)(?:-(?<flavor>installer|portable))?\\.(?<ext>zip|tar\\.gz|exe|deb|dmg)");
         StringAssert.Contains(portalDownloadsServiceText, "\"osx-x64\" => \"macOS x64\"");
         StringAssert.Contains(portalDownloadsServiceText, "if (parsedManifest is not null && parsedManifest.Downloads.Count > 0)");
         StringAssert.Contains(portalDownloadsServiceText, "return new DownloadReleaseManifest(");
@@ -3195,6 +3198,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(portalDownloadsServiceText, "Status = ResolveManifestStatus");
         StringAssert.Contains(portalDownloadsServiceText, "Message = BuildManifestMessage");
         StringAssert.Contains(portalDownloadsServiceText, "Url: $\"/downloads/{relativePath}\"");
+        StringAssert.Contains(portalDownloadsServiceText, "Flavor: flavor");
+        StringAssert.Contains(portalDownloadsServiceText, "Head: ResolveHead(app)");
+        StringAssert.Contains(portalDownloadsServiceText, "Recommended: string.Equals(app, \"avalonia\"");
     }
 
     [TestMethod]
@@ -3262,6 +3268,10 @@ public class MigrationComplianceTests
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
         StringAssert.Contains(workflowText, "CHUMMER_PORTAL_DOWNLOADS_AWS_ACCESS_KEY_ID");
+        StringAssert.Contains(workflowText, "portable_name: Chummer.Avalonia.exe");
+        StringAssert.Contains(workflowText, "portable_name: Chummer.Blazor.Desktop.exe");
+        StringAssert.Contains(workflowText, "chummer-${{ matrix.app }}-${{ matrix.rid }}-portable.exe");
+        StringAssert.Contains(workflowText, "dist/chummer-${{ matrix.app }}-${{ matrix.rid }}*");
         StringAssert.Contains(workflowText, "Validate live verify URL");
         StringAssert.Contains(workflowText, "Set CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL to verify the live portal manifest after deployment.");
         StringAssert.Contains(workflowText, "Verify deployed manifest has artifacts");
@@ -3272,15 +3282,49 @@ public class MigrationComplianceTests
             "Live portal manifest verification should be mandatory when deployment is enabled.");
         StringAssert.Contains(workflowText, "scripts/verify-releases-manifest.sh");
 
-        StringAssert.Contains(manifestScriptText, "chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>[^.]+)\\.(?P<ext>zip|tar\\.gz)");
+        StringAssert.Contains(manifestScriptText, "chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>.+?)(?:-(?P<flavor>installer|portable))?\\.(?P<ext>zip|tar\\.gz|exe|deb|dmg)");
         StringAssert.Contains(manifestScriptText, "\"osx-x64\": \"macOS x64\"");
-        StringAssert.Contains(manifestScriptText, "\"id\": f\"{app}-{rid}\"");
+        StringAssert.Contains(manifestScriptText, "\"id\": f\"{app}-{rid}-{flavor}\"");
         StringAssert.Contains(manifestScriptText, "\"url\": f\"/downloads/files/{artifact.name}\"");
+        StringAssert.Contains(manifestScriptText, "\"flavor\": flavor");
+        StringAssert.Contains(manifestScriptText, "\"head\": resolve_head(app)");
         StringAssert.Contains(verifyScriptText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(verifyScriptText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS");
         StringAssert.Contains(verifyScriptText, "failed artifact verification");
         StringAssert.Contains(verifyScriptText, "Verified artifact links/files");
         StringAssert.Contains(verifyScriptText, "version.lower() == \"unpublished\"");
+    }
+
+    [TestMethod]
+    public void Desktop_localization_targets_match_shipping_language_corpus()
+    {
+        string workflowPath = FindPath(".github", "workflows", "desktop-downloads-matrix.yml");
+        string workflowText = File.ReadAllText(workflowPath);
+        string catalogPath = FindPath("Chummer.Contracts", "Api", "TranslatorLanguageCatalog.cs");
+        string catalogText = File.ReadAllText(catalogPath);
+        string langDirectory = FindDirectory("Chummer", "lang");
+        string[] shippingLocales = ["en-us", "de-de", "fr-fr", "ja-jp", "pt-br", "zh-cn"];
+
+        StringAssert.Contains(catalogText, "public const string SourceCode = \"en-us\"");
+        StringAssert.Contains(catalogText, "public const string FallbackCode = SourceCode");
+        StringAssert.Contains(workflowText, "Verify desktop delivery contracts");
+        StringAssert.Contains(workflowText, "Desktop_localization_targets_match_shipping_language_corpus");
+        StringAssert.Contains(workflowText, "ToolCatalogServiceTests");
+
+        foreach (string locale in shippingLocales)
+        {
+            StringAssert.Contains(catalogText, $"\"{locale}\"");
+            Assert.IsTrue(
+                File.Exists(Path.Combine(langDirectory, $"{locale}.xml")),
+                $"Missing desktop UI localization file for '{locale}'.");
+        }
+
+        foreach (string locale in shippingLocales.Where(static code => !string.Equals(code, "en-us", StringComparison.Ordinal)))
+        {
+            Assert.IsTrue(
+                File.Exists(Path.Combine(langDirectory, $"{locale}_data.xml")),
+                $"Missing desktop data localization file for '{locale}'.");
+        }
     }
 
     [TestMethod]

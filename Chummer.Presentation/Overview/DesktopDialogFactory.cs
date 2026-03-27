@@ -1,4 +1,5 @@
 using Chummer.Contracts.Characters;
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Content;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
@@ -83,11 +84,11 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
             "global_settings" => new DesktopDialogState(
                 "dialog.global_settings",
                 "Global Settings",
-                null,
+                "Desktop language changes apply after restart. Supported shipping locales: en-us, de-de, fr-fr, ja-jp, pt-br, zh-cn.",
                 [
                     new DesktopDialogField("globalUiScale", "UI Scale (%)", preferences.UiScalePercent.ToString(), "100", InputType: "number"),
                     new DesktopDialogField("globalTheme", "Theme", preferences.Theme, "classic"),
-                    new DesktopDialogField("globalLanguage", "Language", preferences.Language, "en-us"),
+                    new DesktopDialogField("globalLanguage", "Language", preferences.Language, TranslatorLanguageCatalog.FallbackCode),
                     new DesktopDialogField("globalCompactMode", "Compact Mode", preferences.CompactMode ? "true" : "false", "false", InputType: "checkbox")
                 ],
                 [
@@ -122,13 +123,8 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
             "translator" => new DesktopDialogState(
                 "dialog.translator",
                 "Translator",
-                "Language catalog preview.",
-                [
-                    new DesktopDialogField("translatorSearch", "Language Search", string.Empty, "filter languages"),
-                    new DesktopDialogField("lang1", "English", "en-us", "en-us", IsReadOnly: true),
-                    new DesktopDialogField("lang2", "Deutsch", "de-de", "de-de", IsReadOnly: true),
-                    new DesktopDialogField("lang3", "Francais", "fr-fr", "fr-fr", IsReadOnly: true)
-                ],
+                "Shipping language catalog preview. Desktop language changes apply after restart and unsupported values fall back to English.",
+                CreateTranslatorPreviewFields(),
                 [new DesktopDialogAction("close", "Close", true)]),
             "xml_editor" => new DesktopDialogState(
                 "dialog.xml_editor",
@@ -267,6 +263,28 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
                 [],
                 [new DesktopDialogAction("close", "Close", true)])
         };
+    }
+
+    private static IReadOnlyList<DesktopDialogField> CreateTranslatorPreviewFields()
+    {
+        List<DesktopDialogField> fields =
+        [
+            new DesktopDialogField("translatorSearch", "Language Search", string.Empty, "filter languages")
+        ];
+
+        int index = 1;
+        foreach (TranslatorShippingLanguage language in TranslatorLanguageCatalog.ShippingLanguages)
+        {
+            fields.Add(new DesktopDialogField(
+                $"lang{index}",
+                language.Name,
+                language.Code,
+                language.Code,
+                IsReadOnly: true));
+            index += 1;
+        }
+
+        return fields;
     }
 
     private static DesktopDialogState CreateRuntimeInspectorDialog(RuntimeInspectorProjection projection)

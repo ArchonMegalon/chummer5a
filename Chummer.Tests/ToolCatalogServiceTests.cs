@@ -11,6 +11,11 @@ namespace Chummer.Tests;
 [TestClass]
 public class ToolCatalogServiceTests
 {
+    private static readonly string RepositoryTempRoot = Path.Combine(
+        AppContext.BaseDirectory,
+        ".test-temp",
+        "tool-catalog");
+
     [TestMethod]
     public void Master_index_reads_xml_files_and_tolerates_invalid_documents()
     {
@@ -127,9 +132,22 @@ public class ToolCatalogServiceTests
             TranslatorLanguagesResponse response = service.GetTranslatorLanguages();
 
             Assert.AreEqual(2, response.Count);
+            Assert.AreEqual("en-us", response.SourceCode);
+            Assert.AreEqual("en-us", response.FallbackCode);
+            Assert.IsTrue(response.RequiresRestartOnChange);
             Assert.HasCount(2, response.Languages);
-            Assert.IsTrue(response.Languages.Any(language => language.Code == "en-us" && language.Name == "English"));
-            Assert.IsTrue(response.Languages.Any(language => language.Code == "fr-fr" && language.Name == "fr-fr"));
+            TranslatorLanguageEntry english = response.Languages.Single(language => language.Code == "en-us");
+            TranslatorLanguageEntry french = response.Languages.Single(language => language.Code == "fr-fr");
+            Assert.AreEqual("English", english.Name);
+            Assert.IsTrue(english.IsSource);
+            Assert.IsTrue(english.IsShippingTarget);
+            Assert.IsTrue(english.HasUiChromeDomain);
+            Assert.IsTrue(english.HasDataNamesDomain);
+            Assert.AreEqual("fr-fr", french.Name);
+            Assert.IsFalse(french.IsSource);
+            Assert.IsTrue(french.IsShippingTarget);
+            Assert.IsTrue(french.HasUiChromeDomain);
+            Assert.IsFalse(french.HasDataNamesDomain);
         }
         finally
         {
@@ -161,6 +179,8 @@ public class ToolCatalogServiceTests
             Assert.HasCount(1, response.Languages);
             Assert.AreEqual("en-us", response.Languages[0].Code);
             Assert.AreEqual("English Overlay", response.Languages[0].Name);
+            Assert.IsTrue(response.Languages[0].IsSource);
+            Assert.IsTrue(response.Languages[0].HasUiChromeDomain);
         }
         finally
         {
@@ -193,6 +213,32 @@ public class ToolCatalogServiceTests
             Assert.HasCount(1, response.Languages);
             Assert.AreEqual("en-us", response.Languages[0].Code);
             Assert.AreEqual("English", response.Languages[0].Name);
+            Assert.IsTrue(response.Languages[0].HasDataNamesDomain);
+        }
+        finally
+        {
+            DeleteTempDirectory(root);
+        }
+    }
+
+    [TestMethod]
+    public void Translator_languages_marks_data_domain_when_data_localization_file_exists()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            string langDir = Path.Combine(root, "lang");
+            Directory.CreateDirectory(langDir);
+            File.WriteAllText(Path.Combine(langDir, "de-de.xml"), "<chummer><name>Deutsch</name></chummer>");
+            File.WriteAllText(Path.Combine(langDir, "de-de_data.xml"), "<chummer><name>Daten</name></chummer>");
+
+            var service = new XmlToolCatalogService(root);
+            TranslatorLanguagesResponse response = service.GetTranslatorLanguages();
+
+            TranslatorLanguageEntry german = response.Languages.Single(language => language.Code == "de-de");
+            Assert.IsTrue(german.IsShippingTarget);
+            Assert.IsTrue(german.HasUiChromeDomain);
+            Assert.IsTrue(german.HasDataNamesDomain);
         }
         finally
         {
@@ -202,7 +248,7 @@ public class ToolCatalogServiceTests
 
     private static string CreateTempDirectory()
     {
-        string path = Path.Combine(Path.GetTempPath(), "chummer-tests", Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(RepositoryTempRoot, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
         return path;
     }

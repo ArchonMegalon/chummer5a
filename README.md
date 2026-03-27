@@ -17,6 +17,12 @@ This repository currently has two tracks:
 * **Legacy path**: the WinForms desktop app (`Chummer`) that continues to serve as compatibility reference and regression oracle.
 * **Current multi-head runtime (Docker branch)**: API + shared presentation seam + gateway + multi-head UI stack (`Chummer.Blazor`, `Chummer.Hub.Web`, `Chummer.Session.Web`, `Chummer.Coach.Web`, `Chummer.Avalonia`, `Chummer.Blazor.Desktop`, `Chummer.Avalonia.Browser`, `Chummer.Portal`).
 
+Current desktop delivery cut:
+
+* `Chummer.Avalonia` is the flagship desktop head for the active preview lane.
+* `Chummer.Blazor.Desktop` remains the bounded compatibility and fallback head.
+* The desktop wave carries the legacy language corpus forward with `en-us`, `de-de`, `fr-fr`, `ja-jp`, `pt-br`, and `zh-cn` as the shipping locale set.
+
 ## Current Multi-Head Runtime (Docker Branch)
 
 The `Docker` branch is the current multi-head runtime architecture for this repository:

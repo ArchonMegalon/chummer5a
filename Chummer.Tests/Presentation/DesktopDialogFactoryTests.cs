@@ -37,6 +37,28 @@ public class DesktopDialogFactoryTests
         Assert.AreEqual("neo", DesktopDialogFieldValueParser.GetValue(dialog, "globalTheme"));
         Assert.AreEqual("de-de", DesktopDialogFieldValueParser.GetValue(dialog, "globalLanguage"));
         Assert.AreEqual("true", DesktopDialogFieldValueParser.GetValue(dialog, "globalCompactMode"));
+        StringAssert.Contains(dialog.Message, "restart");
+    }
+
+    [TestMethod]
+    public void CreateCommandDialog_translator_lists_shipping_locales()
+    {
+        DesktopDialogFactory factory = new();
+
+        DesktopDialogState dialog = factory.CreateCommandDialog(
+            "translator",
+            profile: null,
+            DesktopPreferenceState.Default,
+            activeSectionJson: null,
+            currentWorkspace: null,
+            rulesetId: RulesetDefaults.Sr5);
+
+        string[] expectedCodes = ["en-us", "de-de", "fr-fr", "ja-jp", "pt-br", "zh-cn"];
+        foreach (string code in expectedCodes)
+        {
+            Assert.IsTrue(dialog.Fields.Any(field => string.Equals(field.Value, code, StringComparison.OrdinalIgnoreCase)),
+                $"Expected translator preview to include shipping locale '{code}'.");
+        }
     }
 
     [TestMethod]

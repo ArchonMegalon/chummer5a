@@ -46,62 +46,54 @@ jobs:
             project: Chummer.Avalonia/Chummer.Avalonia.csproj
             os: windows-latest
             rid: win-x64
-            archive_ext: zip
+            portable_name: Chummer.Avalonia.exe
           - app: avalonia
             project: Chummer.Avalonia/Chummer.Avalonia.csproj
             os: windows-latest
             rid: win-arm64
-            archive_ext: zip
+            portable_name: Chummer.Avalonia.exe
           - app: avalonia
             project: Chummer.Avalonia/Chummer.Avalonia.csproj
             os: ubuntu-latest
             rid: linux-x64
-            archive_ext: tar.gz
           - app: avalonia
             project: Chummer.Avalonia/Chummer.Avalonia.csproj
             os: ubuntu-latest
             rid: linux-arm64
-            archive_ext: tar.gz
           - app: avalonia
             project: Chummer.Avalonia/Chummer.Avalonia.csproj
             os: macos-latest
             rid: osx-arm64
-            archive_ext: tar.gz
           - app: avalonia
             project: Chummer.Avalonia/Chummer.Avalonia.csproj
             os: macos-latest
             rid: osx-x64
-            archive_ext: tar.gz
           - app: blazor-desktop
             project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
             os: windows-latest
             rid: win-x64
-            archive_ext: zip
+            portable_name: Chummer.Blazor.Desktop.exe
           - app: blazor-desktop
             project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
             os: windows-latest
             rid: win-arm64
-            archive_ext: zip
+            portable_name: Chummer.Blazor.Desktop.exe
           - app: blazor-desktop
             project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
             os: ubuntu-latest
             rid: linux-x64
-            archive_ext: tar.gz
           - app: blazor-desktop
             project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
             os: ubuntu-latest
             rid: linux-arm64
-            archive_ext: tar.gz
           - app: blazor-desktop
             project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
             os: macos-latest
             rid: osx-arm64
-            archive_ext: tar.gz
           - app: blazor-desktop
             project: Chummer.Blazor.Desktop/Chummer.Blazor.Desktop.csproj
             os: macos-latest
             rid: osx-x64
-            archive_ext: tar.gz
 
     steps:
       - name: Checkout
@@ -114,6 +106,16 @@ jobs:
 
       - name: Restore
         run: dotnet restore ${{ matrix.project }}
+
+      - name: Verify desktop delivery contracts
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.app == 'avalonia' && matrix.rid == 'linux-x64' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet test Chummer.Tests/Chummer.Tests.csproj \
+            -c Release \
+            -f net10.0 \
+            --filter "FullyQualifiedName~ToolCatalogServiceTests|FullyQualifiedName~MigrationComplianceTests.Desktop_localization_targets_match_shipping_language_corpus|FullyQualifiedName~MigrationComplianceTests.Desktop_download_matrix_includes_avalonia_and_blazor_desktop_artifacts|FullyQualifiedName~MigrationComplianceTests.Portal_download_manifest_discovers_local_artifacts_when_manifest_is_empty|FullyQualifiedName~MigrationComplianceTests.Runbook_supports_download_manifest_generation_mode"
 
       - name: Publish desktop app
         shell: bash
@@ -134,6 +136,11 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path dist -Force | Out-Null
+          $portableSource = "out/${{ matrix.app }}/${{ matrix.rid }}/${{ matrix.portable_name }}"
+          if (!(Test-Path $portableSource)) {
+            throw "Portable executable not found at $portableSource"
+          }
+          Copy-Item $portableSource "dist/chummer-${{ matrix.app }}-${{ matrix.rid }}-portable.exe" -Force
           $archive = "dist/chummer-${{ matrix.app }}-${{ matrix.rid }}.zip"
           if (Test-Path $archive) { Remove-Item $archive -Force }
           Compress-Archive -Path "out/${{ matrix.app }}/${{ matrix.rid }}/*" -DestinationPath $archive -Force
@@ -150,7 +157,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.app }}-${{ matrix.rid }}
-          path: dist/chummer-${{ matrix.app }}-${{ matrix.rid }}.${{ matrix.archive_ext }}
+          path: dist/chummer-${{ matrix.app }}-${{ matrix.rid }}*
           if-no-files-found: error
           retention-days: 14
 
@@ -180,7 +187,7 @@ jobs:
           mkdir -p dist/files
           shopt -s nullglob
           moved=0
-          for artifact in dist/chummer-*.zip dist/chummer-*.tar.gz; do
+          for artifact in dist/chummer-*.zip dist/chummer-*.tar.gz dist/chummer-*.exe dist/chummer-*.deb dist/chummer-*.dmg; do
             [[ -f "$artifact" ]] || continue
             mv "$artifact" dist/files/
             moved=1

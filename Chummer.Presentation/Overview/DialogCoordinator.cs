@@ -1,3 +1,4 @@
+using Chummer.Contracts.Api;
 using Chummer.Contracts.Rulesets;
 using Chummer.Contracts.Workspaces;
 using System.Text.RegularExpressions;
@@ -376,8 +377,21 @@ public sealed class DialogCoordinator : IDialogCoordinator
     {
         int uiScalePercent = DesktopDialogFieldValueParser.ParseInt(dialog, "globalUiScale", context.State.Preferences.UiScalePercent);
         string theme = DesktopDialogFieldValueParser.GetValue(dialog, "globalTheme") ?? context.State.Preferences.Theme;
-        string language = DesktopDialogFieldValueParser.GetValue(dialog, "globalLanguage") ?? context.State.Preferences.Language;
+        string requestedLanguage = DesktopDialogFieldValueParser.GetValue(dialog, "globalLanguage") ?? context.State.Preferences.Language;
+        string language = TranslatorLanguageCatalog.NormalizeOrFallback(requestedLanguage);
         bool compactMode = DesktopDialogFieldValueParser.ParseBool(dialog, "globalCompactMode", context.State.Preferences.CompactMode);
+        bool languageChanged = !string.Equals(language, context.State.Preferences.Language, StringComparison.OrdinalIgnoreCase);
+        bool fallbackApplied = !string.Equals(language, requestedLanguage, StringComparison.OrdinalIgnoreCase);
+
+        string notice = "Global settings updated.";
+        if (languageChanged)
+        {
+            notice = "Global settings updated. Restart the desktop client to apply the language change.";
+        }
+        if (fallbackApplied)
+        {
+            notice = $"Global settings updated. Unsupported language fell back to {TranslatorLanguageCatalog.FallbackCode}. Restart the desktop client to apply the language change.";
+        }
 
         context.Publish(context.State with
         {
@@ -390,7 +404,7 @@ public sealed class DialogCoordinator : IDialogCoordinator
                 Language = language,
                 CompactMode = compactMode
             },
-            Notice = "Global settings updated."
+            Notice = notice
         });
     }
 
