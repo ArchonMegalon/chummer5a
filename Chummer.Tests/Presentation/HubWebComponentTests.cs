@@ -159,6 +159,104 @@ public sealed class HubWebComponentTests
     }
 
     [TestMethod]
+    public void Home_renders_buildkit_install_preview_handoff_summaries()
+    {
+        using var context = new BunitContext();
+        context.JSInterop.Mode = JSRuntimeMode.Strict;
+        RegisterHubHeadServices(context);
+        SetupCoachSidecarResponses(context);
+
+        HubCatalogItem item = new(
+            ItemId: "street-sam-starter",
+            Kind: HubCatalogItemKinds.BuildKit,
+            Title: "Street Sam Starter",
+            Description: "Starter template.",
+            RulesetId: "sr5",
+            Visibility: ArtifactVisibilityModes.Public,
+            TrustTier: ArtifactTrustTiers.Curated,
+            LinkTarget: "/hub/buildkits/street-sam-starter",
+            Version: "1.0.0",
+            InstallState: ArtifactInstallStates.Available,
+            Publisher: new HubPublisherSummary("pub.buildkit", "BuildKit Publisher", "buildkit-publisher", HubPublisherVerificationStates.Verified, "/hub/publishers/pub.buildkit"));
+        SetupJsonResponse(
+            context,
+            "/api/hub/search",
+            new HubCatalogResultPage(
+                new BrowseQuery(string.Empty, new Dictionary<string, IReadOnlyList<string>>(), HubCatalogSortIds.Title),
+                [item],
+                [],
+                [],
+                1),
+            "POST");
+        SetupJsonResponse(
+            context,
+            "/api/hub/projects/buildkit/street-sam-starter",
+            new HubProjectDetailProjection(
+                Summary: item,
+                OwnerId: "owner-1",
+                CatalogKind: "published",
+                PublicationStatus: "published",
+                ReviewState: "approved",
+                RuntimeFingerprint: null,
+                OwnerReview: null,
+                AggregateReview: new HubReviewAggregateSummary(1, 1, 0, 0, UsedAtTableCount: 1, RatedReviewCount: 1, AverageStars: 5),
+                Facts:
+                [
+                    new HubProjectDetailFact("workbench", "Workbench", "required")
+                ],
+                Dependencies: [],
+                Actions:
+                [
+                    new HubProjectAction("preview-buildkit", "Preview Install", HubProjectActionKinds.Apply, "/hub/buildkits/street-sam-starter/apply")
+                ],
+                Publisher: item.Publisher));
+        SetupJsonResponse(
+            context,
+            "/api/hub/projects/buildkit/street-sam-starter/compatibility",
+            new HubProjectCompatibilityMatrix(
+                Kind: HubCatalogItemKinds.BuildKit,
+                ItemId: "street-sam-starter",
+                Rows:
+                [
+                    new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.Ruleset, "Ruleset", HubProjectCompatibilityStates.Compatible, "sr5"),
+                    new HubProjectCompatibilityRow(HubProjectCompatibilityRowKinds.SessionRuntime, "Session Runtime", HubProjectCompatibilityStates.Blocked, "workbench-only")
+                ],
+                GeneratedAtUtc: new DateTimeOffset(2026, 03, 07, 12, 00, 00, TimeSpan.Zero)));
+        SetupJsonResponse(
+            context,
+            "/api/hub/projects/buildkit/street-sam-starter/install-preview",
+            new HubProjectInstallPreviewReceipt(
+                Kind: HubCatalogItemKinds.BuildKit,
+                ItemId: "street-sam-starter",
+                Target: new RuleProfileApplyTarget(RuleProfileApplyTargetKinds.Workspace, "workspace-1"),
+                State: HubProjectInstallPreviewStates.Ready,
+                Changes:
+                [
+                    new HubProjectInstallPreviewChange(HubProjectInstallPreviewChangeKinds.InstallStateChanged, "Apply this build path in the workbench, emit the build receipt, and hand it into the selected workspace.", "street-sam-starter")
+                ],
+                Diagnostics:
+                [
+                    new HubProjectInstallPreviewDiagnostic(HubProjectInstallPreviewDiagnosticKinds.Installability, HubProjectInstallPreviewDiagnosticSeverityLevels.Info, "This BuildKit is ready to flow through the workbench and into a compatible runtime receipt.")
+                ],
+                RuntimeCompatibilitySummary: "No extra runtime fingerprint or rule pack is pinned yet; hand the emitted build receipt into the grounded campaign/profile runtime and rule environment already approved for the workspace.",
+                CampaignReturnSummary: "The emitted build receipt can return through the selected workspace once the grounded campaign/profile runtime and rule environment are attached.",
+                SupportClosureSummary: "Support closure can cite the same grounded runtime and rule environment once this build receipt lands."),
+            "POST");
+
+        IRenderedComponent<Home> cut = context.Render<Home>();
+        cut.Find("button[data-hub-item='street-sam-starter']").Click();
+        cut.FindAll("button").Single(button => button.TextContent.Contains("Preview Install", StringComparison.Ordinal)).Click();
+
+        cut.WaitForAssertion(() =>
+        {
+            StringAssert.Contains(cut.Markup, "Handoff");
+            StringAssert.Contains(cut.Markup, "grounded campaign/profile runtime");
+            StringAssert.Contains(cut.Markup, "selected workspace");
+            StringAssert.Contains(cut.Markup, "Support closure can cite the same grounded runtime");
+        });
+    }
+
+    [TestMethod]
     public void Home_surfaces_hub_search_errors_when_catalog_request_fails()
     {
         using var context = new BunitContext();

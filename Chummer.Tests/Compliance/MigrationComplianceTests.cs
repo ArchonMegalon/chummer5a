@@ -840,6 +840,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubInstallPreviewServiceText, "HubProjectInstallPreviewStates.Deferred");
         StringAssert.Contains(hubInstallPreviewServiceText, "entry.Install.State");
         StringAssert.Contains(hubInstallPreviewServiceText, "HubProjectInstallPreviewDiagnosticKinds.InstallState");
+        StringAssert.Contains(hubInstallPreviewServiceText, "BuildKitCompatibilityReceiptBuilder.Create");
         StringAssert.Contains(hubInstallPreviewContractsText, "public sealed record HubProjectInstallPreviewReceipt");
         StringAssert.Contains(hubInstallPreviewContractsText, "RuntimeInspectorPromotionProjection? Promotion = null");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubInstallPreviewService, DefaultHubInstallPreviewService>()");
@@ -1918,10 +1919,13 @@ public class MigrationComplianceTests
         StringAssert.Contains(buildKitApplicationContractsText, "public sealed record BuildKitAppliedAction");
         StringAssert.Contains(buildKitApplicationContractsText, "public sealed record BuildKitValidationReceipt");
         StringAssert.Contains(buildKitApplicationContractsText, "public sealed record BuildKitApplicationReceipt");
+        StringAssert.Contains(buildKitApplicationContractsText, "public sealed record BuildKitRuntimeRequirementReceipt");
+        StringAssert.Contains(buildKitApplicationContractsText, "public sealed record BuildKitCompatibilityReceipt");
         StringAssert.Contains(buildKitApplicationContractsText, "RuntimeFingerprintMismatch");
         StringAssert.Contains(buildKitApplicationContractsText, "PromptRequired");
         StringAssert.Contains(buildKitApplicationContractsText, "PartiallyApplied");
         StringAssert.Contains(buildKitApplicationContractsText, "CharacterVersionReference? ResultingCharacterVersion = null");
+        StringAssert.Contains(buildKitApplicationContractsText, "string NextSafeActionSummary");
     }
 
     [TestMethod]
@@ -2046,6 +2050,9 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubInstallPreviewContractsText, "RuleProfileApplyTarget Target");
         StringAssert.Contains(hubInstallPreviewContractsText, "string? RuntimeFingerprint");
         StringAssert.Contains(hubInstallPreviewContractsText, "string? DeferredReason = null");
+        StringAssert.Contains(hubInstallPreviewContractsText, "string? RuntimeCompatibilitySummary = null");
+        StringAssert.Contains(hubInstallPreviewContractsText, "string? CampaignReturnSummary = null");
+        StringAssert.Contains(hubInstallPreviewContractsText, "string? SupportClosureSummary = null");
         StringAssert.Contains(hubInstallPreviewContractsText, "RuntimeInspectorPromotionProjection? Promotion = null");
     }
 

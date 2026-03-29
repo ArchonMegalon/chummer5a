@@ -163,6 +163,8 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
 
     private HubProjectInstallPreviewReceipt? PreviewBuildKit(OwnerScope owner, string itemId, RuleProfileApplyTarget target, string? rulesetId)
     {
+        string? normalizedRulesetId = RulesetDefaults.NormalizeOptional(rulesetId);
+
         foreach (string candidateRulesetId in EnumerateRulesetIds(rulesetId))
         {
             BuildKitRegistryEntry? entry = _buildKitRegistryService.Get(owner, itemId, candidateRulesetId);
@@ -171,12 +173,112 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
                 continue;
             }
 
-            return CreateDeferredReceipt(
-                kind: HubCatalogItemKinds.BuildKit,
-                itemId: itemId,
-                target: target,
-                deferredReason: "hub_buildkit_apply_preview_not_implemented",
-                message: $"BuildKit apply preview is not implemented yet for '{entry.Manifest.BuildKitId}'.");
+            if (normalizedRulesetId is not null
+                && entry.Manifest.Targets.Count > 0
+                && !entry.Manifest.Targets.Any(targetRulesetId => string.Equals(targetRulesetId, normalizedRulesetId, StringComparison.Ordinal)))
+            {
+                return CreateDeferredReceipt(
+                    HubCatalogItemKinds.BuildKit,
+                    itemId,
+                    target,
+                    BuildKitValidationIssueKinds.RulesetMismatch,
+                    BuildBuildKitRulesetMismatchMessage(entry.Manifest, normalizedRulesetId));
+            }
+
+            BuildKitCompatibilityReceipt compatibilityReceipt = BuildKitCompatibilityReceiptBuilder.Create(entry.Manifest, target);
+            BuildKitRuntimeRequirement? runtimeRequirement = ResolveRuntimeRequirement(entry.Manifest, candidateRulesetId);
+            List<HubProjectInstallPreviewChange> changes = [];
+            List<HubProjectInstallPreviewDiagnostic> diagnostics = [];
+            bool requiresConfirmation = compatibilityReceipt.RequiresPromptResolution || runtimeRequirement is not null;
+
+            if (runtimeRequirement is not null)
+            {
+                string runtimeSummary = compatibilityReceipt.RuntimeRequirements
+                    .FirstOrDefault(requirement => string.Equals(requirement.RulesetId, candidateRulesetId, StringComparison.Ordinal))
+                    ?.Summary
+                    ?? BuildKitHandoffNarrator.SummarizeRuntimeRequirement(runtimeRequirement);
+                changes.Add(
+                    new HubProjectInstallPreviewChange(
+                        Kind: HubProjectInstallPreviewChangeKinds.InstallStateChanged,
+                        Summary: compatibilityReceipt.NextSafeActionSummary,
+                        SubjectId: itemId,
+                        RequiresConfirmation: true));
+                diagnostics.Add(
+                    new HubProjectInstallPreviewDiagnostic(
+                        Kind: HubProjectInstallPreviewDiagnosticKinds.Installability,
+                        Severity: HubProjectInstallPreviewDiagnosticSeverityLevels.Info,
+                        Message: $"This BuildKit stays grounded only when the target shell matches {runtimeSummary}.",
+                        SubjectId: itemId));
+            }
+            else
+            {
+                changes.Add(
+                    new HubProjectInstallPreviewChange(
+                        Kind: HubProjectInstallPreviewChangeKinds.InstallStateChanged,
+                        Summary: compatibilityReceipt.NextSafeActionSummary,
+                        SubjectId: itemId,
+                        RequiresConfirmation: entry.Manifest.Prompts.Count > 0));
+            }
+
+            if (entry.Manifest.Prompts.Count > 0)
+            {
+                changes.Add(
+                    new HubProjectInstallPreviewChange(
+                        Kind: HubProjectInstallPreviewChangeKinds.InstallStateChanged,
+                        Summary: $"{entry.Manifest.Prompts.Count} prompt(s) must be resolved before the build receipt can be emitted.",
+                        SubjectId: itemId,
+                        RequiresConfirmation: true));
+            }
+
+            if (entry.Manifest.Actions.Count > 0)
+            {
+                changes.Add(
+                    new HubProjectInstallPreviewChange(
+                        Kind: HubProjectInstallPreviewChangeKinds.InstallStateChanged,
+                        Summary: $"{entry.Manifest.Actions.Count} grounded action(s) will be staged into the BuildKit receipt.",
+                        SubjectId: itemId));
+            }
+
+            if (diagnostics.Count == 0)
+            {
+                diagnostics.Add(
+                    new HubProjectInstallPreviewDiagnostic(
+                        Kind: HubProjectInstallPreviewDiagnosticKinds.Installability,
+                        Severity: HubProjectInstallPreviewDiagnosticSeverityLevels.Info,
+                        Message: "This BuildKit is ready to flow through the workbench and into a compatible runtime receipt.",
+                        SubjectId: itemId));
+            }
+
+            return new HubProjectInstallPreviewReceipt(
+                Kind: HubCatalogItemKinds.BuildKit,
+                ItemId: itemId,
+                Target: target,
+                State: HubProjectInstallPreviewStates.Ready,
+                Changes: changes.ToArray(),
+                Diagnostics: diagnostics,
+                RuntimeFingerprint: runtimeRequirement?.RequiredRuntimeFingerprints.FirstOrDefault(),
+                RequiresConfirmation: requiresConfirmation,
+                RuntimeCompatibilitySummary: compatibilityReceipt.RuntimeCompatibilitySummary,
+                CampaignReturnSummary: compatibilityReceipt.CampaignReturnSummary,
+                SupportClosureSummary: compatibilityReceipt.SupportClosureSummary);
+        }
+
+        if (normalizedRulesetId is not null)
+        {
+            BuildKitRegistryEntry? incompatibleEntry = _buildKitRegistryService.List(owner, rulesetId: null)
+                .FirstOrDefault(entry =>
+                    string.Equals(entry.Manifest.BuildKitId, itemId, StringComparison.Ordinal)
+                    && entry.Manifest.Targets.Count > 0
+                    && !entry.Manifest.Targets.Any(targetRulesetId => string.Equals(targetRulesetId, normalizedRulesetId, StringComparison.Ordinal)));
+            if (incompatibleEntry is not null)
+            {
+                return CreateDeferredReceipt(
+                    HubCatalogItemKinds.BuildKit,
+                    itemId,
+                    target,
+                    BuildKitValidationIssueKinds.RulesetMismatch,
+                    BuildBuildKitRulesetMismatchMessage(incompatibleEntry.Manifest, normalizedRulesetId));
+            }
         }
 
         return null;
@@ -241,5 +343,22 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
             Severity: HubProjectInstallPreviewDiagnosticSeverityLevels.Info,
             Message: message,
             SubjectId: itemId);
+    }
+
+    private static BuildKitRuntimeRequirement? ResolveRuntimeRequirement(BuildKitManifest manifest, string rulesetId)
+        => manifest.RuntimeRequirements.FirstOrDefault(requirement =>
+               string.Equals(requirement.RulesetId, rulesetId, StringComparison.Ordinal))
+           ?? manifest.RuntimeRequirements.FirstOrDefault();
+
+    private static string BuildBuildKitRulesetMismatchMessage(BuildKitManifest manifest, string requestedRulesetId)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+        ArgumentException.ThrowIfNullOrWhiteSpace(requestedRulesetId);
+
+        string declaredTargets = manifest.Targets.Count == 0
+            ? "an unspecified ruleset target"
+            : string.Join(", ", manifest.Targets.OrderBy(static item => item, StringComparer.Ordinal));
+
+        return $"Build path '{manifest.Title}' targets {declaredTargets}, not {requestedRulesetId}. Choose a compatible runtime lane before handoff.";
     }
 }

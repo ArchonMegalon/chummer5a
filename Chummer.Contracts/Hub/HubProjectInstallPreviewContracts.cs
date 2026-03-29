@@ -55,4 +55,7 @@ public sealed record HubProjectInstallPreviewReceipt(
     string? RuntimeFingerprint = null,
     bool RequiresConfirmation = false,
     string? DeferredReason = null,
+    string? RuntimeCompatibilitySummary = null,
+    string? CampaignReturnSummary = null,
+    string? SupportClosureSummary = null,
     RuntimeInspectorPromotionProjection? Promotion = null);

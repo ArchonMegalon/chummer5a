@@ -250,6 +250,27 @@
                     <p class="hint">Lineage: @_installPreview.Promotion.LineageSummary</p>
                 }
 
+                @if (!string.IsNullOrWhiteSpace(_installPreview.RuntimeCompatibilitySummary)
+                    || !string.IsNullOrWhiteSpace(_installPreview.CampaignReturnSummary)
+                    || !string.IsNullOrWhiteSpace(_installPreview.SupportClosureSummary))
+                {
+                    <h4>Handoff</h4>
+                    <dl class="facts compact">
+                        @if (!string.IsNullOrWhiteSpace(_installPreview.RuntimeCompatibilitySummary))
+                        {
+                            <div><dt>Runtime</dt><dd>@_installPreview.RuntimeCompatibilitySummary</dd></div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_installPreview.CampaignReturnSummary))
+                        {
+                            <div><dt>Return</dt><dd>@_installPreview.CampaignReturnSummary</dd></div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_installPreview.SupportClosureSummary))
+                        {
+                            <div><dt>Support</dt><dd>@_installPreview.SupportClosureSummary</dd></div>
+                        }
+                    </dl>
+                }
+
                 @if (_installPreview.Changes.Count > 0)
                 {
                     <h4>Changes</h4>
