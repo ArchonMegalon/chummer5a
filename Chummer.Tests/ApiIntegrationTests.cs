@@ -269,6 +269,27 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_project_install_preview_endpoint_returns_registered_npc_entry_preview()
+    {
+        using var client = CreateClient();
+        RuleProfileApplyTarget target = new(RuleProfileApplyTargetKinds.Workspace, "workspace-1");
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync($"/api/hub/projects/{HubCatalogItemKinds.NpcEntry}/red-samurai/install-preview?ruleset=sr5", target);
+        response.EnsureSuccessStatusCode();
+        JsonNode parsed = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        Assert.IsInstanceOfType<JsonObject>(parsed);
+        JsonObject payload = (JsonObject)parsed!;
+
+        Assert.AreEqual(HubCatalogItemKinds.NpcEntry, payload["kind"]?.GetValue<string>());
+        Assert.AreEqual("red-samurai", payload["itemId"]?.GetValue<string>());
+        Assert.AreEqual("ready", payload["state"]?.GetValue<string>());
+        Assert.AreEqual("sha256:core", payload["runtimeFingerprint"]?.GetValue<string>());
+        Assert.IsTrue(payload["campaignReturnSummary"]?.GetValue<string>()?.Contains("selected workspace", StringComparison.Ordinal) == true);
+        Assert.IsInstanceOfType<JsonArray>(payload["changes"]);
+        Assert.IsInstanceOfType<JsonArray>(payload["diagnostics"]);
+    }
+
+    [TestMethod]
     public async Task Hub_project_install_preview_endpoint_returns_not_found_for_unknown_project()
     {
         using var client = CreateClient();
