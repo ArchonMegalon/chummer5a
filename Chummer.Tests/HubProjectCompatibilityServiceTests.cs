@@ -68,6 +68,7 @@ public class HubProjectCompatibilityServiceTests
             ]),
             new RuleProfileRegistryServiceStub([]),
             new BuildKitRegistryServiceStub([]),
+            new RuntimeInspectorServiceStub(null),
             new RuntimeLockRegistryServiceStub(null));
 
         HubProjectCompatibilityMatrix? matrix = service.GetMatrix(OwnerScope.LocalSingleUser, HubCatalogItemKinds.RulePack, "house-rules", RulesetDefaults.Sr5);
@@ -110,15 +111,123 @@ public class HubProjectCompatibilityServiceTests
                     PublicationStatus: BuildKitPublicationStatuses.Published,
                     UpdatedAtUtc: System.DateTimeOffset.UtcNow)
             ]),
+            new RuntimeInspectorServiceStub(null),
             new RuntimeLockRegistryServiceStub(null));
 
         HubProjectCompatibilityMatrix? matrix = service.GetMatrix(OwnerScope.LocalSingleUser, HubCatalogItemKinds.BuildKit, "street-sam-starter", RulesetDefaults.Sr5);
 
         Assert.IsNotNull(matrix);
         Assert.AreEqual(HubCatalogItemKinds.BuildKit, matrix.Kind);
-        Assert.IsTrue(matrix.Rows.Any(row => row.Kind == HubProjectCompatibilityRowKinds.SessionRuntime && row.State == HubProjectCompatibilityStates.Blocked));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.RuntimeRequirements
+            && row.Notes is not null
+            && row.Notes.Contains("No extra runtime fingerprint or rule pack is pinned yet", StringComparison.Ordinal)
+            && row.Notes.Contains("migration oracle", StringComparison.Ordinal)
+            && row.Notes.Contains("No extra prompt resolution or grounded action staging is required", StringComparison.Ordinal)));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.SessionRuntime
+            && row.State == HubProjectCompatibilityStates.Blocked
+            && row.CurrentValue == "workbench-first"
+            && row.Notes is not null
+            && row.Notes.Contains("emitted build receipt", StringComparison.Ordinal)
+            && row.Notes.Contains("grounded campaign/profile runtime", StringComparison.Ordinal)
+            && row.Notes.Contains("Next safe action:", StringComparison.Ordinal)));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.CampaignReturn
+            && row.State == HubProjectCompatibilityStates.Compatible
+            && row.Notes is not null
+            && row.Notes.Contains("selected workspace or campaign lane", StringComparison.Ordinal)
+            && row.Notes.Contains("grounded campaign/profile runtime", StringComparison.Ordinal)));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.SupportClosure
+            && row.State == HubProjectCompatibilityStates.Compatible
+            && row.Notes is not null
+            && row.Notes.Contains("Support closure can cite", StringComparison.Ordinal)
+            && row.Notes.Contains("rule environment", StringComparison.Ordinal)));
         Assert.IsNotNull(matrix.Capabilities);
         Assert.IsEmpty(matrix.Capabilities);
+    }
+
+    [TestMethod]
+    public void Hub_project_compatibility_service_summarizes_buildkit_runtime_requirements_for_campaign_handoff()
+    {
+        DefaultHubProjectCompatibilityService service = new(
+            CreatePluginRegistry(),
+            new RulePackRegistryServiceStub([]),
+            new RuleProfileRegistryServiceStub([]),
+            new BuildKitRegistryServiceStub(
+            [
+                new BuildKitRegistryEntry(
+                    new BuildKitManifest(
+                        BuildKitId: "matrix-operator",
+                        Version: "1.1.0",
+                        Title: "Matrix Operator",
+                        Description: "Decker planning lane.",
+                        Targets: [RulesetDefaults.Sr5],
+                        RuntimeRequirements:
+                        [
+                            new BuildKitRuntimeRequirement(
+                                RulesetId: RulesetDefaults.Sr5,
+                                RequiredRuntimeFingerprints: ["sha256:campaign-a"],
+                                RequiredRulePacks: [new ArtifactVersionReference("official-errata", "1.2.0")])
+                        ],
+                        Prompts:
+                        [
+                            new BuildKitPromptDescriptor(
+                                PromptId: "matrix-lane",
+                                Kind: BuildKitPromptKinds.Choice,
+                                Label: "Matrix lane",
+                                Options: [new BuildKitPromptOption("stealth", "Stealth")],
+                                Required: true)
+                        ],
+                        Actions:
+                        [
+                            new BuildKitActionDescriptor(
+                                ActionId: "queue-specialty",
+                                Kind: BuildKitActionKinds.QueueCareerUpdate,
+                                TargetId: "career.matrix-operator")
+                        ],
+                        Visibility: ArtifactVisibilityModes.Public,
+                        TrustTier: ArtifactTrustTiers.Curated),
+                    Owner: new OwnerScope("system"),
+                    Visibility: ArtifactVisibilityModes.Public,
+                    PublicationStatus: BuildKitPublicationStatuses.Published,
+                    UpdatedAtUtc: System.DateTimeOffset.UtcNow)
+            ]),
+            new RuntimeInspectorServiceStub(null),
+            new RuntimeLockRegistryServiceStub(null));
+
+        HubProjectCompatibilityMatrix? matrix = service.GetMatrix(OwnerScope.LocalSingleUser, HubCatalogItemKinds.BuildKit, "matrix-operator", RulesetDefaults.Sr5);
+
+        Assert.IsNotNull(matrix);
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.RuntimeRequirements
+            && row.State == HubProjectCompatibilityStates.ReviewRequired
+            && row.Notes is not null
+            && row.Notes.Contains("Requires a compatible campaign/profile runtime and rule environment before handoff", StringComparison.Ordinal)
+            && row.Notes.Contains("sha256:campaign-a", StringComparison.Ordinal)
+            && row.Notes.Contains("official-errata@1.2.0", StringComparison.Ordinal)
+            && row.Notes.Contains("1 prompt(s) must be resolved and 1 grounded action(s) will be staged", StringComparison.Ordinal)));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.SessionRuntime
+            && row.State == HubProjectCompatibilityStates.Blocked
+            && row.CurrentValue == "workbench-first"
+            && row.Notes is not null
+            && row.Notes.Contains("compatible runtime and rule environment that match", StringComparison.Ordinal)
+            && row.Notes.Contains("Next safe action:", StringComparison.Ordinal)
+            && row.Notes.Contains("Resolve the build path in the workbench", StringComparison.Ordinal)));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.CampaignReturn
+            && row.State == HubProjectCompatibilityStates.ReviewRequired
+            && row.Notes is not null
+            && row.Notes.Contains("selected workspace or campaign lane", StringComparison.Ordinal)
+            && row.Notes.Contains("migration oracle", StringComparison.Ordinal)));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.SupportClosure
+            && row.State == HubProjectCompatibilityStates.ReviewRequired
+            && row.Notes is not null
+            && row.Notes.Contains("Support closure can reuse", StringComparison.Ordinal)
+            && row.Notes.Contains("migration-oracle contract", StringComparison.Ordinal)));
     }
 
     [TestMethod]
@@ -129,6 +238,7 @@ public class HubProjectCompatibilityServiceTests
             new RulePackRegistryServiceStub([]),
             new RuleProfileRegistryServiceStub([]),
             new BuildKitRegistryServiceStub([]),
+            new RuntimeInspectorServiceStub(null),
             new RuntimeLockRegistryServiceStub(
                 new RuntimeLockRegistryEntry(
                     LockId: "sha256:core",
@@ -159,10 +269,56 @@ public class HubProjectCompatibilityServiceTests
             && row.CurrentValue == ArtifactInstallStates.Pinned
             && row.Notes == "workspace-1"));
         Assert.IsTrue(matrix.Rows.Any(row => row.Kind == HubProjectCompatibilityRowKinds.Capabilities && row.CurrentValue == "2"));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.CampaignReturn
+            && row.State == HubProjectCompatibilityStates.Compatible
+            && row.Notes?.Contains("workspace or campaign lane", StringComparison.Ordinal) == true));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.SupportClosure
+            && row.State == HubProjectCompatibilityStates.Compatible
+            && row.Notes?.Contains("sha256:core", StringComparison.Ordinal) == true));
         Assert.IsNotNull(matrix.Capabilities);
         Assert.IsTrue(matrix.Capabilities.Any(capability =>
             capability.CapabilityId == RulePackCapabilityIds.DeriveStat
             && capability.InvocationKind == RulesetCapabilityInvocationKinds.Rule));
+    }
+
+    [TestMethod]
+    public void Hub_project_compatibility_service_marks_rule_profiles_for_review_when_runtime_rebind_is_required()
+    {
+        RuleProfileRegistryEntry profile = CreateRuleProfile("campaign-profile", ArtifactInstallStates.Installed, "sha256:required");
+        RuntimeInspectorProjection projection = CreateRuntimeInspectorProjection(
+            profile,
+            diagnostics:
+            [
+                new RuntimeLockCompatibilityDiagnostic(
+                    State: RuntimeLockCompatibilityStates.RebindRequired,
+                    Message: "Runtime lock must be rebound before this profile can reopen play.")
+            ]);
+
+        DefaultHubProjectCompatibilityService service = new(
+            CreatePluginRegistry(),
+            new RulePackRegistryServiceStub([]),
+            new RuleProfileRegistryServiceStub([profile]),
+            new BuildKitRegistryServiceStub([]),
+            new RuntimeInspectorServiceStub(projection),
+            new RuntimeLockRegistryServiceStub(null));
+
+        HubProjectCompatibilityMatrix? matrix = service.GetMatrix(OwnerScope.LocalSingleUser, HubCatalogItemKinds.RuleProfile, profile.Manifest.ProfileId, RulesetDefaults.Sr5);
+
+        Assert.IsNotNull(matrix);
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.SessionRuntime
+            && row.State == HubProjectCompatibilityStates.ReviewRequired
+            && row.Notes?.Contains("rebound before this profile can reopen play", StringComparison.Ordinal) == true));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.CampaignReturn
+            && row.State == HubProjectCompatibilityStates.ReviewRequired
+            && row.Notes?.Contains("aligned again", StringComparison.Ordinal) == true));
+        Assert.IsTrue(matrix.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.SupportClosure
+            && row.State == HubProjectCompatibilityStates.ReviewRequired
+            && row.Notes?.Contains("compatibility warnings", StringComparison.Ordinal) == true));
     }
 
     private static RulesetPluginRegistry CreatePluginRegistry() =>
@@ -217,6 +373,18 @@ public class HubProjectCompatibilityServiceTests
             _entries.FirstOrDefault(entry => entry.Manifest.BuildKitId == buildKitId);
     }
 
+    private sealed class RuntimeInspectorServiceStub : IRuntimeInspectorService
+    {
+        private readonly RuntimeInspectorProjection? _projection;
+
+        public RuntimeInspectorServiceStub(RuntimeInspectorProjection? projection)
+        {
+            _projection = projection;
+        }
+
+        public RuntimeInspectorProjection? GetProfileProjection(OwnerScope owner, string profileId, string? rulesetId = null) => _projection;
+    }
+
     private sealed class RuntimeLockRegistryServiceStub : IRuntimeLockRegistryService
     {
         private readonly RuntimeLockRegistryEntry? _entry;
@@ -232,6 +400,61 @@ public class HubProjectCompatibilityServiceTests
         public RuntimeLockRegistryEntry? Get(OwnerScope owner, string lockId, string? rulesetId = null) => _entry;
 
         public RuntimeLockRegistryEntry Upsert(OwnerScope owner, string lockId, RuntimeLockSaveRequest request) => throw new NotSupportedException();
+    }
+
+    private static RuleProfileRegistryEntry CreateRuleProfile(string profileId, string installState, string runtimeFingerprint)
+    {
+        return new RuleProfileRegistryEntry(
+            new RuleProfileManifest(
+                ProfileId: profileId,
+                Title: "Campaign Profile",
+                Description: "Profile for compatibility tests.",
+                RulesetId: RulesetDefaults.Sr5,
+                Audience: RuleProfileAudienceKinds.Campaign,
+                CatalogKind: RuleProfileCatalogKinds.Curated,
+                RulePacks: [],
+                DefaultToggles: [],
+                RuntimeLock: new ResolvedRuntimeLock(
+                    RulesetId: RulesetDefaults.Sr5,
+                    ContentBundles: [],
+                    RulePacks: [],
+                    ProviderBindings: new Dictionary<string, string>(),
+                    EngineApiVersion: "rulepack-v1",
+                    RuntimeFingerprint: runtimeFingerprint),
+                UpdateChannel: RuleProfileUpdateChannels.CampaignPinned),
+            new RuleProfilePublicationMetadata(
+                OwnerId: "local-single-user",
+                Visibility: ArtifactVisibilityModes.CampaignShared,
+                PublicationStatus: RuleProfilePublicationStatuses.Published,
+                Review: new RulePackReviewDecision(RulePackReviewStates.NotRequired),
+                Shares: []),
+            new ArtifactInstallState(installState));
+    }
+
+    private static RuntimeInspectorProjection CreateRuntimeInspectorProjection(
+        RuleProfileRegistryEntry profile,
+        IReadOnlyList<RuntimeLockCompatibilityDiagnostic> diagnostics)
+    {
+        return new RuntimeInspectorProjection(
+            TargetKind: RuntimeInspectorTargetKinds.RuntimeLock,
+            TargetId: profile.Manifest.ProfileId,
+            RuntimeLock: profile.Manifest.RuntimeLock,
+            Install: profile.Install,
+            ResolvedRulePacks: [],
+            ProviderBindings: [],
+            CompatibilityDiagnostics: diagnostics,
+            Warnings: [],
+            MigrationPreview: [],
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            ProfileSourceKind: RegistryEntrySourceKinds.PersistedManifest,
+            CapabilityDescriptors: [],
+            Promotion: new RuntimeInspectorPromotionProjection(
+                PublicationStatus: RuleProfilePublicationStatuses.Published,
+                Visibility: profile.Publication.Visibility,
+                UpdateChannel: profile.Manifest.UpdateChannel,
+                PromotionSummary: "Campaign profile is published.",
+                RollbackSummary: "Rollback stays available.",
+                LineageSummary: "Campaign lineage remains grounded."));
     }
 
     private sealed class HubRulesetPluginStub : IRulesetPlugin

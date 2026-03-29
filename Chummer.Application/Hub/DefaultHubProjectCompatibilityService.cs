@@ -12,6 +12,7 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
     private readonly IRulePackRegistryService _rulePackRegistryService;
     private readonly IRuleProfileRegistryService _ruleProfileRegistryService;
     private readonly IBuildKitRegistryService _buildKitRegistryService;
+    private readonly IRuntimeInspectorService _runtimeInspectorService;
     private readonly IRuntimeLockRegistryService _runtimeLockRegistryService;
 
     public DefaultHubProjectCompatibilityService(
@@ -19,12 +20,14 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
         IRulePackRegistryService rulePackRegistryService,
         IRuleProfileRegistryService ruleProfileRegistryService,
         IBuildKitRegistryService buildKitRegistryService,
+        IRuntimeInspectorService runtimeInspectorService,
         IRuntimeLockRegistryService runtimeLockRegistryService)
     {
         _rulesetPluginRegistry = rulesetPluginRegistry;
         _rulePackRegistryService = rulePackRegistryService;
         _ruleProfileRegistryService = ruleProfileRegistryService;
         _buildKitRegistryService = buildKitRegistryService;
+        _runtimeInspectorService = runtimeInspectorService;
         _runtimeLockRegistryService = runtimeLockRegistryService;
     }
 
@@ -107,6 +110,9 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
             .OfType<RulePackRegistryEntry>()
             .ToArray();
         bool sessionReady = resolvedRulePacks.Length == 0 || resolvedRulePacks.All(IsSessionReadyRulePack);
+        RuntimeInspectorProjection? runtimeProjection = _runtimeInspectorService.GetProfileProjection(owner, itemId, entry.Manifest.RulesetId);
+        bool requiresRuntimeReview = runtimeProjection?.CompatibilityDiagnostics.Any(diagnostic =>
+            !string.Equals(diagnostic.State, RuntimeLockCompatibilityStates.Compatible, StringComparison.Ordinal)) ?? false;
         HubProjectCapabilityDescriptorProjection[] capabilities = BuildRuntimeCapabilities(
             entry.Manifest.RulesetId,
             entry.Manifest.RuntimeLock.ProviderBindings,
@@ -126,10 +132,18 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                 new HubProjectCompatibilityRow(
                     HubProjectCompatibilityRowKinds.SessionRuntime,
                     "Session Runtime Bundle",
-                    sessionReady ? HubProjectCompatibilityStates.Compatible : HubProjectCompatibilityStates.ReviewRequired,
-                    sessionReady ? "session-ready" : "session-review-required",
+                    sessionReady && !requiresRuntimeReview ? HubProjectCompatibilityStates.Compatible : HubProjectCompatibilityStates.ReviewRequired,
+                    sessionReady && !requiresRuntimeReview ? "session-ready" : "session-review-required",
                     RequiredValue: RulePackExecutionEnvironments.SessionRuntimeBundle,
-                    Notes: $"{entry.Manifest.RulePacks.Count} selected RulePack(s)")
+                    Notes: ResolveRuleProfileSessionRuntimeNotes(entry, runtimeProjection)),
+                CreateNarrativeRow(
+                    HubProjectCompatibilityRowKinds.CampaignReturn,
+                    sessionReady && !requiresRuntimeReview ? HubProjectCompatibilityStates.Compatible : HubProjectCompatibilityStates.ReviewRequired,
+                    DescribeRuleProfileCampaignReturn(entry, runtimeProjection)),
+                CreateNarrativeRow(
+                    HubProjectCompatibilityRowKinds.SupportClosure,
+                    sessionReady && !requiresRuntimeReview ? HubProjectCompatibilityStates.Compatible : HubProjectCompatibilityStates.ReviewRequired,
+                    DescribeRuleProfileSupportClosure(entry, runtimeProjection))
             ],
             GeneratedAtUtc: DateTimeOffset.UtcNow,
             Capabilities: capabilities);
@@ -145,6 +159,8 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                 continue;
             }
 
+            BuildKitCompatibilityReceipt compatibilityReceipt = BuildKitCompatibilityReceiptBuilder.Create(entry.Manifest);
+
             return new HubProjectCompatibilityMatrix(
                 Kind: HubCatalogItemKinds.BuildKit,
                 ItemId: itemId,
@@ -156,16 +172,24 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                     new HubProjectCompatibilityRow(
                         HubProjectCompatibilityRowKinds.RuntimeRequirements,
                         "Runtime Requirements",
-                        entry.Manifest.RuntimeRequirements.Count == 0 ? HubProjectCompatibilityStates.Compatible : HubProjectCompatibilityStates.ReviewRequired,
-                        entry.Manifest.RuntimeRequirements.Count.ToString(),
-                        Notes: "BuildKits may require a campaign or profile runtime."),
+                        compatibilityReceipt.RequiresRuntimeReview ? HubProjectCompatibilityStates.ReviewRequired : HubProjectCompatibilityStates.Compatible,
+                        compatibilityReceipt.RuntimeRequirements.Count.ToString(),
+                        Notes: compatibilityReceipt.RuntimeCompatibilitySummary),
                     new HubProjectCompatibilityRow(
                         HubProjectCompatibilityRowKinds.SessionRuntime,
                         "Session Runtime Bundle",
                         HubProjectCompatibilityStates.Blocked,
-                        "workbench-only",
+                        "workbench-first",
                         RequiredValue: RulePackExecutionEnvironments.SessionRuntimeBundle,
-                        Notes: "BuildKits are create/career templates, not session-runtime inputs.")
+                        Notes: $"{compatibilityReceipt.SessionRuntimeSummary} Next safe action: {compatibilityReceipt.NextSafeActionSummary}"),
+                    CreateNarrativeRow(
+                        HubProjectCompatibilityRowKinds.CampaignReturn,
+                        compatibilityReceipt.RequiresRuntimeReview ? HubProjectCompatibilityStates.ReviewRequired : HubProjectCompatibilityStates.Compatible,
+                        compatibilityReceipt.CampaignReturnSummary),
+                    CreateNarrativeRow(
+                        HubProjectCompatibilityRowKinds.SupportClosure,
+                        compatibilityReceipt.RequiresRuntimeReview ? HubProjectCompatibilityStates.ReviewRequired : HubProjectCompatibilityStates.Compatible,
+                        compatibilityReceipt.SupportClosureSummary)
                 ],
                 GeneratedAtUtc: DateTimeOffset.UtcNow,
                 Capabilities: []);
@@ -205,7 +229,15 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                     HubProjectCompatibilityStates.Compatible,
                     "bundle-ready",
                     RequiredValue: RulePackExecutionEnvironments.SessionRuntimeBundle,
-                    Notes: $"{entry.RuntimeLock.RulePacks.Count} RulePack(s) resolved")
+                    Notes: $"{entry.RuntimeLock.RulePacks.Count} RulePack(s) resolved"),
+                CreateNarrativeRow(
+                    HubProjectCompatibilityRowKinds.CampaignReturn,
+                    HubProjectCompatibilityStates.Compatible,
+                    DescribeRuntimeLockCampaignReturn(entry)),
+                CreateNarrativeRow(
+                    HubProjectCompatibilityRowKinds.SupportClosure,
+                    HubProjectCompatibilityStates.Compatible,
+                    DescribeRuntimeLockSupportClosure(entry))
             ],
             GeneratedAtUtc: DateTimeOffset.UtcNow,
             Capabilities: capabilities);
@@ -239,6 +271,19 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
                 ? "No typed capability descriptors are published for this runtime."
                 : $"{capabilities.Count(capability => capability.SessionSafe)} session-safe; {capabilities.Count(capability => capability.Explainable)} explainable");
 
+    private static HubProjectCompatibilityRow CreateNarrativeRow(string kind, string state, string notes) =>
+        new(
+            kind,
+            kind switch
+            {
+                HubProjectCompatibilityRowKinds.CampaignReturn => "Campaign Return",
+                HubProjectCompatibilityRowKinds.SupportClosure => "Support Closure",
+                _ => kind
+            },
+            state,
+            state,
+            Notes: notes);
+
     private static string ResolveExecutionState(string? policyMode, bool sessionSafe)
     {
         if (sessionSafe)
@@ -260,6 +305,75 @@ public sealed class DefaultHubProjectCompatibilityService : IHubProjectCompatibi
             || entry.Manifest.ExecutionPolicies.Any(policy =>
                 string.Equals(policy.Environment, RulePackExecutionEnvironments.SessionRuntimeBundle, StringComparison.Ordinal)
                 && !string.Equals(policy.PolicyMode, RulePackExecutionPolicyModes.Deny, StringComparison.Ordinal));
+    }
+
+    private static string ResolveRuleProfileSessionRuntimeNotes(RuleProfileRegistryEntry entry, RuntimeInspectorProjection? runtimeProjection)
+    {
+        string defaultNotes = $"{entry.Manifest.RulePacks.Count} selected RulePack(s)";
+        if (runtimeProjection is null)
+        {
+            return defaultNotes;
+        }
+
+        string[] reviewMessages = runtimeProjection.CompatibilityDiagnostics
+            .Where(diagnostic => !string.Equals(diagnostic.State, RuntimeLockCompatibilityStates.Compatible, StringComparison.Ordinal))
+            .Select(diagnostic => diagnostic.Message)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        return reviewMessages.Length == 0
+            ? defaultNotes
+            : string.Join(" ", reviewMessages);
+    }
+
+    private static string DescribeRuleProfileCampaignReturn(RuleProfileRegistryEntry entry, RuntimeInspectorProjection? runtimeProjection)
+    {
+        string? issueSummary = ResolveCompatibilityIssueSummary(runtimeProjection);
+        if (issueSummary is not null)
+        {
+            return $"Campaign return should wait until runtime '{entry.Manifest.RuntimeLock.RuntimeFingerprint}' and the selected rule environment are aligned again. {issueSummary}";
+        }
+
+        return $"Campaign return can reopen through the selected workspace or campaign lane once runtime '{entry.Manifest.RuntimeLock.RuntimeFingerprint}' and {entry.Manifest.RulePacks.Count} selected RulePack(s) stay aligned.";
+    }
+
+    private static string DescribeRuleProfileSupportClosure(RuleProfileRegistryEntry entry, RuntimeInspectorProjection? runtimeProjection)
+    {
+        string? issueSummary = ResolveCompatibilityIssueSummary(runtimeProjection);
+        if (issueSummary is not null)
+        {
+            return $"Support closure should cite runtime '{entry.Manifest.RuntimeLock.RuntimeFingerprint}' with the current compatibility warnings before reopening play. {issueSummary}";
+        }
+
+        return $"Support closure can cite runtime '{entry.Manifest.RuntimeLock.RuntimeFingerprint}' and {entry.Manifest.RulePacks.Count} selected RulePack(s) as the grounded recovery contract.";
+    }
+
+    private static string DescribeRuntimeLockCampaignReturn(RuntimeLockRegistryEntry entry)
+    {
+        return $"Campaign return can reopen through the selected workspace or campaign lane once runtime '{entry.RuntimeLock.RuntimeFingerprint}' and {entry.RuntimeLock.RulePacks.Count} RulePack(s) stay aligned.";
+    }
+
+    private static string DescribeRuntimeLockSupportClosure(RuntimeLockRegistryEntry entry)
+    {
+        return $"Support closure can cite runtime '{entry.RuntimeLock.RuntimeFingerprint}' and {entry.RuntimeLock.RulePacks.Count} RulePack(s) as the grounded recovery contract.";
+    }
+
+    private static string? ResolveCompatibilityIssueSummary(RuntimeInspectorProjection? runtimeProjection)
+    {
+        if (runtimeProjection is null)
+        {
+            return null;
+        }
+
+        string[] reviewMessages = runtimeProjection.CompatibilityDiagnostics
+            .Where(diagnostic => !string.Equals(diagnostic.State, RuntimeLockCompatibilityStates.Compatible, StringComparison.Ordinal))
+            .Select(diagnostic => diagnostic.Message)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        return reviewMessages.Length == 0
+            ? null
+            : string.Join(" ", reviewMessages);
     }
 
     private HubProjectCapabilityDescriptorProjection[] BuildRulePackCapabilities(string rulesetId, RulePackRegistryEntry entry)
