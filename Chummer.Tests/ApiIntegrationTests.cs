@@ -314,6 +314,21 @@ public class ApiIntegrationTests
     }
 
     [TestMethod]
+    public async Task Hub_project_compatibility_endpoint_returns_registered_npc_entry_matrix()
+    {
+        using var client = CreateClient();
+
+        JsonObject payload = await GetRequiredJsonObject(client, $"/api/hub/projects/{HubCatalogItemKinds.NpcEntry}/red-samurai/compatibility?ruleset=sr5");
+
+        Assert.AreEqual(HubCatalogItemKinds.NpcEntry, payload["kind"]?.GetValue<string>());
+        Assert.AreEqual("red-samurai", payload["itemId"]?.GetValue<string>());
+        Assert.IsInstanceOfType<JsonArray>(payload["rows"]);
+        Assert.IsTrue(payload["rows"]!.AsArray().OfType<JsonObject>().Any(row =>
+            string.Equals(row["kind"]?.GetValue<string>(), HubProjectCompatibilityRowKinds.CampaignReturn, StringComparison.Ordinal)
+            && string.Equals(row["state"]?.GetValue<string>(), HubProjectCompatibilityStates.Compatible, StringComparison.Ordinal)));
+    }
+
+    [TestMethod]
     public async Task Hub_project_compatibility_endpoint_returns_bad_request_for_unknown_project_kind()
     {
         using var client = CreateClient();

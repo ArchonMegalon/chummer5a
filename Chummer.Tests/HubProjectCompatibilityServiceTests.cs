@@ -68,6 +68,7 @@ public class HubProjectCompatibilityServiceTests
             ]),
             new RuleProfileRegistryServiceStub([]),
             new BuildKitRegistryServiceStub([]),
+            new DefaultNpcVaultRegistryService(),
             new RuntimeInspectorServiceStub(null),
             new RuntimeLockRegistryServiceStub(null));
 
@@ -111,6 +112,7 @@ public class HubProjectCompatibilityServiceTests
                     PublicationStatus: BuildKitPublicationStatuses.Published,
                     UpdatedAtUtc: System.DateTimeOffset.UtcNow)
             ]),
+            new DefaultNpcVaultRegistryService(),
             new RuntimeInspectorServiceStub(null),
             new RuntimeLockRegistryServiceStub(null));
 
@@ -194,6 +196,7 @@ public class HubProjectCompatibilityServiceTests
                     PublicationStatus: BuildKitPublicationStatuses.Published,
                     UpdatedAtUtc: System.DateTimeOffset.UtcNow)
             ]),
+            new DefaultNpcVaultRegistryService(),
             new RuntimeInspectorServiceStub(null),
             new RuntimeLockRegistryServiceStub(null));
 
@@ -238,6 +241,7 @@ public class HubProjectCompatibilityServiceTests
             new RulePackRegistryServiceStub([]),
             new RuleProfileRegistryServiceStub([]),
             new BuildKitRegistryServiceStub([]),
+            new DefaultNpcVaultRegistryService(),
             new RuntimeInspectorServiceStub(null),
             new RuntimeLockRegistryServiceStub(
                 new RuntimeLockRegistryEntry(
@@ -301,6 +305,7 @@ public class HubProjectCompatibilityServiceTests
             new RulePackRegistryServiceStub([]),
             new RuleProfileRegistryServiceStub([profile]),
             new BuildKitRegistryServiceStub([]),
+            new DefaultNpcVaultRegistryService(),
             new RuntimeInspectorServiceStub(projection),
             new RuntimeLockRegistryServiceStub(null));
 
@@ -319,6 +324,42 @@ public class HubProjectCompatibilityServiceTests
             row.Kind == HubProjectCompatibilityRowKinds.SupportClosure
             && row.State == HubProjectCompatibilityStates.ReviewRequired
             && row.Notes?.Contains("compatibility warnings", StringComparison.Ordinal) == true));
+    }
+
+    [TestMethod]
+    public void Hub_project_compatibility_service_builds_npc_matrices_from_seeded_vault_packets()
+    {
+        DefaultHubProjectCompatibilityService service = new(
+            CreatePluginRegistry(),
+            new RulePackRegistryServiceStub([]),
+            new RuleProfileRegistryServiceStub([]),
+            new BuildKitRegistryServiceStub([]),
+            new DefaultNpcVaultRegistryService(),
+            new RuntimeInspectorServiceStub(null),
+            new RuntimeLockRegistryServiceStub(null));
+
+        HubProjectCompatibilityMatrix? npcEntry = service.GetMatrix(OwnerScope.LocalSingleUser, HubCatalogItemKinds.NpcEntry, "red-samurai", RulesetDefaults.Sr5);
+        HubProjectCompatibilityMatrix? npcPack = service.GetMatrix(OwnerScope.LocalSingleUser, HubCatalogItemKinds.NpcPack, "renraku-security", RulesetDefaults.Sr5);
+        HubProjectCompatibilityMatrix? encounterPack = service.GetMatrix(OwnerScope.LocalSingleUser, HubCatalogItemKinds.EncounterPack, "renraku-checkpoint", RulesetDefaults.Sr5);
+
+        Assert.IsNotNull(npcEntry);
+        Assert.IsNotNull(npcPack);
+        Assert.IsNotNull(encounterPack);
+        Assert.IsTrue(npcEntry.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.RuntimeFingerprint
+            && row.CurrentValue == "sha256:core"));
+        Assert.IsTrue(npcEntry.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.CampaignReturn
+            && row.State == HubProjectCompatibilityStates.Compatible
+            && row.Notes?.Contains("Red Samurai", StringComparison.Ordinal) == true));
+        Assert.IsTrue(npcPack.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.SessionRuntime
+            && row.CurrentValue == "campaign-bindable"
+            && row.Notes?.Contains("3 opposition seat(s)", StringComparison.Ordinal) == true));
+        Assert.IsTrue(encounterPack.Rows.Any(row =>
+            row.Kind == HubProjectCompatibilityRowKinds.SupportClosure
+            && row.State == HubProjectCompatibilityStates.Compatible
+            && row.Notes?.Contains("2 explicit role lane(s)", StringComparison.Ordinal) == true));
     }
 
     private static RulesetPluginRegistry CreatePluginRegistry() =>
