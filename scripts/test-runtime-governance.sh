@@ -5,4 +5,4 @@ dotnet test Chummer.Tests/Chummer.Tests.csproj \
   -c Release \
   -f net10.0 \
   -p:TargetFramework=net10.0 \
-  --filter "(FullyQualifiedName~RuntimeInspectorServiceTests|FullyQualifiedName~RuleProfileApplicationServiceTests|FullyQualifiedName~HubInstallPreviewServiceTests|FullyQualifiedName~HubWebComponentTests|FullyQualifiedName~DesktopDialogFactoryTests|FullyQualifiedName~MigrationComplianceTests)"
+  --filter "(FullyQualifiedName~RuntimeInspectorServiceTests|FullyQualifiedName~RuleProfileApplicationServiceTests|FullyQualifiedName~BuildKitRegistryServiceTests|FullyQualifiedName~HubInstallPreviewServiceTests|FullyQualifiedName~HubWebComponentTests|FullyQualifiedName~DesktopDialogFactoryTests|FullyQualifiedName~MigrationComplianceTests)"
