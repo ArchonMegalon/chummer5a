@@ -77,7 +77,14 @@ public class HubInstallPreviewServiceTests
                             Severity: RuntimeInspectorWarningSeverityLevels.Info,
                             Message: "Local-only profile.",
                             SubjectId: "official.sr5.core")
-                    ])),
+                    ],
+                    Promotion: new RuntimeInspectorPromotionProjection(
+                        PublicationStatus: RuleProfilePublicationStatuses.Published,
+                        Visibility: ArtifactVisibilityModes.Public,
+                        UpdateChannel: RuleProfileUpdateChannels.Stable,
+                        PromotionSummary: "Stable rule environment is published with public visibility and ready for governed reuse.",
+                        RollbackSummary: "Rollback can re-pin sha256:core on workspace:workspace-1 while the next promotion is reviewed.",
+                        LineageSummary: "Built-in core profile remains the baseline lineage anchor for this runtime."))),
             new RuntimeLockInstallServiceStub(null),
             new RuntimeLockRegistryServiceStub(null),
             new RulePackRegistryServiceStub([]),
@@ -95,6 +102,8 @@ public class HubInstallPreviewServiceTests
         Assert.AreEqual("sha256:core", preview.RuntimeFingerprint);
         Assert.AreEqual(HubProjectInstallPreviewChangeKinds.RuntimeLockPinned, preview.Changes[0].Kind);
         Assert.AreEqual(RuntimeInspectorWarningKinds.Trust, preview.Diagnostics[0].Kind);
+        Assert.IsNotNull(preview.Promotion);
+        Assert.AreEqual(RuleProfileUpdateChannels.Stable, preview.Promotion!.UpdateChannel);
         Assert.IsTrue(preview.Diagnostics.Any(diagnostic => diagnostic.Kind == HubProjectInstallPreviewDiagnosticKinds.InstallState));
         Assert.IsTrue(preview.RequiresConfirmation);
     }

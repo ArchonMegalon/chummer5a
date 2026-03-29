@@ -247,7 +247,14 @@ public class DesktopDialogFactoryTests
                     MaximumGasBudget: new RulesetGasBudget(5_000, 10_000, 8_388_608),
                     ProviderId: "official.sr5.core/derive.stat",
                     PackId: "official.sr5.core")
-            ]);
+            ],
+            Promotion: new RuntimeInspectorPromotionProjection(
+                PublicationStatus: RuleProfilePublicationStatuses.Published,
+                Visibility: ArtifactVisibilityModes.Public,
+                UpdateChannel: RuleProfileUpdateChannels.Stable,
+                PromotionSummary: "Stable rule environment is published with public visibility and ready for governed reuse.",
+                RollbackSummary: "Rollback can re-pin sha256:sr5-runtime-fingerprint on workspace:runtime-preview while the next promotion is reviewed.",
+                LineageSummary: "Built-in core profile remains the baseline lineage anchor for this runtime."));
 
         DesktopDialogState dialog = factory.CreateCommandDialog(
             OverviewCommandPolicy.RuntimeInspectorCommandId,
@@ -257,6 +264,11 @@ public class DesktopDialogFactoryTests
             currentWorkspace: null,
             rulesetId: RulesetDefaults.Sr5,
             runtimeInspector: projection);
+
+        Assert.AreEqual("published / stable", DesktopDialogFieldValueParser.GetValue(dialog, "runtimePromotionStatus"));
+        Assert.AreEqual("public", DesktopDialogFieldValueParser.GetValue(dialog, "runtimePromotionVisibility"));
+        StringAssert.Contains(DesktopDialogFieldValueParser.GetValue(dialog, "runtimeRollbackSummary"), "Rollback can re-pin sha256:sr5-runtime-fingerprint");
+        StringAssert.Contains(DesktopDialogFieldValueParser.GetValue(dialog, "runtimeLineageSummary"), "baseline lineage anchor");
 
         Assert.AreEqual("dialog.runtime_inspector", dialog.Id);
         Assert.AreEqual("official.sr5.core", DesktopDialogFieldValueParser.GetValue(dialog, "runtimeProfileId"));

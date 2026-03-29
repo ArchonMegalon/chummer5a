@@ -41,7 +41,8 @@ public sealed record RuleProfilePreviewReceipt(
     ResolvedRuntimeLock RuntimeLock,
     IReadOnlyList<RuleProfilePreviewItem> Changes,
     IReadOnlyList<RuntimeInspectorWarning> Warnings,
-    bool RequiresConfirmation = false);
+    bool RequiresConfirmation = false,
+    RuntimeInspectorPromotionProjection? Promotion = null);
 
 public sealed record RuleProfileApplyReceipt(
     string ProfileId,

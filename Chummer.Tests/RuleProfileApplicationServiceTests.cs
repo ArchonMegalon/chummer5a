@@ -33,6 +33,9 @@ public class RuleProfileApplicationServiceTests
         Assert.AreEqual("workspace-1", preview.Target.TargetId);
         Assert.AreEqual("runtime-lock-sha256", preview.RuntimeLock.RuntimeFingerprint);
         Assert.IsTrue(preview.RequiresConfirmation);
+        Assert.IsNotNull(preview.Promotion);
+        Assert.AreEqual(RuleProfileUpdateChannels.Stable, preview.Promotion!.UpdateChannel);
+        StringAssert.Contains(preview.Promotion.PromotionSummary, "Stable rule environment");
         Assert.IsTrue(preview.Changes.Any(change => string.Equals(change.Kind, RuleProfilePreviewChangeKinds.RulePackSelectionChanged, StringComparison.Ordinal)));
     }
 

@@ -52,12 +52,14 @@ public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService
         RuntimeLockCompatibilityDiagnostic[] compatibilityDiagnostics = BuildCompatibilityDiagnostics(profile, registryEntries);
         RuntimeInspectorWarning[] warnings = BuildWarnings(profile, resolvedRulePacks, compatibilityDiagnostics);
         RuntimeMigrationPreviewItem[] migrationPreview = BuildMigrationPreview(profile, resolvedRulePacks);
+        ArtifactInstallState install = RuntimeInspectorPromotionNarrator.NormalizeInstall(profile.Install, profile.Manifest.RuntimeLock.RuntimeFingerprint);
+        RuntimeInspectorPromotionProjection promotion = RuntimeInspectorPromotionNarrator.BuildPromotion(profile, install);
 
         return new RuntimeInspectorProjection(
             TargetKind: RuntimeInspectorTargetKinds.RuntimeLock,
             TargetId: profile.Manifest.ProfileId,
             RuntimeLock: profile.Manifest.RuntimeLock,
-            Install: NormalizeInstall(profile.Install, profile.Manifest.RuntimeLock.RuntimeFingerprint),
+            Install: install,
             ResolvedRulePacks: resolvedRulePacks,
             ProviderBindings: providerBindings,
             CompatibilityDiagnostics: compatibilityDiagnostics,
@@ -65,7 +67,8 @@ public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService
             MigrationPreview: migrationPreview,
             GeneratedAtUtc: DateTimeOffset.UtcNow,
             ProfileSourceKind: profile.SourceKind,
-            CapabilityDescriptors: capabilityDescriptors);
+            CapabilityDescriptors: capabilityDescriptors,
+            Promotion: promotion);
     }
 
     private RuntimeInspectorCapabilityDescriptorProjection[] BuildCapabilityDescriptors(
@@ -217,12 +220,5 @@ public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService
         }
 
         return null;
-    }
-
-    private static ArtifactInstallState NormalizeInstall(ArtifactInstallState install, string runtimeFingerprint)
-    {
-        return string.IsNullOrWhiteSpace(install.RuntimeFingerprint)
-            ? install with { RuntimeFingerprint = runtimeFingerprint }
-            : install;
     }
 }

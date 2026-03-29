@@ -236,6 +236,20 @@
                     <div><dt>Confirmation</dt><dd>@(_installPreview.RequiresConfirmation ? "required" : "not required")</dd></div>
                 </dl>
 
+                @if (_installPreview.Promotion is not null)
+                {
+                    <h4>Promotion</h4>
+                    <dl class="facts compact">
+                        <div><dt>Publication</dt><dd>@_installPreview.Promotion.PublicationStatus</dd></div>
+                        <div><dt>Visibility</dt><dd>@_installPreview.Promotion.Visibility</dd></div>
+                        <div><dt>Update Channel</dt><dd>@_installPreview.Promotion.UpdateChannel</dd></div>
+                        <div><dt>Published</dt><dd>@(_installPreview.Promotion.PublishedAtUtc?.ToString("u") ?? "not published yet")</dd></div>
+                    </dl>
+                    <p class="hint">@_installPreview.Promotion.PromotionSummary</p>
+                    <p class="hint">Rollback: @_installPreview.Promotion.RollbackSummary</p>
+                    <p class="hint">Lineage: @_installPreview.Promotion.LineageSummary</p>
+                }
+
                 @if (_installPreview.Changes.Count > 0)
                 {
                     <h4>Changes</h4>

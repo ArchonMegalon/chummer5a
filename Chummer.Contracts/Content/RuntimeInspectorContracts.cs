@@ -90,6 +90,15 @@ public sealed record ActiveRuntimeStatusProjection(
     int ProviderBindingCount = 0,
     int WarningCount = 0);
 
+public sealed record RuntimeInspectorPromotionProjection(
+    string PublicationStatus,
+    string Visibility,
+    string UpdateChannel,
+    string PromotionSummary,
+    string RollbackSummary,
+    string LineageSummary,
+    DateTimeOffset? PublishedAtUtc = null);
+
 public sealed record RuntimeInspectorProjection(
     string TargetKind,
     string TargetId,
@@ -102,4 +111,5 @@ public sealed record RuntimeInspectorProjection(
     IReadOnlyList<RuntimeMigrationPreviewItem> MigrationPreview,
     DateTimeOffset GeneratedAtUtc,
     string ProfileSourceKind = RegistryEntrySourceKinds.PersistedManifest,
-    IReadOnlyList<RuntimeInspectorCapabilityDescriptorProjection>? CapabilityDescriptors = null);
+    IReadOnlyList<RuntimeInspectorCapabilityDescriptorProjection>? CapabilityDescriptors = null,
+    RuntimeInspectorPromotionProjection? Promotion = null);

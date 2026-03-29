@@ -319,29 +319,39 @@ public sealed class DesktopDialogFactory : IDesktopDialogFactory
         string installTarget = string.IsNullOrWhiteSpace(projection.Install.InstalledTargetKind)
             ? "(none)"
             : $"{projection.Install.InstalledTargetKind}:{projection.Install.InstalledTargetId ?? string.Empty}".TrimEnd(':');
+        List<DesktopDialogField> fields =
+        [
+            new DesktopDialogField("runtimeProfileId", "Profile", projection.TargetId, projection.TargetId, IsReadOnly: true),
+            new DesktopDialogField("runtimeProfileSource", "Profile Source", projection.ProfileSourceKind, projection.ProfileSourceKind, IsReadOnly: true),
+            new DesktopDialogField("runtimeTargetKind", "Target Kind", projection.TargetKind, projection.TargetKind, IsReadOnly: true),
+            new DesktopDialogField("runtimeRulesetId", "Ruleset", projection.RuntimeLock.RulesetId, projection.RuntimeLock.RulesetId, IsReadOnly: true),
+            new DesktopDialogField("runtimeEngineApi", "Engine API", projection.RuntimeLock.EngineApiVersion, projection.RuntimeLock.EngineApiVersion, IsReadOnly: true),
+            new DesktopDialogField("runtimeFingerprint", "Fingerprint", projection.RuntimeLock.RuntimeFingerprint, projection.RuntimeLock.RuntimeFingerprint, IsReadOnly: true),
+            new DesktopDialogField("runtimeInstallState", "Install State", projection.Install.State, projection.Install.State, IsReadOnly: true),
+            new DesktopDialogField("runtimeInstallTarget", "Install Target", installTarget, installTarget, IsReadOnly: true),
+            new DesktopDialogField("runtimeContentBundles", "Content Bundles", contentBundles, contentBundles, IsReadOnly: true, IsMultiline: true),
+            new DesktopDialogField("runtimeRulePacks", "RulePacks", rulePacks, rulePacks, IsReadOnly: true, IsMultiline: true),
+            new DesktopDialogField("runtimeProviderBindings", "Provider Bindings", providerBindings, providerBindings, IsReadOnly: true, IsMultiline: true),
+            new DesktopDialogField("runtimeCapabilities", "Capabilities", capabilities, capabilities, IsReadOnly: true, IsMultiline: true),
+            new DesktopDialogField("runtimeCompatibility", "Compatibility", compatibility, compatibility, IsReadOnly: true, IsMultiline: true),
+            new DesktopDialogField("runtimeWarnings", "Warnings", warnings, warnings, IsReadOnly: true, IsMultiline: true),
+            new DesktopDialogField("runtimeMigrationPreview", "Migration Preview", migrationPreview, migrationPreview, IsReadOnly: true, IsMultiline: true)
+        ];
+
+        if (projection.Promotion is not null)
+        {
+            fields.Add(new DesktopDialogField("runtimePromotionStatus", "Promotion", $"{projection.Promotion.PublicationStatus} / {projection.Promotion.UpdateChannel}", $"{projection.Promotion.PublicationStatus} / {projection.Promotion.UpdateChannel}", IsReadOnly: true));
+            fields.Add(new DesktopDialogField("runtimePromotionVisibility", "Promotion Visibility", projection.Promotion.Visibility, projection.Promotion.Visibility, IsReadOnly: true));
+            fields.Add(new DesktopDialogField("runtimePromotionSummary", "Promotion Summary", projection.Promotion.PromotionSummary, projection.Promotion.PromotionSummary, IsReadOnly: true, IsMultiline: true));
+            fields.Add(new DesktopDialogField("runtimeRollbackSummary", "Rollback Summary", projection.Promotion.RollbackSummary, projection.Promotion.RollbackSummary, IsReadOnly: true, IsMultiline: true));
+            fields.Add(new DesktopDialogField("runtimeLineageSummary", "Lineage", projection.Promotion.LineageSummary, projection.Promotion.LineageSummary, IsReadOnly: true, IsMultiline: true));
+        }
 
         return new DesktopDialogState(
             Id: "dialog.runtime_inspector",
             Title: "Runtime Inspector",
             Message: $"Inspect resolved runtime for '{projection.TargetId}'.",
-            Fields:
-            [
-                new DesktopDialogField("runtimeProfileId", "Profile", projection.TargetId, projection.TargetId, IsReadOnly: true),
-                new DesktopDialogField("runtimeProfileSource", "Profile Source", projection.ProfileSourceKind, projection.ProfileSourceKind, IsReadOnly: true),
-                new DesktopDialogField("runtimeTargetKind", "Target Kind", projection.TargetKind, projection.TargetKind, IsReadOnly: true),
-                new DesktopDialogField("runtimeRulesetId", "Ruleset", projection.RuntimeLock.RulesetId, projection.RuntimeLock.RulesetId, IsReadOnly: true),
-                new DesktopDialogField("runtimeEngineApi", "Engine API", projection.RuntimeLock.EngineApiVersion, projection.RuntimeLock.EngineApiVersion, IsReadOnly: true),
-                new DesktopDialogField("runtimeFingerprint", "Fingerprint", projection.RuntimeLock.RuntimeFingerprint, projection.RuntimeLock.RuntimeFingerprint, IsReadOnly: true),
-                new DesktopDialogField("runtimeInstallState", "Install State", projection.Install.State, projection.Install.State, IsReadOnly: true),
-                new DesktopDialogField("runtimeInstallTarget", "Install Target", installTarget, installTarget, IsReadOnly: true),
-                new DesktopDialogField("runtimeContentBundles", "Content Bundles", contentBundles, contentBundles, IsReadOnly: true, IsMultiline: true),
-                new DesktopDialogField("runtimeRulePacks", "RulePacks", rulePacks, rulePacks, IsReadOnly: true, IsMultiline: true),
-                new DesktopDialogField("runtimeProviderBindings", "Provider Bindings", providerBindings, providerBindings, IsReadOnly: true, IsMultiline: true),
-                new DesktopDialogField("runtimeCapabilities", "Capabilities", capabilities, capabilities, IsReadOnly: true, IsMultiline: true),
-                new DesktopDialogField("runtimeCompatibility", "Compatibility", compatibility, compatibility, IsReadOnly: true, IsMultiline: true),
-                new DesktopDialogField("runtimeWarnings", "Warnings", warnings, warnings, IsReadOnly: true, IsMultiline: true),
-                new DesktopDialogField("runtimeMigrationPreview", "Migration Preview", migrationPreview, migrationPreview, IsReadOnly: true, IsMultiline: true)
-            ],
+            Fields: fields,
             Actions:
             [
                 new DesktopDialogAction("close", "Close", true)

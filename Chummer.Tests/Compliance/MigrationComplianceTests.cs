@@ -611,7 +611,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(defaultRuntimeInspectorServiceText, "public sealed class DefaultRuntimeInspectorService : IRuntimeInspectorService");
         StringAssert.Contains(defaultRuntimeInspectorServiceText, "IRuleProfileRegistryService");
         StringAssert.Contains(defaultRuntimeInspectorServiceText, "IRulePackRegistryService");
-        StringAssert.Contains(defaultRuntimeInspectorServiceText, "profile.Install");
+        StringAssert.Contains(defaultRuntimeInspectorServiceText, "RuntimeInspectorPromotionNarrator.BuildPromotion");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IRuntimeInspectorService, DefaultRuntimeInspectorService>()");
         StringAssert.Contains(readmeText, "/api/runtime/profiles/{profileId}");
     }
@@ -841,6 +841,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubInstallPreviewServiceText, "entry.Install.State");
         StringAssert.Contains(hubInstallPreviewServiceText, "HubProjectInstallPreviewDiagnosticKinds.InstallState");
         StringAssert.Contains(hubInstallPreviewContractsText, "public sealed record HubProjectInstallPreviewReceipt");
+        StringAssert.Contains(hubInstallPreviewContractsText, "RuntimeInspectorPromotionProjection? Promotion = null");
         StringAssert.Contains(serviceRegistrationText, "AddSingleton<IHubInstallPreviewService, DefaultHubInstallPreviewService>()");
         StringAssert.Contains(readmeText, "/api/hub/projects/*/install-preview");
     }
@@ -1983,6 +1984,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(ruleProfileApplicationContractsText, "public sealed record RuleProfilePreviewItem");
         StringAssert.Contains(ruleProfileApplicationContractsText, "public sealed record RuleProfilePreviewReceipt");
         StringAssert.Contains(ruleProfileApplicationContractsText, "public sealed record RuleProfileApplyReceipt");
+        StringAssert.Contains(ruleProfileApplicationContractsText, "RuntimeInspectorPromotionProjection? Promotion = null");
         StringAssert.Contains(ruleProfileApplicationContractsText, "RuntimeLockInstallReceipt? InstallReceipt = null");
         StringAssert.Contains(ruleProfileApplicationContractsText, "string? DeferredReason = null");
     }
@@ -2044,6 +2046,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(hubInstallPreviewContractsText, "RuleProfileApplyTarget Target");
         StringAssert.Contains(hubInstallPreviewContractsText, "string? RuntimeFingerprint");
         StringAssert.Contains(hubInstallPreviewContractsText, "string? DeferredReason = null");
+        StringAssert.Contains(hubInstallPreviewContractsText, "RuntimeInspectorPromotionProjection? Promotion = null");
     }
 
     [TestMethod]
@@ -2311,6 +2314,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorCapabilityDescriptorProjection");
         StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorWarning");
         StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeMigrationPreviewItem");
+        StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorPromotionProjection");
         StringAssert.Contains(runtimeInspectorContractsText, "public sealed record RuntimeInspectorProjection");
         StringAssert.Contains(runtimeInspectorContractsText, "runtime-lock");
         StringAssert.Contains(runtimeInspectorContractsText, "provider-rebound");
@@ -2318,6 +2322,7 @@ public class MigrationComplianceTests
         StringAssert.Contains(runtimeInspectorContractsText, "ArtifactInstallState Install");
         StringAssert.Contains(runtimeInspectorContractsText, "IReadOnlyList<RuntimeLockCompatibilityDiagnostic> CompatibilityDiagnostics");
         StringAssert.Contains(runtimeInspectorContractsText, "IReadOnlyList<RuntimeInspectorCapabilityDescriptorProjection>? CapabilityDescriptors = null");
+        StringAssert.Contains(runtimeInspectorContractsText, "RuntimeInspectorPromotionProjection? Promotion = null");
         StringAssert.Contains(runtimeInspectorContractsText, "string SourceKind = RegistryEntrySourceKinds.PersistedManifest");
         StringAssert.Contains(runtimeInspectorContractsText, "string ProfileSourceKind = RegistryEntrySourceKinds.PersistedManifest");
         Assert.IsFalse(runtimeInspectorContractsText.Contains("Avalonia", StringComparison.Ordinal));
@@ -4346,13 +4351,13 @@ public class MigrationComplianceTests
         StringAssert.Contains(publisherText, "CHUMMER_PORTAL_DOWNLOADS_DEPLOY_ENABLED");
         StringAssert.Contains(publisherText, "Deployment mode requires CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
         StringAssert.Contains(publisherText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS");
-        StringAssert.Contains(publisherText, "Published ${#artifacts[@]} desktop artifact(s)");
+        StringAssert.Contains(publisherText, "Published ${#artifacts[@]} public desktop artifact(s)");
         StringAssert.Contains(s3PublisherText, "CHUMMER_PORTAL_DOWNLOADS_S3_URI");
         StringAssert.Contains(s3PublisherText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_URL");
         StringAssert.Contains(s3PublisherText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS");
         StringAssert.Contains(s3PublisherText, "aws s3 cp");
         StringAssert.Contains(s3PublisherText, "verify-releases-manifest.sh");
-        StringAssert.Contains(s3PublisherText, "Published ${artifact_count} desktop artifact(s) to object storage target");
+        StringAssert.Contains(s3PublisherText, "Published ${artifact_count} public desktop artifact(s) to object storage target");
 
         string verifierPath = FindPath("scripts", "verify-releases-manifest.sh");
         string verifierText = File.ReadAllText(verifierPath);

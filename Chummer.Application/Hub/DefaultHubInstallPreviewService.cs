@@ -83,7 +83,8 @@ public sealed class DefaultHubInstallPreviewService : IHubInstallPreviewService
             Changes: preview.Changes.Select(change => new HubProjectInstallPreviewChange(change.Kind, change.Summary, change.SubjectId ?? itemId, change.RequiresConfirmation)).ToArray(),
             Diagnostics: diagnostics,
             RuntimeFingerprint: preview.RuntimeLock.RuntimeFingerprint,
-            RequiresConfirmation: requiresConfirmation);
+            RequiresConfirmation: requiresConfirmation,
+            Promotion: preview.Promotion);
     }
 
     private HubProjectInstallPreviewReceipt? PreviewRuntimeLock(OwnerScope owner, string itemId, RuleProfileApplyTarget target, string? rulesetId)

@@ -86,6 +86,8 @@ public sealed class DefaultRuleProfileApplicationService : IRuleProfileApplicati
     {
         RuleProfilePreviewItem[] changes = BuildPreviewChanges(entry, target);
         RuntimeInspectorWarning[] warnings = BuildWarnings(entry);
+        ArtifactInstallState install = RuntimeInspectorPromotionNarrator.NormalizeInstall(entry.Install, entry.Manifest.RuntimeLock.RuntimeFingerprint);
+        RuntimeInspectorPromotionProjection promotion = RuntimeInspectorPromotionNarrator.BuildPromotion(entry, install);
 
         return new RuleProfilePreviewReceipt(
             ProfileId: entry.Manifest.ProfileId,
@@ -93,7 +95,8 @@ public sealed class DefaultRuleProfileApplicationService : IRuleProfileApplicati
             RuntimeLock: entry.Manifest.RuntimeLock,
             Changes: changes,
             Warnings: warnings,
-            RequiresConfirmation: changes.Any(change => change.RequiresConfirmation));
+            RequiresConfirmation: changes.Any(change => change.RequiresConfirmation),
+            Promotion: promotion);
     }
 
     private void PersistProfileInstall(

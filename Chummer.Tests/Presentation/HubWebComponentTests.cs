@@ -106,7 +106,14 @@ public sealed class HubWebComponentTests
                 [
                     new HubProjectInstallPreviewDiagnostic(HubProjectInstallPreviewDiagnosticKinds.Installability, HubProjectInstallPreviewDiagnosticSeverityLevels.Info, "Safe to install.")
                 ],
-                RuntimeFingerprint: "sha256:runtime-profile"),
+                RuntimeFingerprint: "sha256:runtime-profile",
+                Promotion: new RuntimeInspectorPromotionProjection(
+                    PublicationStatus: RuleProfilePublicationStatuses.Published,
+                    Visibility: ArtifactVisibilityModes.CampaignShared,
+                    UpdateChannel: RuleProfileUpdateChannels.CampaignPinned,
+                    PromotionSummary: "Campaign-pinned rule environment is published with campaign-shared visibility and stays on the campaign-approved rail until broader promotion is chosen.",
+                    RollbackSummary: "Rollback can re-pin sha256:runtime-profile on global-defaults:hub-preview while the next promotion is reviewed.",
+                    LineageSummary: "Built-in core profile remains the baseline lineage anchor for this runtime.")),
             "POST");
 
         IRenderedComponent<Home> cut = context.Render<Home>();
@@ -145,6 +152,9 @@ public sealed class HubWebComponentTests
         {
             StringAssert.Contains(cut.Markup, "Runtime will be pinned.");
             StringAssert.Contains(cut.Markup, "Safe to install.");
+            StringAssert.Contains(cut.Markup, "Update Channel");
+            StringAssert.Contains(cut.Markup, "campaign-pinned");
+            StringAssert.Contains(cut.Markup, "Rollback can re-pin sha256:runtime-profile");
         });
     }
 
