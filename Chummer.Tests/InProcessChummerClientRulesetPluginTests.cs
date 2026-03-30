@@ -204,7 +204,27 @@ public sealed class InProcessChummerClientRulesetPluginTests
                     Karma: 0m,
                     Nuyen: 0m,
                     Created: true),
-                RulesetId: "sr6")
+                RulesetId: "sr6",
+                ImportReceiptId: "import-ws-owner-abc123",
+                ImportedAtUtc: DateTimeOffset.Parse("2026-03-30T12:00:00+00:00"),
+                Portability: new WorkspacePortabilityReceipt(
+                    FormatId: WorkspacePortabilityFormatIds.NativeWorkspaceXmlV1,
+                    CompatibilityState: WorkspacePortabilityCompatibilityStates.Compatible,
+                    ContextSummary: "Owner Runner imported into governed dossier truth.",
+                    ReceiptSummary: "Portable import completed as governed dossier truth and is ready for normal use or portable export.",
+                    ProvenanceSummary: "Import receipt import-ws-owner-abc123 captured payload hash abc123.",
+                    PayloadSha256: "abc123",
+                    NextSafeAction: "Use the workspace normally or export it for governed handoff.",
+                    SupportedExchangeModes:
+                    [
+                        WorkspacePortabilityExchangeModes.InspectOnly,
+                        WorkspacePortabilityExchangeModes.Merge,
+                        WorkspacePortabilityExchangeModes.Replace
+                    ],
+                    Notes:
+                    [
+                        new WorkspacePortabilityNote("format-identity", WorkspacePortabilityNoteSeverities.Info, "Imported native workspace XML on the governed dossier rail.")
+                    ]))
         };
         InProcessChummerClient client = new(
             workspaceService,
@@ -218,6 +238,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
 
         Assert.AreEqual(owner.NormalizedValue, workspaceService.LastImportOwner?.NormalizedValue);
         Assert.AreEqual("sr6", result.RulesetId);
+        Assert.AreEqual("import-ws-owner-abc123", result.ImportReceiptId);
+        Assert.AreEqual(WorkspacePortabilityCompatibilityStates.Compatible, result.Portability?.CompatibilityState);
     }
 
     [TestMethod]
@@ -375,7 +397,27 @@ public sealed class InProcessChummerClientRulesetPluginTests
                         """)),
                     FileName: "runner-export.json",
                     DocumentLength: 109,
-                    RulesetId: "sr5"),
+                    RulesetId: "sr5",
+                    PackageId: "portable-ws-export-abc123",
+                    ExportedAtUtc: DateTimeOffset.Parse("2026-03-30T12:05:00+00:00"),
+                    Portability: new WorkspacePortabilityReceipt(
+                        FormatId: WorkspacePortabilityFormatIds.PortableDossierV1,
+                        CompatibilityState: WorkspacePortabilityCompatibilityStates.Compatible,
+                        ContextSummary: "Runner export is packaged as a portable dossier.",
+                        ReceiptSummary: "Portable export is ready for inspect-only, merge, or governed replace on a receiving surface.",
+                        ProvenanceSummary: "Portable package portable-ws-export-abc123 captured payload hash abc123.",
+                        PayloadSha256: "abc123",
+                        NextSafeAction: "Share the package or inspect it first on the receiving surface.",
+                        SupportedExchangeModes:
+                        [
+                            WorkspacePortabilityExchangeModes.InspectOnly,
+                            WorkspacePortabilityExchangeModes.Merge,
+                            WorkspacePortabilityExchangeModes.Replace
+                        ],
+                        Notes:
+                        [
+                            new WorkspacePortabilityNote("format-identity", WorkspacePortabilityNoteSeverities.Info, "Package format chummer.portable-dossier.v1 stays attached to governed dossier truth.")
+                        ])),
                 Error: null)
         };
         InProcessChummerClient client = new(
@@ -387,6 +429,8 @@ public sealed class InProcessChummerClientRulesetPluginTests
         Assert.IsTrue(export.Success);
         Assert.IsNotNull(export.Value);
         Assert.AreEqual("runner-export.json", export.Value.FileName);
+        Assert.AreEqual("portable-ws-export-abc123", export.Value.PackageId);
+        Assert.AreEqual(WorkspacePortabilityFormatIds.PortableDossierV1, export.Value.Portability?.FormatId);
         string payload = Encoding.UTF8.GetString(Convert.FromBase64String(export.Value.ContentBase64));
         StringAssert.Contains(payload, "\"Name\": \"Runner\"");
         StringAssert.Contains(payload, "\"REA\"");

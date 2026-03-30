@@ -27,7 +27,10 @@ public static class WorkspaceEndpoints
                 return Results.Ok(new WorkspaceImportResponse(
                     Id: result.Id.Value,
                     Summary: result.Summary,
-                    RulesetId: result.RulesetId));
+                    RulesetId: result.RulesetId,
+                    ImportReceiptId: result.ImportReceiptId,
+                    ImportedAtUtc: result.ImportedAtUtc,
+                    Portability: result.Portability));
             }
             catch (InvalidOperationException ex)
             {
@@ -213,7 +216,10 @@ public static class WorkspaceEndpoints
                 ContentBase64: result.Value.ContentBase64,
                 FileName: result.Value.FileName,
                 DocumentLength: result.Value.DocumentLength,
-                RulesetId: result.Value.RulesetId));
+                RulesetId: result.Value.RulesetId,
+                PackageId: result.Value.PackageId,
+                ExportedAtUtc: result.Value.ExportedAtUtc,
+                Portability: result.Value.Portability));
         });
 
         app.MapGet("/api/workspaces/{id}/print", (string id, IWorkspaceService workspaceService, IOwnerContextAccessor ownerContextAccessor) =>

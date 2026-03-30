@@ -31,6 +31,10 @@ public sealed class WorkspaceOverviewStateFactory : IWorkspaceOverviewStateFacto
             ActiveSectionJson: restoredView?.ActiveSectionJson,
             ActiveSectionRows: restoredView?.ActiveSectionRows ?? [],
             LastCommandId: currentState.LastCommandId,
+            LatestPortabilityActivity: currentState.WorkspaceId is { } currentWorkspaceId
+                && string.Equals(currentWorkspaceId.Value, workspaceId.Value, StringComparison.Ordinal)
+                ? currentState.LatestPortabilityActivity
+                : null,
             Notice: currentState.Notice,
             ActiveDialog: null,
             Preferences: currentState.Preferences,

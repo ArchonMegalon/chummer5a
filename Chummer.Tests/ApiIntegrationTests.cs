@@ -2670,6 +2670,11 @@ public class ApiIntegrationTests
         string workspaceId = importResponse["id"]?.GetValue<string>() ?? string.Empty;
         Assert.IsFalse(string.IsNullOrWhiteSpace(workspaceId));
         Assert.AreEqual("sr5", (importResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.IsFalse(string.IsNullOrWhiteSpace(importResponse["importReceiptId"]?.GetValue<string>()));
+        Assert.IsFalse(string.IsNullOrWhiteSpace(importResponse["importedAtUtc"]?.GetValue<string>()));
+        Assert.AreEqual("compatible", importResponse["portability"]?["compatibilityState"]?.GetValue<string>());
+        Assert.AreEqual("chummer.workspace.native-xml.v1", importResponse["portability"]?["formatId"]?.GetValue<string>());
+        StringAssert.Contains(importResponse["portability"]?["receiptSummary"]?.GetValue<string>() ?? string.Empty, "Portable import completed");
 
         JsonObject summary = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/summary");
         Assert.AreEqual("Cerri", summary["name"]?.GetValue<string>());
@@ -2721,6 +2726,19 @@ public class ApiIntegrationTests
         string contentBase64 = downloadResponse["contentBase64"]?.GetValue<string>() ?? string.Empty;
         Assert.IsFalse(string.IsNullOrWhiteSpace(contentBase64));
         Assert.IsGreaterThan(0, Convert.FromBase64String(contentBase64).Length);
+
+        JsonObject exportResponse = await GetRequiredJsonObject(client, $"/api/workspaces/{workspaceId}/export");
+        Assert.AreEqual(workspaceId, exportResponse["id"]?.GetValue<string>());
+        Assert.AreEqual("Json", exportResponse["format"]?.GetValue<string>());
+        Assert.AreEqual("sr5", (exportResponse["rulesetId"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant());
+        Assert.IsFalse(string.IsNullOrWhiteSpace(exportResponse["packageId"]?.GetValue<string>()));
+        Assert.IsFalse(string.IsNullOrWhiteSpace(exportResponse["exportedAtUtc"]?.GetValue<string>()));
+        Assert.AreEqual("chummer.portable-dossier.v1", exportResponse["portability"]?["formatId"]?.GetValue<string>());
+        Assert.AreEqual("compatible", exportResponse["portability"]?["compatibilityState"]?.GetValue<string>());
+        StringAssert.Contains(exportResponse["portability"]?["receiptSummary"]?.GetValue<string>() ?? string.Empty, "Portable export is ready");
+        string exportContentBase64 = exportResponse["contentBase64"]?.GetValue<string>() ?? string.Empty;
+        Assert.IsFalse(string.IsNullOrWhiteSpace(exportContentBase64));
+        Assert.IsGreaterThan(0, Convert.FromBase64String(exportContentBase64).Length);
     }
 
     [TestMethod]
