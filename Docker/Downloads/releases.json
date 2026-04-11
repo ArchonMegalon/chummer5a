@@ -1,46 +1,401 @@
 {
+  "generated_at": "2026-04-07T14:46:15Z",
+  "generatedAt": "2026-04-07T14:46:15Z",
   "version": "unpublished",
   "channel": "docker",
-  "publishedAt": "2026-03-25T15:23:09Z",
+  "publishedAt": "2026-04-07T14:46:14Z",
   "downloads": [
     {
       "id": "avalonia-linux-x64-installer",
       "platform": "Avalonia Desktop Linux X64 Installer",
       "url": "/downloads/files/chummer-avalonia-linux-x64-installer.deb",
-      "sha256": "1f4fe66da9489c9131ec350c82506bc896a9f3b36c26b27e7dc7c044061ac53a",
-      "sizeBytes": 34059256,
+      "sha256": "4544ef844262d3381bc424105c4d67e95fa6f3c2541c1c79b00d0b4666a6198c",
+      "sizeBytes": 31796460,
       "format": "deb",
-      "flavor": "installer"
+      "flavor": "installer",
+      "kind": "installer",
+      "head": "avalonia",
+      "platformId": "linux-x64",
+      "arch": "x64",
+      "fileName": "chummer-avalonia-linux-x64-installer.deb",
+      "installAccessClass": "open_public"
     },
     {
       "id": "blazor-desktop-linux-x64-installer",
       "platform": "Blazor Desktop Linux X64 Installer",
       "url": "/downloads/files/chummer-blazor-desktop-linux-x64-installer.deb",
-      "sha256": "d37a5c4e2489a4a93e8e274e45378bc621d4ef05dd481cc9e62a9f8dd16f55ca",
-      "sizeBytes": 36482868,
+      "sha256": "fba47bb24a11f45dcd37c9d70b036346355d24802a434bf9eac2e6f3767c11f3",
+      "sizeBytes": 34182932,
       "format": "deb",
-      "flavor": "installer"
+      "flavor": "installer",
+      "kind": "installer",
+      "head": "blazor-desktop",
+      "platformId": "linux-x64",
+      "arch": "x64",
+      "fileName": "chummer-blazor-desktop-linux-x64-installer.deb",
+      "installAccessClass": "open_public"
     },
     {
       "id": "avalonia-win-x64-installer",
       "platform": "Avalonia Desktop Windows X64 Installer",
       "url": "/downloads/files/chummer-avalonia-win-x64-installer.exe",
-      "sha256": "dcb609cbfc32e795bbd9880a8b15538ae965ce347a99a8cb44170f6731b0f4c2",
-      "sizeBytes": 51645826,
+      "sha256": "529a427c84a36082fe66d09a4547b17bd6c5046d2e4586277c5b7cd0c83ab00f",
+      "sizeBytes": 95974786,
       "format": "exe",
-      "flavor": "installer"
-    },
-    {
-      "id": "blazor-desktop-win-x64-installer",
-      "platform": "Blazor Desktop Windows X64 Installer",
-      "url": "/downloads/files/chummer-blazor-desktop-win-x64-installer.exe",
-      "sha256": "bc960d8d8081bd3e661b6f7ac281ee08879a5eeb007d45ec0bdfb9a98f188499",
-      "sizeBytes": 51645872,
-      "format": "exe",
-      "flavor": "installer"
+      "flavor": "installer",
+      "kind": "installer",
+      "head": "avalonia",
+      "platformId": "windows-x64",
+      "arch": "x64",
+      "fileName": "chummer-avalonia-win-x64-installer.exe",
+      "installAccessClass": "account_required"
     }
   ],
   "source": "registry",
   "status": "published",
-  "message": null
+  "message": null,
+  "rolloutState": "coverage_incomplete",
+  "rolloutReason": "Current shelf is published, but promotion stays blocked because required desktop tuple coverage is incomplete (platforms: macos; pairs: blazor-desktop:windows, avalonia:macos, blazor-desktop:macos; tuples: avalonia:osx-arm64:macos, blazor-desktop:osx-arm64:macos, blazor-desktop:win-x64:windows).",
+  "supportabilityState": "review_required",
+  "supportabilitySummary": "Treat the current shelf as review-required because required desktop tuple coverage is incomplete (platforms: macos; pairs: blazor-desktop:windows, avalonia:macos, blazor-desktop:macos; tuples: avalonia:osx-arm64:macos, blazor-desktop:osx-arm64:macos, blazor-desktop:win-x64:windows).",
+  "knownIssueSummary": "Known issue: required desktop tuple coverage is incomplete (platforms: macos; pairs: blazor-desktop:windows, avalonia:macos, blazor-desktop:macos; tuples: avalonia:osx-arm64:macos, blazor-desktop:osx-arm64:macos, blazor-desktop:win-x64:windows).",
+  "fixAvailabilitySummary": "Do not send fixed notices until required desktop tuple coverage is complete for the promoted shelf.",
+  "releaseProof": {
+    "status": "passed",
+    "generatedAt": "2026-04-07T13:38:56Z",
+    "baseUrl": "https://chummer.run",
+    "journeysPassed": [
+      "install_claim_restore_continue",
+      "build_explain_publish",
+      "campaign_session_recover_recap",
+      "report_cluster_release_notify"
+    ],
+    "proofRoutes": [
+      "/downloads/install/avalonia-linux-x64-installer",
+      "/home/access",
+      "/home/work",
+      "/account/work",
+      "/account/support",
+      "/contact"
+    ],
+    "uiLocalizationReleaseGate": {
+      "status": "pass",
+      "generatedAt": "2026-04-07T14:15:56Z",
+      "defaultKeyCount": 383,
+      "explicitFallbackRuntime": "pass",
+      "signoffSmokeRunnerStatus": "pass",
+      "shippingLocales": [
+        "en-us",
+        "de-de",
+        "fr-fr",
+        "ja-jp",
+        "pt-br",
+        "zh-cn"
+      ],
+      "localeSummary": [
+        {
+          "locale": "en-us",
+          "untranslatedKeyCount": 0,
+          "overrideCount": 383,
+          "minimumOverrideCount": 383,
+          "missingReleaseSeedKeys": [],
+          "legacyXmlPresent": true,
+          "legacyDataXmlPresent": true
+        },
+        {
+          "locale": "de-de",
+          "untranslatedKeyCount": 0,
+          "overrideCount": 383,
+          "minimumOverrideCount": 40,
+          "missingReleaseSeedKeys": [],
+          "legacyXmlPresent": true,
+          "legacyDataXmlPresent": true
+        },
+        {
+          "locale": "fr-fr",
+          "untranslatedKeyCount": 0,
+          "overrideCount": 383,
+          "minimumOverrideCount": 40,
+          "missingReleaseSeedKeys": [],
+          "legacyXmlPresent": true,
+          "legacyDataXmlPresent": true
+        },
+        {
+          "locale": "ja-jp",
+          "untranslatedKeyCount": 0,
+          "overrideCount": 383,
+          "minimumOverrideCount": 40,
+          "missingReleaseSeedKeys": [],
+          "legacyXmlPresent": true,
+          "legacyDataXmlPresent": true
+        },
+        {
+          "locale": "pt-br",
+          "untranslatedKeyCount": 0,
+          "overrideCount": 383,
+          "minimumOverrideCount": 40,
+          "missingReleaseSeedKeys": [],
+          "legacyXmlPresent": true,
+          "legacyDataXmlPresent": true
+        },
+        {
+          "locale": "zh-cn",
+          "untranslatedKeyCount": 0,
+          "overrideCount": 383,
+          "minimumOverrideCount": 40,
+          "missingReleaseSeedKeys": [],
+          "legacyXmlPresent": true,
+          "legacyDataXmlPresent": true
+        }
+      ],
+      "acceptanceGates": [
+        "pseudo_localization",
+        "missing_key_fail_fast",
+        "top_surface_overflow_checks",
+        "locale_smoke_first_launch",
+        "locale_smoke_settings",
+        "locale_smoke_explain",
+        "locale_smoke_updater",
+        "locale_smoke_support",
+        "non_english_generated_artifact_smoke"
+      ],
+      "domainCoverage": {
+        "app_chrome": "pass",
+        "data_rules_names": "pass",
+        "explain_receipts": "pass",
+        "generated_artifacts": "pass",
+        "install_update_support": "pass"
+      },
+      "localeDomainCoverage": {
+        "de-de": {
+          "app_chrome": "pass",
+          "data_rules_names": "pass",
+          "explain_receipts": "pass",
+          "generated_artifacts": "pass",
+          "install_update_support": "pass"
+        },
+        "en-us": {
+          "app_chrome": "pass",
+          "data_rules_names": "pass",
+          "explain_receipts": "pass",
+          "generated_artifacts": "pass",
+          "install_update_support": "pass"
+        },
+        "fr-fr": {
+          "app_chrome": "pass",
+          "data_rules_names": "pass",
+          "explain_receipts": "pass",
+          "generated_artifacts": "pass",
+          "install_update_support": "pass"
+        },
+        "ja-jp": {
+          "app_chrome": "pass",
+          "data_rules_names": "pass",
+          "explain_receipts": "pass",
+          "generated_artifacts": "pass",
+          "install_update_support": "pass"
+        },
+        "pt-br": {
+          "app_chrome": "pass",
+          "data_rules_names": "pass",
+          "explain_receipts": "pass",
+          "generated_artifacts": "pass",
+          "install_update_support": "pass"
+        },
+        "zh-cn": {
+          "app_chrome": "pass",
+          "data_rules_names": "pass",
+          "explain_receipts": "pass",
+          "generated_artifacts": "pass",
+          "install_update_support": "pass"
+        }
+      },
+      "blockingFindings": [],
+      "blockingFindingsCount": 0,
+      "translationBacklogFindings": [],
+      "translationBacklogFindingsCount": 0
+    }
+  },
+  "desktopTupleCoverage": {
+    "requiredDesktopPlatforms": [
+      "linux",
+      "windows",
+      "macos"
+    ],
+    "requiredDesktopHeads": [
+      "avalonia",
+      "blazor-desktop"
+    ],
+    "promotedInstallerTuples": [
+      {
+        "tupleId": "avalonia:linux:linux-x64",
+        "head": "avalonia",
+        "platform": "linux",
+        "rid": "linux-x64",
+        "arch": "x64",
+        "kind": "installer",
+        "artifactId": "avalonia-linux-x64-installer"
+      },
+      {
+        "tupleId": "blazor-desktop:linux:linux-x64",
+        "head": "blazor-desktop",
+        "platform": "linux",
+        "rid": "linux-x64",
+        "arch": "x64",
+        "kind": "installer",
+        "artifactId": "blazor-desktop-linux-x64-installer"
+      },
+      {
+        "tupleId": "avalonia:windows:win-x64",
+        "head": "avalonia",
+        "platform": "windows",
+        "rid": "win-x64",
+        "arch": "x64",
+        "kind": "installer",
+        "artifactId": "avalonia-win-x64-installer"
+      }
+    ],
+    "promotedPlatformHeads": {
+      "linux": [
+        "avalonia",
+        "blazor-desktop"
+      ],
+      "windows": [
+        "avalonia"
+      ],
+      "macos": []
+    },
+    "requiredDesktopPlatformHeadRidTuples": [
+      "avalonia:linux-x64:linux",
+      "avalonia:osx-arm64:macos",
+      "avalonia:win-x64:windows",
+      "blazor-desktop:linux-x64:linux",
+      "blazor-desktop:osx-arm64:macos",
+      "blazor-desktop:win-x64:windows"
+    ],
+    "promotedPlatformHeadRidTuples": [
+      "avalonia:linux-x64:linux",
+      "avalonia:win-x64:windows",
+      "blazor-desktop:linux-x64:linux"
+    ],
+    "missingRequiredPlatforms": [
+      "macos"
+    ],
+    "missingRequiredHeads": [],
+    "missingRequiredPlatformHeadPairs": [
+      "blazor-desktop:windows",
+      "avalonia:macos",
+      "blazor-desktop:macos"
+    ],
+    "missingRequiredPlatformHeadRidTuples": [
+      "avalonia:osx-arm64:macos",
+      "blazor-desktop:osx-arm64:macos",
+      "blazor-desktop:win-x64:windows"
+    ],
+    "externalProofRequests": [
+      {
+        "tupleId": "avalonia:osx-arm64:macos",
+        "channelId": "docker",
+        "head": "avalonia",
+        "platform": "macos",
+        "rid": "osx-arm64",
+        "requiredHost": "macos",
+        "requiredProofs": [
+          "promoted_installer_artifact",
+          "startup_smoke_receipt"
+        ],
+        "expectedArtifactId": "avalonia-osx-arm64-installer",
+        "expectedInstallerFileName": "chummer-avalonia-osx-arm64-installer.dmg",
+        "expectedInstallerRelativePath": "files/chummer-avalonia-osx-arm64-installer.dmg",
+        "expectedInstallerSha256": "",
+        "expectedPublicInstallRoute": "/downloads/install/avalonia-osx-arm64-installer",
+        "expectedStartupSmokeReceiptPath": "startup-smoke/startup-smoke-avalonia-osx-arm64.receipt.json",
+        "startupSmokeReceiptContract": {
+          "statusAnyOf": [
+            "pass",
+            "passed",
+            "ready"
+          ],
+          "readyCheckpoint": "pre_ui_event_loop",
+          "headId": "avalonia",
+          "platform": "macos",
+          "rid": "osx-arm64",
+          "hostClassContains": "macos"
+        },
+        "proofCaptureCommands": [
+          "cd /docker/chummercomplete/chummer6-ui && CHUMMER_DESKTOP_STARTUP_SMOKE_HOST_CLASS=macos-host CHUMMER_DESKTOP_STARTUP_SMOKE_OPERATING_SYSTEM=macOS ./scripts/run-desktop-startup-smoke.sh /docker/chummercomplete/chummer6-ui/Docker/Downloads/files/chummer-avalonia-osx-arm64-installer.dmg avalonia osx-arm64 Chummer.Avalonia /docker/chummercomplete/chummer6-ui/Docker/Downloads/startup-smoke",
+          "cd /docker/chummercomplete/chummer6-ui && ./scripts/generate-releases-manifest.sh"
+        ]
+      },
+      {
+        "tupleId": "blazor-desktop:osx-arm64:macos",
+        "channelId": "docker",
+        "head": "blazor-desktop",
+        "platform": "macos",
+        "rid": "osx-arm64",
+        "requiredHost": "macos",
+        "requiredProofs": [
+          "promoted_installer_artifact",
+          "startup_smoke_receipt"
+        ],
+        "expectedArtifactId": "blazor-desktop-osx-arm64-installer",
+        "expectedInstallerFileName": "chummer-blazor-desktop-osx-arm64-installer.dmg",
+        "expectedInstallerRelativePath": "files/chummer-blazor-desktop-osx-arm64-installer.dmg",
+        "expectedInstallerSha256": "",
+        "expectedPublicInstallRoute": "/downloads/install/blazor-desktop-osx-arm64-installer",
+        "expectedStartupSmokeReceiptPath": "startup-smoke/startup-smoke-blazor-desktop-osx-arm64.receipt.json",
+        "startupSmokeReceiptContract": {
+          "statusAnyOf": [
+            "pass",
+            "passed",
+            "ready"
+          ],
+          "readyCheckpoint": "pre_ui_event_loop",
+          "headId": "blazor-desktop",
+          "platform": "macos",
+          "rid": "osx-arm64",
+          "hostClassContains": "macos"
+        },
+        "proofCaptureCommands": [
+          "cd /docker/chummercomplete/chummer6-ui && CHUMMER_DESKTOP_STARTUP_SMOKE_HOST_CLASS=macos-host CHUMMER_DESKTOP_STARTUP_SMOKE_OPERATING_SYSTEM=macOS ./scripts/run-desktop-startup-smoke.sh /docker/chummercomplete/chummer6-ui/Docker/Downloads/files/chummer-blazor-desktop-osx-arm64-installer.dmg blazor-desktop osx-arm64 Chummer.Blazor.Desktop /docker/chummercomplete/chummer6-ui/Docker/Downloads/startup-smoke",
+          "cd /docker/chummercomplete/chummer6-ui && ./scripts/generate-releases-manifest.sh"
+        ]
+      },
+      {
+        "tupleId": "blazor-desktop:win-x64:windows",
+        "channelId": "docker",
+        "head": "blazor-desktop",
+        "platform": "windows",
+        "rid": "win-x64",
+        "requiredHost": "windows",
+        "requiredProofs": [
+          "promoted_installer_artifact",
+          "startup_smoke_receipt"
+        ],
+        "expectedArtifactId": "blazor-desktop-win-x64-installer",
+        "expectedInstallerFileName": "chummer-blazor-desktop-win-x64-installer.exe",
+        "expectedInstallerRelativePath": "files/chummer-blazor-desktop-win-x64-installer.exe",
+        "expectedInstallerSha256": "420df5ac80ec449a774e2f6536c84933a28ca95f80b4219ec914d60e99fc46de",
+        "expectedPublicInstallRoute": "/downloads/install/blazor-desktop-win-x64-installer",
+        "expectedStartupSmokeReceiptPath": "startup-smoke/startup-smoke-blazor-desktop-win-x64.receipt.json",
+        "startupSmokeReceiptContract": {
+          "statusAnyOf": [
+            "pass",
+            "passed",
+            "ready"
+          ],
+          "readyCheckpoint": "pre_ui_event_loop",
+          "headId": "blazor-desktop",
+          "platform": "windows",
+          "rid": "win-x64",
+          "hostClassContains": "windows"
+        },
+        "proofCaptureCommands": [
+          "cd /docker/chummercomplete/chummer6-ui && CHUMMER_DESKTOP_STARTUP_SMOKE_HOST_CLASS=windows-host CHUMMER_DESKTOP_STARTUP_SMOKE_OPERATING_SYSTEM=Windows ./scripts/run-desktop-startup-smoke.sh /docker/chummercomplete/chummer6-ui/Docker/Downloads/files/chummer-blazor-desktop-win-x64-installer.exe blazor-desktop win-x64 Chummer.Blazor.Desktop.exe /docker/chummercomplete/chummer6-ui/Docker/Downloads/startup-smoke",
+          "cd /docker/chummercomplete/chummer6-ui && ./scripts/generate-releases-manifest.sh"
+        ]
+      }
+    ],
+    "complete": false
+  }
 }

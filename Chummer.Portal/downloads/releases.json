@@ -1,6 +1,33 @@
 {
-  "version": "unpublished",
-  "channel": "docker",
-  "publishedAt": "2026-03-04T15:31:02Z",
-  "downloads": []
+  "version": "run-20260402-flagship-desktop",
+  "channel": "preview",
+  "publishedAt": "2026-04-02T15:27:01Z",
+  "downloads": [
+    {
+      "id": "avalonia-linux-x64-installer",
+      "platform": "Avalonia Desktop Linux x64 Installer",
+      "url": "/downloads/files/chummer-avalonia-linux-x64-installer.deb",
+      "sha256": "6b0a63c39850a257e66d142c0bad196a7cc4fcbaf027635965f138f534bb13ea",
+      "sizeBytes": 34297862,
+      "format": "deb",
+      "flavor": "installer",
+      "app": "avalonia",
+      "rid": "linux-x64",
+      "head": "flagship",
+      "recommended": true
+    },
+    {
+      "id": "avalonia-win-x64-installer",
+      "platform": "Avalonia Desktop Windows x64 Installer",
+      "url": "/downloads/files/chummer-avalonia-win-x64-installer.exe",
+      "sha256": "7b90663eea8ca1c80249398db34e71ee5e53dc4ae709d36e194b4683a33ff067",
+      "sizeBytes": 95938229,
+      "format": "exe",
+      "flavor": "installer",
+      "app": "avalonia",
+      "rid": "win-x64",
+      "head": "flagship",
+      "recommended": true
+    }
+  ]
 }

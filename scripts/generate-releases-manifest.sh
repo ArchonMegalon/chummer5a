@@ -8,6 +8,7 @@ DOWNLOADS_DIR="${DOWNLOADS_DIR:-$REPO_ROOT/Docker/Downloads/files}"
 MANIFEST_PATH="${MANIFEST_PATH:-$REPO_ROOT/Docker/Downloads/releases.json}"
 PORTAL_MANIFEST_PATH="${PORTAL_MANIFEST_PATH:-$REPO_ROOT/Chummer.Portal/downloads/releases.json}"
 PORTAL_DOWNLOADS_DIR="${PORTAL_DOWNLOADS_DIR:-$REPO_ROOT/Chummer.Portal/downloads}"
+STARTUP_SMOKE_DIR="${STARTUP_SMOKE_DIR:-}"
 RELEASE_VERSION="${RELEASE_VERSION:-unpublished}"
 RELEASE_CHANNEL="${RELEASE_CHANNEL:-docker}"
 RELEASE_PUBLISHED_AT="${RELEASE_PUBLISHED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
@@ -17,7 +18,7 @@ mkdir -p "$(dirname "$MANIFEST_PATH")"
 mkdir -p "$(dirname "$PORTAL_MANIFEST_PATH")"
 mkdir -p "$DOWNLOADS_DIR"
 
-python3 - "$DOWNLOADS_DIR" "$MANIFEST_PATH" "$RELEASE_VERSION" "$RELEASE_CHANNEL" "$RELEASE_PUBLISHED_AT" "$CHUMMER_MACOS_PUBLIC_SHELF_ENABLED" <<'PY'
+python3 - "$DOWNLOADS_DIR" "$MANIFEST_PATH" "$RELEASE_VERSION" "$RELEASE_CHANNEL" "$RELEASE_PUBLISHED_AT" "$CHUMMER_MACOS_PUBLIC_SHELF_ENABLED" "$STARTUP_SMOKE_DIR" <<'PY'
 import hashlib
 import json
 import re
@@ -30,6 +31,7 @@ version = sys.argv[3]
 channel = sys.argv[4]
 published_at = sys.argv[5]
 macos_public_shelf_enabled = sys.argv[6].strip().lower() in {"1", "true", "yes", "on"}
+startup_smoke_dir = Path(sys.argv[7]).expanduser() if sys.argv[7].strip() else None
 
 app_labels = {
     "avalonia": "Avalonia Desktop",
@@ -48,6 +50,35 @@ pattern = re.compile(
     r"^chummer-(?P<app>avalonia|blazor-desktop)-(?P<rid>.+?)(?:-(?P<flavor>installer|portable))?\.(?P<ext>zip|tar\.gz|exe|deb|dmg)$"
 )
 downloads = []
+
+
+def load_startup_smoke_receipts(directory: Path | None) -> list[dict[str, str]]:
+    if directory is None or not directory.exists():
+        return []
+
+    receipts = []
+    for receipt_path in sorted(directory.rglob("startup-smoke-*.receipt.json")):
+        try:
+            loaded = json.loads(receipt_path.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(loaded, dict):
+            continue
+        head = str(loaded.get("headId") or "").strip()
+        platform = str(loaded.get("platform") or "").strip().lower()
+        arch = str(loaded.get("arch") or "").strip().lower()
+        artifact_digest = str(loaded.get("artifactDigest") or "").strip().lower()
+        if not head or not platform or not arch:
+            continue
+        receipts.append(
+            {
+                "head": head,
+                "platform": platform,
+                "arch": arch,
+                "artifactDigest": artifact_digest,
+            }
+        )
+    return receipts
 
 
 def normalize_flavor(raw_flavor: str | None, ext: str) -> str:
@@ -78,6 +109,39 @@ def is_public_shelf_artifact(rid: str) -> bool:
         return macos_public_shelf_enabled
     return True
 
+
+startup_smoke_receipts = load_startup_smoke_receipts(startup_smoke_dir)
+
+
+def has_startup_smoke_proof(app: str, rid: str, flavor: str, sha256: str) -> bool:
+    if flavor != "installer" or not startup_smoke_receipts:
+        return True
+    platform = {
+        "win-x64": "windows",
+        "win-arm64": "windows",
+        "linux-x64": "linux",
+        "linux-arm64": "linux",
+        "osx-x64": "macos",
+        "osx-arm64": "macos",
+    }.get(rid, "")
+    arch = {
+        "win-x64": "x64",
+        "linux-x64": "x64",
+        "osx-x64": "x64",
+        "win-arm64": "arm64",
+        "linux-arm64": "arm64",
+        "osx-arm64": "arm64",
+    }.get(rid, "")
+    matching_receipts = [
+        receipt
+        for receipt in startup_smoke_receipts
+        if receipt["head"] == app and receipt["platform"] == platform and receipt["arch"] == arch
+    ]
+    if not matching_receipts:
+        return False
+    expected_digest = f"sha256:{sha256.lower()}"
+    return any(not receipt["artifactDigest"] or receipt["artifactDigest"] == expected_digest for receipt in matching_receipts)
+
 for artifact in sorted(downloads_dir.iterdir()):
     if not artifact.is_file():
         continue
@@ -93,6 +157,8 @@ for artifact in sorted(downloads_dir.iterdir()):
     if not is_public_shelf_artifact(rid):
         continue
     sha256 = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    if not has_startup_smoke_proof(app, rid, flavor, sha256):
+        continue
     size_bytes = artifact.stat().st_size
     downloads.append(
         {

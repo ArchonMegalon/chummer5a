@@ -3309,6 +3309,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(manifestScriptText, "\"flavor\": flavor");
         StringAssert.Contains(manifestScriptText, "\"head\": resolve_head(app)");
         StringAssert.Contains(manifestScriptText, "CHUMMER_MACOS_PUBLIC_SHELF_ENABLED");
+        StringAssert.Contains(manifestScriptText, "STARTUP_SMOKE_DIR");
+        StringAssert.Contains(manifestScriptText, "has_startup_smoke_proof");
         StringAssert.Contains(manifestScriptText, "if not is_public_shelf_artifact(rid):");
         StringAssert.Contains(verifyScriptText, "CHUMMER_PORTAL_DOWNLOADS_REQUIRE_PUBLISHED_VERSION");
         StringAssert.Contains(verifyScriptText, "CHUMMER_PORTAL_DOWNLOADS_VERIFY_LINKS");

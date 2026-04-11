@@ -1,0 +1,48 @@
+{
+  "version": "run-20260401-202132",
+  "channel": "preview",
+  "publishedAt": "2026-04-01T20:33:13+00:00",
+  "downloads": [
+    {
+      "id": "avalonia-linux-x64-installer",
+      "platform": "Avalonia Desktop Linux X64 Installer",
+      "url": "/downloads/files/chummer-avalonia-linux-x64-installer.deb",
+      "sha256": "019c9f7240619a8c0639501c505e9d50a2d35c7e358b6d09a7b2e90005dc662a",
+      "sizeBytes": 34314308,
+      "head": null,
+      "platformId": null,
+      "arch": null,
+      "kind": "installer",
+      "fileName": null,
+      "installAccessClass": null
+    },
+    {
+      "id": "avalonia-osx-arm64-installer",
+      "platform": "Avalonia Desktop macOS ARM64 Installer",
+      "url": "/downloads/files/chummer-avalonia-osx-arm64-installer.dmg",
+      "sha256": "ff7424afc52f51bb6536aff0a2b0fb88eee76588bde26c9bbcc578fa39656caa",
+      "sizeBytes": 33244484,
+      "head": null,
+      "platformId": null,
+      "arch": null,
+      "kind": "installer",
+      "fileName": null,
+      "installAccessClass": null
+    }
+  ],
+  "source": "registry",
+  "status": "published",
+  "message": null,
+  "hasFallbackSource": false,
+  "rolloutState": "promoted_preview",
+  "rolloutReason": "Current preview shelf is published, but release proof should be re-run before widening trust claims.",
+  "supportabilityState": "review_required",
+  "supportabilitySummary": "Treat the current shelf as review-required until release proof and support closure checks pass.",
+  "knownIssueSummary": "The preview shelf is visible, but known-issue review should stay front-and-center until proof is refreshed.",
+  "fixAvailabilitySummary": "Verify fix availability against the live channel artifact before closing support loops.",
+  "proofStatus": null,
+  "proofGeneratedAt": null,
+  "proofBaseUrl": null,
+  "proofJourneys": null,
+  "proofRoutes": null
+}
