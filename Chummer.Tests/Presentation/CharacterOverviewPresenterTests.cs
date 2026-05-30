@@ -731,6 +731,28 @@ public class CharacterOverviewPresenterTests
     }
 
     [TestMethod]
+    public async Task ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs()
+    {
+        (string CommandId, string DialogId)[] routeExpectations =
+        [
+            ("translator", "dialog.translator"),
+            ("xml_editor", "dialog.xml_editor"),
+            ("hero_lab_importer", "dialog.hero_lab_importer")
+        ];
+
+        foreach ((string commandId, string dialogId) in routeExpectations)
+        {
+            var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+            await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+
+            await presenter.ExecuteCommandAsync(commandId, CancellationToken.None);
+
+            Assert.AreEqual(commandId, presenter.State.LastCommandId);
+            Assert.AreEqual(dialogId, presenter.State.ActiveDialog?.Id);
+        }
+    }
+
+    [TestMethod]
     public async Task ExecuteCommandAsync_runtime_inspector_uses_runtime_projection_dialog()
     {
         var client = new FakeChummerClient();

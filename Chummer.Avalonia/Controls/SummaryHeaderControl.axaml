@@ -1,36 +1,58 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Chummer.Avalonia.Controls.SummaryHeaderControl">
-  <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="8">
-    <Border Grid.Column="0" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+  <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+    <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*,*" ColumnSpacing="8">
+      <Border Grid.Column="0" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+        <StackPanel>
+          <TextBlock Text="Name" FontWeight="Bold" />
+          <TextBlock x:Name="NameValueText" Text="-" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="1" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+        <StackPanel>
+          <TextBlock Text="Alias" FontWeight="Bold" />
+          <TextBlock x:Name="AliasValueText" Text="-" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="2" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+        <StackPanel>
+          <TextBlock Text="Karma" FontWeight="Bold" />
+          <TextBlock x:Name="KarmaValueText" Text="-" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="3" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+        <StackPanel>
+          <TextBlock Text="Skills" FontWeight="Bold" />
+          <TextBlock x:Name="SkillsValueText" Text="-" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="4" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
+        <StackPanel>
+          <TextBlock Text="Runtime" FontWeight="Bold" />
+          <TextBlock x:Name="RuntimeValueText" Text="-" TextWrapping="Wrap" />
+          <Button x:Name="RuntimeInspectButton" Content="Inspect Runtime" HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <Border Grid.Row="1" Padding="10" BorderThickness="1" BorderBrush="#4B5563" Background="#F8FAFC">
       <StackPanel>
-        <TextBlock Text="Name" FontWeight="Bold" />
-        <TextBlock x:Name="NameValueText" Text="-" />
-      </StackPanel>
-    </Border>
-    <Border Grid.Column="1" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
-      <StackPanel>
-        <TextBlock Text="Alias" FontWeight="Bold" />
-        <TextBlock x:Name="AliasValueText" Text="-" />
-      </StackPanel>
-    </Border>
-    <Border Grid.Column="2" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
-      <StackPanel>
-        <TextBlock Text="Karma" FontWeight="Bold" />
-        <TextBlock x:Name="KarmaValueText" Text="-" />
-      </StackPanel>
-    </Border>
-    <Border Grid.Column="3" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
-      <StackPanel>
-        <TextBlock Text="Skills" FontWeight="Bold" />
-        <TextBlock x:Name="SkillsValueText" Text="-" />
-      </StackPanel>
-    </Border>
-    <Border Grid.Column="4" Padding="8" BorderThickness="1" BorderBrush="#4B5563">
-      <StackPanel>
-        <TextBlock Text="Runtime" FontWeight="Bold" />
-        <TextBlock x:Name="RuntimeValueText" Text="-" TextWrapping="Wrap" />
-        <Button x:Name="RuntimeInspectButton" Content="Inspect Runtime" HorizontalAlignment="Left" />
+        <TextBlock Text="Campaign Memory" FontWeight="Bold" />
+        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12" Margin="0,6,0,0">
+          <StackPanel Grid.Column="0" Spacing="4">
+            <TextBlock Text="Consequence" FontWeight="SemiBold" />
+            <TextBlock x:Name="CampaignConsequenceText" Text="-" TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="4">
+            <TextBlock Text="Stale State" FontWeight="SemiBold" />
+            <TextBlock x:Name="CampaignStaleStateText" Text="-" TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="4">
+            <TextBlock Text="Return Action" FontWeight="SemiBold" />
+            <TextBlock x:Name="CampaignReturnActionText" Text="-" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
       </StackPanel>
     </Border>
   </Grid>
