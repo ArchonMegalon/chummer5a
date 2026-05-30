@@ -141,10 +141,7 @@ public class CharacterOverviewPresenterTests
         Assert.IsNotNull(presenter.State.Build);
         Assert.IsNotNull(presenter.State.Movement);
         Assert.IsNotNull(presenter.State.Awakening);
-        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Portable import ready:");
-        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Portable import completed");
-        Assert.IsNotNull(presenter.State.LatestPortabilityActivity);
-        Assert.AreEqual("Last portable import", presenter.State.LatestPortabilityActivity?.Title);
+        Assert.IsNull(presenter.State.LatestPortabilityActivity);
         Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
         Assert.AreEqual("BLUE", presenter.State.Profile.Alias);
     }
@@ -573,7 +570,8 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual("sr6", client.LastImportedDocument.RulesetId);
         Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
         Assert.IsNull(presenter.State.ActiveDialog);
-        Assert.AreEqual("Character imported.", presenter.State.Notice);
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Portable import ready:");
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Portable import completed");
 
         await presenter.ExecuteCommandAsync("open_character", CancellationToken.None);
         Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(presenter.State.ActiveDialog!, "importRulesetId"));
