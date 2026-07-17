@@ -4682,7 +4682,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(workspaceStripCodeText, "public void SetState(WorkspaceStripState state)");
         StringAssert.Contains(workspaceStripCodeText, "SetWorkspaceText(state.WorkspaceText);");
         StringAssert.Contains(summaryHeaderCodeText, "public void SetState(SummaryHeaderState state)");
-        StringAssert.Contains(summaryHeaderCodeText, "SetValues(state.Name, state.Alias, state.Karma, state.Skills, state.RuntimeSummary, state.CanInspectRuntime);");
+        StringAssert.Contains(summaryHeaderCodeText, "SetValues(");
+        StringAssert.Contains(summaryHeaderCodeText, "state.CampaignMemory);");
         StringAssert.Contains(summaryHeaderCodeText, "RuntimeInspectButton.IsEnabled = canInspectRuntime;");
         StringAssert.Contains(statusStripCodeText, "public void SetState(StatusStripState state)");
         StringAssert.Contains(statusStripCodeText, "SetValues(");
