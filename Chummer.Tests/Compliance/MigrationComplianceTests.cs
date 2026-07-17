@@ -4492,6 +4492,21 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Active_heads_pin_patched_transitive_security_floors()
+    {
+        string apiProjectText = File.ReadAllText(FindPath("Chummer.Api", "Chummer.Api.csproj"));
+        string avaloniaProjectText = File.ReadAllText(
+            FindPath("Chummer.Avalonia", "Chummer.Avalonia.csproj"));
+
+        StringAssert.Contains(
+            apiProjectText,
+            "<PackageReference Include=\"Microsoft.OpenApi\" Version=\"2.7.5\" />");
+        StringAssert.Contains(
+            avaloniaProjectText,
+            "<PackageReference Include=\"Tmds.DBus.Protocol\" Version=\"0.21.3\" />");
+    }
+
+    [TestMethod]
     public void Repo_guidance_marks_legacy_heads_as_oracle_only()
     {
         string solutionPath = FindPath("Chummer.sln");
