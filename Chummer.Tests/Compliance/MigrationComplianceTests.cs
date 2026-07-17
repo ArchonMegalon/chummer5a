@@ -4465,6 +4465,33 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Archived_chummerhub_does_not_package_or_log_google_credentials()
+    {
+        string projectText = File.ReadAllText(FindPath("ChummerHub", "ChummerHub.csproj"));
+        string driveHandlerText = File.ReadAllText(
+            FindPath("ChummerHub", "Services", "GoogleDrive", "DriveHandler.cs"));
+        string gitIgnoreText = File.ReadAllText(FindPath(".gitignore"));
+        string rootDockerIgnoreText = File.ReadAllText(FindPath(".dockerignore"));
+        string hubDockerIgnoreText = File.ReadAllText(FindPath("ChummerHub", ".dockerignore"));
+
+        Assert.IsNull(TryFindPath("ChummerHub", "Services", "GoogleDrive", "SINners.json"));
+        Assert.IsNull(TryFindPath("ChummerHub", "Services", "GoogleDrive", "TextFile.txt"));
+        Assert.IsFalse(projectText.Contains("Services\\GoogleDrive\\SINners.json", StringComparison.Ordinal));
+        Assert.IsFalse(driveHandlerText.Contains(
+            "AuthenticationGoogleRefreshToken retrieved from KeyVault:",
+            StringComparison.Ordinal));
+        Assert.IsFalse(driveHandlerText.Contains("GoogleChummerSINersSecret:", StringComparison.Ordinal));
+        Assert.IsFalse(driveHandlerText.Contains("GoogleChummerSINersId:", StringComparison.Ordinal));
+
+        StringAssert.Contains(gitIgnoreText, "ChummerHub/Services/GoogleDrive/SINners.json");
+        StringAssert.Contains(gitIgnoreText, "ChummerHub/Services/GoogleDrive/TextFile.txt");
+        StringAssert.Contains(rootDockerIgnoreText, "ChummerHub/Services/GoogleDrive/SINners.json");
+        StringAssert.Contains(rootDockerIgnoreText, "ChummerHub/Services/GoogleDrive/TextFile.txt");
+        StringAssert.Contains(hubDockerIgnoreText, "Services/GoogleDrive/SINners.json");
+        StringAssert.Contains(hubDockerIgnoreText, "Services/GoogleDrive/TextFile.txt");
+    }
+
+    [TestMethod]
     public void Repo_guidance_marks_legacy_heads_as_oracle_only()
     {
         string solutionPath = FindPath("Chummer.sln");

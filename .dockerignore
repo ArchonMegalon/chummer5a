@@ -1,6 +1,8 @@
 **/.classpath
 **/.dockerignore
 **/.env
+ChummerHub/Services/GoogleDrive/SINners.json
+ChummerHub/Services/GoogleDrive/TextFile.txt
 **/.git
 **/.gitignore
 !.gitignore
