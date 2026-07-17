@@ -4492,6 +4492,30 @@ public class MigrationComplianceTests
     }
 
     [TestMethod]
+    public void Archived_chummerhub_container_build_fails_closed_without_explicit_migration_opt_in()
+    {
+        string dockerfileText = File.ReadAllText(FindPath("ChummerHub", "Dockerfile"));
+        string readmeText = File.ReadAllText(FindPath("ChummerHub", "README.md"));
+        const string guard =
+            "RUN test \"$CHUMMER_ALLOW_ARCHIVED_HUB_BUILD\" = \"1\" ||";
+
+        StringAssert.Contains(
+            dockerfileText,
+            "ARG CHUMMER_ALLOW_ARCHIVED_HUB_BUILD=0");
+        StringAssert.Contains(dockerfileText, guard);
+        Assert.IsLessThan(
+            dockerfileText.IndexOf(guard, StringComparison.Ordinal),
+            dockerfileText.IndexOf("RUN dotnet restore", StringComparison.Ordinal),
+            "The archived-project guard must fail before dependency restore or compilation.");
+        StringAssert.Contains(
+            readmeText,
+            "--build-arg CHUMMER_ALLOW_ARCHIVED_HUB_BUILD=1");
+        StringAssert.Contains(
+            readmeText,
+            "A zero-high/critical dependency audit and supported-runtime migration are required before removing the guard.");
+    }
+
+    [TestMethod]
     public void Active_heads_pin_patched_transitive_security_floors()
     {
         string apiProjectText = File.ReadAllText(FindPath("Chummer.Api", "Chummer.Api.csproj"));

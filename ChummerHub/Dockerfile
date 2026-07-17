@@ -9,6 +9,8 @@ EXPOSE 44321
 EXPOSE 1433
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+ARG CHUMMER_ALLOW_ARCHIVED_HUB_BUILD=0
+RUN test "$CHUMMER_ALLOW_ARCHIVED_HUB_BUILD" = "1" || (echo "ChummerHub is an archived, unsupported .NET 6 compatibility asset; pass --build-arg CHUMMER_ALLOW_ARCHIVED_HUB_BUILD=1 only for isolated migration work." >&2; exit 1)
 WORKDIR /src
 COPY ["ChummerHub/ChummerHub.csproj", "ChummerHub/"]
 RUN dotnet restore "ChummerHub/ChummerHub.csproj"
