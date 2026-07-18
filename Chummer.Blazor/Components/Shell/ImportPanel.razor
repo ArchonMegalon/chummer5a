@@ -1,6 +1,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 
-<section class="panel import">
+<section class="panel import"
+         data-interactive-ready="@(_interactiveReady ? "true" : "false")">
     <h2>Import Character File</h2>
     <InputFile OnChange="ImportFileRequested"
                accept=".chum5,.xml,text/xml,application/xml"
@@ -18,6 +19,8 @@
 </section>
 
 @code {
+    private bool _interactiveReady;
+
     [Parameter]
     public bool IsBusy { get; set; }
 
@@ -42,5 +45,16 @@
     private Task OnRawImportXmlChanged(ChangeEventArgs args)
     {
         return RawImportXmlChanged.InvokeAsync(args.Value?.ToString() ?? string.Empty);
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _interactiveReady = true;
+            StateHasChanged();
+        }
+
+        return Task.CompletedTask;
     }
 }

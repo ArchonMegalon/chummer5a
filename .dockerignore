@@ -21,6 +21,8 @@ ChummerHub/Services/GoogleDrive/TextFile.txt
 !docker-compose.yml
 **/Dockerfile*
 !.dockerignore
+!ChummerHub/.dockerignore
+!ChummerHub/Dockerfile
 !Chummer.Coach.Web/Dockerfile
 !Chummer.Session.Web/Dockerfile
 !Docker/Dockerfile.tests

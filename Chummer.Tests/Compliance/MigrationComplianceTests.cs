@@ -4459,6 +4459,13 @@ public class MigrationComplianceTests
         StringAssert.Contains(dockerfileText, "COPY README.md ./");
         StringAssert.Contains(dockerfileText, "COPY docs/ docs/");
         Assert.IsFalse(dockerfileText.Contains("COPY ChummerHub/ ChummerHub/", StringComparison.Ordinal));
+        StringAssert.Contains(dockerfileText, "COPY ChummerHub/ChummerHub.csproj ChummerHub/");
+        StringAssert.Contains(dockerfileText, "COPY ChummerHub/Dockerfile ChummerHub/");
+        StringAssert.Contains(dockerfileText, "COPY ChummerHub/README.md ChummerHub/");
+        StringAssert.Contains(dockerfileText, "COPY ChummerHub/.dockerignore ChummerHub/");
+        StringAssert.Contains(
+            dockerfileText,
+            "COPY ChummerHub/Services/GoogleDrive/DriveHandler.cs ChummerHub/Services/GoogleDrive/");
         StringAssert.Contains(dockerfileText, "COPY .github/PULL_REQUEST_TEMPLATE.md .github/");
         StringAssert.Contains(dockerfileText, "COPY Docker/Amends/ Docker/Amends/");
         StringAssert.Contains(dockerfileText, "COPY Docker/Downloads/ Docker/Downloads/");
