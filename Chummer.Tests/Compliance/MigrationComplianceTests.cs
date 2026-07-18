@@ -4459,9 +4459,82 @@ public class MigrationComplianceTests
         StringAssert.Contains(dockerfileText, "COPY README.md ./");
         StringAssert.Contains(dockerfileText, "COPY docs/ docs/");
         Assert.IsFalse(dockerfileText.Contains("COPY ChummerHub/ ChummerHub/", StringComparison.Ordinal));
+        StringAssert.Contains(dockerfileText, "COPY ChummerHub/ChummerHub.csproj ChummerHub/");
+        StringAssert.Contains(dockerfileText, "COPY ChummerHub/Dockerfile ChummerHub/");
+        StringAssert.Contains(dockerfileText, "COPY ChummerHub/README.md ChummerHub/");
+        StringAssert.Contains(dockerfileText, "COPY ChummerHub/.dockerignore ChummerHub/");
+        StringAssert.Contains(
+            dockerfileText,
+            "COPY ChummerHub/Services/GoogleDrive/DriveHandler.cs ChummerHub/Services/GoogleDrive/");
         StringAssert.Contains(dockerfileText, "COPY .github/PULL_REQUEST_TEMPLATE.md .github/");
         StringAssert.Contains(dockerfileText, "COPY Docker/Amends/ Docker/Amends/");
         StringAssert.Contains(dockerfileText, "COPY Docker/Downloads/ Docker/Downloads/");
+    }
+
+    [TestMethod]
+    public void Archived_chummerhub_does_not_package_or_log_google_credentials()
+    {
+        string projectText = File.ReadAllText(FindPath("ChummerHub", "ChummerHub.csproj"));
+        string driveHandlerText = File.ReadAllText(
+            FindPath("ChummerHub", "Services", "GoogleDrive", "DriveHandler.cs"));
+        string gitIgnoreText = File.ReadAllText(FindPath(".gitignore"));
+        string rootDockerIgnoreText = File.ReadAllText(FindPath(".dockerignore"));
+        string hubDockerIgnoreText = File.ReadAllText(FindPath("ChummerHub", ".dockerignore"));
+
+        Assert.IsNull(TryFindPath("ChummerHub", "Services", "GoogleDrive", "SINners.json"));
+        Assert.IsNull(TryFindPath("ChummerHub", "Services", "GoogleDrive", "TextFile.txt"));
+        Assert.IsFalse(projectText.Contains("Services\\GoogleDrive\\SINners.json", StringComparison.Ordinal));
+        Assert.IsFalse(driveHandlerText.Contains(
+            "AuthenticationGoogleRefreshToken retrieved from KeyVault:",
+            StringComparison.Ordinal));
+        Assert.IsFalse(driveHandlerText.Contains("GoogleChummerSINersSecret:", StringComparison.Ordinal));
+        Assert.IsFalse(driveHandlerText.Contains("GoogleChummerSINersId:", StringComparison.Ordinal));
+
+        StringAssert.Contains(gitIgnoreText, "ChummerHub/Services/GoogleDrive/SINners.json");
+        StringAssert.Contains(gitIgnoreText, "ChummerHub/Services/GoogleDrive/TextFile.txt");
+        StringAssert.Contains(rootDockerIgnoreText, "ChummerHub/Services/GoogleDrive/SINners.json");
+        StringAssert.Contains(rootDockerIgnoreText, "ChummerHub/Services/GoogleDrive/TextFile.txt");
+        StringAssert.Contains(hubDockerIgnoreText, "Services/GoogleDrive/SINners.json");
+        StringAssert.Contains(hubDockerIgnoreText, "Services/GoogleDrive/TextFile.txt");
+    }
+
+    [TestMethod]
+    public void Archived_chummerhub_container_build_fails_closed_without_explicit_migration_opt_in()
+    {
+        string dockerfileText = File.ReadAllText(FindPath("ChummerHub", "Dockerfile"));
+        string readmeText = File.ReadAllText(FindPath("ChummerHub", "README.md"));
+        const string guard =
+            "RUN test \"$CHUMMER_ALLOW_ARCHIVED_HUB_BUILD\" = \"1\" ||";
+
+        StringAssert.Contains(
+            dockerfileText,
+            "ARG CHUMMER_ALLOW_ARCHIVED_HUB_BUILD=0");
+        StringAssert.Contains(dockerfileText, guard);
+        Assert.IsLessThan(
+            dockerfileText.IndexOf("RUN dotnet restore", StringComparison.Ordinal),
+            dockerfileText.IndexOf(guard, StringComparison.Ordinal),
+            "The archived-project guard must fail before dependency restore or compilation.");
+        StringAssert.Contains(
+            readmeText,
+            "--build-arg CHUMMER_ALLOW_ARCHIVED_HUB_BUILD=1");
+        StringAssert.Contains(
+            readmeText,
+            "A zero-high/critical dependency audit and supported-runtime migration are required before removing the guard.");
+    }
+
+    [TestMethod]
+    public void Active_heads_pin_patched_transitive_security_floors()
+    {
+        string apiProjectText = File.ReadAllText(FindPath("Chummer.Api", "Chummer.Api.csproj"));
+        string avaloniaProjectText = File.ReadAllText(
+            FindPath("Chummer.Avalonia", "Chummer.Avalonia.csproj"));
+
+        StringAssert.Contains(
+            apiProjectText,
+            "<PackageReference Include=\"Microsoft.OpenApi\" Version=\"2.7.5\" />");
+        StringAssert.Contains(
+            avaloniaProjectText,
+            "<PackageReference Include=\"Tmds.DBus.Protocol\" Version=\"0.21.3\" />");
     }
 
     [TestMethod]
@@ -4616,7 +4689,8 @@ public class MigrationComplianceTests
         StringAssert.Contains(workspaceStripCodeText, "public void SetState(WorkspaceStripState state)");
         StringAssert.Contains(workspaceStripCodeText, "SetWorkspaceText(state.WorkspaceText);");
         StringAssert.Contains(summaryHeaderCodeText, "public void SetState(SummaryHeaderState state)");
-        StringAssert.Contains(summaryHeaderCodeText, "SetValues(state.Name, state.Alias, state.Karma, state.Skills, state.RuntimeSummary, state.CanInspectRuntime);");
+        StringAssert.Contains(summaryHeaderCodeText, "SetValues(");
+        StringAssert.Contains(summaryHeaderCodeText, "state.CampaignMemory);");
         StringAssert.Contains(summaryHeaderCodeText, "RuntimeInspectButton.IsEnabled = canInspectRuntime;");
         StringAssert.Contains(statusStripCodeText, "public void SetState(StatusStripState state)");
         StringAssert.Contains(statusStripCodeText, "SetValues(");
@@ -4691,9 +4765,9 @@ public class MigrationComplianceTests
         string xamlText = File.ReadAllText(xamlPath);
         string coachSidecarCodePath = FindPath("Chummer.Avalonia", "MainWindow.CoachSidecar.cs");
         string coachSidecarCodeText = File.ReadAllText(coachSidecarCodePath);
-        string coachClientPath = FindPath("Chummer.Avalonia", "AvaloniaCoachSidecarClient.cs");
+        string coachClientPath = FindPath("Chummer.Desktop.Runtime", "AvaloniaCoachSidecarClient.cs");
         string coachClientText = File.ReadAllText(coachClientPath);
-        string coachClientContractPath = FindPath("Chummer.Avalonia", "IAvaloniaCoachSidecarClient.cs");
+        string coachClientContractPath = FindPath("Chummer.Desktop.Runtime", "IAvaloniaCoachSidecarClient.cs");
         string coachClientContractText = File.ReadAllText(coachClientContractPath);
         string coachControlPath = FindPath("Chummer.Avalonia", "Controls", "CoachSidecarControl.axaml");
         string coachControlText = File.ReadAllText(coachControlPath);
@@ -4704,9 +4778,8 @@ public class MigrationComplianceTests
         string projectorTestsPath = FindPath("Chummer.Tests", "Presentation", "AvaloniaCoachSidecarProjectorTests.cs");
         string projectorTestsText = File.ReadAllText(projectorTestsPath);
 
-        StringAssert.Contains(appText, "AddSingleton<IAvaloniaCoachSidecarClient>");
-        StringAssert.Contains(appText, "HttpAvaloniaCoachSidecarClient");
-        StringAssert.Contains(appText, "InProcessAvaloniaCoachSidecarClient");
+        StringAssert.Contains(appText, "AddAvaloniaCoachSidecarClient");
+        StringAssert.Contains(coachClientText, "AddSingleton<IAvaloniaCoachSidecarClient>");
         StringAssert.Contains(mainWindowText, "private readonly IAvaloniaCoachSidecarClient _coachSidecarClient;");
         StringAssert.Contains(mainWindowText, "ResolveService<IAvaloniaCoachSidecarClient>()");
         StringAssert.Contains(xamlText, "CoachSidecarControl");

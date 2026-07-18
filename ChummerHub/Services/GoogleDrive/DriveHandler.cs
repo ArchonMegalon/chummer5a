@@ -88,10 +88,6 @@ namespace ChummerHub.Services.GoogleDrive
                 var keys = new KeyVault(_logger);
                 string refreshToken = keys.GetSecret("AuthenticationGoogleRefreshToken");
 
-                //_logger.LogInformation("AuthenticationGoogleRefreshToken retrieved from KeyVault: " + refreshToken);
-                
-                    
-
                 var token = new TokenResponse
                 {
                     AccessToken = "",
@@ -112,9 +108,8 @@ namespace ChummerHub.Services.GoogleDrive
                     DataStore = new GoogleIDataStore("me", refreshToken, _logger)
                 });
 
-                _logger.LogInformation("AuthenticationGoogleRefreshToken retrieved from KeyVault: " + refreshToken
-                    + Environment.NewLine + "\tGoogleChummerSINersId: " + flow2.ClientSecrets.ClientId + Environment.NewLine 
-                    + "\tGoogleChummerSINersSecret: " + flow2.ClientSecrets.ClientSecret);
+                _logger.LogInformation(
+                    "Google Drive credentials were resolved from Key Vault for the configured service user.");
 
                 UserCredential credential = new UserCredential(flow2, "me", token);
                 return credential;

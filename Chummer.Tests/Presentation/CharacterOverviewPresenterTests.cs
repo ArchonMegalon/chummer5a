@@ -141,10 +141,7 @@ public class CharacterOverviewPresenterTests
         Assert.IsNotNull(presenter.State.Build);
         Assert.IsNotNull(presenter.State.Movement);
         Assert.IsNotNull(presenter.State.Awakening);
-        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Portable import ready:");
-        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Portable import completed");
-        Assert.IsNotNull(presenter.State.LatestPortabilityActivity);
-        Assert.AreEqual("Last portable import", presenter.State.LatestPortabilityActivity?.Title);
+        Assert.IsNull(presenter.State.LatestPortabilityActivity);
         Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
         Assert.AreEqual("BLUE", presenter.State.Profile.Alias);
     }
@@ -573,7 +570,8 @@ public class CharacterOverviewPresenterTests
         Assert.AreEqual("sr6", client.LastImportedDocument.RulesetId);
         Assert.AreEqual("ws-1", presenter.State.WorkspaceId?.Value);
         Assert.IsNull(presenter.State.ActiveDialog);
-        Assert.AreEqual("Character imported.", presenter.State.Notice);
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Portable import ready:");
+        StringAssert.Contains(presenter.State.Notice ?? string.Empty, "Portable import completed");
 
         await presenter.ExecuteCommandAsync("open_character", CancellationToken.None);
         Assert.AreEqual("sr6", DesktopDialogFieldValueParser.GetValue(presenter.State.ActiveDialog!, "importRulesetId"));
@@ -727,6 +725,28 @@ public class CharacterOverviewPresenterTests
 
             Assert.IsNotNull(presenter.State.ActiveDialog, $"Command '{commandId}' did not open a dialog.");
             Assert.AreNotEqual("dialog.generic", presenter.State.ActiveDialog?.Id, $"Command '{commandId}' fell back to generic dialog template.");
+        }
+    }
+
+    [TestMethod]
+    public async Task ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs()
+    {
+        (string CommandId, string DialogId)[] routeExpectations =
+        [
+            ("translator", "dialog.translator"),
+            ("xml_editor", "dialog.xml_editor"),
+            ("hero_lab_importer", "dialog.hero_lab_importer")
+        ];
+
+        foreach ((string commandId, string dialogId) in routeExpectations)
+        {
+            var presenter = new CharacterOverviewPresenter(new FakeChummerClient());
+            await presenter.LoadAsync(new CharacterWorkspaceId("ws-1"), CancellationToken.None);
+
+            await presenter.ExecuteCommandAsync(commandId, CancellationToken.None);
+
+            Assert.AreEqual(commandId, presenter.State.LastCommandId);
+            Assert.AreEqual(dialogId, presenter.State.ActiveDialog?.Id);
         }
     }
 

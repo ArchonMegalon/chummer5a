@@ -26,6 +26,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Chummer.Tests.Presentation;
 
 [TestClass]
+[TestCategory("ApiIntegration")]
 public class DualHeadAcceptanceTests
 {
     private static readonly Uri BaseUri = ResolveBaseUri();
@@ -928,6 +929,30 @@ public class DualHeadAcceptanceTests
             Assert.IsTrue(blazorSnapshots.TryGetValue(commandId, out CommandDialogSnapshot? blazor), $"Missing Blazor dialog snapshot for command '{commandId}'.");
             AssertCommandDialogSnapshotEqual(avalonia, blazor, commandId);
         }
+    }
+
+    [TestMethod]
+    public async Task Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts()
+    {
+        string xml = File.ReadAllText(FindTestFilePath("Apex Predator.chum5"));
+        byte[] documentBytes = Encoding.UTF8.GetBytes(xml);
+        string[] commandIds = ["translator", "xml_editor", "hero_lab_importer"];
+
+        Dictionary<string, CommandDialogSnapshot> avaloniaSnapshots = await CaptureAvaloniaCommandDialogSnapshotsAsync(documentBytes, commandIds);
+        Dictionary<string, CommandDialogSnapshot> blazorSnapshots = await CaptureBlazorCommandDialogSnapshotsAsync(documentBytes, commandIds);
+
+        foreach (string commandId in commandIds)
+        {
+            Assert.IsTrue(avaloniaSnapshots.TryGetValue(commandId, out CommandDialogSnapshot? avalonia), $"Missing Avalonia dialog snapshot for command '{commandId}'.");
+            Assert.IsTrue(blazorSnapshots.TryGetValue(commandId, out CommandDialogSnapshot? blazor), $"Missing Blazor dialog snapshot for command '{commandId}'.");
+            AssertCommandDialogSnapshotEqual(avalonia, blazor, commandId);
+        }
+
+        CollectionAssert.Contains(avaloniaSnapshots["translator"].Fields.Select(field => field.Id).ToArray(), "translatorSearch");
+        CollectionAssert.Contains(avaloniaSnapshots["xml_editor"].Fields.Select(field => field.Id).ToArray(), "xmlEditorDialog");
+        CollectionAssert.Contains(avaloniaSnapshots["hero_lab_importer"].Fields.Select(field => field.Id).ToArray(), "heroLabSource");
+        CollectionAssert.Contains(avaloniaSnapshots["hero_lab_importer"].Fields.Select(field => field.Id).ToArray(), "importRulesetId");
+        CollectionAssert.Contains(avaloniaSnapshots["hero_lab_importer"].Fields.Select(field => field.Id).ToArray(), "heroLabXml");
     }
 
     [TestMethod]

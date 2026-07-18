@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Chummer.Application.AI;
 using Chummer.Desktop.Runtime;
 using Chummer.Contracts.Presentation;
 using Chummer.Presentation;
@@ -52,10 +51,7 @@ public partial class App : global::Avalonia.Application
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddChummerLocalRuntimeClient(AppContext.BaseDirectory, Directory.GetCurrentDirectory());
-        services.AddSingleton<IAvaloniaCoachSidecarClient>(serviceProvider =>
-            UseHttpClientMode()
-                ? new HttpAvaloniaCoachSidecarClient(serviceProvider.GetRequiredService<HttpClient>())
-                : new InProcessAvaloniaCoachSidecarClient(serviceProvider.GetRequiredService<IAiGatewayService>()));
+        services.AddAvaloniaCoachSidecarClient(UseHttpClientMode());
         services.AddSingleton<IShellBootstrapDataProvider, ShellBootstrapDataProvider>();
         services.AddSingleton<ICharacterOverviewPresenter, CharacterOverviewPresenter>();
         services.AddSingleton<IShellPresenter, ShellPresenter>();

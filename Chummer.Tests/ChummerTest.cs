@@ -61,7 +61,7 @@ namespace Chummer.Tests
         public static Character[] Characters { get; }
     }
 
-    [TestClass]
+    [STATestClass]
     public class ChummerTest
     {
         [AssemblyInitialize]
@@ -69,6 +69,11 @@ namespace Chummer.Tests
         {
             Utils.IsUnitTest = true;
             Utils.IsUnitTestForUI = false;
+        }
+
+        [ClassInitialize]
+        public static void InitializeUiFixture(TestContext context)
+        {
             Utils.CreateSynchronizationContext();
         }
 

@@ -14,10 +14,24 @@ public partial class SummaryHeaderControl : UserControl
 
     public void SetState(SummaryHeaderState state)
     {
-        SetValues(state.Name, state.Alias, state.Karma, state.Skills, state.RuntimeSummary, state.CanInspectRuntime);
+        SetValues(
+            state.Name,
+            state.Alias,
+            state.Karma,
+            state.Skills,
+            state.RuntimeSummary,
+            state.CanInspectRuntime,
+            state.CampaignMemory);
     }
 
-    public void SetValues(string? name, string? alias, string? karma, string? skills, string? runtimeSummary, bool canInspectRuntime)
+    public void SetValues(
+        string? name,
+        string? alias,
+        string? karma,
+        string? skills,
+        string? runtimeSummary,
+        bool canInspectRuntime,
+        CampaignMemoryState? campaignMemory)
     {
         NameValueText.Text = string.IsNullOrWhiteSpace(name) ? "-" : name;
         AliasValueText.Text = string.IsNullOrWhiteSpace(alias) ? "-" : alias;
@@ -25,6 +39,9 @@ public partial class SummaryHeaderControl : UserControl
         SkillsValueText.Text = string.IsNullOrWhiteSpace(skills) ? "-" : skills;
         RuntimeValueText.Text = string.IsNullOrWhiteSpace(runtimeSummary) ? "-" : runtimeSummary;
         RuntimeInspectButton.IsEnabled = canInspectRuntime;
+        CampaignConsequenceText.Text = campaignMemory?.ConsequenceSummary ?? "-";
+        CampaignStaleStateText.Text = campaignMemory?.StaleStateSummary ?? "-";
+        CampaignReturnActionText.Text = campaignMemory?.ReturnActionSummary ?? "-";
     }
 
     private void RuntimeInspectButton_OnClick(object? sender, global::Avalonia.Interactivity.RoutedEventArgs e)
@@ -39,4 +56,10 @@ public sealed record SummaryHeaderState(
     string? Karma,
     string? Skills,
     string? RuntimeSummary,
-    bool CanInspectRuntime);
+    bool CanInspectRuntime,
+    CampaignMemoryState? CampaignMemory = null);
+
+public sealed record CampaignMemoryState(
+    string ConsequenceSummary,
+    string StaleStateSummary,
+    string ReturnActionSummary);

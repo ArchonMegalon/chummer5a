@@ -39,6 +39,7 @@ async function run() {
   try {
     await openRootWithRetry(page);
     await page.waitForSelector('text=Import Character File', { timeout: 15000 });
+    await page.waitForSelector('section.import[data-interactive-ready="true"]', { timeout: 30000 });
 
     const workspaceButtons = page.locator('#openCharactersTree .command-button');
     if (await workspaceButtons.count() === 0) {

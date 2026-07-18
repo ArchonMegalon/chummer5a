@@ -55,17 +55,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Remove="Services\GoogleDrive\SINners.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="googleb94c18697e68333b.html" />
     <None Remove="Migrations\ApplicationDbContextModelSnapshot.cs.txt" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Services\GoogleDrive\SINners.json" />
-  </ItemGroup>
   <!--<PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>

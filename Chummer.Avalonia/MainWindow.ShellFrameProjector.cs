@@ -34,7 +34,8 @@ internal static class MainWindowShellFrameProjector
                     Karma: state.Progress?.Karma.ToString(),
                     Skills: state.Skills?.Count.ToString(),
                     RuntimeSummary: ShellStatusTextFormatter.BuildActiveRuntimeSummary(shellSurface.ActiveRuntime),
-                    CanInspectRuntime: shellSurface.ActiveRuntime is not null),
+                    CanInspectRuntime: shellSurface.ActiveRuntime is not null,
+                    CampaignMemory: ProjectCampaignMemory(state, shellSurface)),
                 StatusStrip: new StatusStripState(
                     CharacterState: $"Character: {(workspaceContext.ActiveWorkspaceId is null ? "none" : "loaded")}",
                     ServiceState: $"Service: {(shellSurface.Error is null ? "online" : "error")}",
@@ -192,6 +193,142 @@ internal static class MainWindowShellFrameProjector
         }
 
         return lookup;
+    }
+
+    internal static CampaignMemoryState ProjectCampaignMemory(
+        CharacterOverviewState state,
+        ShellSurfaceState shellSurface)
+    {
+        return ProjectCampaignMemory(state, shellSurface, DateTimeOffset.UtcNow);
+    }
+
+    internal static CampaignMemoryState ProjectCampaignMemory(
+        CharacterOverviewState state,
+        ShellSurfaceState shellSurface,
+        DateTimeOffset nowUtc)
+    {
+        OpenWorkspaceState? activeWorkspace = shellSurface.OpenWorkspaces
+            .FirstOrDefault(workspace => string.Equals(workspace.Id.Value, shellSurface.ActiveWorkspaceId?.Value, StringComparison.Ordinal));
+
+        string consequenceSummary = BuildConsequenceSummary(state, shellSurface, activeWorkspace);
+        string staleStateSummary = BuildStaleStateSummary(shellSurface, activeWorkspace, nowUtc);
+        string returnActionSummary = BuildReturnActionSummary(state, shellSurface);
+        return new CampaignMemoryState(consequenceSummary, staleStateSummary, returnActionSummary);
+    }
+
+    private static string BuildConsequenceSummary(
+        CharacterOverviewState state,
+        ShellSurfaceState shellSurface,
+        OpenWorkspaceState? activeWorkspace)
+    {
+        if (state.LatestPortabilityActivity is { } activity)
+        {
+            WorkspacePortabilityNote? primaryNote = activity.Receipt.Notes
+                .FirstOrDefault(note =>
+                    string.Equals(note.Severity, WorkspacePortabilityNoteSeverities.Warning, StringComparison.Ordinal)
+                    || string.Equals(note.Severity, WorkspacePortabilityNoteSeverities.Error, StringComparison.Ordinal));
+            string summary = primaryNote?.Summary ?? activity.Receipt.ReceiptSummary;
+            return $"{activity.Title}: {summary}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(shellSurface.Notice))
+        {
+            return shellSurface.Notice;
+        }
+
+        if (activeWorkspace is not null)
+        {
+            return $"No governed campaign consequence receipt is pinned for {activeWorkspace.Name} yet.";
+        }
+
+        return "No restored workspace is carrying campaign consequence memory yet.";
+    }
+
+    private static string BuildStaleStateSummary(
+        ShellSurfaceState shellSurface,
+        OpenWorkspaceState? activeWorkspace,
+        DateTimeOffset nowUtc)
+    {
+        if (activeWorkspace is null)
+        {
+            return "No active workspace is restored. Open a roster entry or import a dossier before the next session.";
+        }
+
+        if (!activeWorkspace.HasSavedWorkspace)
+        {
+            return "Unsaved workspace changes are still local to this device; save before you trust the next-session return path.";
+        }
+
+        if (shellSurface.ActiveRuntime is null)
+        {
+            return "Workspace restored without a governed runtime pin; inspect runtime before you resume.";
+        }
+
+        TimeSpan age = nowUtc - activeWorkspace.LastOpenedUtc;
+        if (age >= TimeSpan.FromDays(7))
+        {
+            return $"Last opened {FormatAge(age)} ago; treat session context as stale until you review recap and rules.";
+        }
+
+        if (age >= TimeSpan.FromHours(24))
+        {
+            return $"Last opened {FormatAge(age)} ago; review recap and open tabs before continuing.";
+        }
+
+        return $"Last opened {FormatAge(age)} ago with a governed runtime attached.";
+    }
+
+    private static string BuildReturnActionSummary(
+        CharacterOverviewState state,
+        ShellSurfaceState shellSurface)
+    {
+        if (state.LatestPortabilityActivity is { } activity
+            && !string.IsNullOrWhiteSpace(activity.Receipt.NextSafeAction))
+        {
+            return activity.Receipt.NextSafeAction;
+        }
+
+        WorkflowSurfaceActionBinding? workflowSurface = shellSurface.ActiveWorkflowSurfaceActions.FirstOrDefault();
+        if (workflowSurface is not null)
+        {
+            return $"Resume with '{workflowSurface.Label}' on the active workbench route.";
+        }
+
+        WorkspaceSurfaceActionDefinition? workspaceAction = shellSurface.WorkspaceActions.FirstOrDefault();
+        if (workspaceAction is not null)
+        {
+            return $"Resume with '{workspaceAction.Label}' from the active tab.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(shellSurface.ActiveTabId))
+        {
+            return $"Reopen '{shellSurface.ActiveTabId}' and review the workspace before play.";
+        }
+
+        return "Reopen the workspace and review profile, rules, and recap before play.";
+    }
+
+    private static string FormatAge(TimeSpan age)
+    {
+        if (age < TimeSpan.FromMinutes(1))
+        {
+            return "under a minute";
+        }
+
+        if (age < TimeSpan.FromHours(1))
+        {
+            int minutes = Math.Max(1, (int)Math.Floor(age.TotalMinutes));
+            return $"{minutes} minute{(minutes == 1 ? string.Empty : "s")}";
+        }
+
+        if (age < TimeSpan.FromDays(1))
+        {
+            int hours = Math.Max(1, (int)Math.Floor(age.TotalHours));
+            return $"{hours} hour{(hours == 1 ? string.Empty : "s")}";
+        }
+
+        int days = Math.Max(1, (int)Math.Floor(age.TotalDays));
+        return $"{days} day{(days == 1 ? string.Empty : "s")}";
     }
 
     private sealed record ActiveWorkspaceContext(

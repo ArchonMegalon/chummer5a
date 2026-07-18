@@ -4,8 +4,25 @@ using System.Text.Json;
 using Chummer.Application.AI;
 using Chummer.Contracts.AI;
 using Chummer.Contracts.Owners;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Chummer.Avalonia;
+namespace Chummer.Desktop.Runtime;
+
+public static class AvaloniaCoachSidecarServiceCollectionExtensions
+{
+    public static IServiceCollection AddAvaloniaCoachSidecarClient(
+        this IServiceCollection services,
+        bool useHttpClientMode)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddSingleton<IAvaloniaCoachSidecarClient>(serviceProvider =>
+            useHttpClientMode
+                ? new HttpAvaloniaCoachSidecarClient(serviceProvider.GetRequiredService<HttpClient>())
+                : new InProcessAvaloniaCoachSidecarClient(serviceProvider.GetRequiredService<IAiGatewayService>()));
+        return services;
+    }
+}
 
 public sealed class HttpAvaloniaCoachSidecarClient : IAvaloniaCoachSidecarClient
 {

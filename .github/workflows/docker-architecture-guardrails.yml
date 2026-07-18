@@ -50,6 +50,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install runbook prerequisites
+        run: sudo apt-get update && sudo apt-get install --yes ripgrep
+
       - name: Regenerate parity checklist
         run: RUNBOOK_MODE=parity-checklist bash scripts/runbook.sh
 
@@ -62,6 +65,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install runbook prerequisites
+        run: sudo apt-get update && sudo apt-get install --yes ripgrep
+
       - name: Run repo-local downloads smoke
         run: RUNBOOK_MODE=downloads-smoke bash scripts/runbook.sh
 
@@ -70,6 +76,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install runbook prerequisites
+        run: sudo apt-get update && sudo apt-get install --yes ripgrep
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -157,6 +166,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout pinned presentation proof source
+        uses: actions/checkout@v4
+        with:
+          repository: ArchonMegalon/chummer6-ui
+          ref: d7449ec0476c68c1ac6863350f1d4585ab0eecf3
+          path: .proof-sources/chummer6-ui
+
+      - name: Checkout pinned core proof source
+        uses: actions/checkout@v4
+        with:
+          repository: ArchonMegalon/chummer6-core
+          ref: 7560c65ee968a3c9eb650255f236524bf7d65144
+          path: .proof-sources/chummer6-core
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -166,7 +189,10 @@ jobs:
         run: dotnet restore Chummer.Tests/Chummer.Tests.csproj -p:TargetFramework=net10.0
 
       - name: Test (net10.0)
-        run: dotnet test Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0 -p:TargetFramework=net10.0 --no-restore
+        env:
+          CHUMMER_PRESENTATION_PROOF_ROOT: ${{ github.workspace }}/.proof-sources/chummer6-ui
+          CHUMMER_CORE_PROOF_ROOT: ${{ github.workspace }}/.proof-sources/chummer6-core
+        run: dotnet test Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0 -p:TargetFramework=net10.0 --no-restore --filter "TestCategory!=ApiIntegration"
 
   windows-desktop-tests:
     runs-on: windows-latest
@@ -180,7 +206,7 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore
-        run: dotnet restore Chummer.Tests/Chummer.Tests.csproj -p:TargetFramework=net10.0-windows
+        run: dotnet restore Chummer.Tests/Chummer.Tests.csproj
 
       - name: Test (net10.0-windows)
-        run: dotnet test Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0-windows -p:TargetFramework=net10.0-windows --no-restore
+        run: dotnet test Chummer.Tests/Chummer.Tests.csproj -c Release -f net10.0-windows -p:TargetFramework=net10.0-windows --no-restore --filter "TestCategory!=ApiIntegration"

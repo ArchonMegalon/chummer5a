@@ -169,6 +169,28 @@ public class DesktopDialogFactoryTests
     }
 
     [TestMethod]
+    public void CreateCommandDialog_xml_editor_uses_active_section_payload_preview()
+    {
+        DesktopDialogFactory factory = new();
+        const string activeSectionJson = "<character><name>Runner</name></character>";
+
+        DesktopDialogState dialog = factory.CreateCommandDialog(
+            "xml_editor",
+            profile: null,
+            DesktopPreferenceState.Default,
+            activeSectionJson,
+            currentWorkspace: null,
+            rulesetId: "sr5");
+
+        Assert.AreEqual("dialog.xml_editor", dialog.Id);
+        Assert.AreEqual(activeSectionJson, DesktopDialogFieldValueParser.GetValue(dialog, "xmlEditorDialog"));
+        DesktopDialogField? xmlField = dialog.Fields.SingleOrDefault(field => string.Equals(field.Id, "xmlEditorDialog", StringComparison.Ordinal));
+        Assert.IsNotNull(xmlField);
+        Assert.IsTrue(xmlField!.IsMultiline);
+        Assert.IsNotNull(dialog.Actions.SingleOrDefault(action => string.Equals(action.Id, "apply", StringComparison.Ordinal)));
+    }
+
+    [TestMethod]
     public void CreateCommandDialog_switch_ruleset_uses_ruleset_selection_template()
     {
         DesktopDialogFactory factory = new();

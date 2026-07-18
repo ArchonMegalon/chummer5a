@@ -1,0 +1,183 @@
+{
+  "contract_name": "chummer5a.next90_m141_ui_import_route_proof",
+  "errors": [],
+  "external_screenshot_anchors": {
+    "chummer5a_screenshot_review_gate": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/CHUMMER5A_SCREENSHOT_REVIEW_GATE.generated.json",
+    "core_m141_receipts_doc": "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
+    "core_m141_receipts_json": "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json",
+    "desktop_executable_exit_gate": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
+    "desktop_visual_familiarity_exit_gate": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/DESKTOP_VISUAL_FAMILIARITY_EXIT_GATE.generated.json",
+    "screenshot_control_evidence": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/ui-flagship-release-gate-screenshots/SCREENSHOT_CONTROL_EVIDENCE.generated.json",
+    "screenshot_root": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/ui-flagship-release-gate-screenshots",
+    "ui_flagship_release_gate": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
+    "veteran_task_time_evidence_gate": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
+  },
+  "external_source_commits": {
+    "ArchonMegalon/chummer6-core": "7560c65ee968a3c9eb650255f236524bf7d65144",
+    "ArchonMegalon/chummer6-ui": "d7449ec0476c68c1ac6863350f1d4585ab0eecf3"
+  },
+  "frontier_id": 1922169755,
+  "generated_at": "2026-05-05T22:20:31.837888+00:00",
+  "local_runtime_anchors": {
+    "dialog_coordinator_tests": {
+      "path": "Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
+      "tokens": [
+        "CoordinateAsync_hero_lab_import_imports_workspace_and_sets_compat_notice"
+      ]
+    },
+    "dialog_factory_tests": {
+      "path": "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+      "tokens": [
+        "CreateCommandDialog_translator_lists_shipping_locales",
+        "CreateCommandDialog_xml_editor_uses_active_section_payload_preview",
+        "CreateCommandDialog_hero_lab_importer_uses_xml_compatibility_fields"
+      ]
+    },
+    "dual_head_tests": {
+      "path": "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+      "tokens": [
+        "Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts"
+      ]
+    },
+    "governance_entrypoint": {
+      "path": "scripts/test-runtime-governance.sh",
+      "tokens": [
+        "verify-next90-m141-ui-import-route-proof.py",
+        ".codex-studio/published/NEXT90_M141_UI_IMPORT_ROUTE_PROOF.generated.json",
+        "--check"
+      ]
+    },
+    "presenter_tests": {
+      "path": "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
+      "tokens": [
+        "ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs"
+      ]
+    }
+  },
+  "milestone_id": 141,
+  "package_id": "next90-m141-ui-capture-direct-screenshot-and-runtime-proof-for-translator-xml-amendment",
+  "repo": "chummer6-ui",
+  "route_rows": [
+    {
+      "dialog_id": "dialog.translator",
+      "evidence": [
+        "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+        "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
+        "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
+      ],
+      "id": "source:translator_route",
+      "label": "Translator route",
+      "reason": "Direct screenshot 38-translator-dialog-light.png plus runtime assertions CreateCommandDialog_translator_lists_shipping_locales, ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs, and Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts keep the Translator lane under direct screenshot/runtime proof.",
+      "runtime_assertions": [
+        "CreateCommandDialog_translator_lists_shipping_locales",
+        "ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs",
+        "Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts"
+      ],
+      "screenshots": [
+        "38-translator-dialog-light.png"
+      ]
+    },
+    {
+      "dialog_id": "dialog.xml_editor",
+      "evidence": [
+        "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+        "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
+        "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/DESKTOP_VISUAL_FAMILIARITY_EXIT_GATE.generated.json"
+      ],
+      "id": "source:xml_amendment_editor_route",
+      "label": "XML amendment editor route",
+      "reason": "Direct screenshot 39-xml-editor-dialog-light.png plus runtime assertions CreateCommandDialog_xml_editor_uses_active_section_payload_preview, ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs, and Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts keep the XML Amendment Editor lane under direct screenshot/runtime proof.",
+      "runtime_assertions": [
+        "CreateCommandDialog_xml_editor_uses_active_section_payload_preview",
+        "ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs",
+        "Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts"
+      ],
+      "screenshots": [
+        "39-xml-editor-dialog-light.png"
+      ]
+    },
+    {
+      "dialog_id": "dialog.hero_lab_importer",
+      "evidence": [
+        "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+        "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
+        "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+        "Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/CHUMMER5A_SCREENSHOT_REVIEW_GATE.generated.json",
+        "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md"
+      ],
+      "id": "source:hero_lab_importer_route",
+      "label": "Hero Lab importer route",
+      "reason": "Direct screenshot 40-hero-lab-importer-dialog-light.png plus runtime assertions CreateCommandDialog_hero_lab_importer_uses_xml_compatibility_fields, ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs, Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts, and CoordinateAsync_hero_lab_import_imports_workspace_and_sets_compat_notice keep the Hero Lab importer lane under direct screenshot/runtime proof.",
+      "runtime_assertions": [
+        "CreateCommandDialog_hero_lab_importer_uses_xml_compatibility_fields",
+        "ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs",
+        "Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts",
+        "CoordinateAsync_hero_lab_import_imports_workspace_and_sets_compat_notice"
+      ],
+      "screenshots": [
+        "40-hero-lab-importer-dialog-light.png"
+      ]
+    },
+    {
+      "dialog_id": null,
+      "evidence": [
+        "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+        "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+        "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
+        "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
+      ],
+      "id": "family:custom_data_xml_and_translator_bridge",
+      "label": "Custom data/XML and translator bridge family",
+      "reason": "Direct screenshots 38-translator-dialog-light.png and 39-xml-editor-dialog-light.png, plus the local translator/XML route tests and the external M141 core receipt, keep the custom-data/XML bridge family under direct screenshot/runtime proof instead of generic dialog parity only.",
+      "runtime_assertions": [
+        "CreateCommandDialog_translator_lists_shipping_locales",
+        "CreateCommandDialog_xml_editor_uses_active_section_payload_preview",
+        "Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts"
+      ],
+      "screenshots": [
+        "38-translator-dialog-light.png",
+        "39-xml-editor-dialog-light.png"
+      ]
+    },
+    {
+      "dialog_id": null,
+      "evidence": [
+        "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+        "Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
+        "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+        "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
+        "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json"
+      ],
+      "id": "family:legacy_and_adjacent_import_oracles",
+      "label": "Legacy and adjacent import-oracle family",
+      "reason": "Direct screenshot 40-hero-lab-importer-dialog-light.png, the Hero Lab runtime assertions, and the external M141 core import-oracle receipt keep the legacy and adjacent import-oracle family under direct screenshot/runtime proof.",
+      "runtime_assertions": [
+        "CreateCommandDialog_hero_lab_importer_uses_xml_compatibility_fields",
+        "CoordinateAsync_hero_lab_import_imports_workspace_and_sets_compat_notice",
+        "Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts"
+      ],
+      "screenshots": [
+        "40-hero-lab-importer-dialog-light.png"
+      ]
+    }
+  ],
+  "status": "pass",
+  "summary": {
+    "error_count": 0,
+    "local_runtime_anchor_count": 5,
+    "route_count": 5,
+    "screenshot_count": 6
+  },
+  "verification": [
+    "dotnet test Chummer.Tests/Chummer.Tests.csproj --filter \"FullyQualifiedName~CreateCommandDialog_xml_editor_uses_active_section_payload_preview|FullyQualifiedName~ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs|FullyQualifiedName~Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts|FullyQualifiedName~Materializer_emits_translator_xml_and_hero_lab_route_proof_with_direct_screenshot_tokens\"",
+    "python3 scripts/verify-next90-m141-ui-import-route-proof.py --repo-root . --out .codex-studio/published/NEXT90_M141_UI_IMPORT_ROUTE_PROOF.generated.json --check"
+  ]
+}

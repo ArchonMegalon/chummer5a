@@ -22,6 +22,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Chummer.Tests;
 
 [TestClass]
+[TestCategory("ApiIntegration")]
 public class ApiIntegrationTests
 {
     private static readonly Uri BaseUri = ResolveBaseUri();

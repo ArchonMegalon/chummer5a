@@ -1,6 +1,8 @@
 **/.classpath
 **/.dockerignore
 **/.env
+ChummerHub/Services/GoogleDrive/SINners.json
+ChummerHub/Services/GoogleDrive/TextFile.txt
 **/.git
 **/.gitignore
 !.gitignore
@@ -19,6 +21,8 @@
 !docker-compose.yml
 **/Dockerfile*
 !.dockerignore
+!ChummerHub/.dockerignore
+!ChummerHub/Dockerfile
 !Chummer.Coach.Web/Dockerfile
 !Chummer.Session.Web/Dockerfile
 !Docker/Dockerfile.tests

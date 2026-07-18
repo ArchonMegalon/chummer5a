@@ -54,6 +54,13 @@ COPY README.md ./
 COPY docker-compose.yml ./
 COPY Chummer.Web/ Chummer.Web/
 COPY Chummer/ Chummer/
+# Copy only the archived-Hub source files exercised by security compliance
+# tests. The archived project is not restored, built, or copied wholesale.
+COPY ChummerHub/ChummerHub.csproj ChummerHub/
+COPY ChummerHub/Dockerfile ChummerHub/
+COPY ChummerHub/README.md ChummerHub/
+COPY ChummerHub/.dockerignore ChummerHub/
+COPY ChummerHub/Services/GoogleDrive/DriveHandler.cs ChummerHub/Services/GoogleDrive/
 COPY docs/ docs/
 COPY scripts/ scripts/
 COPY .github/PULL_REQUEST_TEMPLATE.md .github/
