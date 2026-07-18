@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+import subprocess
 import sys
 
 
@@ -59,15 +61,25 @@ LOCAL_EVIDENCE = {
 }
 
 
-SCREENSHOT_ROOT = Path("/docker/chummercomplete/chummer-presentation/.codex-studio/published/ui-flagship-release-gate-screenshots")
-SCREENSHOT_EVIDENCE_JSON = SCREENSHOT_ROOT / "SCREENSHOT_CONTROL_EVIDENCE.generated.json"
-UI_RELEASE_GATE_JSON = Path("/docker/chummercomplete/chummer-presentation/.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json")
-DESKTOP_EXIT_GATE_JSON = Path("/docker/chummercomplete/chummer-presentation/.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json")
-VISUAL_EXIT_GATE_JSON = Path("/docker/chummercomplete/chummer-presentation/.codex-studio/published/DESKTOP_VISUAL_FAMILIARITY_EXIT_GATE.generated.json")
-VETERAN_TIME_GATE_JSON = Path("/docker/chummercomplete/chummer-presentation/.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json")
-SCREENSHOT_REVIEW_GATE_JSON = Path("/docker/chummercomplete/chummer-presentation/.codex-studio/published/CHUMMER5A_SCREENSHOT_REVIEW_GATE.generated.json")
-CORE_RECEIPTS_DOC = Path("/docker/chummercomplete/chummer-core-engine/docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md")
-CORE_RECEIPTS_JSON = Path("/docker/chummercomplete/chummer-core-engine/.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json")
+PRESENTATION_REPOSITORY = "ArchonMegalon/chummer6-ui"
+CORE_REPOSITORY = "ArchonMegalon/chummer6-core"
+PRESENTATION_COMMIT = "d7449ec0476c68c1ac6863350f1d4585ab0eecf3"
+CORE_COMMIT = "7560c65ee968a3c9eb650255f236524bf7d65144"
+
+PRESENTATION_ROOT = Path(
+    os.environ.get("CHUMMER_PRESENTATION_PROOF_ROOT", "/docker/chummercomplete/chummer-presentation")
+)
+CORE_ROOT = Path(os.environ.get("CHUMMER_CORE_PROOF_ROOT", "/docker/chummercomplete/chummer-core-engine"))
+
+SCREENSHOT_ROOT_REL = Path(".codex-studio/published/ui-flagship-release-gate-screenshots")
+SCREENSHOT_EVIDENCE_REL = SCREENSHOT_ROOT_REL / "SCREENSHOT_CONTROL_EVIDENCE.generated.json"
+UI_RELEASE_GATE_REL = Path(".codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json")
+DESKTOP_EXIT_GATE_REL = Path(".codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json")
+VISUAL_EXIT_GATE_REL = Path(".codex-studio/published/DESKTOP_VISUAL_FAMILIARITY_EXIT_GATE.generated.json")
+VETERAN_TIME_GATE_REL = Path(".codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json")
+SCREENSHOT_REVIEW_GATE_REL = Path(".codex-studio/published/CHUMMER5A_SCREENSHOT_REVIEW_GATE.generated.json")
+CORE_RECEIPTS_DOC_REL = Path("docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md")
+CORE_RECEIPTS_JSON_REL = Path(".codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json")
 
 
 def parse_args() -> argparse.Namespace:
@@ -85,8 +97,33 @@ def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def load_json(path: Path) -> object:
-    return json.loads(read_text(path))
+def external_ref(repository: str, commit: str, relative_path: Path) -> str:
+    return f"github:{repository}@{commit}:{relative_path.as_posix()}"
+
+
+def pinned_blob(repo_root: Path, commit: str, relative_path: Path) -> bytes | None:
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(repo_root), "show", f"{commit}:{relative_path.as_posix()}"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+    return completed.stdout
+
+
+def validate_pinned_external(
+    repo_root: Path,
+    repository: str,
+    commit: str,
+    relative_path: Path,
+    errors: list[str],
+) -> None:
+    expected = pinned_blob(repo_root, commit, relative_path)
+    ensure(expected is not None, f"Missing pinned proof source {repository}@{commit}:{relative_path.as_posix()}", errors)
 
 
 def ensure(condition: bool, message: str, errors: list[str]) -> None:
@@ -122,26 +159,32 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
         "family:legacy_and_adjacent_import_oracles": ["40-hero-lab-importer-dialog-light.png"],
     }
 
-    screenshot_control_evidence = load_json(SCREENSHOT_EVIDENCE_JSON) if SCREENSHOT_EVIDENCE_JSON.is_file() else {}
+    screenshot_control_blob = pinned_blob(PRESENTATION_ROOT, PRESENTATION_COMMIT, SCREENSHOT_EVIDENCE_REL)
+    screenshot_control_evidence = json.loads(screenshot_control_blob) if screenshot_control_blob is not None else {}
     screenshot_control_text = json.dumps(screenshot_control_evidence)
 
     external_artifacts = [
-        SCREENSHOT_EVIDENCE_JSON,
-        UI_RELEASE_GATE_JSON,
-        DESKTOP_EXIT_GATE_JSON,
-        VISUAL_EXIT_GATE_JSON,
-        VETERAN_TIME_GATE_JSON,
-        SCREENSHOT_REVIEW_GATE_JSON,
-        CORE_RECEIPTS_DOC,
-        CORE_RECEIPTS_JSON,
+        (PRESENTATION_ROOT, PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, SCREENSHOT_EVIDENCE_REL),
+        (PRESENTATION_ROOT, PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, UI_RELEASE_GATE_REL),
+        (PRESENTATION_ROOT, PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, DESKTOP_EXIT_GATE_REL),
+        (PRESENTATION_ROOT, PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, VISUAL_EXIT_GATE_REL),
+        (PRESENTATION_ROOT, PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, VETERAN_TIME_GATE_REL),
+        (PRESENTATION_ROOT, PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, SCREENSHOT_REVIEW_GATE_REL),
+        (CORE_ROOT, CORE_REPOSITORY, CORE_COMMIT, CORE_RECEIPTS_DOC_REL),
+        (CORE_ROOT, CORE_REPOSITORY, CORE_COMMIT, CORE_RECEIPTS_JSON_REL),
     ]
-    for artifact in external_artifacts:
-        ensure(artifact.is_file(), f"Missing external proof artifact: {artifact}", errors)
+    for repo_root, repository, commit, relative_path in external_artifacts:
+        validate_pinned_external(repo_root, repository, commit, relative_path, errors)
 
     for route_id, screenshot_names in screenshot_files.items():
         for screenshot_name in screenshot_names:
-            screenshot_path = SCREENSHOT_ROOT / screenshot_name
-            ensure(screenshot_path.is_file(), f"Missing direct screenshot asset for {route_id}: {screenshot_path}", errors)
+            validate_pinned_external(
+                PRESENTATION_ROOT,
+                PRESENTATION_REPOSITORY,
+                PRESENTATION_COMMIT,
+                SCREENSHOT_ROOT_REL / screenshot_name,
+                errors,
+            )
             ensure(screenshot_name in screenshot_control_text, f"Screenshot evidence json does not mention {screenshot_name}", errors)
 
     route_rows = [
@@ -160,9 +203,9 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
                 LOCAL_EVIDENCE["dialog_factory_tests"].relative_path,
                 LOCAL_EVIDENCE["presenter_tests"].relative_path,
                 LOCAL_EVIDENCE["dual_head_tests"].relative_path,
-                str(UI_RELEASE_GATE_JSON),
-                str(DESKTOP_EXIT_GATE_JSON),
-                str(VETERAN_TIME_GATE_JSON),
+                external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, UI_RELEASE_GATE_REL),
+                external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, DESKTOP_EXIT_GATE_REL),
+                external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, VETERAN_TIME_GATE_REL),
             ],
         },
         {
@@ -180,9 +223,9 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
                 LOCAL_EVIDENCE["dialog_factory_tests"].relative_path,
                 LOCAL_EVIDENCE["presenter_tests"].relative_path,
                 LOCAL_EVIDENCE["dual_head_tests"].relative_path,
-                str(UI_RELEASE_GATE_JSON),
-                str(DESKTOP_EXIT_GATE_JSON),
-                str(VISUAL_EXIT_GATE_JSON),
+                external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, UI_RELEASE_GATE_REL),
+                external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, DESKTOP_EXIT_GATE_REL),
+                external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, VISUAL_EXIT_GATE_REL),
             ],
         },
         {
@@ -202,8 +245,8 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
                 LOCAL_EVIDENCE["presenter_tests"].relative_path,
                 LOCAL_EVIDENCE["dual_head_tests"].relative_path,
                 LOCAL_EVIDENCE["dialog_coordinator_tests"].relative_path,
-                str(SCREENSHOT_REVIEW_GATE_JSON),
-                str(CORE_RECEIPTS_DOC),
+                external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, SCREENSHOT_REVIEW_GATE_REL),
+                external_ref(CORE_REPOSITORY, CORE_COMMIT, CORE_RECEIPTS_DOC_REL),
             ],
         },
         {
@@ -220,9 +263,9 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
             "evidence": [
                 LOCAL_EVIDENCE["dialog_factory_tests"].relative_path,
                 LOCAL_EVIDENCE["dual_head_tests"].relative_path,
-                str(CORE_RECEIPTS_DOC),
-                str(CORE_RECEIPTS_JSON),
-                str(VETERAN_TIME_GATE_JSON),
+                external_ref(CORE_REPOSITORY, CORE_COMMIT, CORE_RECEIPTS_DOC_REL),
+                external_ref(CORE_REPOSITORY, CORE_COMMIT, CORE_RECEIPTS_JSON_REL),
+                external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, VETERAN_TIME_GATE_REL),
             ],
         },
         {
@@ -240,8 +283,8 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
                 LOCAL_EVIDENCE["dialog_factory_tests"].relative_path,
                 LOCAL_EVIDENCE["dialog_coordinator_tests"].relative_path,
                 LOCAL_EVIDENCE["dual_head_tests"].relative_path,
-                str(CORE_RECEIPTS_DOC),
-                str(CORE_RECEIPTS_JSON),
+                external_ref(CORE_REPOSITORY, CORE_COMMIT, CORE_RECEIPTS_DOC_REL),
+                external_ref(CORE_REPOSITORY, CORE_COMMIT, CORE_RECEIPTS_JSON_REL),
             ],
         },
     ]
@@ -263,16 +306,20 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
         },
         "route_rows": route_rows,
         "local_runtime_anchors": local_evidence,
+        "external_source_commits": {
+            PRESENTATION_REPOSITORY: PRESENTATION_COMMIT,
+            CORE_REPOSITORY: CORE_COMMIT,
+        },
         "external_screenshot_anchors": {
-            "screenshot_root": str(SCREENSHOT_ROOT),
-            "screenshot_control_evidence": str(SCREENSHOT_EVIDENCE_JSON),
-            "ui_flagship_release_gate": str(UI_RELEASE_GATE_JSON),
-            "desktop_executable_exit_gate": str(DESKTOP_EXIT_GATE_JSON),
-            "desktop_visual_familiarity_exit_gate": str(VISUAL_EXIT_GATE_JSON),
-            "veteran_task_time_evidence_gate": str(VETERAN_TIME_GATE_JSON),
-            "chummer5a_screenshot_review_gate": str(SCREENSHOT_REVIEW_GATE_JSON),
-            "core_m141_receipts_doc": str(CORE_RECEIPTS_DOC),
-            "core_m141_receipts_json": str(CORE_RECEIPTS_JSON),
+            "screenshot_root": external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, SCREENSHOT_ROOT_REL),
+            "screenshot_control_evidence": external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, SCREENSHOT_EVIDENCE_REL),
+            "ui_flagship_release_gate": external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, UI_RELEASE_GATE_REL),
+            "desktop_executable_exit_gate": external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, DESKTOP_EXIT_GATE_REL),
+            "desktop_visual_familiarity_exit_gate": external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, VISUAL_EXIT_GATE_REL),
+            "veteran_task_time_evidence_gate": external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, VETERAN_TIME_GATE_REL),
+            "chummer5a_screenshot_review_gate": external_ref(PRESENTATION_REPOSITORY, PRESENTATION_COMMIT, SCREENSHOT_REVIEW_GATE_REL),
+            "core_m141_receipts_doc": external_ref(CORE_REPOSITORY, CORE_COMMIT, CORE_RECEIPTS_DOC_REL),
+            "core_m141_receipts_json": external_ref(CORE_REPOSITORY, CORE_COMMIT, CORE_RECEIPTS_JSON_REL),
         },
         "verification": [
             "dotnet test Chummer.Tests/Chummer.Tests.csproj --filter \"FullyQualifiedName~CreateCommandDialog_xml_editor_uses_active_section_payload_preview|FullyQualifiedName~ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs|FullyQualifiedName~Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts|FullyQualifiedName~Materializer_emits_translator_xml_and_hero_lab_route_proof_with_direct_screenshot_tokens\"",

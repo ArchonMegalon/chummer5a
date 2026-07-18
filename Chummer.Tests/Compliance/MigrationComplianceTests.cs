@@ -4758,9 +4758,9 @@ public class MigrationComplianceTests
         string xamlText = File.ReadAllText(xamlPath);
         string coachSidecarCodePath = FindPath("Chummer.Avalonia", "MainWindow.CoachSidecar.cs");
         string coachSidecarCodeText = File.ReadAllText(coachSidecarCodePath);
-        string coachClientPath = FindPath("Chummer.Avalonia", "AvaloniaCoachSidecarClient.cs");
+        string coachClientPath = FindPath("Chummer.Desktop.Runtime", "AvaloniaCoachSidecarClient.cs");
         string coachClientText = File.ReadAllText(coachClientPath);
-        string coachClientContractPath = FindPath("Chummer.Avalonia", "IAvaloniaCoachSidecarClient.cs");
+        string coachClientContractPath = FindPath("Chummer.Desktop.Runtime", "IAvaloniaCoachSidecarClient.cs");
         string coachClientContractText = File.ReadAllText(coachClientContractPath);
         string coachControlPath = FindPath("Chummer.Avalonia", "Controls", "CoachSidecarControl.axaml");
         string coachControlText = File.ReadAllText(coachControlPath);
@@ -4771,9 +4771,8 @@ public class MigrationComplianceTests
         string projectorTestsPath = FindPath("Chummer.Tests", "Presentation", "AvaloniaCoachSidecarProjectorTests.cs");
         string projectorTestsText = File.ReadAllText(projectorTestsPath);
 
-        StringAssert.Contains(appText, "AddSingleton<IAvaloniaCoachSidecarClient>");
-        StringAssert.Contains(appText, "HttpAvaloniaCoachSidecarClient");
-        StringAssert.Contains(appText, "InProcessAvaloniaCoachSidecarClient");
+        StringAssert.Contains(appText, "AddAvaloniaCoachSidecarClient");
+        StringAssert.Contains(coachClientText, "AddSingleton<IAvaloniaCoachSidecarClient>");
         StringAssert.Contains(mainWindowText, "private readonly IAvaloniaCoachSidecarClient _coachSidecarClient;");
         StringAssert.Contains(mainWindowText, "ResolveService<IAvaloniaCoachSidecarClient>()");
         StringAssert.Contains(xamlText, "CoachSidecarControl");

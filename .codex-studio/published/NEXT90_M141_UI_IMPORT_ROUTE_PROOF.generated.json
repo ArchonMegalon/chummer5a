@@ -2,15 +2,19 @@
   "contract_name": "chummer5a.next90_m141_ui_import_route_proof",
   "errors": [],
   "external_screenshot_anchors": {
-    "chummer5a_screenshot_review_gate": "/docker/chummercomplete/chummer-presentation/.codex-studio/published/CHUMMER5A_SCREENSHOT_REVIEW_GATE.generated.json",
-    "core_m141_receipts_doc": "/docker/chummercomplete/chummer-core-engine/docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
-    "core_m141_receipts_json": "/docker/chummercomplete/chummer-core-engine/.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json",
-    "desktop_executable_exit_gate": "/docker/chummercomplete/chummer-presentation/.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
-    "desktop_visual_familiarity_exit_gate": "/docker/chummercomplete/chummer-presentation/.codex-studio/published/DESKTOP_VISUAL_FAMILIARITY_EXIT_GATE.generated.json",
-    "screenshot_control_evidence": "/docker/chummercomplete/chummer-presentation/.codex-studio/published/ui-flagship-release-gate-screenshots/SCREENSHOT_CONTROL_EVIDENCE.generated.json",
-    "screenshot_root": "/docker/chummercomplete/chummer-presentation/.codex-studio/published/ui-flagship-release-gate-screenshots",
-    "ui_flagship_release_gate": "/docker/chummercomplete/chummer-presentation/.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
-    "veteran_task_time_evidence_gate": "/docker/chummercomplete/chummer-presentation/.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
+    "chummer5a_screenshot_review_gate": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/CHUMMER5A_SCREENSHOT_REVIEW_GATE.generated.json",
+    "core_m141_receipts_doc": "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
+    "core_m141_receipts_json": "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json",
+    "desktop_executable_exit_gate": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
+    "desktop_visual_familiarity_exit_gate": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/DESKTOP_VISUAL_FAMILIARITY_EXIT_GATE.generated.json",
+    "screenshot_control_evidence": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/ui-flagship-release-gate-screenshots/SCREENSHOT_CONTROL_EVIDENCE.generated.json",
+    "screenshot_root": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/ui-flagship-release-gate-screenshots",
+    "ui_flagship_release_gate": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
+    "veteran_task_time_evidence_gate": "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
+  },
+  "external_source_commits": {
+    "ArchonMegalon/chummer6-core": "7560c65ee968a3c9eb650255f236524bf7d65144",
+    "ArchonMegalon/chummer6-ui": "d7449ec0476c68c1ac6863350f1d4585ab0eecf3"
   },
   "frontier_id": 1922169755,
   "generated_at": "2026-05-05T22:20:31.837888+00:00",
@@ -60,9 +64,9 @@
         "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
         "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
         "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
-        "/docker/chummercomplete/chummer-presentation/.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
-        "/docker/chummercomplete/chummer-presentation/.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
-        "/docker/chummercomplete/chummer-presentation/.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
       ],
       "id": "source:translator_route",
       "label": "Translator route",
@@ -82,9 +86,9 @@
         "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
         "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
         "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
-        "/docker/chummercomplete/chummer-presentation/.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
-        "/docker/chummercomplete/chummer-presentation/.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
-        "/docker/chummercomplete/chummer-presentation/.codex-studio/published/DESKTOP_VISUAL_FAMILIARITY_EXIT_GATE.generated.json"
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/DESKTOP_VISUAL_FAMILIARITY_EXIT_GATE.generated.json"
       ],
       "id": "source:xml_amendment_editor_route",
       "label": "XML amendment editor route",
@@ -105,8 +109,8 @@
         "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
         "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
         "Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
-        "/docker/chummercomplete/chummer-presentation/.codex-studio/published/CHUMMER5A_SCREENSHOT_REVIEW_GATE.generated.json",
-        "/docker/chummercomplete/chummer-core-engine/docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md"
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/CHUMMER5A_SCREENSHOT_REVIEW_GATE.generated.json",
+        "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md"
       ],
       "id": "source:hero_lab_importer_route",
       "label": "Hero Lab importer route",
@@ -126,9 +130,9 @@
       "evidence": [
         "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
         "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
-        "/docker/chummercomplete/chummer-core-engine/docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
-        "/docker/chummercomplete/chummer-core-engine/.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json",
-        "/docker/chummercomplete/chummer-presentation/.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
+        "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
+        "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json",
+        "github:ArchonMegalon/chummer6-ui@d7449ec0476c68c1ac6863350f1d4585ab0eecf3:.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
       ],
       "id": "family:custom_data_xml_and_translator_bridge",
       "label": "Custom data/XML and translator bridge family",
@@ -149,8 +153,8 @@
         "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
         "Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
         "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
-        "/docker/chummercomplete/chummer-core-engine/docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
-        "/docker/chummercomplete/chummer-core-engine/.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json"
+        "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
+        "github:ArchonMegalon/chummer6-core@7560c65ee968a3c9eb650255f236524bf7d65144:.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json"
       ],
       "id": "family:legacy_and_adjacent_import_oracles",
       "label": "Legacy and adjacent import-oracle family",

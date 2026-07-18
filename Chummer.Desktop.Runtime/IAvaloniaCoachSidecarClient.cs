@@ -1,6 +1,6 @@
 using Chummer.Contracts.AI;
 
-namespace Chummer.Avalonia;
+namespace Chummer.Desktop.Runtime;
 
 public interface IAvaloniaCoachSidecarClient
 {

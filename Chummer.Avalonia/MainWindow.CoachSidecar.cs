@@ -2,6 +2,7 @@ using Avalonia.Threading;
 using Chummer.Avalonia.Controls;
 using Chummer.Contracts.AI;
 using Chummer.Contracts.Presentation;
+using Chummer.Desktop.Runtime;
 using Chummer.Presentation.Shell;
 
 namespace Chummer.Avalonia;
