@@ -41,7 +41,7 @@ assert_status "200" "$status" "/api/content/overlays without key"
 echo "[auth] verifying protected endpoint blocks missing/invalid key"
 status=$(request_code "/api/tools/master-index")
 assert_status "401" "$status" "/api/tools/master-index without key"
-if ! rg -q '"missing_or_invalid_api_key"' /tmp/chummer-auth-response.json; then
+if ! grep -Fq '"missing_or_invalid_api_key"' /tmp/chummer-auth-response.json; then
   echo "Protected response did not include auth error marker" >&2
   cat /tmp/chummer-auth-response.json >&2 || true
   exit 1
