@@ -16,13 +16,13 @@
   "generated_at": "2026-05-05T22:20:31.837888+00:00",
   "local_runtime_anchors": {
     "dialog_coordinator_tests": {
-      "path": "/docker/chummer5a/Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
+      "path": "Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
       "tokens": [
         "CoordinateAsync_hero_lab_import_imports_workspace_and_sets_compat_notice"
       ]
     },
     "dialog_factory_tests": {
-      "path": "/docker/chummer5a/Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+      "path": "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
       "tokens": [
         "CreateCommandDialog_translator_lists_shipping_locales",
         "CreateCommandDialog_xml_editor_uses_active_section_payload_preview",
@@ -30,13 +30,13 @@
       ]
     },
     "dual_head_tests": {
-      "path": "/docker/chummer5a/Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+      "path": "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
       "tokens": [
         "Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts"
       ]
     },
     "governance_entrypoint": {
-      "path": "/docker/chummer5a/scripts/test-runtime-governance.sh",
+      "path": "scripts/test-runtime-governance.sh",
       "tokens": [
         "verify-next90-m141-ui-import-route-proof.py",
         ".codex-studio/published/NEXT90_M141_UI_IMPORT_ROUTE_PROOF.generated.json",
@@ -44,7 +44,7 @@
       ]
     },
     "presenter_tests": {
-      "path": "/docker/chummer5a/Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
+      "path": "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
       "tokens": [
         "ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs"
       ]
@@ -57,9 +57,9 @@
     {
       "dialog_id": "dialog.translator",
       "evidence": [
-        "/docker/chummer5a/Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
-        "/docker/chummer5a/Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
-        "/docker/chummer5a/Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+        "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+        "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
+        "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
         "/docker/chummercomplete/chummer-presentation/.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
         "/docker/chummercomplete/chummer-presentation/.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
         "/docker/chummercomplete/chummer-presentation/.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
@@ -79,9 +79,9 @@
     {
       "dialog_id": "dialog.xml_editor",
       "evidence": [
-        "/docker/chummer5a/Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
-        "/docker/chummer5a/Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
-        "/docker/chummer5a/Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+        "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+        "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
+        "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
         "/docker/chummercomplete/chummer-presentation/.codex-studio/published/UI_FLAGSHIP_RELEASE_GATE.generated.json",
         "/docker/chummercomplete/chummer-presentation/.codex-studio/published/DESKTOP_EXECUTABLE_EXIT_GATE.generated.json",
         "/docker/chummercomplete/chummer-presentation/.codex-studio/published/DESKTOP_VISUAL_FAMILIARITY_EXIT_GATE.generated.json"
@@ -101,10 +101,10 @@
     {
       "dialog_id": "dialog.hero_lab_importer",
       "evidence": [
-        "/docker/chummer5a/Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
-        "/docker/chummer5a/Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
-        "/docker/chummer5a/Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
-        "/docker/chummer5a/Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
+        "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+        "Chummer.Tests/Presentation/CharacterOverviewPresenterTests.cs",
+        "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+        "Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
         "/docker/chummercomplete/chummer-presentation/.codex-studio/published/CHUMMER5A_SCREENSHOT_REVIEW_GATE.generated.json",
         "/docker/chummercomplete/chummer-core-engine/docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md"
       ],
@@ -124,8 +124,8 @@
     {
       "dialog_id": null,
       "evidence": [
-        "/docker/chummer5a/Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
-        "/docker/chummer5a/Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+        "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+        "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
         "/docker/chummercomplete/chummer-core-engine/docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
         "/docker/chummercomplete/chummer-core-engine/.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json",
         "/docker/chummercomplete/chummer-presentation/.codex-studio/published/VETERAN_TASK_TIME_EVIDENCE_GATE.generated.json"
@@ -146,9 +146,9 @@
     {
       "dialog_id": null,
       "evidence": [
-        "/docker/chummer5a/Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
-        "/docker/chummer5a/Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
-        "/docker/chummer5a/Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
+        "Chummer.Tests/Presentation/DesktopDialogFactoryTests.cs",
+        "Chummer.Tests/Presentation/DialogCoordinatorTests.cs",
+        "Chummer.Tests/Presentation/DualHeadAcceptanceTests.cs",
         "/docker/chummercomplete/chummer-core-engine/docs/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.md",
         "/docker/chummercomplete/chummer-core-engine/.codex-studio/published/NEXT90_M141_IMPORT_ROUTE_RECEIPTS.generated.json"
       ],

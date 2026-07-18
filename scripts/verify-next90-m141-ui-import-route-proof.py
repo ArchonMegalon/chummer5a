@@ -110,7 +110,7 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
         missing_tokens = [token for token in evidence.required_tokens if token not in text]
         ensure(not missing_tokens, f"Missing token(s) in {path}: {', '.join(missing_tokens)}", errors)
         local_evidence[key] = {
-            "path": str(path),
+            "path": evidence.relative_path,
             "tokens": list(evidence.required_tokens),
         }
 
@@ -157,9 +157,9 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
             ],
             "reason": "Direct screenshot 38-translator-dialog-light.png plus runtime assertions CreateCommandDialog_translator_lists_shipping_locales, ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs, and Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts keep the Translator lane under direct screenshot/runtime proof.",
             "evidence": [
-                str(local_paths["dialog_factory_tests"]),
-                str(local_paths["presenter_tests"]),
-                str(local_paths["dual_head_tests"]),
+                LOCAL_EVIDENCE["dialog_factory_tests"].relative_path,
+                LOCAL_EVIDENCE["presenter_tests"].relative_path,
+                LOCAL_EVIDENCE["dual_head_tests"].relative_path,
                 str(UI_RELEASE_GATE_JSON),
                 str(DESKTOP_EXIT_GATE_JSON),
                 str(VETERAN_TIME_GATE_JSON),
@@ -177,9 +177,9 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
             ],
             "reason": "Direct screenshot 39-xml-editor-dialog-light.png plus runtime assertions CreateCommandDialog_xml_editor_uses_active_section_payload_preview, ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs, and Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts keep the XML Amendment Editor lane under direct screenshot/runtime proof.",
             "evidence": [
-                str(local_paths["dialog_factory_tests"]),
-                str(local_paths["presenter_tests"]),
-                str(local_paths["dual_head_tests"]),
+                LOCAL_EVIDENCE["dialog_factory_tests"].relative_path,
+                LOCAL_EVIDENCE["presenter_tests"].relative_path,
+                LOCAL_EVIDENCE["dual_head_tests"].relative_path,
                 str(UI_RELEASE_GATE_JSON),
                 str(DESKTOP_EXIT_GATE_JSON),
                 str(VISUAL_EXIT_GATE_JSON),
@@ -198,10 +198,10 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
             ],
             "reason": "Direct screenshot 40-hero-lab-importer-dialog-light.png plus runtime assertions CreateCommandDialog_hero_lab_importer_uses_xml_compatibility_fields, ExecuteCommandAsync_translator_xml_editor_and_hero_lab_importer_open_expected_dialogs, Avalonia_and_Blazor_translator_xml_editor_and_hero_lab_routes_preserve_matching_dialog_contracts, and CoordinateAsync_hero_lab_import_imports_workspace_and_sets_compat_notice keep the Hero Lab importer lane under direct screenshot/runtime proof.",
             "evidence": [
-                str(local_paths["dialog_factory_tests"]),
-                str(local_paths["presenter_tests"]),
-                str(local_paths["dual_head_tests"]),
-                str(local_paths["dialog_coordinator_tests"]),
+                LOCAL_EVIDENCE["dialog_factory_tests"].relative_path,
+                LOCAL_EVIDENCE["presenter_tests"].relative_path,
+                LOCAL_EVIDENCE["dual_head_tests"].relative_path,
+                LOCAL_EVIDENCE["dialog_coordinator_tests"].relative_path,
                 str(SCREENSHOT_REVIEW_GATE_JSON),
                 str(CORE_RECEIPTS_DOC),
             ],
@@ -218,8 +218,8 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
             ],
             "reason": "Direct screenshots 38-translator-dialog-light.png and 39-xml-editor-dialog-light.png, plus the local translator/XML route tests and the external M141 core receipt, keep the custom-data/XML bridge family under direct screenshot/runtime proof instead of generic dialog parity only.",
             "evidence": [
-                str(local_paths["dialog_factory_tests"]),
-                str(local_paths["dual_head_tests"]),
+                LOCAL_EVIDENCE["dialog_factory_tests"].relative_path,
+                LOCAL_EVIDENCE["dual_head_tests"].relative_path,
                 str(CORE_RECEIPTS_DOC),
                 str(CORE_RECEIPTS_JSON),
                 str(VETERAN_TIME_GATE_JSON),
@@ -237,9 +237,9 @@ def materialize(repo_root: Path, existing_generated_at: str | None = None) -> di
             ],
             "reason": "Direct screenshot 40-hero-lab-importer-dialog-light.png, the Hero Lab runtime assertions, and the external M141 core import-oracle receipt keep the legacy and adjacent import-oracle family under direct screenshot/runtime proof.",
             "evidence": [
-                str(local_paths["dialog_factory_tests"]),
-                str(local_paths["dialog_coordinator_tests"]),
-                str(local_paths["dual_head_tests"]),
+                LOCAL_EVIDENCE["dialog_factory_tests"].relative_path,
+                LOCAL_EVIDENCE["dialog_coordinator_tests"].relative_path,
+                LOCAL_EVIDENCE["dual_head_tests"].relative_path,
                 str(CORE_RECEIPTS_DOC),
                 str(CORE_RECEIPTS_JSON),
             ],

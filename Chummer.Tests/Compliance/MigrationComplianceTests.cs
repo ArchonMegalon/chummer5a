@@ -4504,8 +4504,8 @@ public class MigrationComplianceTests
             "ARG CHUMMER_ALLOW_ARCHIVED_HUB_BUILD=0");
         StringAssert.Contains(dockerfileText, guard);
         Assert.IsLessThan(
-            dockerfileText.IndexOf(guard, StringComparison.Ordinal),
             dockerfileText.IndexOf("RUN dotnet restore", StringComparison.Ordinal),
+            dockerfileText.IndexOf(guard, StringComparison.Ordinal),
             "The archived-project guard must fail before dependency restore or compilation.");
         StringAssert.Contains(
             readmeText,

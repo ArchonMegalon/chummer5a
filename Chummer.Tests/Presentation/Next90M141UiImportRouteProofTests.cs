@@ -27,6 +27,15 @@ public sealed class Next90M141UiImportRouteProofTests
         Assert.AreEqual("pass", root.GetProperty("status").GetString());
         Assert.AreEqual("next90-m141-ui-capture-direct-screenshot-and-runtime-proof-for-translator-xml-amendment", root.GetProperty("package_id").GetString());
 
+        foreach (JsonProperty anchor in root.GetProperty("local_runtime_anchors").EnumerateObject())
+        {
+            string relativePath = anchor.Value.GetProperty("path").GetString() ?? string.Empty;
+            Assert.IsFalse(Path.IsPathRooted(relativePath), $"Local proof anchor '{anchor.Name}' must be repository-relative.");
+            Assert.IsTrue(
+                File.Exists(Path.Combine(repoRoot, relativePath)),
+                $"Local proof anchor '{anchor.Name}' must resolve inside the checked-out repository.");
+        }
+
         JsonElement routes = root.GetProperty("route_rows");
         Assert.AreEqual(5, routes.GetArrayLength());
 
