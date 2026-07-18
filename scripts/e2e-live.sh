@@ -96,16 +96,16 @@ check_get "/api/info" >/dev/null
 check_get "/api/health" >/dev/null
 check_get "/api/content/overlays" >/dev/null
 openapi_json="$(check_get "/openapi/v1.json")"
-if ! printf '%s' "$openapi_json" | grep -q '"openapi"'; then
+if ! grep -q '"openapi"' <<<"$openapi_json"; then
   echo "OpenAPI document is missing expected marker" >&2
   exit 1
 fi
 docs_html="$(check_get "/docs/")"
-if ! printf '%s' "$docs_html" | grep -qi 'Self-hosted OpenAPI explorer'; then
+if ! grep -qi 'Self-hosted OpenAPI explorer' <<<"$docs_html"; then
   echo "Docs UI did not return expected self-hosted docs content" >&2
   exit 1
 fi
-if printf '%s' "$docs_html" | grep -qi 'jsdelivr'; then
+if grep -qi 'jsdelivr' <<<"$docs_html"; then
   echo "Docs UI unexpectedly references external jsdelivr assets" >&2
   exit 1
 fi
