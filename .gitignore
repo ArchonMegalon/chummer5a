@@ -227,3 +227,6 @@ WORK_QUEUE.md
 .env.*
 !.env.example
 .env.providers
+
+# Local vexp context index.
+/.vexp/
